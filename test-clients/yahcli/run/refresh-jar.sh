@@ -1,2 +1,2 @@
 #! /bin/sh
-mv ../target/yahcli.jar assets/
+mv ../build/libs/yahcli.jar assets/

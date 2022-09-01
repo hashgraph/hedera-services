@@ -16,6 +16,7 @@
 package com.hedera.services;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -83,7 +84,7 @@ class ServicesAppTest {
         // setup:
         final var bootstrapProps = new BootstrapProperties();
         final var props = new ChainedSources(overridingProps, bootstrapProps);
-        final var logDirKey = "hedera.recordStream.logDir";
+        final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
 

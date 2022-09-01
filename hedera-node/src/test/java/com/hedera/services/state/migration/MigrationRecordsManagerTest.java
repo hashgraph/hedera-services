@@ -291,30 +291,39 @@ class MigrationRecordsManagerTest {
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
         accounts.clear();
-        // mock contract with 3 slots
+        // mock contract with 4 slots
         final var contract1 = mock(MerkleAccount.class);
         given(contract1.isSmartContract()).willReturn(true);
-        given(contract1.getNumContractKvPairs()).willReturn(3);
+        given(contract1.getNumContractKvPairs()).willReturn(4);
         final var contract1Num = 3L;
-        final var contract1Key1 = ContractKey.from(contract1Num, UInt256.valueOf(1L));
-        final var contract1Key2 = ContractKey.from(contract1Num, UInt256.valueOf(2L));
-        final var contract1Key3 = ContractKey.from(contract1Num, UInt256.valueOf(155542L));
+        final var slot1 = UInt256.valueOf(1L);
+        final var contract1Key1 = ContractKey.from(contract1Num, slot1);
+        final var slot0 = UInt256.valueOf(0L);
+        final var contract1Key2 = ContractKey.from(contract1Num, slot0);
+        final var slot1555542 = UInt256.valueOf(155542L);
+        final var contract1Key3 = ContractKey.from(contract1Num, slot1555542);
+        final var slot999 = UInt256.valueOf(999L);
+        final var contract1Key4 = ContractKey.from(contract1Num, slot999);
         final var contract1Value1 = mock(IterableContractValue.class);
         final var contract1Value2 = mock(IterableContractValue.class);
         final var contract1Value3 = mock(IterableContractValue.class);
+        final var contract1Value4 = mock(IterableContractValue.class);
         given(contract1.getFirstContractStorageKey()).willReturn(contract1Key1);
         given(contract1Value1.getNextKeyScopedTo(contract1Num)).willReturn(contract1Key2);
         final var value1 = "value1".getBytes();
-        given(contract1Value1.getValue()).willReturn(value1);
+        given(contract1Value1.asUInt256()).willReturn(UInt256.fromBytes(Bytes.of(value1)));
         given(contract1Value2.getNextKeyScopedTo(contract1Num)).willReturn(contract1Key3);
-        final var value2 = "value2".getBytes();
-        given(contract1Value2.getValue()).willReturn(value2);
+        final var value2 = UInt256.valueOf(0);
+        given(contract1Value2.asUInt256()).willReturn(value2);
         final var value3 = "value3".getBytes();
-        given(contract1Value3.getValue()).willReturn(value3);
-        given(contract1Value3.getNextKeyScopedTo(contract1Num)).willReturn(null);
+        given(contract1Value3.asUInt256()).willReturn(UInt256.fromBytes(Bytes.of(value3)));
+        given(contract1Value3.getNextKeyScopedTo(contract1Num)).willReturn(contract1Key4);
+        given(contract1Value4.asUInt256()).willReturn(UInt256.ZERO);
+        given(contract1Value4.getNextKeyScopedTo(contract1Num)).willReturn(null);
         given(contractStorage.get(contract1Key1)).willReturn(contract1Value1);
         given(contractStorage.get(contract1Key2)).willReturn(contract1Value2);
         given(contractStorage.get(contract1Key3)).willReturn(contract1Value3);
+        given(contractStorage.get(contract1Key4)).willReturn(contract1Value4);
         final var entityNum1 = EntityNum.fromLong(contract1Num);
         final var runtimeBytes = "runtime".getBytes();
         given(entityAccess.fetchCodeIfPresent(entityNum1.toGrpcAccountId()))
@@ -324,13 +333,14 @@ class MigrationRecordsManagerTest {
         given(contract2.isSmartContract()).willReturn(true);
         given(contract2.getNumContractKvPairs()).willReturn(1);
         final var contrcat2Num = 4L;
-        final var contract2Key1 = ContractKey.from(contrcat2Num, UInt256.valueOf(257L));
+        final var contract2Slot257 = UInt256.valueOf(257L);
+        final var contract2Key1 = ContractKey.from(contrcat2Num, contract2Slot257);
         final var contract2Key2 = ContractKey.from(contract1Num, UInt256.valueOf(2L));
         final var contract2Value1 = mock(IterableContractValue.class);
         given(contract2.getFirstContractStorageKey()).willReturn(contract2Key1);
         given(contract2Value1.getNextKeyScopedTo(contrcat2Num)).willReturn(contract2Key2);
-        final var value4 = "value4".getBytes();
-        given(contract2Value1.getValue()).willReturn(value4);
+        final var value4 = UInt256.valueOf(1L);
+        given(contract2Value1.asUInt256()).willReturn(value4);
         given(contractStorage.get(contract2Key1)).willReturn(contract2Value1);
         final var entityNum2 = EntityNum.fromLong(contrcat2Num);
         final var runtimeBytes2 = "runtime2".getBytes();
@@ -360,8 +370,12 @@ class MigrationRecordsManagerTest {
                                 StorageChange.newBuilder()
                                         .setSlot(
                                                 ByteStringUtils.wrapUnsafely(
-                                                        UInt256.valueOf(257L).toArrayUnsafe()))
-                                        .setValueRead(ByteStringUtils.wrapUnsafely(value4))
+                                                        contract2Slot257
+                                                                .trimLeadingZeros()
+                                                                .toArrayUnsafe()))
+                                        .setValueRead(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        value4.trimLeadingZeros().toArrayUnsafe()))
                                         .build())
                         .build();
         final var expectedStateChangesContract2 =
@@ -387,22 +401,30 @@ class MigrationRecordsManagerTest {
                                 StorageChange.newBuilder()
                                         .setSlot(
                                                 ByteStringUtils.wrapUnsafely(
-                                                        UInt256.valueOf(1L).toArrayUnsafe()))
+                                                        slot1.trimLeadingZeros().toArrayUnsafe()))
                                         .setValueRead(ByteStringUtils.wrapUnsafely(value1))
                                         .build())
                         .addStorageChanges(
-                                StorageChange.newBuilder()
-                                        .setSlot(
-                                                ByteStringUtils.wrapUnsafely(
-                                                        UInt256.valueOf(2L).toArrayUnsafe()))
-                                        .setValueRead(ByteStringUtils.wrapUnsafely(value2))
-                                        .build())
+                                // as per HIP-260 - a contract that only reads a zero value from
+                                // slot zero will have an empty message.
+                                StorageChange.newBuilder().build())
                         .addStorageChanges(
                                 StorageChange.newBuilder()
                                         .setSlot(
                                                 ByteStringUtils.wrapUnsafely(
-                                                        UInt256.valueOf(155542L).toArrayUnsafe()))
+                                                        slot1555542
+                                                                .trimLeadingZeros()
+                                                                .toArrayUnsafe()))
                                         .setValueRead(ByteStringUtils.wrapUnsafely(value3))
+                                        .build())
+                        .addStorageChanges(
+                                // as per HIP-260 - zero value read will not set the valueRead field
+                                // of a
+                                // storage change
+                                StorageChange.newBuilder()
+                                        .setSlot(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        slot999.trimLeadingZeros().toArrayUnsafe()))
                                         .build())
                         .build();
         final var expectedStateChangesContract1 =
@@ -439,7 +461,7 @@ class MigrationRecordsManagerTest {
         given(contract1.getFirstContractStorageKey()).willReturn(contract1Key1);
         given(contract1Value1.getNextKeyScopedTo(contract1Num)).willReturn(null);
         final var value = "value".getBytes();
-        given(contract1Value1.getValue()).willReturn(value);
+        given(contract1Value1.asUInt256()).willReturn(UInt256.fromBytes(Bytes.of(value)));
         given(contractStorage.get(contract1Key1)).willReturn(contract1Value1);
         final var entityNum1 = EntityNum.fromLong(contract1Num);
         final var runtimeBytes = "runtime".getBytes();
@@ -476,7 +498,9 @@ class MigrationRecordsManagerTest {
                                 StorageChange.newBuilder()
                                         .setSlot(
                                                 ByteStringUtils.wrapUnsafely(
-                                                        UInt256.valueOf(1L).toArrayUnsafe()))
+                                                        UInt256.valueOf(1L)
+                                                                .trimLeadingZeros()
+                                                                .toArrayUnsafe()))
                                         .setValueRead(ByteStringUtils.wrapUnsafely(value))
                                         .build())
                         .build();

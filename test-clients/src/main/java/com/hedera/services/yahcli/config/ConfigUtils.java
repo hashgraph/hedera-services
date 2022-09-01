@@ -25,18 +25,10 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.Yahcli;
-import com.hedera.services.yahcli.suites.BalanceSuite;
-import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
-import com.hedera.services.yahcli.suites.CreateSuite;
-import com.hedera.services.yahcli.suites.FreezeHelperSuite;
-import com.hedera.services.yahcli.suites.RekeySuite;
-import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
-import com.hedera.services.yahcli.suites.SendSuite;
-import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
-import com.hedera.services.yahcli.suites.SysFileUploadSuite;
-import com.hedera.services.yahcli.suites.UpgradeHelperSuite;
+import com.hedera.services.yahcli.suites.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -171,7 +163,9 @@ public class ConfigUtils {
                         HapiApiSpec.class,
                         VersionInfoSpec.class,
                         SendSuite.class,
-                        CreateSuite.class)
+                        CreateSuite.class,
+                        SpecialFileHashSuite.class,
+                        CustomSpecAssert.class)
                 .forEach(cls -> setLogLevel(cls, logLevel));
     }
 

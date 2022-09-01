@@ -15,6 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -22,10 +25,14 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
@@ -38,7 +45,11 @@ import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityNum;
@@ -57,6 +68,7 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -81,6 +93,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -106,6 +119,53 @@ public class SyntheticTxnFactory {
     @Inject
     public SyntheticTxnFactory(final GlobalDynamicProperties dynamicProperties) {
         this.dynamicProperties = dynamicProperties;
+    }
+
+    public TransactionBody.Builder synthHbarTransfer(final CurrencyAdjustments adjustments) {
+        final var opBuilder = CryptoTransferTransactionBody.newBuilder();
+        final var nums = adjustments.getAccountNums();
+        final var changes = adjustments.getHbars();
+        for (int i = 0; i < nums.length; i++) {
+            opBuilder
+                    .getTransfersBuilder()
+                    .addAccountAmounts(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(AccountID.newBuilder().setAccountNum(nums[i]))
+                                    .setAmount(changes[i]));
+        }
+        return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
+    }
+
+    public TransactionBody.Builder synthTokenTransfer(final CryptoGcOutcome cryptoGcOutcome) {
+        final var opBuilder = CryptoTransferTransactionBody.newBuilder();
+
+        final var fungibleReturns = cryptoGcOutcome.fungibleTreasuryReturns();
+        for (int i = 0, n = fungibleReturns.numReturns(); i < n; i++) {
+            final var unitReturn = fungibleReturns.transfers().get(i);
+            opBuilder.addTokenTransfers(
+                    TokenTransferList.newBuilder()
+                            .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId())
+                            .addTransfers(
+                                    aaWith(
+                                            unitReturn.getAccountNums()[0],
+                                            unitReturn.getHbars()[0]))
+                            .addTransfers(
+                                    aaWith(
+                                            unitReturn.getAccountNums()[1],
+                                            unitReturn.getHbars()[1]))
+                            .build());
+        }
+
+        final var nonFungibleReturns = cryptoGcOutcome.nonFungibleTreasuryReturns();
+        for (int i = 0, n = nonFungibleReturns.numReturns(); i < n; i++) {
+            final var listBuilder =
+                    TokenTransferList.newBuilder()
+                            .setToken(nonFungibleReturns.tokenTypes().get(i).toGrpcTokenId());
+            nonFungibleReturns.exchanges().get(i).addToGrpc(listBuilder);
+            opBuilder.addTokenTransfers(listBuilder);
+        }
+
+        return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
     }
 
     /**
@@ -168,13 +228,13 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder synthContractAutoRenew(
-            final EntityNum contractNum, final long newExpiry, final AccountID payerForAutoRenew) {
+            final EntityNum contractNum, final long newExpiry, final AccountID payerForExpiry) {
         final var op =
                 ContractUpdateTransactionBody.newBuilder()
                         .setContractID(contractNum.toGrpcContractID())
                         .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
         return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(payerForAutoRenew))
+                .setTransactionID(TransactionID.newBuilder().setAccountID(payerForExpiry))
                 .setContractUpdateInstance(op);
     }
 
@@ -289,13 +349,14 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createApproveAllowanceForAllNFT(
-            final SetApprovalForAllWrapper setApprovalForAllWrapper, final TokenID tokenID) {
+            final SetApprovalForAllWrapper setApprovalForAllWrapper) {
+
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
         builder.addNftAllowances(
                 NftAllowance.newBuilder()
                         .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
-                        .setTokenId(tokenID)
+                        .setTokenId(setApprovalForAllWrapper.tokenId())
                         .setSpender(setApprovalForAllWrapper.to())
                         .build());
 
@@ -430,11 +491,39 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder nodeStakeUpdate(
-            final Timestamp stakingPeriodEnd, final List<NodeStake> nodeStakes) {
+            final Timestamp stakingPeriodEnd,
+            final List<NodeStake> nodeStakes,
+            final PropertySource properties) {
+        final var stakingRewardRate = dynamicProperties.getStakingRewardRate();
+        final var threshold = dynamicProperties.getStakingStartThreshold();
+        final var stakingPeriod = properties.getLongProperty(STAKING_PERIOD_MINS);
+        final var stakingPeriodsStored =
+                properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
+        final var maxStakingRewardRateThPerH =
+                properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR);
+
+        final var nodeRewardFeeFraction =
+                Fraction.newBuilder()
+                        .setNumerator(dynamicProperties.getNodeRewardPercent())
+                        .setDenominator(100L)
+                        .build();
+        final var stakingRewardFeeFraction =
+                Fraction.newBuilder()
+                        .setNumerator(dynamicProperties.getStakingRewardPercent())
+                        .setDenominator(100L)
+                        .build();
+
         final var txnBody =
                 NodeStakeUpdateTransactionBody.newBuilder()
                         .setEndOfStakingPeriod(stakingPeriodEnd)
                         .addAllNodeStake(nodeStakes)
+                        .setMaxStakingRewardRatePerHbar(maxStakingRewardRateThPerH)
+                        .setNodeRewardFeeFraction(nodeRewardFeeFraction)
+                        .setStakingPeriodsStored(stakingPeriodsStored)
+                        .setStakingPeriod(stakingPeriod)
+                        .setStakingRewardFeeFraction(stakingRewardFeeFraction)
+                        .setStakingStartThreshold(threshold)
+                        .setStakingRewardRate(stakingRewardRate)
                         .build();
 
         return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);
@@ -499,6 +588,76 @@ public class SyntheticTxnFactory {
         builder.setToken(unFreezeWrapper.token());
         builder.setAccount(unFreezeWrapper.account());
         return TransactionBody.newBuilder().setTokenUnfreeze(builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdate(TokenUpdateWrapper updateWrapper) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(updateWrapper.tokenID());
+
+        if (updateWrapper.name() != null) builder.setName(updateWrapper.name());
+        if (updateWrapper.symbol() != null) builder.setSymbol(updateWrapper.symbol());
+        if (updateWrapper.memo() != null) builder.setMemo(StringValue.of(updateWrapper.memo()));
+        if (updateWrapper.treasury() != null) builder.setTreasury(updateWrapper.treasury());
+
+        if (updateWrapper.expiry().second() != 0) {
+            builder.setExpiry(
+                    Timestamp.newBuilder().setSeconds(updateWrapper.expiry().second()).build());
+        }
+        if (updateWrapper.expiry().autoRenewAccount() != null)
+            builder.setAutoRenewAccount(updateWrapper.expiry().autoRenewAccount());
+        if (updateWrapper.expiry().autoRenewPeriod() != 0) {
+            builder.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
+        }
+
+        return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdateKeys(TokenUpdateKeysWrapper updateWrapper) {
+        final var builder = constructUpdateTokenBuilder(updateWrapper.tokenID());
+        return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
+    }
+
+    private TokenUpdateTransactionBody.Builder constructUpdateTokenBuilder(TokenID tokenID) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(tokenID);
+        return builder;
+    }
+
+    private TransactionBody.Builder checkTokenKeysTypeAndBuild(
+            List<TokenKeyWrapper> tokenKeys, TokenUpdateTransactionBody.Builder builder) {
+        tokenKeys.forEach(
+                tokenKeyWrapper -> {
+                    final var key = tokenKeyWrapper.key().asGrpc();
+                    if (tokenKeyWrapper.isUsedForAdminKey()) builder.setAdminKey(key);
+                    if (tokenKeyWrapper.isUsedForKycKey()) builder.setKycKey(key);
+                    if (tokenKeyWrapper.isUsedForFreezeKey()) builder.setFreezeKey(key);
+                    if (tokenKeyWrapper.isUsedForWipeKey()) builder.setWipeKey(key);
+                    if (tokenKeyWrapper.isUsedForSupplyKey()) builder.setSupplyKey(key);
+                    if (tokenKeyWrapper.isUsedForFeeScheduleKey()) builder.setFeeScheduleKey(key);
+                    if (tokenKeyWrapper.isUsedForPauseKey()) builder.setPauseKey(key);
+                });
+
+        return TransactionBody.newBuilder().setTokenUpdate(builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdateExpiryInfo(
+            TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(expiryInfoWrapper.tokenID());
+
+        if (expiryInfoWrapper.expiry().second() != 0) {
+            builder.setExpiry(
+                    Timestamp.newBuilder().setSeconds(expiryInfoWrapper.expiry().second()).build());
+        }
+        if (expiryInfoWrapper.expiry().autoRenewAccount() != null)
+            builder.setAutoRenewAccount(expiryInfoWrapper.expiry().autoRenewAccount());
+        if (expiryInfoWrapper.expiry().autoRenewPeriod() != 0) {
+            builder.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(expiryInfoWrapper.expiry().autoRenewPeriod()));
+        }
+
+        return TransactionBody.newBuilder().setTokenUpdate(builder);
     }
 
     public static class HbarTransfer {
@@ -625,16 +784,16 @@ public class SyntheticTxnFactory {
     }
 
     /**
-     * Merges the fungible and non-fungible transfers from one token transfer list into another. (Of
+     * Merges the fungible and non-fungible exchanges from one token transfer list into another. (Of
      * course, at most one of these merges can be sensible; a token cannot be both fungible _and_
      * non-fungible.)
      *
-     * <p>Fungible transfers are "merged" by summing up all the amount fields for each unique
+     * <p>Fungible exchanges are "merged" by summing up all the amount fields for each unique
      * account id that appears in either list. NFT exchanges are "merged" by checking that each
      * exchange from either list appears at most once.
      *
-     * @param to the builder to merge source transfers into
-     * @param from a source of fungible transfers and NFT exchanges
+     * @param to the builder to merge source exchanges into
+     * @param from a source of fungible exchanges and NFT exchanges
      * @return the consolidated target builder
      */
     static TokenTransferList.Builder mergeTokenTransfers(
@@ -714,5 +873,12 @@ public class SyntheticTxnFactory {
             op.setFunctionParameters(ByteStringUtils.wrapUnsafely(ethTxData.callData()));
         }
         return TransactionBody.newBuilder().setContractCall(op);
+    }
+
+    private AccountAmount aaWith(final long num, final long amount) {
+        return AccountAmount.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(num).build())
+                .setAmount(amount)
+                .build();
     }
 }

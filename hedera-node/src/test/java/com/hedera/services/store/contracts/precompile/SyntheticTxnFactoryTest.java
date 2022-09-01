@@ -18,7 +18,9 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenUpdateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fractionalFee;
@@ -43,37 +45,40 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
+import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
+import com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.NodeStake;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.*;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collections;
@@ -90,13 +95,75 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SyntheticTxnFactoryTest {
     @Mock private EthTxData ethTxData;
     @Mock private ContractCustomizer customizer;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    private GlobalDynamicProperties dynamicProperties;
+    private BootstrapProperties propertySource;
 
     private SyntheticTxnFactory subject;
 
     @BeforeEach
     void setUp() {
+        propertySource = new BootstrapProperties();
+        propertySource.ensureProps();
+        dynamicProperties =
+                new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+
         subject = new SyntheticTxnFactory(dynamicProperties);
+    }
+
+    @Test
+    void synthesizesExpectedTreasuryReturns() {
+        final var ftId = EntityId.fromIdentityCode(666);
+        final var nftId = EntityId.fromIdentityCode(777);
+        final var nftAdjusts =
+                new NftAdjustments(
+                        new long[] {1},
+                        List.of(EntityId.fromIdentityCode(2)),
+                        List.of(EntityId.fromIdentityCode(98)));
+        final var fungibleAdjusts =
+                new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
+        final var fungibleReturns =
+                new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
+        final var nonFungibleReturns =
+                new NonFungibleTreasuryReturns(List.of(nftId), List.of(nftAdjusts), true);
+        final var returns = new CryptoGcOutcome(fungibleReturns, nonFungibleReturns, false);
+
+        final var expected =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(ftId.asId().asGrpcToken())
+                                        .addTransfers(aaWith(2, -123))
+                                        .addTransfers(aaWith(98, +123))
+                                        .build())
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(nftId.asId().asGrpcToken())
+                                        .addNftTransfers(nftFromTo(1, 2, 98))
+                                        .build())
+                        .build();
+
+        final var txn = subject.synthTokenTransfer(returns).build();
+        final var op = txn.getCryptoTransfer();
+
+        assertEquals(op, expected);
+    }
+
+    @Test
+    void synthesizesExpectedCryptoTransfer() {
+        final var adjustments = new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
+        final var expected =
+                CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(
+                                TransferList.newBuilder()
+                                        .addAccountAmounts(aaWith(2, -123))
+                                        .addAccountAmounts(aaWith(98, +123))
+                                        .build())
+                        .build();
+
+        final var txn = subject.synthHbarTransfer(adjustments).build();
+        final var op = txn.getCryptoTransfer();
+
+        assertEquals(op, expected);
     }
 
     @Test
@@ -177,7 +244,6 @@ class SyntheticTxnFactoryTest {
         given(ethTxData.callData()).willReturn(callData);
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
-        given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
 
         final var optSynthBody = subject.synthContractOpFromEth(ethTxData);
 
@@ -198,7 +264,6 @@ class SyntheticTxnFactoryTest {
         given(ethTxData.callData()).willReturn(callData);
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
-        given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
 
         final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
 
@@ -214,7 +279,6 @@ class SyntheticTxnFactoryTest {
     void synthesizesPrecheckCreateFromEthDataWithoutInitcode() {
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
-        given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
         given(ethTxData.replaceCallData(MOCK_INITCODE)).willReturn(ethTxData);
         given(ethTxData.callData()).willReturn(MOCK_INITCODE);
 
@@ -340,7 +404,6 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedNodeStakeUpdate() {
         final var now = Instant.now();
-        final var rewardRate = 10_000_000L;
         final var timestamp =
                 Timestamp.newBuilder()
                         .setSeconds(now.getEpochSecond())
@@ -356,8 +419,12 @@ class SyntheticTxnFactoryTest {
                                 .setStake(987_654_321L)
                                 .setStakeRewarded(54_321L)
                                 .build());
+        propertySource.ensureProps();
+        dynamicProperties =
+                new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+        subject = new SyntheticTxnFactory(dynamicProperties);
 
-        final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes);
+        final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes, propertySource);
 
         assertTrue(txnBody.hasNodeStakeUpdate());
         assertEquals(timestamp, txnBody.getNodeStakeUpdate().getEndOfStakingPeriod());
@@ -365,6 +432,19 @@ class SyntheticTxnFactoryTest {
         assertEquals(1_234_567L, txnBody.getNodeStakeUpdate().getNodeStake(0).getStakeRewarded());
         assertEquals(987_654_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStake());
         assertEquals(54_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStakeRewarded());
+        assertEquals(17_808L, txnBody.getNodeStakeUpdate().getMaxStakingRewardRatePerHbar());
+        assertEquals(0L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getNumerator());
+        assertEquals(
+                100L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getDenominator());
+        assertEquals(365, txnBody.getNodeStakeUpdate().getStakingPeriodsStored());
+        assertEquals(1L, txnBody.getNodeStakeUpdate().getStakingPeriod());
+        assertEquals(
+                100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getNumerator());
+        assertEquals(
+                100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getDenominator());
+        assertEquals(
+                25_000_000_000_000_000L, txnBody.getNodeStakeUpdate().getStakingStartThreshold());
+        assertEquals(0L, txnBody.getNodeStakeUpdate().getStakingRewardRate());
     }
 
     @Test
@@ -496,12 +576,13 @@ class SyntheticTxnFactoryTest {
     void createsAdjustAllowanceForAllNFT() {
         var allowances = new SetApprovalForAllWrapper(nonFungible, receiver, true);
 
-        final var result = subject.createApproveAllowanceForAllNFT(allowances, token);
+        final var result = subject.createApproveAllowanceForAllNFT(allowances);
         final var txnBody = result.build();
 
         assertEquals(
                 receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
-        assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
+        assertEquals(
+                nonFungible, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
                 BoolValue.of(true),
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getApprovedForAll());
@@ -555,14 +636,14 @@ class SyntheticTxnFactoryTest {
     void createsExpectedFungibleTokenCreate() {
         // given
         final var adminKey =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false,
                         null,
                         new byte[] {},
                         new byte[] {},
                         EntityIdUtils.contractIdFromEvmAddress(contractAddress));
         final var multiKey =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false,
                         EntityIdUtils.contractIdFromEvmAddress(contractAddress),
                         new byte[] {},
@@ -571,8 +652,8 @@ class SyntheticTxnFactoryTest {
         final var wrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(254, multiKey),
-                                new TokenCreateWrapper.TokenKeyWrapper(1, adminKey)));
+                                new TokenKeyWrapper(254, multiKey),
+                                new TokenKeyWrapper(1, adminKey)));
         wrapper.setFixedFees(List.of(fixedFee));
         wrapper.setFractionalFees(List.of(fractionalFee));
 
@@ -617,7 +698,7 @@ class SyntheticTxnFactoryTest {
     void createsExpectedNonFungibleTokenCreate() {
         // given
         final var multiKey =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false,
                         EntityIdUtils.contractIdFromEvmAddress(contractAddress),
                         new byte[] {},
@@ -625,7 +706,7 @@ class SyntheticTxnFactoryTest {
                         null);
         final var wrapper =
                 createNonFungibleTokenCreateWrapperWithKeys(
-                        List.of(new TokenCreateWrapper.TokenKeyWrapper(112, multiKey)));
+                        List.of(new TokenKeyWrapper(112, multiKey)));
         wrapper.setFixedFees(List.of(fixedFee));
         wrapper.setRoyaltyFees(List.of(royaltyFee));
 
@@ -682,6 +763,131 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
                 expFungibleTransfer.getTransfersList());
+    }
+
+    @Test
+    void createsExpectedTokenUpdateCallForFungible() {
+        // given
+        final var adminKey =
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress));
+        final var multiKey =
+                new KeyValueWrapper(
+                        false,
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+                        new byte[] {},
+                        new byte[] {},
+                        null);
+        final var tokenUpdateWrapper =
+                createFungibleTokenUpdateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(112, multiKey),
+                                new TokenKeyWrapper(1, adminKey)));
+        final var result = subject.createTokenUpdate(tokenUpdateWrapper);
+        final var txnBody = result.build().getTokenUpdate();
+
+        assertEquals(HTSTestsUtil.fungible, txnBody.getToken());
+
+        assertEquals("fungible", txnBody.getName());
+        assertEquals("G", txnBody.getSymbol());
+        assertEquals(account, txnBody.getTreasury());
+        assertEquals("G token memo", txnBody.getMemo().getValue());
+        assertEquals(1, txnBody.getExpiry().getSeconds());
+        assertEquals(2, txnBody.getAutoRenewPeriod().getSeconds());
+        assertTrue(txnBody.hasAutoRenewAccount());
+
+        // keys assertions
+        assertTrue(txnBody.hasSupplyKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+        assertTrue(txnBody.hasFeeScheduleKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+        assertTrue(txnBody.hasPauseKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+    }
+
+    @Test
+    void createsExpectedTokenUpdateCallForNonFungible() {
+        // given
+        final var ComplexKey =
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress));
+        final var multiKey =
+                new KeyValueWrapper(
+                        false,
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+                        new byte[] {},
+                        new byte[] {},
+                        null);
+        final var wrapper =
+                createNonFungibleTokenUpdateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(112, multiKey),
+                                new TokenKeyWrapper(2, ComplexKey),
+                                new TokenKeyWrapper(4, ComplexKey),
+                                new TokenKeyWrapper(8, ComplexKey)));
+
+        // when
+        final var result = subject.createTokenUpdate(wrapper);
+        final var txnBody = result.build().getTokenUpdate();
+
+        // then
+
+        assertEquals(0, txnBody.getExpiry().getSeconds());
+        assertEquals(0, txnBody.getAutoRenewPeriod().getSeconds());
+        assertFalse(txnBody.hasAutoRenewAccount());
+
+        // keys assertions
+        assertTrue(txnBody.hasSupplyKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+        assertTrue(txnBody.hasFeeScheduleKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+        assertTrue(txnBody.hasPauseKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+    }
+
+    @Test
+    void createsExpectedTokenUpdateKeysCallForFungible() {
+        // given
+        final var adminKey =
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress));
+        final var multiKey =
+                new KeyValueWrapper(
+                        false,
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+                        new byte[] {},
+                        new byte[] {},
+                        null);
+        final var tokenUpdateKeysWrapper =
+                new TokenUpdateKeysWrapper(
+                        fungible,
+                        List.of(
+                                new TokenKeyWrapper(112, multiKey),
+                                new TokenKeyWrapper(1, adminKey)));
+        final var result = subject.createTokenUpdateKeys(tokenUpdateKeysWrapper);
+        final var txnBody = result.build().getTokenUpdate();
+
+        assertEquals(fungible, txnBody.getToken());
+
+        // keys assertions
+        assertTrue(txnBody.hasSupplyKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+        assertTrue(txnBody.hasFeeScheduleKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+        assertTrue(txnBody.hasPauseKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
     }
 
     @Test
@@ -941,6 +1147,77 @@ class SyntheticTxnFactoryTest {
         assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
     }
 
+    private NftTransfer nftFromTo(final long num, final long sender, final long receiver) {
+        return NftTransfer.newBuilder()
+                .setSerialNumber(num)
+                .setSenderAccountID(AccountID.newBuilder().setAccountNum(sender).build())
+                .setReceiverAccountID(AccountID.newBuilder().setAccountNum(receiver).build())
+                .build();
+    }
+
+    private AccountAmount aaWith(final long num, final long amount) {
+        return AccountAmount.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(num).build())
+                .setAmount(amount)
+                .build();
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfo() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfoWithZeroExpiry() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(0L, payer, 555L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(0L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfoWithZeroAutoRenewPeriod() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 0L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(0L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfoWithNoAutoRenewAccount() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, null, 555L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertTrue(txnBody.getTokenUpdate().getAutoRenewAccount().toString().isEmpty());
+        assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
     private AccountAmount aaWith(final AccountID account, final long amount) {
         return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
     }
@@ -969,5 +1246,5 @@ class SyntheticTxnFactoryTest {
     private static final byte[] callData = "Between the idea and the reality".getBytes();
     private static final byte[] addressTo = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
     private static final Duration autoRenewPeriod =
-            Duration.newBuilder().setSeconds(1_234_567).build();
+            Duration.newBuilder().setSeconds(2592000).build();
 }

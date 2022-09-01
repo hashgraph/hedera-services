@@ -27,14 +27,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.submerkle.*;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -51,18 +49,10 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.utility.CommonUtils;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public class TxnUtils {
     public static TransferList withAdjustments(
@@ -328,38 +318,17 @@ public class TxnUtils {
         assertEquals(status, ex.getResponseCode());
     }
 
+    public static void assertExhaustsResourceLimit(
+            final Runnable something, final ResponseCodeEnum status) {
+        final var ex = assertThrows(ResourceLimitException.class, something::run);
+        assertEquals(status, ex.getResponseCode());
+    }
+
     public static void assertFailsRevertingWith(
             final Runnable something, final ResponseCodeEnum status) {
         final var ex = assertThrows(InvalidTransactionException.class, something::run);
         assertEquals(status, ex.getResponseCode());
         assertTrue(ex.isReverting());
-    }
-
-    public static <T extends SelfSerializable> void assertSerdeWorks(
-            final T original, final Supplier<T> factory, final int version) throws IOException {
-        final var baos = new ByteArrayOutputStream();
-        final var out = new SerializableDataOutputStream(baos);
-        original.serialize(out);
-
-        final var reconstruction = factory.get();
-
-        final var bais = new ByteArrayInputStream(baos.toByteArray());
-        final var in = new SerializableDataInputStream(bais);
-        reconstruction.deserialize(in, version);
-
-        assertEquals(original, reconstruction);
-    }
-
-    public static <T extends SelfSerializable> T deserializeFromHex(
-            final Supplier<T> factory, final int version, final String hexedForm)
-            throws IOException {
-        final var reconstruction = factory.get();
-
-        final var bais = new ByteArrayInputStream(CommonUtils.unhex(hexedForm));
-        final var in = new SerializableDataInputStream(bais);
-        reconstruction.deserialize(in, version);
-
-        return reconstruction;
     }
 
     public static ExpirableTxnRecord recordOne() {
@@ -442,6 +411,14 @@ public class TxnUtils {
                 .build();
     }
 
+    public static TokenTransferList exchangeOf(
+            TokenID scope, AccountID src, AccountID dest, long serial) {
+        return TokenTransferList.newBuilder()
+                .setToken(scope)
+                .addNftTransfers(serialFromTo(serial, src, dest))
+                .build();
+    }
+
     public static TokenTransferList asymmetricTtlOf(TokenID scope, AccountID src, long amount) {
         return TokenTransferList.newBuilder()
                 .setToken(scope)
@@ -449,7 +426,71 @@ public class TxnUtils {
                 .build();
     }
 
+    public static TokenTransferList burnExchangeOf(TokenID scope, AccountID src, long serialNo) {
+        return TokenTransferList.newBuilder()
+                .setToken(scope)
+                .addNftTransfers(
+                        serialFromTo(serialNo, src, EntityNum.fromLong(0).toGrpcAccountId()))
+                .build();
+    }
+
+    public static TokenTransferList returnExchangeOf(
+            TokenID scope, AccountID src, AccountID dst, long serialNo) {
+        return TokenTransferList.newBuilder()
+                .setToken(scope)
+                .addNftTransfers(serialFromTo(serialNo, src, dst))
+                .build();
+    }
+
     public static AccountAmount aaOf(AccountID id, long amount) {
         return AccountAmount.newBuilder().setAccountID(id).setAmount(amount).build();
+    }
+
+    public static NftTransfer serialFromTo(
+            final long num, final AccountID sender, final AccountID receiver) {
+        return NftTransfer.newBuilder()
+                .setSerialNumber(num)
+                .setSenderAccountID(sender)
+                .setReceiverAccountID(receiver)
+                .build();
+    }
+
+    public static List<CurrencyAdjustments> adjustmentsFrom(final List<TokenTransferList> ttls) {
+        return ttls.stream()
+                .map(
+                        ttl ->
+                                new CurrencyAdjustments(
+                                        ttl.getTransfersList().stream()
+                                                .mapToLong(AccountAmount::getAmount)
+                                                .toArray(),
+                                        ttl.getTransfersList().stream()
+                                                .map(AccountAmount::getAccountID)
+                                                .mapToLong(AccountID::getAccountNum)
+                                                .toArray()))
+                .toList();
+    }
+
+    public static List<NftAdjustments> exchangesFrom(final List<TokenTransferList> ttls) {
+        return ttls.stream()
+                .map(
+                        ttl ->
+                                new NftAdjustments(
+                                        ttl.getNftTransfersList().stream()
+                                                .mapToLong(NftTransfer::getSerialNumber)
+                                                .toArray(),
+                                        ttl.getNftTransfersList().stream()
+                                                .map(
+                                                        xfer ->
+                                                                EntityId.fromGrpcAccountId(
+                                                                        xfer.getSenderAccountID()))
+                                                .toList(),
+                                        ttl.getNftTransfersList().stream()
+                                                .map(
+                                                        xfer ->
+                                                                EntityId.fromGrpcAccountId(
+                                                                        xfer
+                                                                                .getReceiverAccountID()))
+                                                .toList()))
+                .toList();
     }
 }

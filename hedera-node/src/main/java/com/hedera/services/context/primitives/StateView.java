@@ -32,9 +32,9 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableMap;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
-import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.ethereum.EthTxSigs;
@@ -97,20 +97,15 @@ import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualValue;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -125,17 +120,10 @@ public class StateView {
     public static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
 
     static final byte[] EMPTY_BYTES = new byte[0];
-    static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
-    static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
-
-    static final Map<ByteString, EntityNum> EMPTY_HM = new HashMap<>();
-    static final MerkleNetworkContext EMPTY_CTX = new MerkleNetworkContext();
 
     public static final JKey EMPTY_WACL = new JKeyList();
     public static final MerkleToken REMOVED_TOKEN =
             new MerkleToken(0L, 0L, 0, "", "", false, false, MISSING_ENTITY_ID);
-    public static final StateView EMPTY_VIEW =
-            new StateView(null, new MutableStateChildren(), null);
 
     private final ScheduleStore scheduleStore;
     private final StateChildren stateChildren;
@@ -151,7 +139,7 @@ public class StateView {
     private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = null;
 
     public StateView(
-            @Nullable final ScheduleStore scheduleStore,
+            final ScheduleStore scheduleStore,
             final StateChildren stateChildren,
             final NetworkInfo networkInfo) {
         this.scheduleStore = scheduleStore;
@@ -170,9 +158,6 @@ public class StateView {
     }
 
     public Optional<byte[]> contentsOf(final FileID id) {
-        if (stateChildren == null) {
-            return Optional.empty();
-        }
         final var specialFiles = stateChildren.specialFiles();
         if (specialFiles.contains(id)) {
             return Optional.ofNullable(specialFiles.get(id));
@@ -186,16 +171,10 @@ public class StateView {
     }
 
     public Optional<MerkleToken> tokenWith(final TokenID id) {
-        if (stateChildren == null) {
-            return Optional.empty();
-        }
         return Optional.ofNullable(stateChildren.tokens().get(EntityNum.fromTokenId(id)));
     }
 
     public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
-        if (stateChildren == null) {
-            return Optional.empty();
-        }
         try {
             final var tokens = stateChildren.tokens();
             final var token = tokens.get(EntityNum.fromTokenId(tokenId));
@@ -270,7 +249,6 @@ public class StateView {
     }
 
     public Optional<ConsensusTopicInfo> infoForTopic(final TopicID topicID) {
-
         final var merkleTopic = topics().get(EntityNum.fromTopicId(topicID));
         if (merkleTopic == null) {
             return Optional.empty();
@@ -300,9 +278,6 @@ public class StateView {
     }
 
     public Optional<ScheduleInfo> infoForSchedule(final ScheduleID scheduleID) {
-        if (scheduleStore == null) {
-            return Optional.empty();
-        }
         try {
             final var id = scheduleStore.resolve(scheduleID);
             if (id == MISSING_SCHEDULE) {
@@ -437,19 +412,24 @@ public class StateView {
         if (attr == null) {
             return Optional.empty();
         }
+        final var contents = contentsOf(id).orElse(EMPTY_BYTES);
         final var info =
                 FileGetInfoResponse.FileInfo.newBuilder()
                         .setLedgerId(networkInfo.ledgerId())
                         .setFileID(id)
-                        .setMemo(attr.getMemo())
                         .setDeleted(attr.isDeleted())
                         .setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpiry()))
-                        .setSize(
-                                Optional.ofNullable(fileContents.get(id))
-                                        .orElse(EMPTY_BYTES)
-                                        .length);
+                        .setSize(contents.length);
         if (!attr.getWacl().isEmpty()) {
             info.setKeys(MiscUtils.asKeyUnchecked(attr.getWacl()).getKeyList());
+        }
+        if (!stateChildren.specialFiles().contains(id)) {
+            info.setMemo(attr.getMemo());
+        } else {
+            // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
+            final var upgradeHash =
+                    hex(CryptoFactory.getInstance().digestSync(contents).getValue());
+            info.setMemo(upgradeHash);
         }
         return Optional.of(info.build());
     }
@@ -538,9 +518,6 @@ public class StateView {
     }
 
     public List<CustomFee> tokenCustomFees(final TokenID tokenId) {
-        if (stateChildren == null) {
-            return emptyList();
-        }
         try {
             final var tokens = stateChildren.tokens();
             final var token = tokens.get(EntityNum.fromTokenId(tokenId));
@@ -684,35 +661,35 @@ public class StateView {
     }
 
     public MerkleMap<EntityNum, MerkleTopic> topics() {
-        return stateChildren == null ? emptyMm() : stateChildren.topics();
+        return Objects.requireNonNull(stateChildren).topics();
     }
 
     public MerkleMap<EntityNum, MerkleAccount> accounts() {
-        return stateChildren == null ? emptyMm() : stateChildren.accounts();
+        return Objects.requireNonNull(stateChildren).accounts();
     }
 
     public MerkleMap<EntityNum, MerkleAccount> contracts() {
-        return stateChildren == null ? emptyMm() : stateChildren.accounts();
+        return Objects.requireNonNull(stateChildren).accounts();
     }
 
     public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
-        return stateChildren == null ? emptyMm() : stateChildren.tokenAssociations();
+        return Objects.requireNonNull(stateChildren).tokenAssociations();
     }
 
     public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-        return stateChildren == null ? emptyMm() : stateChildren.uniqueTokens();
+        return Objects.requireNonNull(stateChildren).uniqueTokens();
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-        return stateChildren == null ? emptyVm() : stateChildren.storage();
+        return Objects.requireNonNull(stateChildren).storage();
     }
 
     public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
-        return stateChildren == null ? emptyVm() : stateChildren.contractStorage();
+        return Objects.requireNonNull(stateChildren).contractStorage();
     }
 
     public MerkleMap<EntityNum, MerkleToken> tokens() {
-        return stateChildren == null ? emptyMm() : stateChildren.tokens();
+        return Objects.requireNonNull(stateChildren).tokens();
     }
 
     public BackingStore<TokenID, MerkleToken> asReadOnlyTokenStore() {
@@ -843,26 +820,18 @@ public class StateView {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {
-        return (MerkleMap<K, V>) EMPTY_MM;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
-        return (VirtualMap<K, V>) EMPTY_VM;
-    }
-
-    /* --- used only in unit tests */
+    @VisibleForTesting
     public MerkleNetworkContext networkCtx() {
-        return stateChildren == null ? EMPTY_CTX : stateChildren.networkCtx();
+        return stateChildren.networkCtx();
     }
 
+    @VisibleForTesting
     public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
-        return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
+        return stateChildren.stakingInfo();
     }
 
+    @VisibleForTesting
     public Map<ByteString, EntityNum> aliases() {
-        return stateChildren == null ? EMPTY_HM : stateChildren.aliases();
+        return stateChildren.aliases();
     }
 }

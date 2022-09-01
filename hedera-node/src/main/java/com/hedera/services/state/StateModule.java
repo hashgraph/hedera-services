@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state;
 
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
@@ -341,7 +343,7 @@ public interface StateModule {
     @Singleton
     static Supplier<JEd25519Key> provideSystemFileKey(@CompositeProps PropertySource properties) {
         return () -> {
-            final var hexedEd25519Key = properties.getStringProperty("bootstrap.genesisPublicKey");
+            final var hexedEd25519Key = properties.getStringProperty(BOOTSTRAP_GENESIS_PUBLIC_KEY);
             final var ed25519Key = new JEd25519Key(CommonUtils.unhex(hexedEd25519Key));
             if (!ed25519Key.isValid()) {
                 throw new IllegalStateException(

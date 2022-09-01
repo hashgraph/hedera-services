@@ -94,7 +94,6 @@ import org.apache.logging.log4j.Logger;
 public class BaseOperationUsage {
     static final Logger log = LogManager.getLogger(BaseOperationUsage.class);
     public static final int CANONICAL_NUM_CONTRACT_KV_PAIRS = 64;
-    public static final int CANONICAL_CONTRACT_BYTECODE_SIZE = 4096;
     private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     private static final ByteString CANONICAL_SIG =
             ByteString.copyFromUtf8(
@@ -301,13 +300,9 @@ public class BaseOperationUsage {
                         .setCurrentMaxAutomaticAssociations(0)
                         .build();
         final var contractContext =
-                new ExtantContractContext(
-                        CANONICAL_NUM_CONTRACT_KV_PAIRS,
-                        CANONICAL_CONTRACT_BYTECODE_SIZE,
-                        accountContext);
+                new ExtantContractContext(CANONICAL_NUM_CONTRACT_KV_PAIRS, accountContext);
         final var into = new UsageAccumulator();
         into.addRbs(THREE_MONTHS_IN_SECONDS * contractContext.currentRb());
-        into.addSbs(THREE_MONTHS_IN_SECONDS * contractContext.currentSb());
         return into;
     }
 

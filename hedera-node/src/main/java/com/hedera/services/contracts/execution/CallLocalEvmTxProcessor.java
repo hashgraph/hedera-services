@@ -15,28 +15,6 @@
  */
 package com.hedera.services.contracts.execution;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
@@ -45,9 +23,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
@@ -67,7 +43,6 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
-    private final StorageExpiry storageExpiry;
 
     @Inject
     public CallLocalEvmTxProcessor(
@@ -77,8 +52,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
-            final AliasManager aliasManager,
-            final StorageExpiry storageExpiry) {
+            final AliasManager aliasManager) {
         super(
                 livePricesSource,
                 dynamicProperties,
@@ -87,7 +61,6 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
                 precompiledContractMap);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
-        this.storageExpiry = storageExpiry;
     }
 
     @Override
@@ -110,8 +83,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final Address receiver,
             final long providedGasLimit,
             final long value,
-            final Bytes callData,
-            final Instant consensusTime) {
+            final Bytes callData) {
         final long gasPrice = 1;
 
         return super.execute(
@@ -122,9 +94,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
                 value,
                 callData,
                 false,
-                consensusTime,
                 true,
-                storageExpiry.hapiStaticCallOracle(),
                 aliasManager.resolveForEvm(receiver),
                 null,
                 0,

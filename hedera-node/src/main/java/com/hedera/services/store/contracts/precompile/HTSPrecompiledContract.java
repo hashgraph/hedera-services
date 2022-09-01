@@ -59,10 +59,14 @@ import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrec
 import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenKeyPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenTypePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsFrozenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsKycPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
@@ -77,10 +81,13 @@ import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile
 import com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
@@ -512,6 +519,31 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils);
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> new TokenUpdatePrecompile(
+                            ledgers,
+                            updater.aliases(),
+                            decoder,
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_KEYS -> new TokenUpdateKeysPrecompile(
+                            ledgers,
+                            updater.aliases(),
+                            decoder,
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
+                    case AbiConstants.ABI_ID_GET_TOKEN_KEY -> new GetTokenKeyPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
                         final var tokenId = target.tokenId();
@@ -724,6 +756,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             decoder,
                             precompilePricingUtils,
                             currentView);
+                    case AbiConstants.ABI_ID_IS_TOKEN -> new IsTokenPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils,
+                            currentView);
+                    case AbiConstants.ABI_ID_GET_TOKEN_TYPE -> new GetTokenTypePrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils,
+                            currentView);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_CUSTOM_FEES -> new TokenGetCustomFeesPrecompile(
                             null,
@@ -733,6 +781,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             decoder,
                             precompilePricingUtils,
                             currentView);
+                    case AbiConstants
+                            .ABI_ID_GET_TOKEN_EXPIRY_INFO -> new GetTokenExpiryInfoPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils,
+                            currentView);
+                    case AbiConstants
+                            .ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> new UpdateTokenExpiryInfoPrecompile(
+                            ledgers,
+                            updater.aliases(),
+                            decoder,
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
                     default -> null;
                 };
         if (precompile != null) {

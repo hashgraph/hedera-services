@@ -135,7 +135,8 @@ class ContractCallLocalResourceUsageTest {
                         1,
                         Bytes.EMPTY,
                         callerID.asEvmAddress(),
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        Collections.emptyList());
         final var response = okResponse(transactionProcessingResult);
         final var estimateResponse = subject.dummyResponse(target);
         final var expected = expectedUsage();
@@ -143,7 +144,7 @@ class ContractCallLocalResourceUsageTest {
         given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
         given(accountStore.loadContract(any()))
                 .willReturn(new Account(Id.fromGrpcContract(target)));
-        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any()))
                 .willReturn(transactionProcessingResult);
         given(
                         usageEstimator.getContractCallLocalFeeMatrices(

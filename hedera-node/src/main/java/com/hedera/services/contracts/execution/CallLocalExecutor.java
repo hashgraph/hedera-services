@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.utility.CommonUtils;
-import java.time.Instant;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -90,12 +89,7 @@ public class CallLocalExecutor {
             /* --- Do the business logic --- */
             final var result =
                     evmTxProcessor.execute(
-                            sender,
-                            receiver.canonicalAddress(),
-                            op.getGas(),
-                            0,
-                            callData,
-                            Instant.now());
+                            sender, receiver.canonicalAddress(), op.getGas(), 0, callData);
 
             var status = ResponseCodeUtil.getStatusOrDefault(result, OK);
 

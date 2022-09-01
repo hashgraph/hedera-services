@@ -15,9 +15,9 @@
  */
 package com.hedera.services.queries.answering;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.accessors.SignedTxnAccessor.IS_THROTTLE_EXEMPT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -185,7 +185,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 
         if (payer == null && RESTRICTED_FUNCTIONALITIES.contains(function)) {
             return NOT_SUPPORTED;
-        } else if (payer == null || !IS_THROTTLE_EXEMPT.test(payer.getAccountNum())) {
+        } else if (payer == null || !STATIC_PROPERTIES.isThrottleExempt(payer.getAccountNum())) {
             return throttles.shouldThrottleQuery(function, query) ? BUSY : OK;
         } else {
             return OK;

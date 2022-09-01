@@ -21,12 +21,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.test.utils.TxnUtils.assertFailsRevertingWith;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -160,7 +155,7 @@ class StaticEntityAccessTest {
     }
 
     @Test
-    void notDetachedIfOkStatus() {
+    void usableIfNonDeletedAndAttached() {
         given(
                         validator.expiryStatusGiven(
                                 someNonContractAccount.getBalance(),
@@ -168,19 +163,7 @@ class StaticEntityAccessTest {
                                 someNonContractAccount.isSmartContract()))
                 .willReturn(OK);
         given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
-        assertFalse(subject.isDetached(id));
-    }
-
-    @Test
-    void detachedIfValidatorSaysSo() {
-        given(
-                        validator.expiryStatusGiven(
-                                someNonContractAccount.getBalance(),
-                                someNonContractAccount.getExpiry(),
-                                someNonContractAccount.isSmartContract()))
-                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-        given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
-        assertTrue(subject.isDetached(id));
+        assertTrue(subject.isUsable(id));
     }
 
     @Test
@@ -192,7 +175,7 @@ class StaticEntityAccessTest {
         assertThrows(UnsupportedOperationException.class, () -> subject.storeCode(id, bytesKey));
         assertThrows(UnsupportedOperationException.class, () -> subject.currentManagedChangeSet());
         assertThrows(UnsupportedOperationException.class, () -> subject.recordNewKvUsageTo(null));
-        assertThrows(UnsupportedOperationException.class, subject::flushStorage);
+        assertThrows(UnsupportedOperationException.class, () -> subject.flushStorage(null));
         assertDoesNotThrow(subject::startAccess);
     }
 
@@ -210,20 +193,31 @@ class StaticEntityAccessTest {
         given(stateView.tokenExists(fungible)).willReturn(true);
 
         assertEquals(someNonContractAccount.getBalance(), subject.getBalance(id));
-        assertEquals(someNonContractAccount.isDeleted(), subject.isDeleted(id));
         assertTrue(subject.isExtant(id));
         assertFalse(subject.isExtant(nonExtantId));
         assertTrue(subject.isTokenAccount(fungibleTokenAddr));
     }
 
     @Test
+    void notUsableIfMissing() {
+        assertFalse(subject.isUsable(id));
+    }
+
+    @Test
+    void notUsableIfDeleted() {
+        given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
+        someNonContractAccount.setDeleted(true);
+        assertFalse(subject.isUsable(id));
+    }
+
+    @Test
     void getWorks() {
         given(storage.get(contractKey)).willReturn(contractVal);
 
-        final var unit256Val = subject.getStorage(id, uint256Key);
+        final var uint256Val = subject.getStorage(id, uint256Key);
 
         final var expectedVal = UInt256.fromBytes(Bytes.wrap(contractVal.getValue()));
-        assertEquals(expectedVal, unit256Val);
+        assertEquals(expectedVal, uint256Val);
     }
 
     @Test

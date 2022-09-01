@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
@@ -65,7 +66,7 @@ public class BlockManager {
         this.runningHashLeaf = runningHashLeaf;
 
         blockPeriodMs =
-                bootstrapProperties.getLongProperty("hedera.recordStream.logPeriod")
+                bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD)
                         * Units.SECONDS_TO_MILLISECONDS;
     }
 

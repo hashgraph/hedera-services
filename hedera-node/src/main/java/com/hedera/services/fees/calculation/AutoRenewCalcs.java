@@ -15,7 +15,8 @@
  */
 package com.hedera.services.fees.calculation;
 
-import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedAdd;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedMultiply;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
@@ -25,11 +26,12 @@ import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.usage.contract.ExtantContractContext;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
@@ -53,7 +55,8 @@ public class AutoRenewCalcs {
     private static final RenewAssessment NO_RENEWAL_POSSIBLE = new RenewAssessment(0L, 0L);
 
     private final CryptoOpsUsage cryptoOpsUsage;
-    private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
+    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
+    private final GlobalDynamicProperties properties;
 
     private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> accountPricesSeq = null;
     private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> contractPricesSeq = null;
@@ -67,15 +70,15 @@ public class AutoRenewCalcs {
     private long secondContractConstantFee = 0L;
     private long firstContractRbhPrice = 0L;
     private long secondContractRbhPrice = 0L;
-    private long firstContractSbhPrice = 0L;
-    private long secondContractSbhPrice = 0L;
 
     @Inject
     public AutoRenewCalcs(
             final CryptoOpsUsage cryptoOpsUsage,
-            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
-        this.bytecode = bytecode;
+            final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
+            final GlobalDynamicProperties properties) {
+        this.storage = storage;
         this.cryptoOpsUsage = cryptoOpsUsage;
+        this.properties = properties;
     }
 
     public void setAccountRenewalPriceSeq(
@@ -104,9 +107,7 @@ public class AutoRenewCalcs {
             this.firstContractConstantFee = constantFeeFrom(leftPrices);
             this.secondContractConstantFee = constantFeeFrom(rightPrices);
             this.firstContractRbhPrice = leftPrices.getServicedata().getRbh();
-            this.firstContractSbhPrice = leftPrices.getServicedata().getSbh();
             this.secondContractRbhPrice = rightPrices.getServicedata().getRbh();
-            this.secondContractSbhPrice = rightPrices.getServicedata().getSbh();
         }
     }
 
@@ -120,37 +121,53 @@ public class AutoRenewCalcs {
         if (balance == 0L) {
             return NO_RENEWAL_POSSIBLE;
         }
-        final var renewalFees = renewalFees(at, rate, expiredAccountOrContract);
+        final var renewalFees = renewalFees(at, rate, expiredAccountOrContract, reqPeriod);
         return assess(renewalFees, reqPeriod, balance);
     }
 
     private RenewalFees renewalFees(
             final Instant at,
             final ExchangeRate rate,
-            final MerkleAccount expiredAccountOrContract) {
+            final MerkleAccount expiredAccountOrContract,
+            final long reqPeriod) {
         if (expiredAccountOrContract.isSmartContract()) {
-            return contractRenewalPrices(at, rate, expiredAccountOrContract);
+            return contractRenewalPrices(at, rate, expiredAccountOrContract, reqPeriod);
         } else {
             return accountRenewalPrices(at, rate, expiredAccountOrContract);
         }
     }
 
     private RenewalFees contractRenewalPrices(
-            final Instant at, final ExchangeRate rate, final MerkleAccount contract) {
+            final Instant at,
+            final ExchangeRate rate,
+            final MerkleAccount contract,
+            final long reqPeriod) {
         if (contractPricesSeq == null) {
             throw new IllegalStateException("No contract usage prices are set!");
         }
 
         final boolean isBeforeSwitch = at.isBefore(contractPricesSeq.getMiddle());
-        final long fixedPrice =
-                isBeforeSwitch ? firstContractConstantFee : secondContractConstantFee;
+        final long fixedFee = isBeforeSwitch ? firstContractConstantFee : secondContractConstantFee;
         final long rbhPrice = isBeforeSwitch ? firstContractRbhPrice : secondContractRbhPrice;
-        final long sbhPrice = isBeforeSwitch ? firstContractSbhPrice : secondContractSbhPrice;
 
         final var contractContext = contractContextFrom(contract);
-        final var hourlyPrice =
-                rbhPrice * contractContext.currentRb() + sbhPrice * contractContext.currentSb();
+
+        // Since contract bytecode is not charged any fees, ignore sbh in the renewal fee
+        // calculation
+        final var storagePrice = storageFee(contractContext, rate, reqPeriod);
+        final long fixedPrice = clampedAdd(fixedFee, storagePrice);
+        final var hourlyPrice = clampedMultiply(rbhPrice, contractContext.currentRb());
         return new RenewalFees(inTinybars(fixedPrice, rate), inTinybars(hourlyPrice, rate));
+    }
+
+    private long storageFee(
+            final ExtantContractContext contractContext,
+            final ExchangeRate rate,
+            final long requestedLifetime) {
+        final var storagePriceTiers = properties.storagePriceTiers();
+        final var totalKvPairs = storage.get().size();
+        return storagePriceTiers.priceOfAutoRenewal(
+                rate, totalKvPairs, requestedLifetime, contractContext.currentNumKvPairs());
     }
 
     private RenewalFees accountRenewalPrices(
@@ -193,9 +210,7 @@ public class AutoRenewCalcs {
     private ExtantContractContext contractContextFrom(final MerkleAccount contract) {
         final var accountContext = accountContextFrom(contract);
         final var numKvPairs = contract.getNumContractKvPairs();
-        final var code = explicitCodeFetch(bytecode.get(), contract.getKey().longValue());
-        final var codeSize = code == null ? 0 : code.size();
-        return new ExtantContractContext(numKvPairs, codeSize, accountContext);
+        return new ExtantContractContext(numKvPairs, accountContext);
     }
 
     private ExtantCryptoContext accountContextFrom(final MerkleAccount account) {
