@@ -17,10 +17,9 @@ package com.hedera.services.store.contracts;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -162,13 +161,6 @@ class MutableEntityAccessTest {
     }
 
     @Test
-    void delegatesDetachmentTest() {
-        given(ledger.isDetached(id)).willReturn(true);
-
-        assertTrue(subject.isDetached(id));
-    }
-
-    @Test
     void delegatesAlias() {
         final var pretend = ByteString.copyFromUtf8("YAWN");
         given(ledger.alias(id)).willReturn(pretend);
@@ -190,15 +182,17 @@ class MutableEntityAccessTest {
     }
 
     @Test
-    void checksIfDeleted() {
-        // given:
-        given(ledger.isDeleted(id)).willReturn(true);
+    void checksIfUsableOk() {
+        given(ledger.usabilityOf(id)).willReturn(OK);
 
-        // when:
-        assertTrue(subject.isDeleted(id));
+        assertTrue(subject.isUsable(id));
+    }
 
-        // and:
-        verify(ledger).isDeleted(id);
+    @Test
+    void checksIfUsableNotOk() {
+        given(ledger.usabilityOf(id)).willReturn(ACCOUNT_DELETED);
+
+        assertFalse(subject.isUsable(id));
     }
 
     @Test

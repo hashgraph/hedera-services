@@ -138,6 +138,8 @@ class ExpiryThrottleTest {
         assertTrue(subject.allow(Arrays.asList(permissible), pointA));
         final var throttle = subject.getThrottle();
         assertEquals(EXPECTED_CAPACITY, throttle.used());
+
+        assertFalse(subject.allow(List.of(STORAGE_PUT)));
     }
 
     @Test
@@ -152,6 +154,20 @@ class ExpiryThrottleTest {
 
         final var currentSnapshot = subject.getThrottleSnapshot();
         assertEquals(someSnapshot, currentSnapshot);
+    }
+
+    @Test
+    void namecanReclaimLastAllowed() {
+        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC))
+                .willReturn(getTestResource(VALID_RESOURCE_LOC));
+
+        assertDoesNotThrow(subject::reclaimLastAllowedUse);
+        subject.rebuildFromResource(VALID_RESOURCE_LOC);
+
+        subject.allow(List.of(STORAGE_GET), pointA);
+        subject.reclaimLastAllowedUse();
+        final var used = Objects.requireNonNull(subject.getThrottleSnapshot()).used();
+        assertEquals(0, used);
     }
 
     @Test

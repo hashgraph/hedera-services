@@ -190,7 +190,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .maxSupply(500)
                                 .kycKey(key)
                                 .initialSupply(100),
-                        cryptoCreate(user2).maxAutomaticTokenAssociations(10_000),
+                        cryptoCreate(user2).maxAutomaticTokenAssociations(4999),
                         tokenAssociate(user1, token1),
                         tokenAssociate(treasury1, token2),
                         // Restore default

@@ -180,15 +180,6 @@ class HederaWorldStateTest {
     }
 
     @Test
-    void returnsNullForDetached() {
-        given(entityAccess.isExtant(accountId)).willReturn(true);
-        given(entityAccess.isDeleted(accountId)).willReturn(false);
-        given(entityAccess.isDetached(accountId)).willReturn(true);
-
-        assertNull(subject.get(EntityIdUtils.asTypedEvmAddress(accountId)));
-    }
-
-    @Test
     void returnsNullForNull() {
         assertNull(subject.get(null));
     }
@@ -230,20 +221,14 @@ class HederaWorldStateTest {
         objectContractWorksForWorldState(acc);
 
         /* non-existent accounts should resolve to null */
-        given(entityAccess.isExtant(any())).willReturn(false);
+        given(entityAccess.isUsable(any())).willReturn(false);
         var nonExistent = subject.get(Address.RIPEMD160);
-        assertNull(nonExistent);
-
-        given(entityAccess.isExtant(any())).willReturn(true);
-        given(entityAccess.isDeleted(any())).willReturn(true);
-        nonExistent = subject.get(Address.RIPEMD160);
         assertNull(nonExistent);
     }
 
     private void givenWellKnownAccountWithCode(final AccountID account, final Bytes bytecode) {
         given(entityAccess.getBalance(account)).willReturn(balance);
-        given(entityAccess.isExtant(any())).willReturn(true);
-        given(entityAccess.isDeleted(any())).willReturn(false);
+        given(entityAccess.isUsable(any())).willReturn(true);
         if (bytecode != null) {
             given(entityAccess.fetchCodeIfPresent(any())).willReturn(bytecode);
         }
@@ -337,7 +322,7 @@ class HederaWorldStateTest {
         final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
         final var updater = subject.updater();
         // and:
-        given(entityAccess.isExtant(zeroAddress)).willReturn(true);
+        given(entityAccess.isUsable(zeroAddress)).willReturn(true);
         given(entityAccess.getBalance(zeroAddress)).willReturn(balance);
         // and:
         final var expected =
@@ -350,7 +335,7 @@ class HederaWorldStateTest {
         assertEquals(expected.getAddress(), result.getAddress());
         assertEquals(expected.getBalance(), result.getBalance());
         // and:
-        verify(entityAccess).isExtant(zeroAddress);
+        verify(entityAccess).isUsable(zeroAddress);
         verify(entityAccess).getBalance(zeroAddress);
     }
 
@@ -560,7 +545,7 @@ class HederaWorldStateTest {
         final var actualSubject = subject.updater();
 
         final var accountId = accountIdFromEvmAddress(someAddress);
-        given(entityAccess.isExtant(accountId)).willReturn(true);
+        given(entityAccess.isUsable(accountId)).willReturn(true);
         given(entityAccess.getBalance(accountId)).willReturn(balance);
 
         actualSubject.getAccount(someAddress);

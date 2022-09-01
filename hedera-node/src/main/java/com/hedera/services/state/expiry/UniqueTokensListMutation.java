@@ -23,12 +23,13 @@ import com.hedera.services.utils.MapValueListMutation;
 import com.swirlds.merkle.map.MerkleMap;
 import org.jetbrains.annotations.Nullable;
 
-public class UniqueTokensListRemoval
+public class UniqueTokensListMutation
         implements MapValueListMutation<EntityNumPair, MerkleUniqueToken> {
 
     final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 
-    public UniqueTokensListRemoval(final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
+    public UniqueTokensListMutation(
+            final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
         this.uniqueTokens = uniqueTokens;
     }
 

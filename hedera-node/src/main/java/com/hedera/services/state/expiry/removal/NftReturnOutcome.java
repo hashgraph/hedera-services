@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry.classification;
+package com.hedera.services.state.expiry.removal;
 
-public enum ClassificationResult {
-    DETACHED_ACCOUNT,
-    EXPIRED_ACCOUNT_READY_TO_RENEW,
-    DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
-    DETACHED_CONTRACT,
-    EXPIRED_CONTRACT_READY_TO_RENEW,
-    DETACHED_CONTRACT_GRACE_PERIOD_OVER,
-    DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN,
-    OTHER,
-    COME_BACK_LATER
-}
+import com.hedera.services.utils.EntityNumPair;
+
+public record NftReturnOutcome(
+        NonFungibleTreasuryReturns nftReturns, EntityNumPair newRoot, long remainingNfts) {}

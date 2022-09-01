@@ -656,12 +656,16 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             var tokenTransferList =
                     TokenTransferList.newBuilder().setToken(tokens.get(i).toGrpcTokenId());
             if (tokenAdjustments != null && !tokenAdjustments.isEmpty()) {
-                tokenTransferList.addAllTransfers(
-                        tokenAdjustments.get(i).toGrpc().getAccountAmountsList());
+                final var choice = tokenAdjustments.get(i);
+                if (choice != null) {
+                    choice.addToGrpc(tokenTransferList);
+                }
             }
             if (nftTokenAdjustments != null && !nftTokenAdjustments.isEmpty()) {
-                tokenTransferList.addAllNftTransfers(
-                        nftTokenAdjustments.get(i).toGrpc().getNftTransfersList());
+                final var choice = nftTokenAdjustments.get(i);
+                if (choice != null) {
+                    choice.addToGrpc(tokenTransferList);
+                }
             }
             grpcBuilder.addTokenTransferLists(tokenTransferList);
         }

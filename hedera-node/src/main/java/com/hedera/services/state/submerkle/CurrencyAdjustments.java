@@ -20,6 +20,7 @@ import static com.hedera.services.utils.MiscUtils.readableTransferList;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -120,16 +121,25 @@ public class CurrencyAdjustments implements SelfSerializable {
         return grpc.build();
     }
 
+    public void addToGrpc(final TokenTransferList.Builder builder) {
+        for (int i = 0; i < hbars.length; i++) {
+            builder.addTransfers(adjustAt(i));
+        }
+    }
+
     public List<AccountAmount> asAccountAmountsList() {
         final List<AccountAmount> changes = new ArrayList<>();
         for (int i = 0; i < hbars.length; i++) {
-            changes.add(
-                    AccountAmount.newBuilder()
-                            .setAmount(hbars[i])
-                            .setAccountID(EntityNum.fromLong(accountNums[i]).toGrpcAccountId())
-                            .build());
+            changes.add(adjustAt(i));
         }
         return changes;
+    }
+
+    private AccountAmount adjustAt(final int i) {
+        return AccountAmount.newBuilder()
+                .setAmount(hbars[i])
+                .setAccountID(EntityNum.fromLong(accountNums[i]).toGrpcAccountId())
+                .build();
     }
 
     public static CurrencyAdjustments fromChanges(

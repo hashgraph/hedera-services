@@ -31,8 +31,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -51,6 +50,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -93,6 +93,34 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
         assertFalse(subject.hasAnyNfts(misc));
         given(accountsLedger.get(misc, NUM_NFTS_OWNED)).willReturn(1L);
         assertTrue(subject.hasAnyNfts(misc));
+    }
+
+    @Test
+    void usabilityDetectsInvalidId() {
+        given(accountsLedger.get(misc, IS_DELETED)).willThrow(MissingEntityException.class);
+        final var actual = subject.usabilityOf(misc);
+        assertEquals(INVALID_ACCOUNT_ID, actual);
+    }
+
+    @Test
+    void usabilityDetectsDeletedAccount() {
+        given(accountsLedger.get(misc, IS_DELETED)).willReturn(true);
+        final var actual = subject.usabilityOf(misc);
+        assertEquals(ACCOUNT_DELETED, actual);
+    }
+
+    @Test
+    void usabilityDetectsDeletedContract() {
+        given(accountsLedger.get(misc, IS_DELETED)).willReturn(true);
+        given(accountsLedger.get(misc, IS_SMART_CONTRACT)).willReturn(true);
+        final var actual = subject.usabilityOf(misc);
+        assertEquals(CONTRACT_DELETED, actual);
+    }
+
+    @Test
+    void usabilityDelegatesExtantNonDeletedToValidator() {
+        final var actual = subject.usabilityOf(misc);
+        assertEquals(OK, actual);
     }
 
     @Test

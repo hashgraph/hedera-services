@@ -135,7 +135,7 @@ public class ExpiryManager {
 
     /**
      * Entities that typically expire on the order of days or months (topics, accounts, tokens,
-     * etc.) are monitored and automatically renewed or removed by the {@link EntityAutoRenewal}
+     * etc.) are monitored and automatically renewed or removed by the {@link EntityAutoExpiry}
      * process.
      *
      * <p>The only entities that currently qualify as "short-lived" are schedule entities, which
