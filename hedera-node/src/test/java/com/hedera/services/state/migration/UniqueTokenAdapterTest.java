@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -78,6 +79,12 @@ class UniqueTokenAdapterTest {
         assertEquals(456L, merkleSubject.getSpender().num());
         assertArrayEquals("hello".getBytes(), merkleSubject.getMetadata());
         assertEquals(0L, merkleSubject.getPackedCreationTime());
+    }
+
+    @Test
+    void testNullValuesPassedToStaticConstructors() {
+        assertNull(UniqueTokenAdapter.wrap((MerkleUniqueToken) null));
+        assertNull(UniqueTokenAdapter.wrap((UniqueTokenValue) null));
     }
 
     @Test
