@@ -132,11 +132,6 @@ public class UniqueTokenValue implements VirtualValue {
         return copy;
     }
 
-    @Override
-    public void release() {
-        /* no-op */
-    }
-
     interface CheckedConsumer<T> {
         void accept(T t) throws IOException;
     }
