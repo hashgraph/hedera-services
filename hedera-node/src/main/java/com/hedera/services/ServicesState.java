@@ -299,13 +299,11 @@ public class ServicesState extends PartialNaryMerkleInternal
             app.systemExits().fail(1);
         } else {
             final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
-            if (trigger == RESTART) {
+            if (trigger == RESTART && isUpgrade) {
                 dualState.setFreezeTime(null);
-                if (isUpgrade) {
-                    networkCtx().discardPreparedUpgradeMeta();
-                    if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
-                        networkCtx().markMigrationRecordsNotYetStreamed();
-                    }
+                networkCtx().discardPreparedUpgradeMeta();
+                if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
+                    networkCtx().markMigrationRecordsNotYetStreamed();
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);
