@@ -23,8 +23,8 @@ public class SolidityAction {
     private static final byte[] MISSING_BYTES = new byte[0];
 
     private ContractActionType callType;
-    private final EntityId callingAccount;
-    private final EntityId callingContract;
+    private EntityId callingAccount;
+    private EntityId callingContract;
     private final long gas;
     private final byte[] input;
     private EntityId recipientAccount;
@@ -36,24 +36,17 @@ public class SolidityAction {
     private byte[] revertReason;
     private byte[] error;
     private final int callDepth;
+    private CallOperationType callOperationType;
 
     public SolidityAction(
             final ContractActionType callType,
-            final EntityId callingAccount,
-            final EntityId callingContract,
             final long gas,
             final byte[] input,
-            final EntityId recipientAccount,
-            final EntityId recipientContract,
             final long value,
             final int callDepth) {
         this.callType = callType;
-        this.callingAccount = callingAccount;
-        this.callingContract = callingContract;
         this.gas = gas;
         this.input = input == null ? MISSING_BYTES : input;
-        this.recipientAccount = recipientAccount;
-        this.recipientContract = recipientContract;
         this.value = value;
         this.callDepth = callDepth;
     }
@@ -92,6 +85,18 @@ public class SolidityAction {
 
     public byte[] getError() {
         return error;
+    }
+
+    public void setCallOperationType(CallOperationType callOperationType) {
+        this.callOperationType = callOperationType;
+    }
+
+    public void setCallingAccount(EntityId callingAccount) {
+        this.callingAccount = callingAccount;
+    }
+
+    public void setCallingContract(EntityId callingContract) {
+        this.callingContract = callingContract;
     }
 
     public void setError(final byte[] error) {
@@ -146,6 +151,10 @@ public class SolidityAction {
         return callDepth;
     }
 
+    public CallOperationType getCallOperationType() {
+        return callOperationType;
+    }
+
     public ContractAction toGrpc() {
         final var grpc = ContractAction.newBuilder();
         grpc.setCallType(
@@ -174,6 +183,9 @@ public class SolidityAction {
             grpc.setError(ByteStringUtils.wrapUnsafely(error));
         }
         grpc.setCallDepth(callDepth);
+        grpc.setCallOperationType(
+                com.hedera.services.stream.proto.CallOperationType.forNumber(
+                        callOperationType.ordinal()));
         return grpc.build();
     }
 }

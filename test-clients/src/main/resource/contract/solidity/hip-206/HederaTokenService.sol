@@ -219,7 +219,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (responseCode, tokenAddress) = success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));
     }
 
-    /// Allows spender to withdraw from your account multiple times, up to the value amount. If this function is called 
+    /// Allows spender to withdraw from your account multiple times, up to the value amount. If this function is called
     /// again it overwrites the current allowance with value.
     /// Only Applicable to Fungible Tokens
     /// @param token The hedera token address to approve
@@ -267,7 +267,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param token The Hedera NFT token address to check approval
     /// @param serialNumber The NFT to find the approved address for
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return approved The approved address for this NFT, or the zero address if there is none    
+    /// @return approved The approved address for this NFT, or the zero address if there is none
     function getApproved(address token, uint256 serialNumber) internal returns (int responseCode, address approved)
     {
         (bool success, bytes memory result) = precompileAddress.call(
@@ -278,8 +278,8 @@ abstract contract HederaTokenService is HederaResponseCodes {
                 ? abi.decode(result, (int32, address))
                 : (HederaResponseCodes.UNKNOWN, address(0));
     }
-    
-    
+
+
     /// Enable or disable approval for a third party ("operator") to manage
     ///  all of `msg.sender`'s assets
     /// @param token The Hedera NFT token address to approve
@@ -293,7 +293,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
             token, operator, approved));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
-    
+
 
     /// Query if an address is an authorized operator for another address
     /// Only Applicable to NFT Tokens
@@ -376,4 +376,84 @@ abstract contract HederaTokenService is HederaResponseCodes {
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
+    /// Operation to pause token
+    /// @param token The token address to be paused
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function pauseToken(address token) external returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.pauseToken.selector, token));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to unpause token
+    /// @param token The token address to be unpaused
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function unpauseToken(address token) external returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.unPauseToken.selector, token));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to wipe fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param amount The number of tokens to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccount(address token, address account, uint32 amount) internal returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.wipeTokenAccount.selector, token, account, amount));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to wipe non fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param  serialNumbers The serial numbers of token to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccountNFT(address token, address account, int64[] memory serialNumbers) internal
+    returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.wipeTokenAccountNFT.selector, token, account, serialNumbers));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to update token info
+    /// @param token The token address
+    /// @param tokenInfo The hedera token info to update token with
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenInfo(address token, IHederaTokenService.HederaToken memory tokenInfo)
+    internal returns (int64 responseCode){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.updateTokenInfo.selector, token, tokenInfo));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Query token expiry info
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return expiry Expiry info for `token`
+    function getTokenExpiryInfo(address token) internal
+    returns (int responseCode, IHederaTokenService.Expiry memory expiry)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenExpiryInfo.selector, token));
+        IHederaTokenService.Expiry memory defaultExpiryInfo;
+        (responseCode, expiry) = success ? abi.decode(result, (int32, IHederaTokenService.Expiry)) : (HederaResponseCodes.UNKNOWN, defaultExpiryInfo);
+    }
+
+    /// Operation to update token expiry info
+    /// @param token The token address
+    /// @param expiryInfo The hedera token expiry info
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenExpiryInfo(address token, IHederaTokenService.Expiry memory expiryInfo) internal
+    returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.updateTokenExpiryInfo.selector, token, expiryInfo));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
 }

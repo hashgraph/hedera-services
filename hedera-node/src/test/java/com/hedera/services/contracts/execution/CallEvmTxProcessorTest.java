@@ -27,12 +27,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.doCallRealMethod;
-import static org.mockito.BDDMockito.doReturn;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -45,7 +45,6 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -328,27 +327,9 @@ class CallEvmTxProcessorTest {
         given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         final var action =
-                new SolidityAction(
-                        ContractActionType.CALL,
-                        EntityId.fromAddress(Address.ALTBN128_ADD),
-                        null,
-                        500L,
-                        "input".getBytes(),
-                        EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
-                        null,
-                        0L,
-                        0);
+                new SolidityAction(ContractActionType.CALL, 500L, "input".getBytes(), 0L, 0);
         final var action2 =
-                new SolidityAction(
-                        ContractActionType.CREATE,
-                        null,
-                        EntityId.fromAddress(Address.ALTBN128_ADD),
-                        5555L,
-                        "input2".getBytes(),
-                        null,
-                        EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
-                        666L,
-                        1);
+                new SolidityAction(ContractActionType.CREATE, 5555L, "input2".getBytes(), 666L, 1);
         try (MockedConstruction<HederaTracer> ignored =
                 Mockito.mockConstruction(
                         HederaTracer.class,

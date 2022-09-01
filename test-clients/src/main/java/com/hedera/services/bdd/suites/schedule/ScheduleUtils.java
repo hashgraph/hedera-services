@@ -89,6 +89,8 @@ public class ScheduleUtils {
             scheduleBuilder.setTokenDissociate(txn.getTokenDissociate());
         } else if (txn.hasScheduleDelete()) {
             scheduleBuilder.setScheduleDelete(txn.getScheduleDelete());
+        } else if (txn.hasCryptoApproveAllowance()) {
+            scheduleBuilder.setCryptoApproveAllowance(txn.getCryptoApproveAllowance());
         }
 
         return scheduleBuilder.build();

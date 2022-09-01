@@ -44,6 +44,7 @@ public class PropertyNames {
     public static final String ACCOUNTS_EXCHANGE_RATES_ADMIN = "accounts.exchangeRatesAdmin";
     public static final String ACCOUNTS_FEE_SCHEDULE_ADMIN = "accounts.feeSchedulesAdmin";
     public static final String ACCOUNTS_FREEZE_ADMIN = "accounts.freezeAdmin";
+    public static final String ACCOUNTS_LAST_THROTTLE_EXEMPT = "accounts.lastThrottleExempt";
     public static final String ACCOUNTS_NODE_REWARD_ACCOUNT = "accounts.nodeRewardAccount";
     public static final String ACCOUNTS_STAKING_REWARD_ACCOUNT = "accounts.stakingRewardAccount";
     public static final String ACCOUNTS_SYSTEM_ADMIN = "accounts.systemAdmin";
@@ -195,6 +196,8 @@ public class PropertyNames {
     public static final String TOKENS_NFTS_MAX_BATCH_SIZE_MINT = "tokens.nfts.maxBatchSizeMint";
     public static final String TOKENS_NFTS_MAX_ALLOWED_MINTS = "tokens.nfts.maxAllowedMints";
     public static final String TOKENS_NFTS_MAX_QUERY_RANGE = "tokens.nfts.maxQueryRange";
+    public static final String TOKENS_NFTS_USE_TREASURY_WILDCARDS =
+            "tokens.nfts.useTreasuryWildcards";
     public static final String TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR =
             "tokens.nfts.mintThrottleScaleFactor";
     public static final String TOKENS_NFTS_USE_VIRTUAL_MERKLE = "tokens.nfts.useVirtualMerkle";
