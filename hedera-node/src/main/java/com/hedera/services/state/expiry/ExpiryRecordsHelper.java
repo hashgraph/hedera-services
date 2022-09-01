@@ -87,10 +87,10 @@ public class ExpiryRecordsHelper {
             final long fee,
             final long newExpiry,
             final boolean isContract,
-            final EntityNum payerForAutoRenew) {
+            final EntityNum payerForExpiry) {
         final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
         final var grpcId = entityNum.toGrpcAccountId();
-        final var payerId = payerForAutoRenew.toGrpcAccountId();
+        final var payerId = payerForExpiry.toGrpcAccountId();
         final var memo =
                 (isContract ? "Contract " : "Account ")
                         + entityNum.toIdString()
@@ -102,7 +102,7 @@ public class ExpiryRecordsHelper {
                         ? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry, payerId)
                         : syntheticTxnFactory.synthAccountAutoRenew(entityNum, newExpiry);
         final var expirableTxnRecord =
-                forTouchedAccount(grpcId, eventTime, payerForAutoRenew.toEntityId())
+                forTouchedAccount(grpcId, eventTime, payerForExpiry.toEntityId())
                         .setMemo(memo)
                         .setHbarAdjustments(feeXfers(fee, payerId))
                         .setFee(fee)

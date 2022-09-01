@@ -31,7 +31,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -60,7 +62,7 @@ public class GetFileInfoAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         var op = query.getFileGetInfo();
         FileGetInfoResponse.Builder response = FileGetInfoResponse.newBuilder();
 
@@ -75,7 +77,7 @@ public class GetFileInfoAnswer implements AnswerService {
             if (type == COST_ANSWER) {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
-                var info = view.infoForFile(op.getFileID());
+                var info = Objects.requireNonNull(view).infoForFile(op.getFileID());
                 /* Include cost here to satisfy legacy regression tests. */
                 if (info.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK, cost));

@@ -93,6 +93,7 @@ class BootstrapPropertiesTest {
                     entry(ACCOUNTS_NODE_REWARD_ACCOUNT, 801L),
                     entry(ACCOUNTS_STAKING_REWARD_ACCOUNT, 800L),
                     entry(ACCOUNTS_FREEZE_ADMIN, 58L),
+                    entry(ACCOUNTS_LAST_THROTTLE_EXEMPT, 100L),
                     entry(ACCOUNTS_SYSTEM_ADMIN, 50L),
                     entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
                     entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
@@ -142,7 +143,7 @@ class BootstrapPropertiesTest {
                     entry(HEDERA_PROFILES_ACTIVE, Profile.PROD),
                     entry(HEDERA_REALM, 0L),
                     entry(HEDERA_RECORD_STREAM_LOG_DIR, "/opt/hgcapp/recordStreams"),
-                    entry(HEDERA_RECORD_STREAM_SIDE_CAR_DIR, ""),
+                    entry(HEDERA_RECORD_STREAM_SIDE_CAR_DIR, "sidecar"),
                     entry(HEDERA_RECORD_STREAM_LOG_PERIOD, 2L),
                     entry(HEDERA_RECORD_STREAM_IS_ENABLED, true),
                     entry(HEDERA_RECORD_STREAM_QUEUE_CAPACITY, 5000),
@@ -251,8 +252,8 @@ class BootstrapPropertiesTest {
                     entry(HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, 100),
                     entry(HEDERA_ALLOWANCES_IS_ENABLED, true),
                     entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, false),
-                    entry(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION, 5),
-                    entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, 5),
+                    entry(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION, 6),
+                    entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, 6),
                     entry(ACCOUNTS_MAX_NUM, 5_000_000L),
                     entry(CONTRACTS_MAX_NUM, 5_000_000L),
                     entry(CONTRACTS_STORAGE_SLOT_PRICE_TIERS, "0til100M,2000til450M"),
@@ -267,7 +268,9 @@ class BootstrapPropertiesTest {
                     entry(UTIL_PRNG_IS_ENABLED, true),
                     entry(CONTRACTS_SIDECARS, EnumSet.noneOf(SidecarType.class)),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
-                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true));
+                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
+                    entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true));
+    ;
 
     @Test
     void containsProperty() {

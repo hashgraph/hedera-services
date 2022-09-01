@@ -17,6 +17,7 @@ package com.hedera.services.state.expiry.removal;
 
 import static com.hedera.services.state.expiry.removal.TreasuryReturns.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -50,7 +51,7 @@ class TreasuryReturnsTest {
     @Mock private TreasuryReturnHelper returnHelper;
 
     @Mock private EntityLookup entityLookup;
-    @Mock private RelRemovalFacilitation relRemovalFacilitation;
+    @Mock private RelRemover relRemover;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
@@ -125,6 +126,7 @@ class TreasuryReturnsTest {
                         any(List.class),
                         eq(tokenRels));
         assertEquals(0, accountWithRels.getNumAssociations());
+        assertTrue(accountWithRels.isDeleted());
     }
 
     @Test
@@ -139,6 +141,7 @@ class TreasuryReturnsTest {
 
         assertEquals(expected, actual);
         assertEquals(0, accountWithNfts.getNftsOwned());
+        assertTrue(accountWithNfts.isDeleted());
     }
 
     @Test
@@ -284,7 +287,7 @@ class TreasuryReturnsTest {
     }
 
     private void givenStandardUnitsSetup(final boolean includeB, final boolean includeBRemoval) {
-        subject.setRelRemovalFacilitation(relRemovalFacilitation);
+        subject.setRelRemovalFacilitation(relRemover);
         given(tokens.get(aRelKey.getLowOrderAsNum())).willReturn(fungibleToken);
         given(tokenRels.get(aRelKey)).willReturn(aRelStatus);
         if (includeB) {
@@ -292,14 +295,10 @@ class TreasuryReturnsTest {
             given(tokens.get(bRelKey.getLowOrderAsNum())).willReturn(fungibleToken);
         }
 
-        given(
-                        relRemovalFacilitation.removeNext(
-                                eq(aRelKey), eq(aRelKey), any(TokenRelsListMutation.class)))
+        given(relRemover.removeNext(eq(aRelKey), eq(aRelKey), any(TokenRelsListMutation.class)))
                 .willReturn(bRelKey);
         if (includeBRemoval) {
-            given(
-                            relRemovalFacilitation.removeNext(
-                                    eq(bRelKey), eq(bRelKey), any(TokenRelsListMutation.class)))
+            given(relRemover.removeNext(eq(bRelKey), eq(bRelKey), any(TokenRelsListMutation.class)))
                     .willReturn(null);
         }
     }

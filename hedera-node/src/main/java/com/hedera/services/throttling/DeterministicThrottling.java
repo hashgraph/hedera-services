@@ -15,9 +15,9 @@
  */
 package com.hedera.services.throttling;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.grpc.marshalling.AliasResolver.usesAliases;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
-import static com.hedera.services.utils.accessors.SignedTxnAccessor.IS_THROTTLE_EXEMPT;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
@@ -718,7 +718,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
         @Override
         public boolean throttleExempt() {
-            return IS_THROTTLE_EXEMPT.test(payer.getAccountNum());
+            return STATIC_PROPERTIES.isThrottleExempt(payer.getAccountNum());
         }
 
         @Override

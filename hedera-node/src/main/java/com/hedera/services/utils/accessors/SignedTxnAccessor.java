@@ -15,6 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -76,7 +77,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.LongPredicate;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -85,7 +85,6 @@ import org.bouncycastle.util.Arrays;
 
 /** Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}. */
 public class SignedTxnAccessor implements TxnAccessor {
-    public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
     private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
 
     private static final int UNKNOWN_NUM_AUTO_CREATIONS = -1;
@@ -305,7 +304,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         }
         var p = getPayer();
         if (p != null) {
-            return IS_THROTTLE_EXEMPT.test(p.getAccountNum());
+            return STATIC_PROPERTIES.isThrottleExempt(p.getAccountNum());
         }
         return false;
     }

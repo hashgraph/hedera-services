@@ -48,6 +48,7 @@ public class GlobalDynamicProperties {
     private int maxNftTransfersLen;
     private int maxBatchSizeWipe;
     private long maxNftQueryRange;
+    private boolean allowTreasuryToOwnNfts;
     private int maxTokensPerAccount;
     private int maxTokenRelsPerInfoQuery;
     private int maxCustomFeesAllowed;
@@ -143,6 +144,7 @@ public class GlobalDynamicProperties {
     private boolean enableTraceabilityMigration;
     private boolean itemizeStorageFees;
     private ContractStoragePriceTiers storagePriceTiers;
+    private boolean compressRecordFilesOnCreation;
 
     @Inject
     public GlobalDynamicProperties(
@@ -159,6 +161,7 @@ public class GlobalDynamicProperties {
         maxBatchSizeMint = properties.getIntProperty(TOKENS_NFTS_MAX_BATCH_SIZE_MINT);
         maxBatchSizeWipe = properties.getIntProperty(TOKENS_NFTS_MAX_BATCH_SIZE_WIPE);
         maxNftQueryRange = properties.getLongProperty(TOKENS_NFTS_MAX_QUERY_RANGE);
+        allowTreasuryToOwnNfts = properties.getBooleanProperty(TOKENS_NFTS_USE_TREASURY_WILDCARDS);
         maxTokensPerAccount = properties.getIntProperty(TOKENS_MAX_PER_ACCOUNT);
         maxTokenRelsPerInfoQuery = properties.getIntProperty(TOKENS_MAX_RELS_PER_INFO_QUERY);
         maxTokenSymbolUtf8Bytes = properties.getIntProperty(TOKENS_MAX_SYMBOL_UTF8_BYTES);
@@ -290,6 +293,8 @@ public class GlobalDynamicProperties {
                         maxAggregateContractKvPairs,
                         properties.getLongProperty(CONTRACTS_REFERENCE_SLOT_LIFETIME));
         itemizeStorageFees = properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES);
+        compressRecordFilesOnCreation =
+                properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
     }
 
     public int maxTokensPerAccount() {
@@ -326,6 +331,10 @@ public class GlobalDynamicProperties {
 
     public long maxNftQueryRange() {
         return maxNftQueryRange;
+    }
+
+    public boolean treasuryNftAllowance() {
+        return allowTreasuryToOwnNfts;
     }
 
     public int maxTokenSymbolUtf8Bytes() {
@@ -694,5 +703,9 @@ public class GlobalDynamicProperties {
 
     public boolean shouldItemizeStorageFees() {
         return itemizeStorageFees;
+    }
+
+    public boolean shouldCompressRecordFilesOnCreation() {
+        return compressRecordFilesOnCreation;
     }
 }

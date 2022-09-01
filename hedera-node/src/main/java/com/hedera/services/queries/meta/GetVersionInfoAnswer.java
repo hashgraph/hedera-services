@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -50,7 +51,7 @@ public final class GetVersionInfoAnswer extends AbstractAnswer {
     @Override
     public Response responseGiven(
             final Query query,
-            final StateView view,
+            final @Nullable StateView view,
             final ResponseCodeEnum validity,
             final long cost) {
         final var op = query.getNetworkGetVersionInfo();

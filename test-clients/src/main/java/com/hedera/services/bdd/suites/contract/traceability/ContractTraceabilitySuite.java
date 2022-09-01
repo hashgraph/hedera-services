@@ -66,7 +66,6 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                traceabilityE2EScenario1(),
                 traceabilityE2EScenario2(),
                 traceabilityE2EScenario3(),
                 traceabilityE2EScenario4(),
@@ -77,45 +76,6 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
                 traceabilityE2EScenario9(),
                 traceabilityE2EScenario10(),
                 traceabilityE2EScenario11());
-    }
-
-    private HapiApiSpec traceabilityE2EScenario1() {
-        return defaultHapiSpec("traceabilityE2EScenario1")
-                .given(
-                        setup(
-                                TRACEABILITY,
-                                createContractWithSlotValues(TRACEABILITY, FIRST, 55, 2, 2),
-                                createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 12),
-                                createContractWithSlotValues(TRACEABILITY, THIRD, 0, 11, 0)))
-                .when(executeScenario(TRACEABILITY, "eetScenario1", SUCCESS))
-                .then(
-                        assertStateChanges(
-                                StateChange.stateChangeFor(TRACEABILITY)
-                                        .withStorageChanges(
-                                                StorageChange.onlyRead(
-                                                        formattedAssertionValue(0),
-                                                        formattedAssertionValue(55)),
-                                                StorageChange.readAndWritten(
-                                                        formattedAssertionValue(1),
-                                                        formattedAssertionValue(2),
-                                                        formattedAssertionValue(55))),
-                                StateChange.stateChangeFor(TRACEABILITY + SECOND)
-                                        .withStorageChanges(
-                                                StorageChange.readAndWritten(
-                                                        formattedAssertionValue(2),
-                                                        formattedAssertionValue(12),
-                                                        formattedAssertionValue(143))),
-                                StateChange.stateChangeFor(TRACEABILITY + THIRD)
-                                        .withStorageChanges(
-                                                StorageChange.readAndWritten(
-                                                        formattedAssertionValue(0),
-                                                        formattedAssertionValue(0),
-                                                        formattedAssertionValue(0)),
-                                                StorageChange.readAndWritten(
-                                                        formattedAssertionValue(1),
-                                                        formattedAssertionValue(11),
-                                                        formattedAssertionValue(0)))),
-                        tearDown());
     }
 
     private HapiApiSpec traceabilityE2EScenario2() {

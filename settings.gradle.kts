@@ -140,11 +140,12 @@ dependencyResolutionManagement {
             version("picocli-version", "4.6.3")
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")
+            version("truth-java8-extension-version", "1.1.3")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
             bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
-            bundle("testing", listOf("junit-jupiter", "junit-jupiter-api", "junit-jupiter-params", "mockito-core", "mockito-jupiter", "hamcrest", "awaitility"))
+            bundle("testing", listOf("junit-jupiter", "junit-jupiter-api", "junit-jupiter-params", "mockito-core", "mockito-jupiter", "hamcrest", "awaitility", "truth-java8-extension"))
 
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
             library("besu-internal", "org.hyperledger.besu.internal", "crypto").versionRef("besu-internal-version")
@@ -161,6 +162,7 @@ dependencyResolutionManagement {
             library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
             library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")
             library("testcontainers-junit", "org.testcontainers", "junit-jupiter").versionRef("testcontainers-version")
+            library("truth-java8-extension", "com.google.truth.extensions", "truth-java8-extension").versionRef("truth-java8-extension-version")
         }
     }
 }

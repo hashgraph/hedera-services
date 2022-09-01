@@ -33,7 +33,9 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -63,7 +65,7 @@ public class GetBytecodeAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         var op = query.getContractGetBytecode();
         final var target = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
 
@@ -80,7 +82,10 @@ public class GetBytecodeAnswer implements AnswerService {
                 /* Include cost here to satisfy legacy regression tests. */
                 response.setHeader(answerOnlyHeader(OK, cost));
                 response.setBytecode(
-                        ByteString.copyFrom(view.bytecodeOf(target).orElse(EMPTY_BYTECODE)));
+                        ByteString.copyFrom(
+                                Objects.requireNonNull(view)
+                                        .bytecodeOf(target)
+                                        .orElse(EMPTY_BYTECODE)));
             }
         }
         return Response.newBuilder().setContractGetBytecodeResponse(response).build();

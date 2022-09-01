@@ -36,7 +36,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 public class GetAccountDetailsAnswer implements AnswerService {
@@ -67,7 +69,7 @@ public class GetAccountDetailsAnswer implements AnswerService {
     @Override
     public Response responseGiven(
             final Query query,
-            final StateView view,
+            final @Nullable StateView view,
             final ResponseCodeEnum validity,
             final long cost) {
         final GetAccountDetailsQuery op = query.getAccountDetails();
@@ -82,8 +84,11 @@ public class GetAccountDetailsAnswer implements AnswerService {
             } else {
                 AccountID id = op.getAccountId();
                 var optionalDetails =
-                        view.accountDetails(
-                                id, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
+                        Objects.requireNonNull(view)
+                                .accountDetails(
+                                        id,
+                                        aliasManager,
+                                        dynamicProperties.maxTokensRelsPerInfoQuery());
                 if (optionalDetails.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK));
                     response.setAccountDetails(optionalDetails.get());

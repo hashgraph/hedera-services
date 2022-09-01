@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -54,7 +55,7 @@ public class GetExecTimeAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         var op = query.getNetworkGetExecutionTime();
         var response = NetworkGetExecutionTimeResponse.newBuilder();
 

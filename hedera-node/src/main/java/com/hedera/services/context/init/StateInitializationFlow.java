@@ -15,16 +15,18 @@
  */
 package com.hedera.services.context.init;
 
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.MutableStateChildren;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.stream.RecordStreamManager;
 import java.util.Set;
-import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -54,8 +56,13 @@ public class StateInitializationFlow {
         this.fileUpdateInterceptors = fileUpdateInterceptors;
     }
 
-    public void runWith(ServicesState activeState) {
-        staticNumbersHolder.accept(hederaNums);
+    public void runWith(
+            final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
+        final var lastThrottleExempt =
+                bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
+        // The last throttle-exempt account is configurable to make it easy to start dev networks
+        // without throttling
+        numberConfigurer.configureNumbers(hederaNums, lastThrottleExempt);
 
         workingState.updateFrom(activeState);
         log.info("Context updated with working state");
@@ -70,10 +77,15 @@ public class StateInitializationFlow {
         }
     }
 
-    private static Consumer<HederaNumbers> staticNumbersHolder = STATIC_PROPERTIES::setNumbersFrom;
+    interface NumberConfigurer {
+        void configureNumbers(HederaNumbers numbers, long lastThrottleExempt);
+    }
+
+    private static NumberConfigurer numberConfigurer = STATIC_PROPERTIES::configureNumbers;
 
     /* --- Only used by unit tests --- */
-    static void setStaticNumbersHolder(Consumer<HederaNumbers> staticNumbersHolder) {
-        StateInitializationFlow.staticNumbersHolder = staticNumbersHolder;
+    @VisibleForTesting
+    static void setNumberConfigurer(NumberConfigurer numberConfigurer) {
+        StateInitializationFlow.numberConfigurer = numberConfigurer;
     }
 }
