@@ -97,7 +97,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         try {
             initialize();
             return List.of(
-                    traceabilityE2EScenario2(),
+                    traceabilityE2EScenario1(),
                     assertSidecars());
         } catch (IOException e) {
             log.warn("An exception occurred initializing watch service", e);
@@ -1071,7 +1071,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                 CompletableFuture.runAsync(
                         () -> {
                             try {
-                                sidecarWatcher.watch(9);
+                                sidecarWatcher.watch();
                             } catch (IOException e) {
                                 log.fatal(
                                         "An invalid sidecar file was generated from the consensus"

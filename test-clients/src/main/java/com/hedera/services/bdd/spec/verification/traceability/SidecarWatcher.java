@@ -55,11 +55,10 @@ public class SidecarWatcher {
 
     public void prepareInfrastructure() throws IOException {
         watchService = FileSystems.getDefault().newWatchService();
-        recordStreamFolderPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+        recordStreamFolderPath.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
     }
 
-    public void watch(int howMany) throws IOException {
-        this.howMany = howMany;
+    public void watch() throws IOException {
         for (; ; ) {
             // wait for key to be signaled
             WatchKey key;
@@ -90,7 +89,7 @@ public class SidecarWatcher {
                     log.info("We have a new sidecar.");
                     final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
                     onNewSidecarFile(sidecarFile);
-                    if (this.howMany == 0) {
+                    if (shouldTerminateAfterNextSidecar && howMany == 0) {
                         return;
                     }
                 }
@@ -156,6 +155,7 @@ public class SidecarWatcher {
     }
 
     public void addExpectedSidecar(final ExpectedSidecar newExpectedSidecar) {
+        this.howMany++;
         this.expectedSidecars.add(newExpectedSidecar);
     }
 
