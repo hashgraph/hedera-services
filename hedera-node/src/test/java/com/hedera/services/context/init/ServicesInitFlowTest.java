@@ -18,6 +18,7 @@ package com.hedera.services.context.init;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.properties.BootstrapProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,7 @@ class ServicesInitFlowTest {
     @Mock private StoreInitializationFlow storeFlow;
     @Mock private EntitiesInitializationFlow entitiesFlow;
     @Mock private ServicesState activeState;
+    @Mock private BootstrapProperties bootstrapProperties;
 
     private ServicesInitFlow subject;
 
@@ -41,10 +43,10 @@ class ServicesInitFlowTest {
     @Test
     void flowsAsExpected() {
         // when:
-        subject.runWith(activeState);
+        subject.runWith(activeState, bootstrapProperties);
 
         // then:
-        verify(stateFlow).runWith(activeState);
+        verify(stateFlow).runWith(activeState, bootstrapProperties);
         verify(storeFlow).run();
         verify(entitiesFlow).run();
     }

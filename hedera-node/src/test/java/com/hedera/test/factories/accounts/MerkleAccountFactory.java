@@ -64,6 +64,9 @@ public class MerkleAccountFactory {
     private Optional<Long> stakedToMe = Optional.empty();
     private Optional<Long> stakePeriodStart = Optional.empty();
     private Optional<Boolean> declineReward = Optional.empty();
+    private long nftsOwned = 0;
+    private long headNftTokenNum = 0;
+    private long headNftSerialNo = 0;
 
     public MerkleAccount get() {
         MerkleAccount value = new MerkleAccount();
@@ -92,11 +95,14 @@ public class MerkleAccountFactory {
         value.setNumAssociations(associatedTokensCount.orElse(0));
         value.setNumPositiveBalances(numPositiveBalances.orElse(0));
         value.setHeadTokenId(lastAssociatedToken.orElse(MISSING_ID.num()));
+        value.setHeadNftId(headNftTokenNum);
+        value.setHeadNftSerialNum(headNftSerialNo);
         stakedId.ifPresent(value::setStakedId);
         stakePeriodStart.ifPresent(value::setStakePeriodStart);
         declineReward.ifPresent(value::setDeclineReward);
         stakedToMe.ifPresent(value::setStakedToMe);
         autoRenewAccount.ifPresent(p -> value.setAutoRenewAccount(EntityId.fromGrpcAccountId(p)));
+        value.setNftsOwned(nftsOwned);
         if (firstUint256Key != null) {
             value.setFirstUint256StorageKey(firstUint256Key);
         }
@@ -258,6 +264,21 @@ public class MerkleAccountFactory {
 
     public MerkleAccountFactory associatedTokensCount(final int associatedTokensCount) {
         this.associatedTokensCount = Optional.of(associatedTokensCount);
+        return this;
+    }
+
+    public MerkleAccountFactory nftsOwned(final long n) {
+        nftsOwned = n;
+        return this;
+    }
+
+    public MerkleAccountFactory headNftSerialNo(final long n) {
+        headNftSerialNo = n;
+        return this;
+    }
+
+    public MerkleAccountFactory headNftTokenNum(final long n) {
+        headNftTokenNum = n;
         return this;
     }
 }

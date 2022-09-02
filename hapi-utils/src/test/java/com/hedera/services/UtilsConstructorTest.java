@@ -20,6 +20,7 @@ import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hedera.services.sysfiles.ParsingUtils;
+import com.hedera.services.sysfiles.domain.throttling.HapiThrottleUtils;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
 import com.hedera.services.sysfiles.validation.ExpectedCustomThrottles;
@@ -36,6 +37,7 @@ class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested =
             new HashSet<>(
                     Arrays.asList(
+                            HapiThrottleUtils.class,
                             ParsingUtils.class,
                             CommonUtils.class,
                             Ed25519Utils.class,

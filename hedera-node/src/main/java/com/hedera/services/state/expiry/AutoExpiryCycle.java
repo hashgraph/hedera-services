@@ -13,79 +13,79 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.state.expiry;
 
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
+import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
+import com.hedera.services.state.expiry.renewal.RenewalWork;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class RenewalProcess {
-    private final RenewalRecordsHelper recordsHelper;
+public class AutoExpiryCycle {
+    private static final Logger log = LogManager.getLogger(AutoExpiryCycle.class);
     private final RenewalWork renewalWork;
     private final RemovalWork removalWork;
     private final ClassificationWork classifier;
     private Instant cycleTime = null;
 
     @Inject
-    public RenewalProcess(
+    public AutoExpiryCycle(
             final ClassificationWork classifier,
-            final RenewalRecordsHelper recordsHelper,
             final RenewalWork renewalWork,
             final RemovalWork removalWork) {
-        this.recordsHelper = recordsHelper;
         this.renewalWork = renewalWork;
         this.removalWork = removalWork;
         this.classifier = classifier;
     }
 
-    public void beginRenewalCycle(final Instant currentConsTime) {
-        assertNotInCycle();
+    public void beginCycle(final Instant currentConsTime) {
+        warnIfInCycle();
         cycleTime = currentConsTime;
-        recordsHelper.beginRenewalCycle();
-    }
-
-    public void endRenewalCycle() {
-        assertInCycle();
-        cycleTime = null;
-        recordsHelper.endRenewalCycle();
     }
 
     public EntityProcessResult process(final long literalNum) {
-        assertInCycle();
+        warnIfNotInCycle();
 
-        final var longNow = cycleTime.getEpochSecond();
         final var entityNum = EntityNum.fromLong(literalNum);
-        // ClassificationWork
-        final var classification = classifier.classify(entityNum, longNow);
+        final var result = classifier.classify(entityNum, cycleTime);
+        return switch (result) {
+            case COME_BACK_LATER -> STILL_MORE_TO_DO;
 
-        return switch (classification) {
-            case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);
-            case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
             case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(
                     entityNum, cycleTime);
+            case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);
+
             case EXPIRED_CONTRACT_READY_TO_RENEW -> renewalWork.tryToRenewContract(
                     entityNum, cycleTime);
+            case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
+
             default -> NOTHING_TO_DO;
         };
     }
 
-    private void assertInCycle() {
+    public void endCycle() {
+        warnIfNotInCycle();
+        cycleTime = null;
+    }
+
+    private void warnIfNotInCycle() {
         if (cycleTime == null) {
-            throw new IllegalStateException("Cannot stream records if not in a renewal cycle!");
+            log.warn("Cycle ended, but did not have a start time");
         }
     }
 
-    private void assertNotInCycle() {
+    private void warnIfInCycle() {
         if (cycleTime != null) {
-            throw new IllegalStateException("Cannot end renewal cycle, none is started!");
+            log.warn("Cycle started, but had not ended from {}", cycleTime);
         }
     }
 

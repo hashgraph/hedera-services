@@ -114,7 +114,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
 
             final var charges = sideEffects.getNetTrackedHbarChanges();
             if (!charges.isEmpty()) {
-                final var synthBody = syntheticTxnFactory.synthCryptoTransfer(charges);
+                final var synthBody = syntheticTxnFactory.synthHbarTransfer(charges);
                 final var synthRecord =
                         creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, MEMO);
                 recordsHistorian.trackFollowingChildRecord(

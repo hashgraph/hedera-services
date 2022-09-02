@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -85,7 +86,7 @@ public class GetTxnRecordAnswer implements AnswerService {
     @Override
     public Response responseGiven(
             final Query query,
-            final StateView view,
+            final @Nullable StateView view,
             final ResponseCodeEnum validity,
             final long cost) {
         return responseFor(query, validity, cost, NO_QUERY_CTX);

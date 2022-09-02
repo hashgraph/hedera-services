@@ -20,7 +20,7 @@ import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValu
 import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
 import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
-import com.hedera.services.state.expiry.UniqueTokensListRemoval;
+import com.hedera.services.state.expiry.UniqueTokensListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -76,7 +76,7 @@ public class UniqueTokensLinkManager {
         final var curUniqueTokens = uniqueTokens.get();
 
         final var token = curTokens.get(nftId.getHiOrderAsNum());
-        final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
+        final var listMutation = new UniqueTokensListMutation(curUniqueTokens);
 
         MerkleUniqueToken insertedNft = null;
         // Update "from" account
@@ -121,7 +121,7 @@ public class UniqueTokensLinkManager {
 
     @Nullable
     private EntityNumPair rootKeyOf(final MerkleAccount account) {
-        final var headNum = account.getHeadNftId();
+        final var headNum = account.getHeadNftTokenNum();
         final var headSerialNum = account.getHeadNftSerialNum();
         return headNum == 0 ? null : EntityNumPair.fromLongs(headNum, headSerialNum);
     }

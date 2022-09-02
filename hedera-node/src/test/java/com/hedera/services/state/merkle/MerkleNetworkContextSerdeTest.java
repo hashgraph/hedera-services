@@ -47,22 +47,28 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 
     @Override
     protected MerkleNetworkContext getExpectedObject(final int version, final int testCaseNo) {
-        if (version < MerkleNetworkContext.RELEASE_0270_VERSION) {
-            final var seeded =
-                    SeededPropertySource.forSerdeTest(version, testCaseNo).next0260NetworkContext();
-            if (version < MerkleNetworkContext.RELEASE_0260_VERSION) {
-                seeded.setBlockNo(0L);
-                seeded.setFirstConsTimeOfCurrentBlock(null);
-                seeded.getBlockHashes().clear();
+        if (version < MerkleNetworkContext.RELEASE_0300_VERSION) {
+            if (version < MerkleNetworkContext.RELEASE_0270_VERSION) {
+                final var seeded =
+                        SeededPropertySource.forSerdeTest(version, testCaseNo)
+                                .next0260NetworkContext();
+                if (version < MerkleNetworkContext.RELEASE_0260_VERSION) {
+                    seeded.setBlockNo(0L);
+                    seeded.setFirstConsTimeOfCurrentBlock(null);
+                    seeded.getBlockHashes().clear();
+                }
+                return seeded;
+            } else {
+                return SeededPropertySource.forSerdeTest(version, testCaseNo)
+                        .next0270NetworkContext();
             }
-            return seeded;
         } else {
-            return SeededPropertySource.forSerdeTest(version, testCaseNo).next0270NetworkContext();
+            return SeededPropertySource.forSerdeTest(version, testCaseNo).next0300NetworkContext();
         }
     }
 
     @Override
     protected MerkleNetworkContext getExpectedObject(final SeededPropertySource propertySource) {
-        return propertySource.next0270NetworkContext();
+        return propertySource.next0300NetworkContext();
     }
 }

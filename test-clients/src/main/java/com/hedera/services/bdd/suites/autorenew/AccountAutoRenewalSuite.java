@@ -60,15 +60,18 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
     }
 
     @Override
+    @SuppressWarnings("java:S3878")
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                accountAutoRemoval(),
-                accountAutoRenewal(),
-                maxNumberOfEntitiesToRenewOrDeleteWorks(),
-                numberOfEntitiesToScanWorks(),
-                autoDeleteAfterGracePeriod(),
-                accountAutoRenewalSuiteCleanup(),
-                freezeAtTheEnd());
+                new HapiApiSpec[] {
+                    accountAutoRemoval(),
+                    accountAutoRenewal(),
+                    maxNumberOfEntitiesToRenewOrDeleteWorks(),
+                    numberOfEntitiesToScanWorks(),
+                    autoDeleteAfterGracePeriod(),
+                    accountAutoRenewalSuiteCleanup(),
+                    freezeAtTheEnd(),
+                });
     }
 
     private HapiApiSpec accountAutoRemoval() {

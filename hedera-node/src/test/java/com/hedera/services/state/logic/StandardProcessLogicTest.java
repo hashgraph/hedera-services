@@ -33,7 +33,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.state.expiry.EntityAutoRenewal;
+import com.hedera.services.state.expiry.EntityAutoExpiry;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.schedule.ScheduleProcessing;
@@ -65,7 +65,7 @@ class StandardProcessLogicTest {
     @Mock private ExpiryManager expiries;
     @Mock private InvariantChecks invariantChecks;
     @Mock private ExpandHandleSpan expandHandleSpan;
-    @Mock private EntityAutoRenewal autoRenewal;
+    @Mock private EntityAutoExpiry autoRenewal;
     @Mock private ServicesTxnManager txnManager;
     @Mock private TransactionContext txnCtx;
     @Mock private PlatformTxnAccessor accessor;

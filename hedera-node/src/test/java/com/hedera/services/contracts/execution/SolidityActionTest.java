@@ -41,20 +41,12 @@ class SolidityActionTest {
 
     @Test
     void toGrpcWhenCallingAccountAndRecipientAccountAndOutputAreSet() {
-        final var actual =
-                new SolidityAction(
-                        ContractActionType.CALL,
-                        sender,
-                        null,
-                        gas,
-                        input,
-                        recipient,
-                        null,
-                        value,
-                        0,
-                        CallOperationType.OP_CALL);
+        final var actual = new SolidityAction(ContractActionType.CALL, gas, input, value, 0);
+        actual.setCallingAccount(sender);
+        actual.setRecipientAccount(recipient);
         actual.setGasUsed(gasUsed);
         actual.setOutput(output);
+        actual.setCallOperationType(CallOperationType.OP_CALL);
 
         final var expected =
                 ContractAction.newBuilder()
@@ -76,20 +68,12 @@ class SolidityActionTest {
 
     @Test
     void toGrpcWhenCallingContractAndRecipientContractAndRevertReasonAreSet() {
-        final var actual =
-                new SolidityAction(
-                        ContractActionType.CALL,
-                        null,
-                        sender,
-                        gas,
-                        input,
-                        null,
-                        recipient,
-                        value,
-                        0,
-                        CallOperationType.OP_CALL);
+        final var actual = new SolidityAction(ContractActionType.CALL, gas, input, value, 0);
+        actual.setCallingContract(sender);
+        actual.setRecipientContract(recipient);
         actual.setGasUsed(gasUsed);
         actual.setRevertReason(output);
+        actual.setCallOperationType(CallOperationType.OP_CALL);
 
         final var expected =
                 ContractAction.newBuilder()
@@ -113,21 +97,12 @@ class SolidityActionTest {
 
     @Test
     void toGrpcWhenInvalidRecipientAndErrorAreSet() {
-        final var actual =
-                new SolidityAction(
-                        ContractActionType.CALL,
-                        null,
-                        sender,
-                        gas,
-                        input,
-                        null,
-                        null,
-                        value,
-                        0,
-                        CallOperationType.OP_CALL);
+        final var actual = new SolidityAction(ContractActionType.CALL, gas, input, value, 0);
         actual.setGasUsed(gasUsed);
         actual.setError(output);
         actual.setInvalidSolidityAddress(recipient.toEvmAddress().toArrayUnsafe());
+        actual.setCallingContract(sender);
+        actual.setCallOperationType(CallOperationType.OP_CALL);
 
         final var expected =
                 ContractAction.newBuilder()
