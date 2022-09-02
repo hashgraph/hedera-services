@@ -562,7 +562,7 @@ class HederaTracerTest {
         final var firstChildFrame = mock(MessageFrame.class);
         given(firstChildFrame.getType()).willReturn(Type.CONTRACT_CREATION);
         given(firstChildFrame.getCode()).willReturn(Code.EMPTY);
-//        given(firstChildFrame.getSenderAddress()).willReturn(contract);
+        //        given(firstChildFrame.getSenderAddress()).willReturn(contract);
         given(firstChildFrame.getContractAddress()).willReturn(accountReceiver);
         given(firstChildFrame.getRemainingGas()).willReturn(initialGas);
         given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);

@@ -99,7 +99,8 @@ public class HederaTracer implements HederaOperationTracer {
                 action -> {
                     action.setCallOperationType(
                             toCallOperationType(parentFrame.getCurrentOperation().getOpcode()));
-                    action.setCallingContract(EntityId.fromAddress(parentFrame.getContractAddress()));
+                    action.setCallingContract(
+                            EntityId.fromAddress(parentFrame.getContractAddress()));
                 });
     }
 
