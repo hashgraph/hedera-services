@@ -18,6 +18,7 @@ package com.hedera.services.state.expiry.renewal;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.state.expiry.EntityProcessResult.*;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -136,7 +137,8 @@ public class RenewalHelper implements RenewalWork {
                 EntityId.fromGrpcAccountId(payerForLastClassified),
                 lastClassifiedAccount,
                 fee,
-                accountsLedger);
+                accountsLedger,
+                INSUFFICIENT_PAYER_BALANCE);
 
         accountsLedger.commit();
 

@@ -21,6 +21,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_A
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
@@ -141,7 +142,12 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
                             if (fee > 0) {
                                 final var autoRenewId =
                                         (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
-                                nonHapiFeeCharging.chargeNonHapiFee(autoRenewId, id, fee, accounts);
+                                nonHapiFeeCharging.chargeNonHapiFee(
+                                        autoRenewId,
+                                        id,
+                                        fee,
+                                        accounts,
+                                        INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
                             }
                         }
                     });

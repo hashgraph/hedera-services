@@ -19,13 +19,13 @@ import static com.hedera.services.exceptions.ValidationUtils.validateResourceLim
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
@@ -46,28 +46,26 @@ public class NonHapiFeeCharging {
     public void chargeNonHapiFee(
             @Nullable final EntityId preferredPayer,
             final AccountID finalPayer,
-            final long amount,
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-        chargeFee(preferredPayer, finalPayer, amount, accounts);
-    }
-
-    private void chargeFee(
-            @Nullable final EntityId preferredPayer,
-            final AccountID finalPayer,
             final long fee,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts,
+            final ResponseCodeEnum failureStatus) {
         var leftToPay = fee;
 
         if (preferredPayer != null && !MISSING_ENTITY_ID.equals(preferredPayer)) {
             final var grpcId = preferredPayer.toGrpcAccountId();
             if (accounts.contains(grpcId) && !(boolean) accounts.get(grpcId, IS_DELETED)) {
                 final var debited =
-                        charge(preferredPayer.toGrpcAccountId(), leftToPay, false, accounts);
+                        charge(
+                                preferredPayer.toGrpcAccountId(),
+                                leftToPay,
+                                false,
+                                accounts,
+                                failureStatus);
                 leftToPay -= debited;
             }
         }
         if (leftToPay > 0) {
-            charge(finalPayer, leftToPay, true, accounts);
+            charge(finalPayer, leftToPay, true, accounts, failureStatus);
         }
     }
 
@@ -75,11 +73,12 @@ public class NonHapiFeeCharging {
             final AccountID payer,
             final long amount,
             final boolean isLastResort,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts,
+            final ResponseCodeEnum failureStatus) {
         long paid;
         final var balance = (long) accounts.get(payer, BALANCE);
         if (amount > balance) {
-            validateResourceLimit(!isLastResort, INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
+            validateResourceLimit(!isLastResort, failureStatus);
             accounts.set(payer, BALANCE, 0L);
             paid = balance;
         } else {
