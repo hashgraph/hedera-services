@@ -131,13 +131,15 @@ public class RecordStreaming {
         final var blockNumber = rso.getStreamAlignment();
         final var txId = rso.getTransactionRecord().getTransactionID();
         final var txIdString =
-                String.format(
-                        "%d.%d.%d-%d-%d",
-                        txId.getAccountID().getShardNum(),
-                        txId.getAccountID().getRealmNum(),
-                        txId.getAccountID().getAccountNum(),
-                        txId.getTransactionValidStart().getSeconds(),
-                        txId.getTransactionValidStart().getNanos());
+                txId.getAccountID().getShardNum()
+                        + "."
+                        + txId.getAccountID().getRealmNum()
+                        + "."
+                        + txId.getAccountID().getAccountNum()
+                        + "-"
+                        + txId.getTransactionValidStart().getSeconds()
+                        + "-"
+                        + txId.getTransactionValidStart().getNanos();
         final var status = rso.getTransactionRecord().getReceipt().getStatus().toString();
         var type = "UNRECOGNIZED";
 
@@ -150,11 +152,9 @@ public class RecordStreaming {
         }
 
         final var logString =
-                String.format(
-                        "Consensus timestamp: %s, Block number: %d, Transaction ID: %s, Transaction"
-                                + " type: %s, Status: %s",
-                        consTimestamp, blockNumber, txIdString, type, status);
-        log.info(logString);
+                "Consensus timestamp: {}, Block number: {}, Transaction ID: {}, Transaction"
+                        + " type: {}, Status: {}";
+        log.info(logString, consTimestamp, blockNumber, txIdString, type, status);
     }
 
     @VisibleForTesting
