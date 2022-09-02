@@ -89,9 +89,4 @@ public class HederaCallCodeOperation extends CallCodeOperation {
                 addressValidator,
                 precompiledContractMap);
     }
-
-    @Override
-    protected long gas(final MessageFrame frame) {
-        return Words.clampedToLong(frame.getStackItem(0));
-    }
 }

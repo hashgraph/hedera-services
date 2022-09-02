@@ -73,9 +73,4 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
                 () -> super.execute(frame, evm),
                 addressValidator);
     }
-
-    @Override
-    protected long gas(final MessageFrame frame) {
-        return Words.clampedToLong(frame.getStackItem(0));
-    }
 }
