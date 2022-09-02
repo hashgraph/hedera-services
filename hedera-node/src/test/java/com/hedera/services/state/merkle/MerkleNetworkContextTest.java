@@ -17,29 +17,13 @@ package com.hedera.services.state.merkle;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
 
 import com.google.protobuf.ByteString;
@@ -50,6 +34,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -99,6 +84,8 @@ class MerkleNetworkContextTest {
 
     private GasLimitDeterministicThrottle gasLimitDeterministicThrottle;
     private DeterministicThrottle.UsageSnapshot gasLimitUsageSnapshot;
+    private DeterministicThrottle.UsageSnapshot expiryUsageSnapshot =
+            new DeterministicThrottle.UsageSnapshot(666L, Instant.MAX);
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private MerkleNetworkContext subject;
@@ -137,6 +124,7 @@ class MerkleNetworkContextTest {
 
         subject.setUsageSnapshots(usageSnapshots);
         subject.setGasThrottleUsageSnapshot(gasLimitUsageSnapshot);
+        subject.setExpiryUsageSnapshot(expiryUsageSnapshot);
         subject.setCongestionLevelStarts(congestionStarts());
         subject.setStateVersion(stateVersion);
         subject.updateAutoRenewSummaryCounts(
@@ -230,6 +218,7 @@ class MerkleNetworkContextTest {
         assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
         assertEquals(midnightRateSetCopy, subjectCopy.getMidnightRates());
         assertSame(subjectCopy.usageSnapshots(), subject.usageSnapshots());
+        assertSame(subjectCopy.expiryUsageSnapshot(), subject.expiryUsageSnapshot());
         assertSame(subjectCopy.getCongestionLevelStarts(), subject.getCongestionLevelStarts());
         assertEquals(subjectCopy.getStateVersion(), stateVersion);
         assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
@@ -265,6 +254,7 @@ class MerkleNetworkContextTest {
     void copyWorksWithSyncedThrottles() {
         // setup:
         throttling = mock(FunctionalityThrottling.class);
+        final var expiryThrottle = mock(ExpiryThrottle.class);
         feeMultiplierSource = mock(FeeMultiplierSource.class);
         gasLimitDeterministicThrottle = mock(GasLimitDeterministicThrottle.class);
 
@@ -276,10 +266,12 @@ class MerkleNetworkContextTest {
         given(throttling.allActiveThrottles()).willReturn(List.of(someThrottle));
 
         given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+        given(expiryThrottle.getThrottleSnapshot()).willReturn(expiryUsageSnapshot);
         given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
         given(feeMultiplierSource.congestionLevelStarts()).willReturn(syncedStarts);
         // and:
         subject.syncThrottling(throttling);
+        subject.syncExpiryThrottle(expiryThrottle);
         subject.syncMultiplierSource(feeMultiplierSource);
 
         // when:
@@ -295,6 +287,7 @@ class MerkleNetworkContextTest {
         // and:
         assertEquals(someThrottle.usageSnapshot(), subject.usageSnapshots()[0]);
         assertSame(subjectCopy.usageSnapshots(), subject.usageSnapshots());
+        assertSame(subjectCopy.expiryUsageSnapshot(), subject.expiryUsageSnapshot());
         // and:
         assertEquals(syncedStarts, subject.getCongestionLevelStarts());
         assertSame(subject.getCongestionLevelStarts(), subjectCopy.getCongestionLevelStarts());
@@ -309,9 +302,30 @@ class MerkleNetworkContextTest {
         assertFalse(subjectCopy.isImmutable());
         // and:
         assertNull(subject.getThrottling());
+        assertNull(subject.getExpiryThrottle());
         assertNull(subject.getMultiplierSource());
         assertNull(subjectCopy.getThrottling());
         assertNull(subjectCopy.getMultiplierSource());
+        assertNull(subjectCopy.getExpiryThrottle());
+    }
+
+    @Test
+    void copyWorksWithSyncedThrottlesButNoExpiry() {
+        // setup:
+        throttling = mock(FunctionalityThrottling.class);
+        gasLimitDeterministicThrottle = mock(GasLimitDeterministicThrottle.class);
+
+        final var someThrottle = DeterministicThrottle.withTpsAndBurstPeriod(1, 23);
+        someThrottle.allow(1, Instant.now());
+        final var someStart = Instant.ofEpochSecond(7_654_321L, 0);
+
+        given(throttling.allActiveThrottles()).willReturn(List.of(someThrottle));
+        given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+
+        given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
+        subject.syncThrottling(throttling);
+
+        assertDoesNotThrow(subject::copy);
     }
 
     public static void assertEqualContexts(
@@ -321,6 +335,7 @@ class MerkleNetworkContextTest {
         assertEquals(a.lastScannedEntity(), b.lastScannedEntity());
         assertEquals(a.midnightRates(), b.getMidnightRates());
         assertArrayEquals(a.usageSnapshots(), b.usageSnapshots());
+        assertEquals(a.expiryUsageSnapshot(), b.expiryUsageSnapshot());
         assertArrayEquals(a.getCongestionLevelStarts(), b.getCongestionLevelStarts());
         assertEquals(a.getStateVersion(), b.getStateVersion());
         assertEquals(a.getEntitiesScannedThisSecond(), b.getEntitiesScannedThisSecond());
@@ -344,6 +359,7 @@ class MerkleNetworkContextTest {
         assertThrows(MutabilityException.class, () -> subject.clearAutoRenewSummaryCounts());
         assertThrows(MutabilityException.class, () -> subject.updateCongestionStartsFrom(null));
         assertThrows(MutabilityException.class, () -> subject.updateSnapshotsFrom(null));
+        assertThrows(MutabilityException.class, () -> subject.updateExpirySnapshotFrom(null));
         assertThrows(MutabilityException.class, () -> subject.setStateVersion(1));
         assertThrows(
                 MutabilityException.class, () -> subject.setConsensusTimeOfLastHandledTxn(null));
@@ -409,6 +425,7 @@ class MerkleNetworkContextTest {
     void summarizesUnavailableAsExpected() {
         subject.setCongestionLevelStarts(new Instant[0]);
         subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[0]);
+        subject.setExpiryUsageSnapshot(NEVER_USED_SNAPSHOT);
 
         final var desired =
                 "The network context (state version 13) is,\n"
@@ -422,6 +439,7 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                    + "  Expiry work usage snapshot is              :: <N/A>\n"
                     + "  Throttle usage snapshots are               :: <N/A>\n"
                     + "  Congestion level start times are           :: <N/A>\n"
                     + "  Block number is                            :: 0\n"
@@ -460,6 +478,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                    + "  Expiry work usage snapshot is              :: \n"
+                    + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: <N/A>\n"
                     + "  Congestion level start times are           :: <N/A>\n"
                     + "  Block number is                            :: 2\n"
@@ -485,6 +505,7 @@ class MerkleNetworkContextTest {
         given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
         // and:
         subject.updateSnapshotsFrom(throttling);
+        subject.setExpiryUsageSnapshot(expiryUsageSnapshot);
         subject.setPreparedUpdateFileNum(NO_PREPARED_UPDATE_FILE_NUM);
         // and:
         var desiredWithStateVersion =
@@ -499,6 +520,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                    + "  Expiry work usage snapshot is              :: \n"
+                    + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n"
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
@@ -526,6 +549,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                    + "  Expiry work usage snapshot is              :: \n"
+                    + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n"
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
@@ -552,6 +577,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                    + "  Expiry work usage snapshot is              :: \n"
+                    + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n"
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
@@ -606,6 +633,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                    + "  Expiry work usage snapshot is              :: \n"
+                    + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
                     + "    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n"
@@ -634,6 +663,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                    + "  Expiry work usage snapshot is              :: \n"
+                    + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
                     + "    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n"
@@ -765,6 +796,20 @@ class MerkleNetworkContextTest {
 
         // then:
         assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
+    }
+
+    @Test
+    void resetsExpiryThrottleIfNonNullOnly() {
+        final var throttle = mock(ExpiryThrottle.class);
+        subject.resetExpiryThrottleFromSavedSnapshot(throttle);
+        verify(throttle).resetToSnapshot(expiryUsageSnapshot);
+    }
+
+    @Test
+    void canSyncExpiryThrottling() {
+        final var throttle = mock(ExpiryThrottle.class);
+        subject.syncExpiryThrottle(throttle);
+        assertSame(throttle, subject.getExpiryThrottle());
     }
 
     @Test

@@ -15,6 +15,7 @@
  */
 package com.hedera.services.files.sysfiles;
 
+import static com.hedera.services.context.properties.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
 import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -27,6 +28,7 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
@@ -50,6 +52,7 @@ class ConfigCallbacksTest {
             "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
     private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
 
+    @Mock private ExpiryThrottle expiryThrottle;
     @Mock private AddressBook addressBook;
     @Mock private GlobalDynamicProperties dynamicProps;
     @Mock private PropertySources propertySources;
@@ -68,6 +71,7 @@ class ConfigCallbacksTest {
                         hapiOpPermissions,
                         dynamicProps,
                         propertySources,
+                        expiryThrottle,
                         functionalityThrottling,
                         functionalityThrottling,
                         functionalityThrottling,
@@ -81,8 +85,10 @@ class ConfigCallbacksTest {
     void propertiesCbAsExpected() {
         final var numNodes = 10;
         final var hbarFloat = 50_000_000_000L * 100_000_000L;
+        final var expiryResourceLoc = "something.json";
         givenWellKnownStakingInfos();
         given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(hbarFloat);
+        given(properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE)).willReturn(expiryResourceLoc);
         given(addressBook.getSize()).willReturn(numNodes);
         given(dynamicProps.knownBlockValues()).willReturn(blockValues);
         given(dynamicProps.nodeMaxMinStakeRatios()).willReturn(Map.of(0L, 2L, 1L, 8L));
@@ -94,6 +100,7 @@ class ConfigCallbacksTest {
 
         // then:
         verify(propertySources).reloadFrom(config);
+        verify(expiryThrottle).rebuildFromResource(expiryResourceLoc);
         verify(dynamicProps).reload();
         verify(functionalityThrottling, times(3)).applyGasConfig();
         verify(networkCtx).renumberBlocksToMatch(blockValues);

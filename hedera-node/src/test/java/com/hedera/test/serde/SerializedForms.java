@@ -115,9 +115,10 @@ public class SerializedForms {
     }
 
     private static void generateSerializedData() {
-        for (var entry : GENERATOR_MAPPING.entrySet()) {
-            entry.getValue().run();
-        }
+        GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
+        //        for (var entry : GENERATOR_MAPPING.entrySet()) {
+        //            entry.getValue().run();
+        //        }
     }
 
     private static <T extends SelfSerializable> Map.Entry<Class<T>, Runnable> entry(
@@ -192,7 +193,7 @@ public class SerializedForms {
                             MIN_TEST_CASES_PER_VERSION),
                     entry(
                             MerkleNetworkContext.class,
-                            SeededPropertySource::next0270NetworkContext,
+                            SeededPropertySource::next0300NetworkContext,
                             MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
                     entry(
                             MerkleScheduledTransactionsState.class,

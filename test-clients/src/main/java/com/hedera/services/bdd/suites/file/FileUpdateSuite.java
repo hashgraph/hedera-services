@@ -31,19 +31,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
@@ -73,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -131,6 +120,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 
     private static final String STORAGE_PRICE_TIERS_PROP = "contract.storageSlotPriceTiers";
     private static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
+    public static final String CIVILIAN = "civilian";
+    public static final String TEST_TOPIC = "testTopic";
 
     public static void main(String... args) {
         new FileUpdateSuite().runSuiteSync();
@@ -157,6 +148,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                     chainIdChangesDynamically(),
                     entitiesNotCreatableAfterUsageLimitsReached(),
                     rentItemizedAsExpectedWithOverridePriceTiers(),
+                    messageSubmissionSizeChange()
                 });
     }
 
@@ -267,7 +259,7 @@ public class FileUpdateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec apiPermissionsChangeDynamically() {
-        final var civilian = "civilian";
+        final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
@@ -739,6 +731,39 @@ public class FileUpdateSuite extends HapiApiSuite {
                         overridingTwo(
                                 "staking.fees.nodeRewardPercentage", "10",
                                 "staking.fees.stakingRewardPercentage", "10"));
+    }
+
+    private HapiApiSpec messageSubmissionSizeChange() {
+        final var defaultMaxBytesAllowed = 1024;
+        final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
+
+        return defaultHapiSpec("messageSubmissionSizeChange")
+                .given(newKeyNamed("submitKey"), createTopic(TEST_TOPIC).submitKeyName("submitKey"))
+                .when(
+                        cryptoCreate(CIVILIAN),
+                        submitMessageTo(TEST_TOPIC)
+                                .message("testmessage")
+                                .payingWith(CIVILIAN)
+                                .hasRetryPrecheckFrom(BUSY)
+                                .hasKnownStatus(SUCCESS),
+                        fileUpdate(APP_PROPERTIES)
+                                .payingWith(GENESIS)
+                                .overridingProps(
+                                        Map.of(
+                                                "consensus.message.maxBytesAllowed",
+                                                String.valueOf(defaultMaxBytesAllowed - 1))))
+                .then(
+                        submitMessageTo(TEST_TOPIC)
+                                .message(longMessage)
+                                .payingWith(CIVILIAN)
+                                .hasRetryPrecheckFrom(BUSY)
+                                .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
+                        fileUpdate(APP_PROPERTIES)
+                                .payingWith(GENESIS)
+                                .overridingProps(
+                                        Map.of(
+                                                "consensus.message.maxBytesAllowed",
+                                                String.valueOf(defaultMaxBytesAllowed))));
     }
 
     @Override

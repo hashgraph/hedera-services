@@ -50,8 +50,12 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
+import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
+import com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
@@ -74,17 +78,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.NodeStake;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.*;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collections;
@@ -117,6 +111,44 @@ class SyntheticTxnFactoryTest {
     }
 
     @Test
+    void synthesizesExpectedTreasuryReturns() {
+        final var ftId = EntityId.fromIdentityCode(666);
+        final var nftId = EntityId.fromIdentityCode(777);
+        final var nftAdjusts =
+                new NftAdjustments(
+                        new long[] {1},
+                        List.of(EntityId.fromIdentityCode(2)),
+                        List.of(EntityId.fromIdentityCode(98)));
+        final var fungibleAdjusts =
+                new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
+        final var fungibleReturns =
+                new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
+        final var nonFungibleReturns =
+                new NonFungibleTreasuryReturns(List.of(nftId), List.of(nftAdjusts), true);
+        final var returns = new CryptoGcOutcome(fungibleReturns, nonFungibleReturns, false);
+
+        final var expected =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(ftId.asId().asGrpcToken())
+                                        .addTransfers(aaWith(2, -123))
+                                        .addTransfers(aaWith(98, +123))
+                                        .build())
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(nftId.asId().asGrpcToken())
+                                        .addNftTransfers(nftFromTo(1, 2, 98))
+                                        .build())
+                        .build();
+
+        final var txn = subject.synthTokenTransfer(returns).build();
+        final var op = txn.getCryptoTransfer();
+
+        assertEquals(op, expected);
+    }
+
+    @Test
     void synthesizesExpectedCryptoTransfer() {
         final var adjustments = new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
         final var expected =
@@ -128,7 +160,7 @@ class SyntheticTxnFactoryTest {
                                         .build())
                         .build();
 
-        final var txn = subject.synthCryptoTransfer(adjustments).build();
+        final var txn = subject.synthHbarTransfer(adjustments).build();
         final var op = txn.getCryptoTransfer();
 
         assertEquals(op, expected);
@@ -1115,6 +1147,14 @@ class SyntheticTxnFactoryTest {
         assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
     }
 
+    private NftTransfer nftFromTo(final long num, final long sender, final long receiver) {
+        return NftTransfer.newBuilder()
+                .setSerialNumber(num)
+                .setSenderAccountID(AccountID.newBuilder().setAccountNum(sender).build())
+                .setReceiverAccountID(AccountID.newBuilder().setAccountNum(receiver).build())
+                .build();
+    }
+
     private AccountAmount aaWith(final long num, final long amount) {
         return AccountAmount.newBuilder()
                 .setAccountID(AccountID.newBuilder().setAccountNum(num).build())
@@ -1206,5 +1246,5 @@ class SyntheticTxnFactoryTest {
     private static final byte[] callData = "Between the idea and the reality".getBytes();
     private static final byte[] addressTo = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
     private static final Duration autoRenewPeriod =
-            Duration.newBuilder().setSeconds(6_999_999).build();
+            Duration.newBuilder().setSeconds(2592000).build();
 }

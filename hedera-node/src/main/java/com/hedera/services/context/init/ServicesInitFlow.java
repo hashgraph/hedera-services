@@ -16,6 +16,7 @@
 package com.hedera.services.context.init;
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.properties.BootstrapProperties;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -35,8 +36,8 @@ public class ServicesInitFlow {
         this.entitiesFlow = entitiesFlow;
     }
 
-    public void runWith(ServicesState activeState) {
-        stateFlow.runWith(activeState);
+    public void runWith(final ServicesState activeState, final BootstrapProperties bootstrapProps) {
+        stateFlow.runWith(activeState, bootstrapProps);
         storeFlow.run();
         entitiesFlow.run();
     }

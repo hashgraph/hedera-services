@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosResponse;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.Optional;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -55,7 +56,7 @@ public class GetAccountNftInfosAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         TokenGetAccountNftInfosQuery op = query.getTokenGetAccountNftInfos();
         TokenGetAccountNftInfosResponse.Builder response =
                 TokenGetAccountNftInfosResponse.newBuilder();

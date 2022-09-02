@@ -25,6 +25,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -52,6 +53,19 @@ public class NftAdjustments implements SelfSerializable {
         this.serialNums = serialNums;
         this.senderAccIds = senderAccIds;
         this.receiverAccIds = receiverAccIds;
+    }
+
+    public void appendAdjust(
+            final EntityId senderId, final EntityId receiverId, final long serialNo) {
+        final var newSerialNums = new long[serialNums.length + 1];
+        System.arraycopy(serialNums, 0, newSerialNums, 0, serialNums.length);
+        newSerialNums[serialNums.length] = serialNo;
+        serialNums = newSerialNums;
+
+        senderAccIds = new ArrayList<>(senderAccIds);
+        senderAccIds.add(senderId);
+        receiverAccIds = new ArrayList<>(receiverAccIds);
+        receiverAccIds.add(receiverId);
     }
 
     @Override
@@ -112,17 +126,16 @@ public class NftAdjustments implements SelfSerializable {
     public TokenTransferList toGrpc() {
         var grpc = TokenTransferList.newBuilder();
         IntStream.range(0, serialNums.length)
-                .mapToObj(
-                        i ->
-                                NftTransfer.newBuilder()
-                                        .setSerialNumber(serialNums[i])
-                                        .setSenderAccountID(
-                                                EntityIdUtils.asAccount(senderAccIds.get(i)))
-                                        .setReceiverAccountID(
-                                                EntityIdUtils.asAccount(receiverAccIds.get(i))))
+                .mapToObj(this::transferBuilderFor)
                 .forEach(grpc::addNftTransfers);
 
         return grpc.build();
+    }
+
+    public void addToGrpc(final TokenTransferList.Builder builder) {
+        for (int i = 0; i < serialNums.length; i++) {
+            builder.addNftTransfers(transferBuilderFor(i));
+        }
     }
 
     public static NftAdjustments fromGrpc(List<NftTransfer> grpc) {
@@ -142,5 +155,12 @@ public class NftAdjustments implements SelfSerializable {
                         .toList();
 
         return pojo;
+    }
+
+    private NftTransfer.Builder transferBuilderFor(final int i) {
+        return NftTransfer.newBuilder()
+                .setSerialNumber(serialNums[i])
+                .setSenderAccountID(EntityIdUtils.asAccount(senderAccIds.get(i)))
+                .setReceiverAccountID(EntityIdUtils.asAccount(receiverAccIds.get(i)));
     }
 }

@@ -69,16 +69,16 @@ class UniqueTokensLinkManagerTest {
         setUpEntities();
         setUpMaps();
 
-        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftId());
+        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftTokenNum());
         assertEquals(serialNum1, accounts.get(oldOwner).getHeadNftSerialNum());
 
         subject.updateLinks(oldOwner, newOwner, nftKey1);
 
         assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftKey2).getPrev());
         assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftKey1).getNext());
-        assertEquals(tokenNum, accounts.get(newOwner).getHeadNftId());
+        assertEquals(tokenNum, accounts.get(newOwner).getHeadNftTokenNum());
         assertEquals(serialNum1, accounts.get(newOwner).getHeadNftSerialNum());
-        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftId());
+        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftTokenNum());
         assertEquals(serialNum2, accounts.get(oldOwner).getHeadNftSerialNum());
     }
 
@@ -87,16 +87,16 @@ class UniqueTokensLinkManagerTest {
         setUpEntities();
         setUpMaps();
 
-        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftId());
+        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftTokenNum());
         assertEquals(serialNum1, accounts.get(oldOwner).getHeadNftSerialNum());
 
         subject.updateLinks(oldOwner, newOwner, nftKey2);
 
         assertEquals(nftNumPair1, uniqueTokens.get(nftKey3).getPrev());
         assertEquals(nftNumPair3, uniqueTokens.get(nftKey1).getNext());
-        assertEquals(tokenNum, accounts.get(newOwner).getHeadNftId());
+        assertEquals(tokenNum, accounts.get(newOwner).getHeadNftTokenNum());
         assertEquals(serialNum2, accounts.get(newOwner).getHeadNftSerialNum());
-        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftId());
+        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftTokenNum());
         assertEquals(serialNum1, accounts.get(oldOwner).getHeadNftSerialNum());
     }
 
@@ -113,7 +113,7 @@ class UniqueTokensLinkManagerTest {
 
         assertDoesNotThrow(() -> subject.updateLinks(treasury, newOwner, nftKey1));
 
-        assertEquals(tokenNum, accounts.get(newOwner).getHeadNftId());
+        assertEquals(tokenNum, accounts.get(newOwner).getHeadNftTokenNum());
         assertEquals(serialNum1, accounts.get(newOwner).getHeadNftSerialNum());
         assertEquals(nftNumPair1, uniqueTokens.get(nftKey2).getPrev());
         assertEquals(nftNumPair2, uniqueTokens.get(nftKey1).getNext());
@@ -128,7 +128,7 @@ class UniqueTokensLinkManagerTest {
 
         assertEquals(nftNumPair1, uniqueTokens.get(nftKey3).getPrev());
         assertEquals(nftNumPair3, uniqueTokens.get(nftKey1).getNext());
-        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftId());
+        assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftTokenNum());
         assertEquals(serialNum1, accounts.get(oldOwner).getHeadNftSerialNum());
     }
 
@@ -149,7 +149,7 @@ class UniqueTokensLinkManagerTest {
         assertSame(updatedNft2, mintedNft);
         assertEquals(nftNumPair1, updatedNft2.getNext());
         final var updatedOwner = accounts.get(newOwner);
-        assertEquals(tokenNum, updatedOwner.getHeadNftId());
+        assertEquals(tokenNum, updatedOwner.getHeadNftTokenNum());
         assertEquals(serialNum2, updatedOwner.getHeadNftSerialNum());
     }
 

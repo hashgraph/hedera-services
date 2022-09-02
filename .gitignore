@@ -60,6 +60,7 @@ hs_err_pid*
 !hedera-node/src/test/resources/legacyAccounts.json
 !hedera-node/src/test/resources/bootstrap/*.json
 !hedera-node/src/main/resources/*.json
+!hedera-node/src/test/resources/testfiles/expiry-throttle.json
 !hedera-node/configuration/**/*.json
 !test-clients/src/main/resource/FeeSchedule.json
 !test-clients/src/main/resource/testSystemFiles/*.json
