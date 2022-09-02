@@ -20,6 +20,7 @@ import com.google.common.collect.Multimap;
 import com.hedera.services.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.sun.nio.file.SensitivityWatchEventModifier;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -49,12 +50,20 @@ public class SidecarWatcher {
     private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
     private final Multimap<String, MismatchedSidecar> failedSidecars = HashMultimap.create();
 
-    private boolean shouldTerminateAfterNextSidecar = false;
+    private boolean noMoreIncomingExpectedSidecars = false;
     private boolean hasSeenFirst = false;
+    // watch service creates 2 notifications for each sidecar
+    // parsing the sidecar on the first notification throws an
+    // exception, since the file is not finalized at that point,
+    // so we need to know when the 2nd one is and only then parse
+    private boolean firstSidecarNotifyEventSeen = false;
 
     public void prepareInfrastructure() throws IOException {
         watchService = FileSystems.getDefault().newWatchService();
-        recordStreamFolderPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+        recordStreamFolderPath.register(
+                watchService,
+                new WatchEvent.Kind[] {StandardWatchEventKinds.ENTRY_MODIFY},
+                SensitivityWatchEventModifier.MEDIUM);
     }
 
     public void watch() throws IOException {
@@ -82,15 +91,17 @@ public class SidecarWatcher {
                 final var ev = (WatchEvent<Path>) event;
                 final var filename = ev.context();
                 final var child = recordStreamFolderPath.resolve(filename);
-                log.debug("Record stream file created -> {} ", child.getFileName());
-                final var newFilePath = child.toAbsolutePath().toString();
+                final var newFilePath = child.toString();
                 if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
-                    log.info("We have a new sidecar.");
-                    final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
-                    onNewSidecarFile(sidecarFile);
-                    if (shouldTerminateAfterNextSidecar) {
-                        return;
+                    if (firstSidecarNotifyEventSeen) {
+                        log.info("New sidecar file: {}", child.getFileName());
+                        final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
+                        onNewSidecarFile(sidecarFile);
+                        if (expectedSidecars.isEmpty() && noMoreIncomingExpectedSidecars) {
+                            return;
+                        }
                     }
+                    firstSidecarNotifyEventSeen = !firstSidecarNotifyEventSeen;
                 }
             }
             // Reset the key -- this step is critical if you want to
@@ -148,8 +159,8 @@ public class SidecarWatcher {
         }
     }
 
-    public void finishWatchingAfterNextSidecar() {
-        shouldTerminateAfterNextSidecar = true;
+    public void setSuiteFinished() {
+        noMoreIncomingExpectedSidecars = true;
     }
 
     public void addExpectedSidecar(final ExpectedSidecar newExpectedSidecar) {
