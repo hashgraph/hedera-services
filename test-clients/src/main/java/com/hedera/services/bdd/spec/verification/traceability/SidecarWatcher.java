@@ -63,7 +63,7 @@ public class SidecarWatcher {
         recordStreamFolderPath.register(
                 watchService,
                 new WatchEvent.Kind[] {StandardWatchEventKinds.ENTRY_MODIFY},
-                SensitivityWatchEventModifier.MEDIUM);
+                SensitivityWatchEventModifier.HIGH);
     }
 
     public void watch() throws IOException {
