@@ -82,7 +82,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
-    private Association decodeMultipleAssociations(
+    public static Association decodeMultipleAssociations(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);

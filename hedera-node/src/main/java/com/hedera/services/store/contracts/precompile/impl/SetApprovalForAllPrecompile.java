@@ -106,7 +106,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
-        setApprovalForAllWrapper = decodeSetApprovalForAll(nestedInput, aliasResolver);
+        setApprovalForAllWrapper = decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
         transactionBody =
                 syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper);
         return transactionBody;
@@ -169,9 +169,11 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
                 .build();
     }
 
-    private SetApprovalForAllWrapper decodeSetApprovalForAll(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var offset = tokenId == null ? 1 : 0;
+    public static SetApprovalForAllWrapper decodeSetApprovalForAll(
+            final Bytes input,
+            final TokenID impliedTokenId,
+            final UnaryOperator<byte[]> aliasResolver) {
+        final var offset = impliedTokenId == null ? 1 : 0;
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,
@@ -181,13 +183,15 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
                         offset == 0
                                 ? ERC_SET_APPROVAL_FOR_ALL_DECODER
                                 : HAPI_SET_APPROVAL_FOR_ALL_DECODER);
-        final var tId =
-                offset == 0 ? tokenId : convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenId =
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final var to =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
         final var approved = (boolean) decodedArguments.get(offset + 1);
 
-        return new SetApprovalForAllWrapper(tId, to, approved);
+        return new SetApprovalForAllWrapper(tokenId, to, approved);
     }
 }

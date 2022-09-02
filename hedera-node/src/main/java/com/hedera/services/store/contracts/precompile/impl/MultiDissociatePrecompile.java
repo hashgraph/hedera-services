@@ -82,7 +82,7 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
-    private Dissociation decodeMultipleDissociations(
+    public static Dissociation decodeMultipleDissociations(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);

@@ -93,7 +93,7 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
         return pricingUtils.getMinimumPriceInTinybars(GRANT_KYC, consensusTime);
     }
 
-    private GrantRevokeKycWrapper decodeGrantTokenKyc(
+    public static GrantRevokeKycWrapper decodeGrantTokenKyc(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

@@ -27,8 +27,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.impl.PausePrecompile.decodePause;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -58,8 +60,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.PauseLogic;
@@ -85,10 +87,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -101,7 +106,6 @@ class PausePrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private PauseLogic pauseLogic;
     @Mock private SideEffectsTracker sideEffects;
@@ -137,8 +141,15 @@ class PausePrecompileTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    private static final Bytes FUNGIBLE_PAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x7c41ad2c000000000000000000000000000000000000000000000000000000000000043d");
+    private static final Bytes NON_FUNGIBLE_PAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x7c41ad2c0000000000000000000000000000000000000000000000000000000000000445");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<PausePrecompile> pausePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -160,7 +171,6 @@ class PausePrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -172,6 +182,12 @@ class PausePrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        pausePrecompile = Mockito.mockStatic(PausePrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        pausePrecompile.close();
     }
 
     @Test
@@ -221,7 +237,7 @@ class PausePrecompileTest {
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
-        given(decoder.decodePause(pretendArguments)).willReturn(fungiblePause);
+        pausePrecompile.when(() -> decodePause(pretendArguments)).thenReturn(fungiblePause);
         given(syntheticTxnFactory.createPause(fungiblePause))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -241,9 +257,25 @@ class PausePrecompileTest {
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
 
+    @Test
+    void decodeFungiblePauseInput() {
+        pausePrecompile.when(() -> decodePause(FUNGIBLE_PAUSE_INPUT)).thenCallRealMethod();
+        final var decodedInput = decodePause(FUNGIBLE_PAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeNonFungiblePauseInput() {
+        pausePrecompile.when(() -> decodePause(NON_FUNGIBLE_PAUSE_INPUT)).thenCallRealMethod();
+        final var decodedInput = decodePause(NON_FUNGIBLE_PAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
     private void givenFungibleFrameContext() {
         givenFrameContext();
-        given(decoder.decodePause(pretendArguments)).willReturn(fungiblePause);
+        pausePrecompile.when(() -> decodePause(pretendArguments)).thenReturn(fungiblePause);
         given(syntheticTxnFactory.createPause(fungiblePause)).willReturn(mockSynthBodyBuilder);
     }
 

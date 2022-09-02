@@ -114,7 +114,7 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
         unpauseLogic.unpause(tokenId);
     }
 
-    private UnpauseWrapper decodeUnpause(final Bytes input) {
+    public static UnpauseWrapper decodeUnpause(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, UNPAUSE_TOKEN_SELECTOR, UNPAUSE_TOKEN_DECODER);
 

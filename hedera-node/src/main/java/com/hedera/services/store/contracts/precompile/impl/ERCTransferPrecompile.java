@@ -119,9 +119,17 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         transferOp =
                 switch (nestedInput.getInt(0)) {
                     case AbiConstants.ABI_ID_ERC_TRANSFER -> decodeERCTransfer(
-                            nestedInput, aliasResolver);
-                    case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> decodeERCTransferFrom(
-                            nestedInput, aliasResolver);
+                            nestedInput, tokenID, callerAccountID, aliasResolver);
+                    case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
+                        final var operatorId = EntityId.fromGrpcAccountId(callerAccountID);
+                        yield decodeERCTransferFrom(
+                                nestedInput,
+                                tokenID,
+                                isFungible,
+                                aliasResolver,
+                                ledgers,
+                                operatorId);
+                    }
                     default -> null;
                 };
 
@@ -152,56 +160,64 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         }
     }
 
-    private List<TokenTransferWrapper> decodeERCTransfer(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static List<TokenTransferWrapper> decodeERCTransfer(
+        final Bytes input,
+        final TokenID token,
+        final AccountID caller,
+        final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
+            decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
 
         final var recipient =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+            convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
         final var amount = (BigInteger) decodedArguments.get(1);
 
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-        addSignedAdjustment(fungibleTransfers, tokenID, recipient, amount.longValue());
-        addSignedAdjustment(fungibleTransfers, tokenID, callerAccountID, -amount.longValue());
+        addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValue());
+        addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValue());
 
         return Collections.singletonList(
-                new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+            new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
     }
 
-    private List<TokenTransferWrapper> decodeERCTransferFrom(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static List<TokenTransferWrapper> decodeERCTransferFrom(
+        final Bytes input,
+        final TokenID token,
+        final boolean isFungible,
+        final UnaryOperator<byte[]> aliasResolver,
+        final WorldLedgers ledgers,
+        final EntityId operatorId) {
         final Tuple decodedArguments =
-                decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
+            decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
 
         final var from =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+            convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
         final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
         if (isFungible) {
             final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers =
-                    new ArrayList<>();
+                new ArrayList<>();
             final var amount = (BigInteger) decodedArguments.get(2);
-            addSignedAdjustment(fungibleTransfers, tokenID, to, amount.longValue());
-            if (from.equals(callerAccountID)) {
-                addSignedAdjustment(fungibleTransfers, tokenID, from, -amount.longValue());
+            addSignedAdjustment(fungibleTransfers, token, to, amount.longValue());
+            if (from.equals(operatorId.toGrpcAccountId())) {
+                addSignedAdjustment(fungibleTransfers, token, from, -amount.longValue());
             } else {
-                addApprovedAdjustment(fungibleTransfers, tokenID, from, -amount.longValue());
+                addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValue());
             }
             return Collections.singletonList(
-                    new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+                new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
         } else {
             final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
             final var serialNo = ((BigInteger) decodedArguments.get(2)).longValue();
-            final var ownerId = ledgers.ownerIfPresent(NftId.fromGrpc(tokenID, serialNo));
-            if (EntityId.fromGrpcAccountId(callerAccountID).equals(ownerId)) {
+            final var ownerId = ledgers.ownerIfPresent(NftId.fromGrpc(token, serialNo));
+            if (operatorId.equals(ownerId)) {
                 nonFungibleTransfers.add(
-                        new SyntheticTxnFactory.NftExchange(serialNo, tokenID, from, to));
+                    new SyntheticTxnFactory.NftExchange(serialNo, token, from, to));
             } else {
                 nonFungibleTransfers.add(
-                        SyntheticTxnFactory.NftExchange.fromApproval(serialNo, tokenID, from, to));
+                    SyntheticTxnFactory.NftExchange.fromApproval(serialNo, token, from, to));
             }
             return Collections.singletonList(
-                    new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
+                new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
         }
     }
 

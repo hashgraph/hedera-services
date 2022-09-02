@@ -25,7 +25,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapperWithInvalidTokenID;
+import static com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile.decodeUpdateTokenExpiryInfo;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -54,8 +57,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -75,10 +78,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,7 +95,6 @@ class UpdateTokenExpiryInfoPrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private TokenUpdateLogic updateLogic;
     @Mock private SideEffectsTracker sideEffects;
@@ -119,8 +124,12 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
+    public static final Bytes UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT =
+            Bytes.fromHexString(
+                    "0x593d6e8200000000000000000000000000000000000000000000000000000000000008d300000000000000000000000000000000000000000000000000000000bbf7edc700000000000000000000000000000000000000000000000000000000000008d000000000000000000000000000000000000000000000000000000000002820a8");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<UpdateTokenExpiryInfoPrecompile> updateTokenExpiryInfoPrecompile;
 
     @BeforeEach
     void setUp() {
@@ -138,7 +147,6 @@ class UpdateTokenExpiryInfoPrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -147,15 +155,22 @@ class UpdateTokenExpiryInfoPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        updateTokenExpiryInfoPrecompile = Mockito.mockStatic(UpdateTokenExpiryInfoPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        updateTokenExpiryInfoPrecompile.close();
     }
 
     @Test
     void updateTokenExpiryInfoHappyPath() {
         // given
         final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO));
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
@@ -174,6 +189,9 @@ class UpdateTokenExpiryInfoPrecompileTest {
     @Test
     void updateTokenExpiryInfoFailsWithInvalidTokenID() {
         // given
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO));
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -185,8 +203,9 @@ class UpdateTokenExpiryInfoPrecompileTest {
         given(worldUpdater.aliases()).willReturn(aliases);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(decoder.decodeUpdateTokenExpiryInfo(any(), any()))
-                .willReturn(tokenUpdateExpiryInfoWrapperWithInvalidTokenID);
+        updateTokenExpiryInfoPrecompile
+                .when(() -> decodeUpdateTokenExpiryInfo(any(), any()))
+                .thenReturn(tokenUpdateExpiryInfoWrapperWithInvalidTokenID);
         givenPricingUtilsContext();
         // when
         subject.prepareFields(frame);
@@ -195,6 +214,23 @@ class UpdateTokenExpiryInfoPrecompileTest {
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(invalidTokenIdResult, result);
+    }
+
+    @Test
+    void decodeUpdateExpiryInfoForTokenInput() {
+        updateTokenExpiryInfoPrecompile
+                .when(
+                        () ->
+                                decodeUpdateTokenExpiryInfo(
+                                        UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity()))
+                .thenCallRealMethod();
+        final var decodedInput =
+                decodeUpdateTokenExpiryInfo(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity());
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.expiry().second() > 0);
+        assertTrue(decodedInput.expiry().autoRenewAccount().getAccountNum() > 0);
+        assertTrue(decodedInput.expiry().autoRenewPeriod() > 0);
     }
 
     private void givenFrameContext() {
@@ -226,8 +262,9 @@ class UpdateTokenExpiryInfoPrecompileTest {
                                 hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
         given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
-        given(decoder.decodeUpdateTokenExpiryInfo(any(), any()))
-                .willReturn(tokenUpdateExpiryInfoWrapper);
+        updateTokenExpiryInfoPrecompile
+                .when(() -> decodeUpdateTokenExpiryInfo(any(), any()))
+                .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()

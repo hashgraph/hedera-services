@@ -138,7 +138,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
         operatorId = EntityId.fromAddress(senderAddress);
-        approveOp = decodeTokenApprove(nestedInput, aliasResolver);
+        approveOp = decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver, ledgers);
         if (approveOp.isFungible()) {
             transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp);
             return transactionBody;
@@ -251,28 +251,32 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         }
     }
 
-    private ApproveWrapper decodeTokenApprove(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static ApproveWrapper decodeTokenApprove(
+            final Bytes input,
+            final TokenID impliedTokenId,
+            final boolean isFungible,
+            final UnaryOperator<byte[]> aliasResolver,
+            WorldLedgers ledgers) {
 
-        final var offset = tokenId == null ? 1 : 0;
+        final var offset = impliedTokenId == null ? 1 : 0;
         final Tuple decodedArguments;
-        final TokenID tId;
+        final TokenID tokenId;
         if (offset == 0) {
             decodedArguments =
                     decodeFunctionCall(
                             input, ERC_TOKEN_APPROVE_SELECTOR, ERC_TOKEN_APPROVE_DECODER);
-            tId = tokenId;
+            tokenId = impliedTokenId;
         } else if (isFungible) {
             decodedArguments =
                     decodeFunctionCall(
                             input, HAPI_TOKEN_APPROVE_SELECTOR, HAPI_TOKEN_APPROVE_DECODER);
-            tId = convertAddressBytesToTokenID(decodedArguments.get(0));
+            tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
         } else {
             decodedArguments =
                     decodeFunctionCall(input, HAPI_APPROVE_NFT_SELECTOR, HAPI_APPROVE_NFT_DECODER);
-            tId = convertAddressBytesToTokenID(decodedArguments.get(0));
+            tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
         }
-        final var ledgerFungible = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tId));
+        final var ledgerFungible = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
         final var spender =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
         if (isFungible) {
@@ -280,13 +284,13 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                 throw new IllegalArgumentException("Token is not a fungible token");
             }
             final var amount = (BigInteger) decodedArguments.get(offset + 1);
-            return new ApproveWrapper(tId, spender, amount, BigInteger.ZERO, isFungible);
+            return new ApproveWrapper(tokenId, spender, amount, BigInteger.ZERO, isFungible);
         } else {
             if (ledgerFungible) {
                 throw new IllegalArgumentException("Token is not an NFT");
             }
             final var serialNumber = (BigInteger) decodedArguments.get(offset + 1);
-            return new ApproveWrapper(tId, spender, BigInteger.ZERO, serialNumber, isFungible);
+            return new ApproveWrapper(tokenId, spender, BigInteger.ZERO, serialNumber, isFungible);
         }
     }
 

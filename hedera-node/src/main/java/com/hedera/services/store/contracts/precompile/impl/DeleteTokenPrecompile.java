@@ -118,7 +118,7 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
         deleteLogic.delete(deleteOp.tokenID());
     }
 
-    private DeleteWrapper decodeDelete(final Bytes input) {
+    public static DeleteWrapper decodeDelete(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, DELETE_TOKEN_SELECTOR, DELETE_TOKEN_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));

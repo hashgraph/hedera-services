@@ -94,7 +94,7 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
         return pricingUtils.getMinimumPriceInTinybars(REVOKE_KYC, consensusTime);
     }
 
-    private GrantRevokeKycWrapper decodeRevokeTokenKyc(
+    public static GrantRevokeKycWrapper decodeRevokeTokenKyc(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

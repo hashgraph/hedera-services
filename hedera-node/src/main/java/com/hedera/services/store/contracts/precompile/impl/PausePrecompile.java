@@ -112,7 +112,7 @@ public class PausePrecompile extends AbstractWritePrecompile {
         pauseLogic.pause(tokenId);
     }
 
-    private PauseWrapper decodePause(final Bytes input) {
+    public static PauseWrapper decodePause(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, PAUSE_TOKEN_SELECTOR, PAUSE_TOKEN_DECODER);
 

@@ -22,7 +22,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.grantRevokeKycWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.impl.IsKycPrecompile.decodeIsKyc;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -50,8 +53,8 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.IsKycPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -68,10 +71,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -81,7 +87,6 @@ class IsKycPrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -108,7 +113,11 @@ class IsKycPrecompileTest {
 
     @Mock private AssetsLoader assetLoader;
 
+    public static final Bytes IS_KYC =
+            Bytes.fromHexString(
+                    "0xf2c31ff400000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
     private HTSPrecompiledContract subject;
+    private MockedStatic<IsKycPrecompile> isKycPrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -126,7 +135,6 @@ class IsKycPrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -135,6 +143,12 @@ class IsKycPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
+        isKycPrecompile = Mockito.mockStatic(IsKycPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        isKycPrecompile.close();
     }
 
     @Test
@@ -146,7 +160,7 @@ class IsKycPrecompileTest {
         final var successOutput =
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000"
-                            + "00000000000000000000000000000000000000000000000000001");
+                                + "00000000000000000000000000000000000000000000000000001");
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_IS_KYC)), fungibleTokenAddr, accountAddr);
@@ -158,7 +172,7 @@ class IsKycPrecompileTest {
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_KYC));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
-        given(decoder.decodeIsKyc(any(), any())).willReturn(grantRevokeKycWrapper);
+        isKycPrecompile.when(() -> decodeIsKyc(any(), any())).thenReturn(grantRevokeKycWrapper);
         given(encoder.encodeIsKyc(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(tokenRels.get(any(), any())).willReturn(Boolean.TRUE);
@@ -172,6 +186,15 @@ class IsKycPrecompileTest {
 
         // then
         assertEquals(successOutput, result);
+    }
+
+    @Test
+    void decodeIsKycInput() {
+        isKycPrecompile.when(() -> decodeIsKyc(IS_KYC, identity())).thenCallRealMethod();
+        final var decodedInput = decodeIsKyc(IS_KYC, identity());
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+        assertTrue(decodedInput.account().getAccountNum() > 0);
     }
 
     private void givenMinimalFrameContext() {

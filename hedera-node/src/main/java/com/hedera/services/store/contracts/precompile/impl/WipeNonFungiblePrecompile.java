@@ -80,7 +80,7 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
         return pricingUtils.getMinimumPriceInTinybars(WIPE_NFT, consensusTime);
     }
 
-    private WipeWrapper decodeWipeNFT(
+    public static WipeWrapper decodeWipeNFT(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

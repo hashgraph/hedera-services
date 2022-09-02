@@ -48,7 +48,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
@@ -58,6 +57,18 @@ import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrappe
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenKeyPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenTypePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsFrozenPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsKycPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsTokenPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -78,10 +89,13 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,7 +103,6 @@ class ViewExecutorTest {
 
     @Mock private MessageFrame frame;
     @Mock private EncodingFacade encodingFacade;
-    @Mock private DecodingFacade decodingFacade;
     @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private BlockValues blockValues;
     @Mock private StateView stateView;
@@ -125,6 +138,18 @@ class ViewExecutorTest {
     private Bytes isFrozenEncoded;
 
     ViewExecutor subject;
+    private MockedStatic<GetTokenDefaultFreezeStatus> getTokenDefaultFreezeStatus;
+    private MockedStatic<GetTokenDefaultKycStatus> getTokenDefaultKycStatus;
+    private MockedStatic<IsKycPrecompile> isKycPrecompile;
+    private MockedStatic<TokenInfoPrecompile> tokenInfoPrecompile;
+    private MockedStatic<FungibleTokenInfoPrecompile> fungibleTokenInfoPrecompile;
+    private MockedStatic<NonFungibleTokenInfoPrecompile> nonFungibleTokenInfoPrecompile;
+    private MockedStatic<IsFrozenPrecompile> isFrozenPrecompile;
+    private MockedStatic<TokenGetCustomFeesPrecompile> tokenGetCustomFeesPrecompile;
+    private MockedStatic<GetTokenKeyPrecompile> getTokenKeyPrecompile;
+    private MockedStatic<IsTokenPrecompile> isTokenPrecompile;
+    private MockedStatic<GetTokenTypePrecompile> getTokenTypePrecompile;
+    private MockedStatic<GetTokenExpiryInfoPrecompile> getTokenExpiryInfoPrecompile;
 
     private static final Bytes RETURN_SUCCESS_TRUE =
             Bytes.fromHexString(
@@ -156,7 +181,35 @@ class ViewExecutorTest {
         isFrozenEncoded =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000"
-                            + "000000000000000000000000001");
+                                + "000000000000000000000000001");
+        getTokenDefaultFreezeStatus = Mockito.mockStatic(GetTokenDefaultFreezeStatus.class);
+        getTokenDefaultKycStatus = Mockito.mockStatic(GetTokenDefaultKycStatus.class);
+        isKycPrecompile = Mockito.mockStatic(IsKycPrecompile.class);
+        tokenInfoPrecompile = Mockito.mockStatic(TokenInfoPrecompile.class);
+        fungibleTokenInfoPrecompile = Mockito.mockStatic(FungibleTokenInfoPrecompile.class);
+        nonFungibleTokenInfoPrecompile = Mockito.mockStatic(NonFungibleTokenInfoPrecompile.class);
+        isFrozenPrecompile = Mockito.mockStatic(IsFrozenPrecompile.class);
+        tokenGetCustomFeesPrecompile = Mockito.mockStatic(TokenGetCustomFeesPrecompile.class);
+        getTokenKeyPrecompile = Mockito.mockStatic(GetTokenKeyPrecompile.class);
+        isTokenPrecompile = Mockito.mockStatic(IsTokenPrecompile.class);
+        getTokenTypePrecompile = Mockito.mockStatic(GetTokenTypePrecompile.class);
+        getTokenExpiryInfoPrecompile = Mockito.mockStatic(GetTokenExpiryInfoPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        getTokenDefaultFreezeStatus.close();
+        getTokenDefaultKycStatus.close();
+        isKycPrecompile.close();
+        tokenInfoPrecompile.close();
+        fungibleTokenInfoPrecompile.close();
+        nonFungibleTokenInfoPrecompile.close();
+        isFrozenPrecompile.close();
+        tokenGetCustomFeesPrecompile.close();
+        getTokenKeyPrecompile.close();
+        isTokenPrecompile.close();
+        getTokenTypePrecompile.close();
+        getTokenExpiryInfoPrecompile.close();
     }
 
     private ByteString fromString(final String value) {
@@ -169,7 +222,9 @@ class ViewExecutorTest {
                 prerequisites(ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS, fungibleTokenAddress);
 
         final var wrapper = new GetTokenDefaultFreezeStatusWrapper(fungible);
-        given(decodingFacade.decodeTokenDefaultFreezeStatus(input)).willReturn(wrapper);
+        getTokenDefaultFreezeStatus
+                .when(() -> GetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input))
+                .thenReturn(wrapper);
         given(encodingFacade.encodeGetTokenDefaultFreezeStatus(anyBoolean()))
                 .willReturn(RETURN_SUCCESS_TRUE);
 
@@ -181,7 +236,9 @@ class ViewExecutorTest {
         final var input = prerequisites(ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS, fungibleTokenAddress);
 
         final var wrapper = new GetTokenDefaultKycStatusWrapper(fungible);
-        given(decodingFacade.decodeTokenDefaultKycStatus(input)).willReturn(wrapper);
+        getTokenDefaultKycStatus
+                .when(() -> GetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input))
+                .thenReturn(wrapper);
         given(encodingFacade.encodeGetTokenDefaultKycStatus(anyBoolean()))
                 .willReturn(RETURN_SUCCESS_TRUE);
 
@@ -193,7 +250,7 @@ class ViewExecutorTest {
         final var input = prerequisites(ABI_ID_IS_KYC, fungibleTokenAddress);
 
         final var wrapper = new GrantRevokeKycWrapper(fungible, account);
-        given(decodingFacade.decodeIsKyc(any(), any())).willReturn(wrapper);
+        isKycPrecompile.when(() -> IsKycPrecompile.decodeIsKyc(any(), any())).thenReturn(wrapper);
         given(encodingFacade.encodeIsKyc(anyBoolean())).willReturn(RETURN_SUCCESS_TRUE);
 
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
@@ -204,7 +261,9 @@ class ViewExecutorTest {
         final var input = prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
-        given(decodingFacade.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> TokenInfoPrecompile.decodeGetTokenInfo(input))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
         given(encodingFacade.encodeGetTokenInfo(any())).willReturn(tokenInfoEncoded);
@@ -217,7 +276,9 @@ class ViewExecutorTest {
         final var input = prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungible);
-        given(decodingFacade.decodeGetFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
+        fungibleTokenInfoPrecompile
+                .when(() -> FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
         given(encodingFacade.encodeGetFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
@@ -231,7 +292,9 @@ class ViewExecutorTest {
                 prerequisites(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, nonfungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
-        given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
+        nonFungibleTokenInfoPrecompile
+                .when(() -> NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(nonfungibletoken)).willReturn(Optional.of(tokenInfo));
         given(
@@ -252,7 +315,9 @@ class ViewExecutorTest {
         final var input = prerequisites(ABI_ID_IS_FROZEN, fungibleTokenAddress);
 
         final var isFrozenWrapper = TokenFreezeUnfreezeWrapper.forIsFrozen(fungible, account);
-        given(decodingFacade.decodeIsFrozen(any(), any())).willReturn(isFrozenWrapper);
+        isFrozenPrecompile
+                .when(() -> IsFrozenPrecompile.decodeIsFrozen(any(), any()))
+                .thenReturn(isFrozenWrapper);
         given(ledgers.isFrozen(account, fungible)).willReturn(true);
         given(encodingFacade.encodeIsFrozen(true)).willReturn(isFrozenEncoded);
 
@@ -266,8 +331,9 @@ class ViewExecutorTest {
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000036000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000900000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000378000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000000");
 
-        given(decodingFacade.decodeTokenGetCustomFees(input))
-                .willReturn(new TokenGetCustomFeesWrapper(fungible));
+        tokenGetCustomFeesPrecompile
+                .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
+                .thenReturn(new TokenGetCustomFeesWrapper(fungible));
         given(stateView.tokenCustomFees(fungible)).willReturn(getCustomFees());
         given(stateView.tokenExists(fungible)).willReturn(true);
         given(encodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
@@ -281,8 +347,9 @@ class ViewExecutorTest {
         final var getTokenKeyEncoded =
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000209e417334d2ea6be459624060e3efdc1b459a884bc6a9c232349af35e9060ed620000000000000000000000000000000000000000000000000000000000000000");
-        given(decodingFacade.decodeGetTokenKey(input))
-                .willReturn(new GetTokenKeyWrapper(fungible, 1));
+        getTokenKeyPrecompile
+                .when(() -> GetTokenKeyPrecompile.decodeGetTokenKey(input))
+                .thenReturn(new GetTokenKeyWrapper(fungible, 1));
         given(stateView.tokenExists(fungible)).willReturn(true);
         given(ledgers.tokens()).willReturn(tokens);
         given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
@@ -303,8 +370,9 @@ class ViewExecutorTest {
     void computeGetTokenCustomFeesThrowsWhenTokenDoesNotExists() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_CUSTOM_FEES, fungibleTokenAddress);
 
-        given(decodingFacade.decodeTokenGetCustomFees(input))
-                .willReturn(new TokenGetCustomFeesWrapper(fungible));
+        tokenGetCustomFeesPrecompile
+                .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
+                .thenReturn(new TokenGetCustomFeesWrapper(fungible));
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
     }
@@ -313,7 +381,9 @@ class ViewExecutorTest {
     void computeIsToken() {
         final var input = prerequisites(ABI_ID_IS_TOKEN, fungibleTokenAddress);
         final var isTokenWrapper = TokenInfoWrapper.forToken(fungible);
-        given(decodingFacade.decodeIsToken(input)).willReturn(isTokenWrapper);
+        isTokenPrecompile
+                .when(() -> IsTokenPrecompile.decodeIsToken(input))
+                .thenReturn(isTokenWrapper);
         given(stateView.tokenExists(fungible)).willReturn(true);
         given(encodingFacade.encodeIsToken(true)).willReturn(RETURN_SUCCESS_TRUE);
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
@@ -323,7 +393,9 @@ class ViewExecutorTest {
     void computeGetTokenType() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_TYPE, fungibleTokenAddress);
         final var wrapper = TokenInfoWrapper.forToken(fungible);
-        given(decodingFacade.decodeGetTokenType(input)).willReturn(wrapper);
+        getTokenTypePrecompile
+                .when(() -> GetTokenTypePrecompile.decodeGetTokenType(input))
+                .thenReturn(wrapper);
         given(stateView.tokenExists(fungible)).willReturn(true);
         given(stateView.tokens()).willReturn(merkleTokens);
         given(merkleTokens.get(EntityNum.fromTokenId(wrapper.tokenID()))).willReturn(token);
@@ -344,7 +416,9 @@ class ViewExecutorTest {
         final var input = prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
-        given(decodingFacade.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> TokenInfoPrecompile.decodeGetTokenInfo(input))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(any())).willReturn(Optional.empty());
 
@@ -357,7 +431,9 @@ class ViewExecutorTest {
         final var input = prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungible);
-        given(decodingFacade.decodeGetFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
+        fungibleTokenInfoPrecompile
+                .when(() -> FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(any())).willReturn(Optional.empty());
 
@@ -371,7 +447,9 @@ class ViewExecutorTest {
                 prerequisitesForNft(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, 1L);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
-        given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
+        nonFungibleTokenInfoPrecompile
+                .when(() -> NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(any())).willReturn(Optional.empty());
 
@@ -385,7 +463,9 @@ class ViewExecutorTest {
                 prerequisitesForNft(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, 1L);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
-        given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
+        nonFungibleTokenInfoPrecompile
+                .when(() -> NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(any())).willReturn(Optional.of(tokenInfo));
         given(stateView.infoForNft(any())).willReturn(Optional.empty());
@@ -401,8 +481,9 @@ class ViewExecutorTest {
                 Bytes.fromHexString(
                         "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000006370f6ca00000000000000000000000000000000000000000000000000000000000004c2000000000000000000000000000000000000000000000000000000000076a700");
 
-        given(decodingFacade.decodeGetTokenExpiryInfo(input))
-                .willReturn(new GetTokenExpiryInfoWrapper(fungible));
+        getTokenExpiryInfoPrecompile
+                .when(() -> GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
+                .thenReturn(new GetTokenExpiryInfoWrapper(fungible));
         given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
         given(stateView.tokenExists(fungible)).willReturn(true);
         given(encodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
@@ -414,8 +495,9 @@ class ViewExecutorTest {
     void computeGetTokenExpiryInfoFailsAsExpected() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_EXPIRY_INFO, fungibleTokenAddress);
 
-        given(decodingFacade.decodeGetTokenExpiryInfo(input))
-                .willReturn(new GetTokenExpiryInfoWrapper(fungible));
+        getTokenExpiryInfoPrecompile
+                .when(() -> GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
+                .thenReturn(new GetTokenExpiryInfoWrapper(fungible));
         given(stateView.infoForToken(fungible)).willReturn(Optional.empty());
         given(stateView.tokenExists(fungible)).willReturn(true);
 
@@ -430,13 +512,7 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input,
-                        frame,
-                        encodingFacade,
-                        decodingFacade,
-                        viewGasCalculator,
-                        stateView,
-                        ledgers);
+                        input, frame, encodingFacade, viewGasCalculator, stateView, ledgers);
         return input;
     }
 
@@ -452,13 +528,7 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input,
-                        frame,
-                        encodingFacade,
-                        decodingFacade,
-                        viewGasCalculator,
-                        stateView,
-                        ledgers);
+                        input, frame, encodingFacade, viewGasCalculator, stateView, ledgers);
         return input;
     }
 

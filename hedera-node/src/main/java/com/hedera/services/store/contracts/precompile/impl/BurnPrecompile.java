@@ -144,7 +144,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         return encoder.encodeBurnFailure(status);
     }
 
-    private BurnWrapper decodeBurn(final Bytes input) {
+    public static BurnWrapper decodeBurn(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, BURN_TOKEN_SELECTOR, BURN_TOKEN_DECODER);
 

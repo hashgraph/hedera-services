@@ -40,13 +40,17 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendin
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.impl.MintPrecompile.decodeMint;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -55,6 +59,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -83,8 +88,8 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.MintLogic;
@@ -101,8 +106,10 @@ import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -111,10 +118,12 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -127,7 +136,6 @@ class MintPrecompilesTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private MintLogic mintLogic;
     @Mock private SideEffectsTracker sideEffects;
@@ -164,8 +172,15 @@ class MintPrecompilesTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    private static final Bytes FUNGIBLE_MINT_INPUT =
+            Bytes.fromHexString(
+                    "0x278e0b88000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes NON_FUNGIBLE_MINT_INPUT =
+            Bytes.fromHexString(
+                    "0x278e0b88000000000000000000000000000000000000000000000000000000000000042e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000124e4654206d65746164617461207465737431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000124e4654206d657461646174612074657374320000000000000000000000000000");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<MintPrecompile> mintPrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -188,7 +203,6 @@ class MintPrecompilesTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -197,15 +211,22 @@ class MintPrecompilesTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        mintPrecompile = Mockito.mockStatic(MintPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        mintPrecompile.close();
     }
 
     @Test
     void mintFailurePathWorks() {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
@@ -244,6 +265,9 @@ class MintPrecompilesTest {
     void mintRandomFailurePathWorks() {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(sigsVerifier.hasActiveSupplyKey(Mockito.anyBoolean(), any(), any(), any()))
                 .willThrow(new IllegalArgumentException("random error"));
@@ -278,6 +302,9 @@ class MintPrecompilesTest {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
@@ -335,6 +362,9 @@ class MintPrecompilesTest {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
@@ -378,6 +408,9 @@ class MintPrecompilesTest {
         givenLedgers();
         givenFungibleCollaborators();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(encoder.encodeMintSuccess(anyLong(), any()))
                 .willReturn(fungibleSuccessResultWith10Supply);
         given(worldUpdater.aliases()).willReturn(aliases);
@@ -398,7 +431,6 @@ class MintPrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        ;
         final var result = subject.computeInternal(frame);
         // then:
         assertEquals(fungibleSuccessResultWith10Supply, result);
@@ -416,6 +448,9 @@ class MintPrecompilesTest {
         givenLedgers();
         givenFungibleCollaborators();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(encoder.encodeMintSuccess(anyLong(), any()))
                 .willReturn(fungibleSuccessResultWith10Supply);
         given(worldUpdater.parentUpdater()).willReturn(Optional.empty());
@@ -443,11 +478,16 @@ class MintPrecompilesTest {
     void fungibleMintFailureAmountLimitOversize() {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
         // given:
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         doCallRealMethod().when(frame).setRevertReason(any());
-        given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMintAmountOversize);
+        mintPrecompile
+                .when(() -> decodeMint(pretendArguments))
+                .thenReturn(fungibleMintAmountOversize);
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
@@ -464,7 +504,10 @@ class MintPrecompilesTest {
         givenPricingUtilsContext();
         Bytes pretendArguments = givenFrameContext();
         givenFungibleCollaborators();
-        given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMintMaxAmount);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMintMaxAmount);
         given(syntheticTxnFactory.createMint(fungibleMintMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
         given(encoder.encodeMintSuccess(anyLong(), any()))
@@ -505,7 +548,10 @@ class MintPrecompilesTest {
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
-        given(decoder.decodeMint(any())).willReturn(fungibleMint);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        mintPrecompile.when(() -> decodeMint(any())).thenReturn(fungibleMint);
         given(syntheticTxnFactory.createMint(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -525,16 +571,39 @@ class MintPrecompilesTest {
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
 
+    @Test
+    void decodeFungibleMintInput() {
+        mintPrecompile.when(() -> decodeMint(FUNGIBLE_MINT_INPUT)).thenCallRealMethod();
+        final var decodedInput = decodeMint(FUNGIBLE_MINT_INPUT);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(15, decodedInput.amount());
+        assertEquals(FUNGIBLE_COMMON, decodedInput.type());
+    }
+
+    @Test
+    void decodeNonFungibleMintInput() {
+        mintPrecompile.when(() -> decodeMint(NON_FUNGIBLE_MINT_INPUT)).thenCallRealMethod();
+        final var decodedInput = decodeMint(NON_FUNGIBLE_MINT_INPUT);
+        final var metadata1 = ByteString.copyFrom("NFT metadata test1".getBytes());
+        final var metadata2 = ByteString.copyFrom("NFT metadata test2".getBytes());
+        final List<ByteString> metadata = Arrays.asList(metadata1, metadata2);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(metadata, decodedInput.metadata());
+        assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
     private Bytes givenNonFungibleFrameContext() {
         Bytes pretendArguments = givenFrameContext();
-        given(decoder.decodeMint(pretendArguments)).willReturn(nftMint);
+        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(nftMint);
         given(syntheticTxnFactory.createMint(nftMint)).willReturn(mockSynthBodyBuilder);
         return pretendArguments;
     }
 
     private Bytes givenFungibleFrameContext() {
         Bytes pretendArguments = givenFrameContext();
-        given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMint);
+        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMint);
         given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
         return pretendArguments;
     }

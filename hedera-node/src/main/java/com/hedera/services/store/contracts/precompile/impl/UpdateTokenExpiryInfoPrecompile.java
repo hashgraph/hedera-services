@@ -88,7 +88,7 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
         super.run(frame);
     }
 
-    private TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfo(
+    public static TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfo(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

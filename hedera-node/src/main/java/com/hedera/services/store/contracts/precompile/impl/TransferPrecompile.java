@@ -296,7 +296,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         return accumulatedCost;
     }
 
-    private List<TokenTransferWrapper> decodeCryptoTransfer(
+    public static List<TokenTransferWrapper> decodeCryptoTransfer(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedTuples =
                 decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
@@ -327,7 +327,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         return tokenTransferWrappers;
     }
 
-    private List<TokenTransferWrapper> decodeTransferTokens(
+    public static List<TokenTransferWrapper> decodeTransferTokens(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TRANSFER_TOKENS_SELECTOR, TRANSFER_TOKENS_DECODER);
@@ -348,7 +348,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
     }
 
-    private List<TokenTransferWrapper> decodeTransferToken(
+    public static List<TokenTransferWrapper> decodeTransferToken(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TRANSFER_TOKEN_SELECTOR, TRANSFER_TOKEN_DECODER);
@@ -368,7 +368,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                         amount, false, tokenID, sender, receiver))));
     }
 
-    private List<TokenTransferWrapper> decodeTransferNFTs(
+    public static List<TokenTransferWrapper> decodeTransferNFTs(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
@@ -390,7 +390,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
     }
 
-    private List<TokenTransferWrapper> decodeTransferNFT(
+    public static List<TokenTransferWrapper> decodeTransferNFT(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TRANSFER_NFT_SELECTOR, TRANSFER_NFT_DECODER);

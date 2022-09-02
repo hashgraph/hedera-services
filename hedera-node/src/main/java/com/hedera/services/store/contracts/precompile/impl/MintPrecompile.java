@@ -156,7 +156,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
         return encoder.encodeMintFailure(status);
     }
 
-    private MintWrapper decodeMint(final Bytes input) {
+    public static MintWrapper decodeMint(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, MINT_TOKEN_SELECTOR, MINT_TOKEN_DECODER);
 

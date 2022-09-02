@@ -73,9 +73,8 @@ public class DecodingFacade {
                     + EXPIRY_DECODER
                     + ")";
 
-    @Inject
-    public DecodingFacade() {
-        // empty constructor
+    private DecodingFacade() {
+        throw new UnsupportedOperationException("Utility Class");
     }
 
     public static List<TokenKeyWrapper> decodeTokenKeys(

@@ -22,6 +22,8 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenFreezeUnFreezeWrapper;
+import static com.hedera.services.store.contracts.precompile.impl.IsFrozenPrecompile.decodeIsFrozen;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -50,8 +52,8 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.IsFrozenPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -72,10 +74,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,7 +90,6 @@ class IsFrozenPrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -112,7 +116,11 @@ class IsFrozenPrecompileTest {
 
     @Mock private AssetsLoader assetLoader;
 
+    public static final Bytes IS_FROZEN_INPUT =
+            Bytes.fromHexString(
+                    "0x46de0fb1000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
     private HTSPrecompiledContract subject;
+    private MockedStatic<IsFrozenPrecompile> isFrozenPrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -135,7 +143,6 @@ class IsFrozenPrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -144,6 +151,12 @@ class IsFrozenPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
+        isFrozenPrecompile = Mockito.mockStatic(IsFrozenPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        isFrozenPrecompile.close();
     }
 
     @Test
@@ -155,7 +168,7 @@ class IsFrozenPrecompileTest {
         final var successOutput =
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000"
-                            + "00000000000000000000000000000000000000000000000000001");
+                                + "00000000000000000000000000000000000000000000000000001");
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN)),
@@ -169,7 +182,9 @@ class IsFrozenPrecompileTest {
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
-        given(decoder.decodeIsFrozen(any(), any())).willReturn(tokenFreezeUnFreezeWrapper);
+        isFrozenPrecompile
+                .when(() -> decodeIsFrozen(any(), any()))
+                .thenReturn(tokenFreezeUnFreezeWrapper);
         given(encoder.encodeIsFrozen(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(tokenRels.get(any(), any())).willReturn(Boolean.TRUE);
@@ -183,6 +198,16 @@ class IsFrozenPrecompileTest {
 
         // then
         assertEquals(successOutput, result);
+    }
+
+    @Test
+    void decodeTokenIsFrozenWithValidInput() {
+        isFrozenPrecompile
+                .when(() -> decodeIsFrozen(IS_FROZEN_INPUT, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeIsFrozen(IS_FROZEN_INPUT, identity());
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1294).build(), decodedInput.token());
     }
 
     private void givenMinimalFrameContext() {

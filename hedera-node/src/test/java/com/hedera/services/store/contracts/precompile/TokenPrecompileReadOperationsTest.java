@@ -45,9 +45,10 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenTypePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
@@ -62,10 +63,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,7 +79,6 @@ class TokenPrecompileReadOperationsTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -91,11 +94,12 @@ class TokenPrecompileReadOperationsTest {
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokenMerkleMap;
     @Mock private AssetsLoader assetLoader;
-    @Mock private AccessorFactory accessorFactory;
     private MerkleToken merkleToken;
     private final TokenID tokenID = asToken("0.0.5");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<IsTokenPrecompile> isTokenPrecompile;
+    private MockedStatic<GetTokenTypePrecompile> getTokenTypePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -114,7 +118,6 @@ class TokenPrecompileReadOperationsTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -134,6 +137,14 @@ class TokenPrecompileReadOperationsTest {
                         true,
                         EntityId.fromGrpcTokenId(tokenID));
         merkleToken.setTokenType(0);
+        isTokenPrecompile = Mockito.mockStatic(IsTokenPrecompile.class);
+        getTokenTypePrecompile = Mockito.mockStatic(GetTokenTypePrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        isTokenPrecompile.close();
+        getTokenTypePrecompile.close();
     }
 
     @Test
@@ -149,8 +160,9 @@ class TokenPrecompileReadOperationsTest {
         givenMinimalContextForSuccessfulCall();
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
-        given(decoder.decodeIsToken(pretendArguments))
-                .willReturn(TokenInfoWrapper.forToken(fungible));
+        isTokenPrecompile
+                .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
+                .thenReturn(TokenInfoWrapper.forToken(fungible));
         given(encoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -177,9 +189,9 @@ class TokenPrecompileReadOperationsTest {
         given(stateView.tokenExists(any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN));
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
-        given(decoder.decodeIsToken(pretendArguments)).willReturn(tokenInfoWrapper);
+        isTokenPrecompile
+                .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
         given(encoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -214,7 +226,9 @@ class TokenPrecompileReadOperationsTest {
         givenMinimalContextForSuccessfulCall();
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
-        given(decoder.decodeGetTokenType(any())).willReturn(wrapper);
+        getTokenTypePrecompile
+                .when(() -> GetTokenTypePrecompile.decodeGetTokenType(pretendArguments))
+                .thenReturn(wrapper);
         given(encoder.encodeGetTokenType(0)).willReturn(RETURN_GET_TOKEN_TYPE);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);

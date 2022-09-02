@@ -24,6 +24,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenDeleteWrapper;
+import static com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile.decodeDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -55,8 +56,8 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.DeleteLogic;
@@ -81,10 +82,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -96,7 +100,6 @@ class DeleteTokenPrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -124,6 +127,7 @@ class DeleteTokenPrecompileTest {
     @Mock private AssetsLoader assetLoader;
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<DeleteTokenPrecompile> deleteTokenPrecompile;
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
@@ -131,6 +135,9 @@ class DeleteTokenPrecompileTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    public static final Bytes DELETE_INPUT =
+            Bytes.fromHexString(
+                    "0xf069f712000000000000000000000000000000000000000000000000000000000000046d");
 
     @BeforeEach
     void setUp() throws IOException {
@@ -152,7 +159,6 @@ class DeleteTokenPrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -161,6 +167,12 @@ class DeleteTokenPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
+        deleteTokenPrecompile = Mockito.mockStatic(DeleteTokenPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        deleteTokenPrecompile.close();
     }
 
     @Test
@@ -195,7 +207,7 @@ class DeleteTokenPrecompileTest {
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
                 .willReturn(DEFAULT_GAS_PRICE);
-        given(decoder.decodeDelete(any())).willReturn(tokenDeleteWrapper);
+        deleteTokenPrecompile.when(() -> decodeDelete(any())).thenReturn(tokenDeleteWrapper);
         given(syntheticTxnFactory.createDelete(tokenDeleteWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -206,6 +218,14 @@ class DeleteTokenPrecompileTest {
         final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
+    }
+
+    @Test
+    void decodeTokenDeleteWithValidInput() {
+        deleteTokenPrecompile.when(() -> decodeDelete(DELETE_INPUT)).thenCallRealMethod();
+        final var decodedInput = decodeDelete(DELETE_INPUT);
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1133).build(), decodedInput.tokenID());
     }
 
     private void givenMinimalFrameContext() {
@@ -238,7 +258,7 @@ class DeleteTokenPrecompileTest {
         given(infrastructureFactory.newDeleteLogic(accountStore, tokenStore))
                 .willReturn(deleteLogic);
         given(deleteLogic.validate(any())).willReturn(OK);
-        given(decoder.decodeDelete(any())).willReturn(tokenDeleteWrapper);
+        deleteTokenPrecompile.when(() -> decodeDelete(any())).thenReturn(tokenDeleteWrapper);
         given(syntheticTxnFactory.createDelete(tokenDeleteWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()

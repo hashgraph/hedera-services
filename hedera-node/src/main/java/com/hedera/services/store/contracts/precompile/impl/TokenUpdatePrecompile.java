@@ -91,7 +91,7 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
         super.run(frame);
     }
 
-    private TokenUpdateWrapper decodeUpdateTokenInfo(
+    public static TokenUpdateWrapper decodeUpdateTokenInfo(
             Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR, TOKEN_UPDATE_INFO_DECODER);

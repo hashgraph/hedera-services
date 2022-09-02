@@ -34,11 +34,15 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
+import static com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile.decodeAssociation;
+import static com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile.decodeMultipleAssociations;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -72,8 +76,9 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -102,10 +107,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -115,7 +123,6 @@ class AssociatePrecompileTest {
     @Mock private GasCalculator gasCalculator;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -158,8 +165,16 @@ class AssociatePrecompileTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    private static final Bytes ASSOCIATE_INPUT =
+            Bytes.fromHexString(
+                    "0x49146bde00000000000000000000000000000000000000000000000000000000000004820000000000000000000000000000000000000000000000000000000000000480");
+    private static final Bytes MULTIPLE_ASSOCIATE_INPUT =
+            Bytes.fromHexString(
+                    "0x2e63879b00000000000000000000000000000000000000000000000000000000000004880000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004860000000000000000000000000000000000000000000000000000000000000486");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<AssociatePrecompile> associatePrecompile;
+    private MockedStatic<MultiAssociatePrecompile> multiAssociatePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -182,7 +197,6 @@ class AssociatePrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -192,9 +206,14 @@ class AssociatePrecompileTest {
                         precompilePricingUtils,
                         infrastructureFactory);
 
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        associatePrecompile = Mockito.mockStatic(AssociatePrecompile.class);
+        multiAssociatePrecompile = Mockito.mockStatic(MultiAssociatePrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        associatePrecompile.close();
+        multiAssociatePrecompile.close();
     }
 
     @Test
@@ -203,7 +222,12 @@ class AssociatePrecompileTest {
         givenCommonFrameContext();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        associatePrecompile
+                .when(() -> decodeAssociation(eq(pretendArguments), any()))
+                .thenReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
@@ -244,7 +268,12 @@ class AssociatePrecompileTest {
         givenFrameContextWithDelegateCallFromParent();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        associatePrecompile
+                .when(() -> decodeAssociation(eq(pretendArguments), any()))
+                .thenReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
@@ -280,6 +309,9 @@ class AssociatePrecompileTest {
     @Test
     void computeAssociateTokenHappyPathWorksWithDelegateCall() {
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getContractAddress()).willReturn(contractAddress);
         given(frame.getRecipientAddress()).willReturn(contractAddress);
         given(frame.getSenderAddress()).willReturn(senderAddress);
@@ -292,7 +324,9 @@ class AssociatePrecompileTest {
         given(frame.getRecipientAddress()).willReturn(recipientAddress);
         givenLedgers();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        associatePrecompile
+                .when(() -> decodeAssociation(eq(pretendArguments), any()))
+                .thenReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
@@ -346,6 +380,9 @@ class AssociatePrecompileTest {
     @Test
     void computeAssociateTokenBadSyntax() {
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getContractAddress()).willReturn(contractAddress);
         given(frame.getRecipientAddress()).willReturn(contractAddress);
         given(frame.getSenderAddress()).willReturn(senderAddress);
@@ -358,7 +395,9 @@ class AssociatePrecompileTest {
         given(frame.getRecipientAddress()).willReturn(recipientAddress);
         givenLedgers();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        associatePrecompile
+                .when(() -> decodeAssociation(eq(pretendArguments), any()))
+                .thenReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
@@ -405,7 +444,12 @@ class AssociatePrecompileTest {
         givenLedgers();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        associatePrecompile
+                .when(() -> decodeAssociation(eq(pretendArguments), any()))
+                .thenReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
@@ -459,7 +503,12 @@ class AssociatePrecompileTest {
         givenLedgers();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        associatePrecompile
+                .when(() -> decodeAssociation(eq(pretendArguments), any()))
+                .thenReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
@@ -513,7 +562,12 @@ class AssociatePrecompileTest {
         givenLedgers();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        associatePrecompile
+                .when(() -> decodeAssociation(eq(pretendArguments), any()))
+                .thenReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
@@ -567,8 +621,12 @@ class AssociatePrecompileTest {
         givenLedgers();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKENS);
-        given(decoder.decodeMultipleAssociations(eq(pretendArguments), any()))
-                .willReturn(multiAssociateOp);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        multiAssociatePrecompile
+                .when(() -> decodeMultipleAssociations(eq(pretendArguments), any()))
+                .thenReturn(multiAssociateOp);
         given(syntheticTxnFactory.createAssociate(multiAssociateOp))
                 .willReturn(mockSynthBodyBuilder);
         given(
@@ -621,7 +679,12 @@ class AssociatePrecompileTest {
         givenFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKENS));
-        given(decoder.decodeMultipleAssociations(any(), any())).willReturn(associateOp);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        multiAssociatePrecompile
+                .when(() -> decodeMultipleAssociations(any(), any()))
+                .thenReturn(multiAssociateOp);
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(multiDissociateOp.accountId());
         builder.addAllTokens(multiDissociateOp.tokenIds());
@@ -648,7 +711,9 @@ class AssociatePrecompileTest {
         givenFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKEN));
-        given(decoder.decodeAssociation(any(), any())).willReturn(associateOp);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(associateOp.accountId());
         builder.addAllTokens(associateOp.tokenIds());
@@ -667,6 +732,30 @@ class AssociatePrecompileTest {
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
+    }
+
+    @Test
+    void decodeAssociateToken() {
+        associatePrecompile
+                .when(() -> decodeAssociation(ASSOCIATE_INPUT, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeAssociation(ASSOCIATE_INPUT, identity());
+
+        assertTrue(decodedInput.accountId().getAccountNum() > 0);
+        assertTrue(decodedInput.tokenIds().get(0).getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeMultipleAssociateToken() {
+        multiAssociatePrecompile
+                .when(() -> decodeMultipleAssociations(MULTIPLE_ASSOCIATE_INPUT, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeMultipleAssociations(MULTIPLE_ASSOCIATE_INPUT, identity());
+
+        assertTrue(decodedInput.accountId().getAccountNum() > 0);
+        assertEquals(2, decodedInput.tokenIds().size());
+        assertTrue(decodedInput.tokenIds().get(0).getTokenNum() > 0);
+        assertTrue(decodedInput.tokenIds().get(1).getTokenNum() > 0);
     }
 
     private void givenFrameContextWithDelegateCallFromParent() {

@@ -83,7 +83,7 @@ public class FreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
         return pricingUtils.getMinimumPriceInTinybars(FREEZE, consensusTime);
     }
 
-    private TokenFreezeUnfreezeWrapper decodeFreeze(
+    public static TokenFreezeUnfreezeWrapper decodeFreeze(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

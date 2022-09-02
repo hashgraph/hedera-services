@@ -17,9 +17,12 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.defaultFreezeStatusWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.defaultKycStatusWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultKycStatus.decodeTokenDefaultKycStatus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -39,6 +42,8 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -49,10 +54,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,7 +70,6 @@ class GetTokenDefaultKycStatusTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -79,8 +86,12 @@ class GetTokenDefaultKycStatusTest {
     @Mock private AccessorFactory accessorFactory;
 
     @Mock private AssetsLoader assetLoader;
+    public static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_INPUT =
+            Bytes.fromHexString(
+                    "0x335e04c10000000000000000000000000000000000000000000000000000000000000404");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<GetTokenDefaultKycStatus> getTokenDefaultKycStatus;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -98,7 +109,6 @@ class GetTokenDefaultKycStatusTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -107,6 +117,12 @@ class GetTokenDefaultKycStatusTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
+        getTokenDefaultKycStatus = Mockito.mockStatic(GetTokenDefaultKycStatus.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        getTokenDefaultKycStatus.close();
     }
 
     @Test
@@ -118,7 +134,7 @@ class GetTokenDefaultKycStatusTest {
         final var successOutput =
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000"
-                            + "00000000000000000000000000000000000000000000000000001");
+                                + "00000000000000000000000000000000000000000000000000001");
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -127,7 +143,9 @@ class GetTokenDefaultKycStatusTest {
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
-        given(decoder.decodeTokenDefaultKycStatus(any())).willReturn(defaultKycStatusWrapper);
+        getTokenDefaultKycStatus
+                .when(() -> decodeTokenDefaultKycStatus(any()))
+                .thenReturn(defaultKycStatusWrapper);
         given(encoder.encodeGetTokenDefaultKycStatus(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(wrappedLedgers.defaultKycStatus((any()))).willReturn(Boolean.TRUE);
@@ -141,6 +159,16 @@ class GetTokenDefaultKycStatusTest {
 
         // then
         assertEquals(successOutput, result);
+    }
+
+    @Test
+    void decodeGetTokenDefaultKycStatusInput() {
+        getTokenDefaultKycStatus
+                .when(() -> decodeTokenDefaultKycStatus(GET_TOKEN_DEFAULT_KYC_STATUS_INPUT))
+                .thenCallRealMethod();
+        final var decodedInput = decodeTokenDefaultKycStatus(GET_TOKEN_DEFAULT_KYC_STATUS_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
     }
 
     private void givenMinimalContextForSuccessfulCall() {
