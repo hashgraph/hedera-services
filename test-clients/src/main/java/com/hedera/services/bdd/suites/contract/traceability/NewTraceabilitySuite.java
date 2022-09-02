@@ -1084,7 +1084,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setCallingContract(
                                                                                 spec.registry()
                                                                                         .getContractId(
-                                                                                                TRACEABILITY))
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
                                                                         .setGas(909474)
                                                                         .setGasUsed(2347)
                                                                         .setCallDepth(2)
@@ -1142,7 +1143,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setCallingContract(
                                                                                 spec.registry()
                                                                                         .getContractId(
-                                                                                                TRACEABILITY))
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
                                                                         .setGas(905801)
                                                                         .setGasUsed(20323)
                                                                         .setCallDepth(2)
@@ -1196,7 +1198,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setCallingContract(
                                                                                 spec.registry()
                                                                                         .getContractId(
-                                                                                                TRACEABILITY))
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
                                                                         .setGas(884859)
                                                                         .setGasUsed(2391)
                                                                         .setCallDepth(2)
@@ -1254,7 +1257,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setCallingContract(
                                                                                 spec.registry()
                                                                                         .getContractId(
-                                                                                                TRACEABILITY))
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
                                                                         .setGas(881071)
                                                                         .setGasUsed(424)
                                                                         .setCallDepth(2)

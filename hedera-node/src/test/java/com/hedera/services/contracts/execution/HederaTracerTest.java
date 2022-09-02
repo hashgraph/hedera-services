@@ -119,7 +119,6 @@ class HederaTracerTest {
         final var firstChildFrame = mock(MessageFrame.class);
         given(firstChildFrame.getType()).willReturn(Type.CONTRACT_CREATION);
         given(firstChildFrame.getCode()).willReturn(Code.EMPTY);
-        given(firstChildFrame.getSenderAddress()).willReturn(contract);
         given(firstChildFrame.getContractAddress()).willReturn(accountReceiver);
         final long initialGasChild = initialGas - 500L;
         given(firstChildFrame.getRemainingGas()).willReturn(initialGasChild);
@@ -161,7 +160,6 @@ class HederaTracerTest {
         final var childFrame2 = mock(MessageFrame.class);
         given(childFrame2.getCode()).willReturn(Code.EMPTY);
         given(childFrame2.getType()).willReturn(Type.MESSAGE_CALL);
-        given(childFrame2.getSenderAddress()).willReturn(contract);
         given(childFrame2.getContractAddress()).willReturn(accountReceiver);
         given(childFrame2.getRemainingGas()).willReturn(500L);
         given(childFrame2.getInputData()).willReturn(Bytes.EMPTY);
@@ -564,7 +562,6 @@ class HederaTracerTest {
         final var firstChildFrame = mock(MessageFrame.class);
         given(firstChildFrame.getType()).willReturn(Type.CONTRACT_CREATION);
         given(firstChildFrame.getCode()).willReturn(Code.EMPTY);
-        given(firstChildFrame.getSenderAddress()).willReturn(contract);
         given(firstChildFrame.getContractAddress()).willReturn(accountReceiver);
         given(firstChildFrame.getRemainingGas()).willReturn(initialGas);
         given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);
