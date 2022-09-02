@@ -56,11 +56,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.fee.FeeObject;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -94,10 +92,6 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
         final var standardLifetime = 7776000L;
         final var creation = "creation";
         final var expectedExpiryPostRenew = new AtomicLong();
-        final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
-        final AtomicReference<Double> stakingRewardFee = new AtomicReference<>();
-        final AtomicReference<Double> nodeRewardFee = new AtomicReference<>();
-        final AtomicReference<Double> fundingFee = new AtomicReference<>();
 
         return defaultHapiSpec("renewalFeeDistributedToStakingAccounts")
                 .given(
@@ -215,8 +209,9 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                 (spec, opLog) -> {
                                     final var lookup = getTxnRecord(creation);
                                     allRunFor(spec, lookup);
-                                    final var record = lookup.getResponseRecord();
-                                    final var birth = record.getConsensusTimestamp().getSeconds();
+                                    final var responseRecord = lookup.getResponseRecord();
+                                    final var birth =
+                                            responseRecord.getConsensusTimestamp().getSeconds();
                                     expectedExpiryPostRenew.set(
                                             birth + minimalLifetime + standardLifetime);
                                     opLog.info(
