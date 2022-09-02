@@ -214,7 +214,7 @@ class WipeFungiblePrecompileTest {
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveWipeKey(
@@ -259,7 +259,7 @@ class WipeFungiblePrecompileTest {
         // given:
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -281,7 +281,7 @@ class WipeFungiblePrecompileTest {
         // given:
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -319,7 +319,7 @@ class WipeFungiblePrecompileTest {
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         wipeFungiblePrecompile
                 .when(() -> decodeWipe(eq(pretendArguments), any()))
@@ -372,7 +372,7 @@ class WipeFungiblePrecompileTest {
         Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         wipeFungiblePrecompile
                 .when(() -> decodeWipe(eq(pretendArguments), any()))
                 .thenReturn(fungibleWipe);

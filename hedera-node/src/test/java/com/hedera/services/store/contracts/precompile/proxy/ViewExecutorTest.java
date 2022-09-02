@@ -181,7 +181,7 @@ class ViewExecutorTest {
         isFrozenEncoded =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000"
-                                + "000000000000000000000000001");
+                            + "000000000000000000000000001");
         getTokenDefaultFreezeStatus = Mockito.mockStatic(GetTokenDefaultFreezeStatus.class);
         getTokenDefaultKycStatus = Mockito.mockStatic(GetTokenDefaultKycStatus.class);
         isKycPrecompile = Mockito.mockStatic(IsKycPrecompile.class);

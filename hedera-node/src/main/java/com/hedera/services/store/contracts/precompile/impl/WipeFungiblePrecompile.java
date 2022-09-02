@@ -79,7 +79,8 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
         return pricingUtils.getMinimumPriceInTinybars(WIPE_FUNGIBLE, consensusTime);
     }
 
-    public static WipeWrapper decodeWipe(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static WipeWrapper decodeWipe(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
 

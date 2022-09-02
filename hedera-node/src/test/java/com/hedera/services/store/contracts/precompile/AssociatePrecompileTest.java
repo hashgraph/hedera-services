@@ -224,7 +224,7 @@ class AssociatePrecompileTest {
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(associateOp);
@@ -270,7 +270,7 @@ class AssociatePrecompileTest {
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(associateOp);
@@ -311,7 +311,7 @@ class AssociatePrecompileTest {
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getContractAddress()).willReturn(contractAddress);
         given(frame.getRecipientAddress()).willReturn(contractAddress);
         given(frame.getSenderAddress()).willReturn(senderAddress);
@@ -382,7 +382,7 @@ class AssociatePrecompileTest {
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getContractAddress()).willReturn(contractAddress);
         given(frame.getRecipientAddress()).willReturn(contractAddress);
         given(frame.getSenderAddress()).willReturn(senderAddress);
@@ -446,7 +446,7 @@ class AssociatePrecompileTest {
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(associateOp);
@@ -505,7 +505,7 @@ class AssociatePrecompileTest {
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(associateOp);
@@ -564,7 +564,7 @@ class AssociatePrecompileTest {
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(associateOp);
@@ -623,7 +623,7 @@ class AssociatePrecompileTest {
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKENS);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         multiAssociatePrecompile
                 .when(() -> decodeMultipleAssociations(eq(pretendArguments), any()))
                 .thenReturn(multiAssociateOp);
@@ -681,7 +681,7 @@ class AssociatePrecompileTest {
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKENS));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         multiAssociatePrecompile
                 .when(() -> decodeMultipleAssociations(any(), any()))
                 .thenReturn(multiAssociateOp);
@@ -713,7 +713,7 @@ class AssociatePrecompileTest {
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKEN));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
-            .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(associateOp.accountId());
         builder.addAllTokens(associateOp.tokenIds());

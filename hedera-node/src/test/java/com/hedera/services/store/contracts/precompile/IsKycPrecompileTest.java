@@ -160,7 +160,7 @@ class IsKycPrecompileTest {
         final var successOutput =
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000"
-                                + "00000000000000000000000000000000000000000000000000001");
+                            + "00000000000000000000000000000000000000000000000000001");
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_IS_KYC)), fungibleTokenAddr, accountAddr);

@@ -131,7 +131,7 @@ class GetTokenDefaultFreezeStatusTest {
         final var successOutput =
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000"
-                                + "00000000000000000000000000000000000000000000000000001");
+                            + "00000000000000000000000000000000000000000000000000001");
 
         givenMinimalFrameContext();
         givenLedgers();
