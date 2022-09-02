@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
 import static com.hedera.services.state.expiry.renewal.RenewalHelper.SELF_RENEWAL_WORK;
 import static com.hedera.services.state.expiry.renewal.RenewalHelper.SUPPORTED_RENEWAL_WORK;
@@ -29,6 +31,10 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
+import com.hedera.services.fees.charging.FeeDistribution;
+import com.hedera.services.fees.charging.NonHapiFeeCharging;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
@@ -37,6 +43,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,7 +59,10 @@ class RenewalHelperTest {
     @Mock private FeeCalculator fees;
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private FeeDistribution feeDistribution;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
+    private NonHapiFeeCharging nonHapiFeeCharging;
     private EntityLookup lookup;
     private ClassificationWork classificationWork;
     private RenewalHelper subject;
@@ -61,14 +71,16 @@ class RenewalHelperTest {
     void setUp() {
         lookup = new EntityLookup(() -> accounts);
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
+        nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         subject =
                 new RenewalHelper(
-                        lookup,
                         expiryThrottle,
                         classificationWork,
                         properties,
                         fees,
-                        recordsHelper);
+                        recordsHelper,
+                        nonHapiFeeCharging,
+                        accountsLedger);
     }
 
     @Test
@@ -77,11 +89,20 @@ class RenewalHelperTest {
         var key = EntityNum.fromLong(fundedExpiredAccountNum);
         var fundingKey = EntityNum.fromInt(98);
 
-        givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance, true);
-        givenPresent(98, fundingAccount, true);
+        givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
+        givenPresent(98, fundingAccount);
         given(expiryThrottle.allow(any(), any(Instant.class))).willReturn(true);
         given(expiryThrottle.allow(any())).willReturn(true);
-
+        given(
+                        accountsLedger.get(
+                                EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
+                                EXPIRY))
+                .willReturn(1234567L);
+        given(
+                        accountsLedger.get(
+                                EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
+                                BALANCE))
+                .willReturn(1234567L);
         // when:
         classificationWork.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
         given(
@@ -96,14 +117,15 @@ class RenewalHelperTest {
         subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
 
         // then:
-        verify(accounts, times(2)).getForModify(key);
-        verify(accounts).getForModify(fundingKey);
+        verify(accountsLedger, times(1)).get(key.toGrpcAccountId(), BALANCE);
+        verify(accountsLedger, times(1)).get(key.toGrpcAccountId(), EXPIRY);
+        verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         assertEquals(key, classificationWork.getPayerNumForLastClassified());
     }
 
     @Test
     void doesNotRenewIfNoSelfCapacityAvailable() {
-        givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance, false);
+        givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
         given(expiryThrottle.allow(SELF_RENEWAL_WORK)).willReturn(false);
 
@@ -123,12 +145,13 @@ class RenewalHelperTest {
 
         subject =
                 new RenewalHelper(
-                        lookup,
                         expiryThrottle,
                         classificationWork,
                         properties,
                         fees,
-                        recordsHelper);
+                        recordsHelper,
+                        nonHapiFeeCharging,
+                        accountsLedger);
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
@@ -158,16 +181,9 @@ class RenewalHelperTest {
     }
 
     private void givenPresent(final long num, final MerkleAccount account) {
-        givenPresent(num, account, false);
-    }
-
-    private void givenPresent(long num, MerkleAccount account, boolean modifiable) {
         var key = EntityNum.fromLong(num);
         if (num != 98) {
             given(accounts.get(key)).willReturn(account);
-        }
-        if (modifiable) {
-            given(accounts.getForModify(key)).willReturn(account);
         }
     }
 
