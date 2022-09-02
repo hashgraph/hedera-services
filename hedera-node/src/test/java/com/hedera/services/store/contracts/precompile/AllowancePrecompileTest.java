@@ -19,7 +19,7 @@ import static com.hedera.services.store.contracts.precompile.impl.AllowancePreco
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.AllowancePrecompile;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.AfterEach;
@@ -43,21 +43,21 @@ class AllowancePrecompileTest {
     private static final long ACCOUNT_NUM_ALLOWANCE_SPENDER = 0x602;
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
-    private MockedStatic<ApprovePrecompile> approvePrecompile;
+    private MockedStatic<AllowancePrecompile> allowancePrecompile;
 
     @BeforeEach
     void setUp() {
-        approvePrecompile = Mockito.mockStatic(ApprovePrecompile.class);
+        allowancePrecompile = Mockito.mockStatic(AllowancePrecompile.class);
     }
 
     @AfterEach
     void closeMocks() {
-        approvePrecompile.close();
+        allowancePrecompile.close();
     }
 
     @Test
     void decodeAllowanceInputERC() {
-        approvePrecompile
+        allowancePrecompile
                 .when(() -> decodeTokenAllowance(ALLOWANCE_INPUT_ERC, TOKEN_ID, identity()))
                 .thenCallRealMethod();
         final var decodedInput = decodeTokenAllowance(ALLOWANCE_INPUT_ERC, TOKEN_ID, identity());
@@ -69,7 +69,7 @@ class AllowancePrecompileTest {
 
     @Test
     void decodeAllowanceInputHAPI() {
-        approvePrecompile
+        allowancePrecompile
                 .when(() -> decodeTokenAllowance(ALLOWANCE_INPUT_HAPI, null, identity()))
                 .thenCallRealMethod();
         final var decodedInput = decodeTokenAllowance(ALLOWANCE_INPUT_HAPI, null, identity());

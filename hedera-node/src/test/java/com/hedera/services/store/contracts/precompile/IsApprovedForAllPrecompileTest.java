@@ -75,7 +75,10 @@ class IsApprovedForAllPrecompileTest {
     @Test
     void decodeIsApprovedForAllHAPI() {
         isApprovedForAllPrecompile
-                .when(() -> decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT_ERC, null, identity()))
+                .when(
+                        () ->
+                                decodeIsApprovedForAll(
+                                        IS_APPROVED_FOR_ALL_INPUT_HAPI, null, identity()))
                 .thenCallRealMethod();
         final var decodedInput =
                 decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT_HAPI, null, identity());

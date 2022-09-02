@@ -179,9 +179,7 @@ class PausePrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
         pausePrecompile = Mockito.mockStatic(PausePrecompile.class);
     }
 
@@ -192,6 +190,9 @@ class PausePrecompileTest {
 
     @Test
     void pauseHappyPathWorks() {
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -234,6 +235,9 @@ class PausePrecompileTest {
     @Test
     void gasRequirementReturnsCorrectValueForPauseFungibleToken() {
         // given
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));

@@ -68,7 +68,7 @@ class GetApprovedPrecompileTest {
     @Test
     void decodeGetApprovedInput() {
         getApprovedPrecompile
-                .when(() -> decodeGetApproved(GET_APPROVED_INPUT_ERC, TOKEN_ID))
+                .when(() -> decodeGetApproved(GET_APPROVED_INPUT_HAPI, null))
                 .thenCallRealMethod();
         final var decodedInput = decodeGetApproved(GET_APPROVED_INPUT_HAPI, null);
 

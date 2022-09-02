@@ -180,9 +180,7 @@ class UnpausePrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
         unpausePrecompile = Mockito.mockStatic(UnpausePrecompile.class);
     }
 
@@ -193,6 +191,9 @@ class UnpausePrecompileTest {
 
     @Test
     void unpauseHappyPathWorks() {
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -235,6 +236,9 @@ class UnpausePrecompileTest {
     @Test
     void gasRequirementReturnsCorrectValueForUnpauseFungibleToken() {
         // given
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
