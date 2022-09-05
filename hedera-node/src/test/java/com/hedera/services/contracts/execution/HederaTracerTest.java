@@ -97,6 +97,7 @@ class HederaTracerTest {
         // trace top level frame
         subject.init(topLevelMessageFrame);
 
+        verify(topLevelMessageFrame, times(1)).getContractAddress();
         assertEquals(1, subject.getActions().size());
         final var topLevelAction = subject.getActions().get(0);
         assertEquals(CALL, topLevelAction.getCallType());
@@ -144,6 +145,7 @@ class HederaTracerTest {
         assertEquals(Wei.ZERO.toLong(), childFrame1.getValue());
         assertEquals(1, childFrame1.getCallDepth());
         assertEquals(OP_CREATE, childFrame1.getCallOperationType());
+        verify(topLevelMessageFrame, times(2)).getContractAddress();
         // child frame executes operations
         given(firstChildFrame.getState()).willReturn(State.CODE_EXECUTING);
         subject.traceExecution(firstChildFrame, eo);
@@ -169,6 +171,7 @@ class HederaTracerTest {
         // trace second child
         subject.traceExecution(topLevelMessageFrame, eo);
         verify(eo, times(6)).execute();
+        verify(topLevelMessageFrame, times(3)).getContractAddress();
         // assert call depth is correct
         assertEquals(3, subject.getActions().size());
         assertEquals(1, subject.getActions().get(2).getCallDepth());
