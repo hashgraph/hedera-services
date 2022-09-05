@@ -51,6 +51,7 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
     }
 
     @Override
+    @SuppressWarnings("java:S3878")
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {

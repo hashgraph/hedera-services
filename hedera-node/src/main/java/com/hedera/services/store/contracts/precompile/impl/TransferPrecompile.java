@@ -176,7 +176,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
             }
             if (i < numExplicitChanges) {
-                /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT transfers) */
+                /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT exchanges) */
                 var hasReceiverSigIfReq = true;
                 if (change.isForNft()) {
                     final var counterPartyAddress =

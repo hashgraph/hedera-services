@@ -47,7 +47,9 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -117,7 +119,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 
@@ -181,7 +183,9 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                     // Should happen rarely if ever, but signal clients they can retry
                     response.setHeader(answerOnlyHeader(BUSY, cost));
                 } else {
-                    final var entityAccess = new StaticEntityAccess(view, aliasManager, validator);
+                    final var entityAccess =
+                            new StaticEntityAccess(
+                                    Objects.requireNonNull(view), aliasManager, validator);
                     final var codeCache = new CodeCache(nodeProperties, entityAccess);
                     final var worldState =
                             new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);

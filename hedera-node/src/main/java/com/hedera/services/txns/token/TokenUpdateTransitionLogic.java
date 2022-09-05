@@ -17,16 +17,7 @@ package com.hedera.services.txns.token;
 
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
@@ -135,8 +126,9 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
         Optional<AccountID> replacedTreasury = Optional.empty();
         if (op.hasTreasury()) {
             var newTreasury = op.getTreasury();
-            if (ledger.isDetached(newTreasury)) {
-                txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+            final var newTreasuryStatus = ledger.usabilityOf(newTreasury);
+            if (newTreasuryStatus != OK) {
+                txnCtx.setStatus(newTreasuryStatus);
                 return;
             }
             if (!store.associationExists(newTreasury, id)) {
@@ -217,8 +209,11 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
             TokenUpdateTransactionBody op, MerkleToken token) {
         if (op.hasAutoRenewAccount()) {
             final var newAutoRenew = op.getAutoRenewAccount();
-            if (ledger.isDetached(newAutoRenew)) {
-                return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+            final var newAutoRenewStatus = ledger.usabilityOf(newAutoRenew);
+            if (newAutoRenewStatus != OK) {
+                return newAutoRenewStatus == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL
+                        ? newAutoRenewStatus
+                        : INVALID_AUTORENEW_ACCOUNT;
             }
             if (token.hasAutoRenewAccount()) {
                 final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();

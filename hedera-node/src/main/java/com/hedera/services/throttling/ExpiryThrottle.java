@@ -55,11 +55,23 @@ public class ExpiryThrottle {
         this.resourceLoader = resourceLoader;
     }
 
-    public boolean allow(final List<MapAccessType> accessTypes, final Instant now) {
+    public boolean allow(final List<MapAccessType> accessTypes) {
+        return allow(accessTypes, null);
+    }
+
+    public boolean allow(final List<MapAccessType> accessTypes, @Nullable final Instant now) {
         if (throttle != null && accessReqs != null) {
-            return throttle.allow(requiredOps(accessTypes), now);
+            final var effectiveNow = (now != null) ? now : throttle.lastDecisionTime();
+            throttle.resetLastAllowedUse();
+            return throttle.allow(requiredOps(accessTypes), effectiveNow);
         }
         return false;
+    }
+
+    public void reclaimLastAllowedUse() {
+        if (throttle != null) {
+            throttle.reclaimLastAllowedUse();
+        }
     }
 
     public void rebuildFromResource(final String resourceLoc) {

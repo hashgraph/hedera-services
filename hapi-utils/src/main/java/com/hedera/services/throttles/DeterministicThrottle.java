@@ -239,7 +239,7 @@ public class DeterministicThrottle {
         return delegate;
     }
 
-    Instant lastDecisionTime() {
+    public Instant lastDecisionTime() {
         return lastDecisionTime;
     }
 }

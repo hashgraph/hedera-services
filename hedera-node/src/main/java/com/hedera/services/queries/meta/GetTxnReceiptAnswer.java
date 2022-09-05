@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -57,7 +58,7 @@ public class GetTxnReceiptAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         TransactionGetReceiptQuery op = query.getTransactionGetReceipt();
         TransactionGetReceiptResponse.Builder opResponse =
                 TransactionGetReceiptResponse.newBuilder();

@@ -24,6 +24,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -113,6 +115,7 @@ class CallLocalEvmTxProcessorTest {
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY);
         assertTrue(result.isSuccessful());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+        verify(globalDynamicProperties, never()).enabledSidecars();
     }
 
     @Test

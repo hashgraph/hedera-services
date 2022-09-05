@@ -21,17 +21,7 @@ import static com.hedera.services.state.virtual.schedule.ScheduleVirtualValueTes
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -372,6 +362,7 @@ class HederaScheduleStoreTest {
     @Test
     void createProvisionallyWorks() {
         given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+        given(hederaLedger.usabilityOf(any())).willReturn(OK);
 
         final var expected = ScheduleVirtualValue.from(parentTxn.toByteArray(), 0L);
 
@@ -392,6 +383,7 @@ class HederaScheduleStoreTest {
     void createProvisionallyWorksWithLongTermTxnsEnabled() {
         given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
         given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(true);
+        given(hederaLedger.usabilityOf(any())).willReturn(OK);
 
         final var expected = ScheduleVirtualValue.from(parentTxn.toByteArray(), 0L);
 
@@ -410,6 +402,7 @@ class HederaScheduleStoreTest {
     void createProvisionallyWorksWithLongTermTxnsEnabledNoExpirationProvided() {
         given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
         given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(true);
+        given(hederaLedger.usabilityOf(any())).willReturn(OK);
 
         final var expected =
                 ScheduleVirtualValue.from(
@@ -532,13 +525,16 @@ class HederaScheduleStoreTest {
     @Test
     void createProvisionallyRejectsInvalidScheduler() {
         given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+        final var invalidId = IdUtils.asAccount("22.33.44");
+        given(hederaLedger.usabilityOf(entityPayer.toGrpcAccountId())).willReturn(OK);
+        given(hederaLedger.usabilityOf(invalidId)).willReturn(INVALID_ACCOUNT_ID);
 
         final var differentParentTxn =
                 scheduleCreateTxnWith(
                         adminJKey,
                         entityMemo,
                         entityPayer.toGrpcAccountId(),
-                        IdUtils.asAccount("22.33.44"),
+                        invalidId,
                         schedulingTXValidStart.toGrpc());
 
         rejectWith(INVALID_SCHEDULE_ACCOUNT_ID, differentParentTxn);
@@ -555,15 +551,16 @@ class HederaScheduleStoreTest {
     @Test
     void rejectsCreateProvisionallyDeletedScheduler() {
         given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
-        given(hederaLedger.isDeleted(schedulingAccount)).willReturn(true);
-        given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+        given(hederaLedger.usabilityOf(payerId)).willReturn(OK);
+        given(hederaLedger.usabilityOf(schedulingAccount)).willReturn(ACCOUNT_DELETED);
 
         rejectWith(INVALID_SCHEDULE_ACCOUNT_ID, parentTxn);
     }
 
     @Test
     void rejectsCreateProvisionallyWithMissingSchedulingAccount() {
-        given(accountsLedger.exists(schedulingAccount)).willReturn(false);
+        given(hederaLedger.usabilityOf(payerId)).willReturn(OK);
+        given(hederaLedger.usabilityOf(schedulingAccount)).willReturn(INVALID_ACCOUNT_ID);
         given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
 
         rejectWith(INVALID_SCHEDULE_ACCOUNT_ID, parentTxn);

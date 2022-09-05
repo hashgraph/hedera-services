@@ -35,14 +35,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class UniqueTokensListRemovalTest {
+class UniqueTokensListMutationTest {
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 
-    private UniqueTokensListRemoval subject;
+    private UniqueTokensListMutation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new UniqueTokensListRemoval(uniqueTokens);
+        subject = new UniqueTokensListMutation(uniqueTokens);
     }
 
     @Test

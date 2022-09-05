@@ -15,7 +15,6 @@
  */
 package com.hedera.services.context.primitives;
 
-import static com.hedera.services.context.primitives.StateView.EMPTY_CTX;
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
@@ -117,6 +116,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -1163,6 +1163,23 @@ class StateViewTest {
     }
 
     @Test
+    void specialFileMemoIsHexedHash() {
+        FileID file150 = asFile("0.0.150");
+        final var expectedMemo =
+                CommonUtils.hex(CryptoFactory.getInstance().digestSync(data).getValue());
+
+        given(specialFiles.get(file150)).willReturn(data);
+        given(specialFiles.contains(file150)).willReturn(true);
+        given(attrs.get(file150)).willReturn(metadata);
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+        final var info = subject.infoForFile(file150);
+        assertTrue(info.isPresent());
+        final var details = info.get();
+        assertEquals(expectedMemo, details.getMemo());
+    }
+
+    @Test
     void rejectsMissingNft() {
         final var optionalNftInfo = subject.infoForNft(missingNftId);
 
@@ -1229,45 +1246,6 @@ class StateViewTest {
         assertEquals(nftSpenderId, info.getSpenderId());
         assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
         assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
-    }
-
-    @Test
-    void viewAdaptToNullChildren() {
-        subject = new StateView(null, null, null);
-
-        assertSame(StateView.EMPTY_MM, subject.tokens());
-        assertSame(StateView.EMPTY_VM, subject.storage());
-        assertSame(StateView.EMPTY_VM, subject.contractStorage());
-        assertSame(StateView.EMPTY_MM, subject.uniqueTokens());
-        assertSame(StateView.EMPTY_MM, subject.tokenAssociations());
-        assertSame(StateView.EMPTY_MM, subject.contracts());
-        assertSame(StateView.EMPTY_MM, subject.accounts());
-        assertSame(StateView.EMPTY_MM, subject.topics());
-        assertSame(StateView.EMPTY_MM, subject.stakingInfo());
-        assertSame(StateView.EMPTY_HM, subject.aliases());
-        assertSame(EMPTY_CTX, subject.networkCtx());
-        assertTrue(subject.contentsOf(target).isEmpty());
-        assertTrue(subject.infoForFile(target).isEmpty());
-        assertTrue(
-                subject.infoForContract(
-                                cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
-                        .isEmpty());
-        assertTrue(
-                subject.infoForAccount(
-                                tokenAccountId,
-                                aliasManager,
-                                maxTokensFprAccountInfo,
-                                rewardCalculator)
-                        .isEmpty());
-        assertTrue(subject.tokenType(tokenId).isEmpty());
-        assertTrue(subject.infoForNft(targetNftId).isEmpty());
-        assertTrue(subject.infoForSchedule(scheduleId).isEmpty());
-        assertTrue(subject.infoForToken(tokenId).isEmpty());
-        assertTrue(subject.tokenWith(tokenId).isEmpty());
-        assertFalse(subject.nftExists(targetNftId));
-        assertFalse(subject.scheduleExists(scheduleId));
-        assertFalse(subject.tokenExists(tokenId));
-        assertEquals(0, subject.numNftsOwnedBy(nftOwnerId));
     }
 
     @Test

@@ -25,9 +25,12 @@ class RecordStreamingUtilsTest {
 
     private static final String PATH_TO_FILES = "src/test/resources/recordstream";
 
-    private static final String V6_RECORD_FILE = "2022-06-14T14_49_22.456975294Z.rcd";
+    private static final String V6_RECORD_FILE = "2022-08-15T14_02_51.642641228Z.rcd.gz";
+    private static final String V6_RECORD_UNCOMPRESSED_FILE = "2022-08-18T09_37_10.411994657Z.rcd";
     private static final String V6_RECORD_SIGNATURE_FILE = "2022-06-14T14_49_22.456975294Z.rcd_sig";
-    private static final String V6_SIDECAR_FILE = "2022-06-30T09_07_20.147156221Z_03.rcd";
+    private static final String V6_SIDECAR_FILE = "2022-08-15T14_02_58.158861963Z_01.rcd.gz";
+    private static final String V6_SIDECAR_UNCOMPRESSED_FILE =
+            "2022-08-18T09_37_10.411994657Z_01.rcd";
     private static final String V5_RECORD_FILE = "V5_2022-05-27T08_27_14.157194938Z.rcd";
     private static final String V5_RECORD_SIGNATURE_FILE =
             "V5_2022-05-27T08_27_14.157194938Z.rcd_sig";
@@ -38,6 +41,17 @@ class RecordStreamingUtilsTest {
 
         final var recordFilePair =
                 RecordStreamingUtils.readRecordStreamFile(recordFilePath.toString());
+
+        assertEquals(6, recordFilePair.getLeft());
+        assertTrue(recordFilePair.getRight().isPresent());
+    }
+
+    @Test
+    void parsingUncompressedV6RecordFilesSucceeds() throws IOException {
+        final var recordFilePath = Path.of(PATH_TO_FILES, V6_RECORD_UNCOMPRESSED_FILE);
+
+        final var recordFilePair =
+                RecordStreamingUtils.readUncompressedRecordStreamFile(recordFilePath.toString());
 
         assertEquals(6, recordFilePair.getLeft());
         assertTrue(recordFilePair.getRight().isPresent());
@@ -64,12 +78,33 @@ class RecordStreamingUtilsTest {
     }
 
     @Test
+    void parsingUncompressedV6SidecarRecordFilesSucceeds() throws IOException {
+        final var sidecarFilePath = Path.of(PATH_TO_FILES, V6_SIDECAR_UNCOMPRESSED_FILE);
+
+        final var sidecarFile =
+                RecordStreamingUtils.readUncompressedSidecarFile(sidecarFilePath.toString());
+
+        assertNotNull(sidecarFile);
+    }
+
+    @Test
     void parsingUnknownRecordFilesReturnsEmptyPair() {
         final var recordFilePath = Path.of(PATH_TO_FILES, V5_RECORD_FILE);
 
         assertThrows(
                 IOException.class,
                 () -> RecordStreamingUtils.readRecordStreamFile(recordFilePath.toString()));
+    }
+
+    @Test
+    void parsingUnknownUncompressedRecordFilesReturnsEmptyPair() {
+        final var recordFilePath = Path.of(PATH_TO_FILES, V5_RECORD_FILE);
+
+        assertThrows(
+                IOException.class,
+                () ->
+                        RecordStreamingUtils.readUncompressedRecordStreamFile(
+                                recordFilePath.toString()));
     }
 
     @Test
@@ -88,5 +123,16 @@ class RecordStreamingUtilsTest {
         assertThrows(
                 IOException.class,
                 () -> RecordStreamingUtils.readSidecarFile(notSidecarFilePath.toString()));
+    }
+
+    @Test
+    void parsingUnknownUncompressedSidecarFileReturnsEmptyOptional() {
+        final var notSidecarFilePath = Path.of(PATH_TO_FILES, V5_RECORD_SIGNATURE_FILE);
+
+        assertThrows(
+                IOException.class,
+                () ->
+                        RecordStreamingUtils.readUncompressedSidecarFile(
+                                notSidecarFilePath.toString()));
     }
 }

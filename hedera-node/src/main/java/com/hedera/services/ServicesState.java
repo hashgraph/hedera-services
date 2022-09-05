@@ -19,12 +19,7 @@ import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_FIRST_USER_ENTITY;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
-import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
-import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSION;
-import static com.hedera.services.state.migration.StateVersions.FIRST_027X_VERSION;
-import static com.hedera.services.state.migration.StateVersions.FIRST_028X_VERSION;
-import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
-import static com.hedera.services.state.migration.StateVersions.lastSoftwareVersionOf;
+import static com.hedera.services.state.migration.StateVersions.*;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
@@ -42,11 +37,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.migration.KvPairIterationMigrator;
-import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
-import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
-import com.hedera.services.state.migration.ReleaseTwentySixMigration;
-import com.hedera.services.state.migration.StateChildIndices;
+import com.hedera.services.state.migration.*;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -103,11 +94,9 @@ public class ServicesState extends PartialNaryMerkleInternal
     public static final ImmutableHash EMPTY_HASH =
             new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
-    private static boolean expiryJustEnabled = false;
-
-    /* Only over-written when Platform deserializes a legacy version of the state */
+    // Only over-written when Platform deserializes a legacy version of the state
     private int deserializedStateVersion = CURRENT_VERSION;
-    /* All of the state that is not itself hashed or serialized, but only derived from such state */
+    // All of the state that is not itself hashed or serialized, but only derived from such state
     private StateMetadata metadata;
 
     /**
@@ -121,20 +110,20 @@ public class ServicesState extends PartialNaryMerkleInternal
     private MerkleScheduledTransactions migrationSchedules;
 
     public ServicesState() {
-        /* RuntimeConstructable */
+        // RuntimeConstructable
     }
 
     private ServicesState(ServicesState that) {
-        /* Copy the Merkle route from the source instance */
+        // Copy the Merkle route from the source instance
         super(that);
-        /* Copy the non-null Merkle children from the source */
+        // Copy the non-null Merkle children from the source
         for (int childIndex = 0, n = that.getNumberOfChildren(); childIndex < n; childIndex++) {
             final var childToCopy = that.getChild(childIndex);
             if (childToCopy != null) {
                 setChild(childIndex, childToCopy.copy());
             }
         }
-        /* Copy the non-Merkle state from the source */
+        // Copy the non-Merkle state from the source
         this.deserializedStateVersion = that.deserializedStateVersion;
         this.metadata = (that.metadata == null) ? null : that.metadata.copy();
     }
@@ -311,8 +300,8 @@ public class ServicesState extends PartialNaryMerkleInternal
         } else {
             final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
             if (trigger == RESTART && isUpgrade) {
-                networkCtx().discardPreparedUpgradeMeta();
                 dualState.setFreezeTime(null);
+                networkCtx().discardPreparedUpgradeMeta();
                 if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                     networkCtx().markMigrationRecordsNotYetStreamed();
                 }
@@ -323,7 +312,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             // Log state before migration.
             logStateChildrenSizes();
             // This updates the working state accessor with our children
-            app.initializationFlow().runWith(this);
+            app.initializationFlow().runWith(this, bootstrapProps);
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
             // for lazy-initialization to take place
@@ -525,12 +514,11 @@ public class ServicesState extends PartialNaryMerkleInternal
                 null, new SequenceNumber(seqStart), seqStart - 1, new ExchangeRates());
     }
 
-    private static OwnedNftsLinkMigrator ownedNftsLinkMigrator =
-            ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList;
+    private static NftLinksRepair nftLinksRepair = ReleaseThirtyMigration::rebuildNftOwners;
     private static IterableStorageMigrator iterableStorageMigrator =
             ReleaseTwentySixMigration::makeStorageIterable;
     private static ContractAutoRenewalMigrator autoRenewalMigrator =
-            ReleaseTwentySixMigration::grantFreeAutoRenew;
+            ReleaseThirtyMigration::grantFreeAutoRenew;
     private static StakingInfoBuilder stakingInfoBuilder =
             ReleaseTwentySevenMigration::buildStakingInfoMap;
     private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory =
@@ -547,13 +535,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                     KvPairIterationMigrator::new,
                     VirtualMapMigration::extractVirtualMapData,
                     vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
-            ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), uniqueTokens());
-
-            // When enabling expiry, we will grant all contracts a ~90 day auto-renewal via the
-            // autoRenewalMigrator
-            if (expiryJustEnabled) {
-                autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
-            }
         }
         if (FIRST_027X_VERSION.isAfter(deserializedVersion)) {
             setChild(
@@ -566,10 +547,13 @@ public class ServicesState extends PartialNaryMerkleInternal
             scheduledTxnsMigrator.accept(this);
         }
         if (FIRST_028X_VERSION.isAfter(deserializedVersion)) {
-            // These accounts were created with an (unnecessary) MerkleAccountTokens child; remove
-            // it
+            // These accounts were created with an (unnecessary) MerkleAccountTokens child
             accounts().get(EntityNum.fromLong(800L)).forgetThirdChildIfPlaceholder();
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
+        }
+        if (FIRST_030X_VERSION.isAfter(deserializedVersion)) {
+            autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+            nftLinksRepair.rebuildOwnershipLists(accounts(), uniqueTokens());
         }
 
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)
@@ -580,8 +564,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     @FunctionalInterface
-    interface OwnedNftsLinkMigrator {
-        void buildAccountNftsOwnedLinkedList(
+    interface NftLinksRepair {
+        void rebuildOwnershipLists(
                 MerkleMap<EntityNum, MerkleAccount> accounts,
                 MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens);
     }
@@ -627,8 +611,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     @VisibleForTesting
-    static void setOwnedNftsLinkMigrator(OwnedNftsLinkMigrator ownedNftsLinkMigrator) {
-        ServicesState.ownedNftsLinkMigrator = ownedNftsLinkMigrator;
+    static void setOwnedNftsLinkMigrator(NftLinksRepair nftLinksRepair) {
+        ServicesState.nftLinksRepair = nftLinksRepair;
     }
 
     @VisibleForTesting
@@ -649,11 +633,6 @@ public class ServicesState extends PartialNaryMerkleInternal
     @VisibleForTesting
     static void setVmFactory(final Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory) {
         ServicesState.vmFactory = vmFactory;
-    }
-
-    @VisibleForTesting
-    static void setExpiryJustEnabled(final boolean expiryJustEnabled) {
-        ServicesState.expiryJustEnabled = expiryJustEnabled;
     }
 
     static void setScheduledTransactionsMigrator(

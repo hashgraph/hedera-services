@@ -19,6 +19,7 @@ import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -195,6 +196,13 @@ class BlockManagerTest {
 
         assertArrayEquals(aSuffixHash.toArrayUnsafe(), hash.toArrayUnsafe());
         assertNotSame(aSuffixHash, hash);
+    }
+
+    @Test
+    void shouldLogEveryTransactionStandardCase() {
+        final var result = subject.shouldLogEveryTransaction();
+
+        assertFalse(result);
     }
 
     private static final long gasLimit = 1000;
