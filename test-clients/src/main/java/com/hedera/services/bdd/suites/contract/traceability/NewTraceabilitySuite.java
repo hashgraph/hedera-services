@@ -86,6 +86,12 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     private static final String SECOND = "B";
     private static final String THIRD = "C";
     private static final String TRACEABILITY_TXN = "nestedtxn";
+    private static final String GET_ZERO_SLOT = "getSlot0";
+    private static final String GET_FIRST_SLOT = "getSlot1";
+    private static final String GET_SECOND_SLOT = "getSlot2";
+    private static final String SET_ZERO_SLOT = "setSlot0";
+    private static final String SET_FIRST_SLOT = "setSlot1";
+    private static final String SET_SECOND_SLOT = "setSlot2";
 
     public static void main(String... args) {
         new NewTraceabilitySuite().runSuiteSync();
@@ -360,7 +366,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot0"))
+                                                                                        GET_ZERO_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -382,7 +388,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot1",
+                                                                                        SET_FIRST_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         55)))
@@ -412,7 +418,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot2"))
+                                                                                        GET_SECOND_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -435,7 +441,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot2",
+                                                                                        SET_SECOND_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         143)))
@@ -494,7 +500,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot0"))
+                                                                                        GET_ZERO_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -549,7 +555,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot0",
+                                                                                        SET_ZERO_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         0)))
@@ -608,7 +614,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot1"))
+                                                                                        GET_FIRST_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -663,7 +669,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot1",
+                                                                                        SET_FIRST_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         0)))
@@ -911,7 +917,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot0"))
+                                                                                        GET_ZERO_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -933,7 +939,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot1",
+                                                                                        SET_FIRST_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         55)))
@@ -990,7 +996,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot2"))
+                                                                                        GET_SECOND_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -1043,7 +1049,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot2",
+                                                                                        SET_SECOND_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         143)))
@@ -1102,7 +1108,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot0"))
+                                                                                        GET_ZERO_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -1157,7 +1163,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot0",
+                                                                                        SET_ZERO_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         100)))
@@ -1216,7 +1222,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot1"))
+                                                                                        GET_FIRST_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -1271,7 +1277,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot1",
+                                                                                        SET_FIRST_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         0)))
