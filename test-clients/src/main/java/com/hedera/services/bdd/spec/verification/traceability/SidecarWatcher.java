@@ -52,11 +52,11 @@ public class SidecarWatcher {
 
     private boolean noMoreIncomingExpectedSidecars = false;
     private boolean hasSeenFirst = false;
-    // watch service creates 2 notifications for each sidecar
-    // parsing the sidecar on the first notification throws an
+    // watch service creates 2 notifications per sidecar file
+    // parsing the file on the first notification throws an
     // exception, since the file is not finalized at that point,
     // so we need to know when the 2nd one is and only then parse
-    private boolean firstSidecarNotifyEventSeen = false;
+    private boolean firstEventOfSidecarReceived = false;
 
     public void prepareInfrastructure() throws IOException {
         watchService = FileSystems.getDefault().newWatchService();
@@ -93,7 +93,7 @@ public class SidecarWatcher {
                 final var child = recordStreamFolderPath.resolve(filename);
                 final var newFilePath = child.toString();
                 if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
-                    if (firstSidecarNotifyEventSeen) {
+                    if (firstEventOfSidecarReceived) {
                         log.info("New sidecar file: {}", child.getFileName());
                         final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
                         onNewSidecarFile(sidecarFile);
@@ -101,7 +101,7 @@ public class SidecarWatcher {
                             return;
                         }
                     }
-                    firstSidecarNotifyEventSeen = !firstSidecarNotifyEventSeen;
+                    firstEventOfSidecarReceived = !firstEventOfSidecarReceived;
                 }
             }
             // Reset the key -- this step is critical if you want to
