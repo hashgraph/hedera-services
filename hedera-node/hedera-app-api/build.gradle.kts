@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-apply {
-    plugin("com.hedera.hashgraph.hedera-conventions")
+plugins {
+    id("com.hedera.hashgraph.hedera-conventions")
 }
 
 description = "Hedera Application - API"
