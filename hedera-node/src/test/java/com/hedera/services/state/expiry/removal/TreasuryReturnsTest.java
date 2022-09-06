@@ -164,7 +164,8 @@ class TreasuryReturnsTest {
         givenCorruptNfsSetup();
         given(expiryThrottle.allow(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
-        given(returnHelper.burnOrReturnNft(true, bNftKey, nfts)).willThrow(NullPointerException.class);
+        given(returnHelper.burnOrReturnNft(true, bNftKey, nfts))
+                .willThrow(NullPointerException.class);
 
         final var expected = NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
 
