@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
 import com.hedera.services.fees.charging.FeeDistribution;
@@ -35,7 +36,6 @@ import com.hedera.services.fees.charging.NonHapiFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
-import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.expiry.removal.*;
 import com.hedera.services.state.expiry.renewal.RenewalHelper;
 import com.hedera.services.state.expiry.renewal.RenewalWork;
@@ -106,7 +106,7 @@ class AutoExpiryCycleTest {
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     @Mock private FeeDistribution feeDistribution;
-    private EntityLookup lookup;
+    @Mock private SideEffectsTracker sideEffectsTracker;
     private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
     private RenewalWork renewalWork;
     private RemovalWork removalWork;
@@ -120,7 +120,6 @@ class AutoExpiryCycleTest {
     }
 
     private void setUpPreRequisites() {
-        lookup = new EntityLookup(() -> accounts);
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         renewalWork =
                 new RenewalHelper(
@@ -130,7 +129,8 @@ class AutoExpiryCycleTest {
                         fees,
                         recordsHelper,
                         nonHapiFeeCharging,
-                        accountsLedger);
+                        accountsLedger,
+                        sideEffectsTracker);
         removalWork =
                 new RemovalHelper(
                         classifier, dynamicProperties, contractGC, accountGC, recordsHelper);
@@ -205,6 +205,7 @@ class AutoExpiryCycleTest {
         // then:
         assertEquals(NOTHING_TO_DO, result);
         verifyNoMoreInteractions(classifier);
+        verifyNoMoreInteractions(sideEffectsTracker);
     }
 
     @Test

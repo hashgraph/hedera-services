@@ -29,6 +29,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
 import com.hedera.services.fees.charging.FeeDistribution;
@@ -61,6 +62,7 @@ class RenewalHelperTest {
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private FeeDistribution feeDistribution;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private SideEffectsTracker sideEffectsTracker;
 
     private NonHapiFeeCharging nonHapiFeeCharging;
     private EntityLookup lookup;
@@ -80,7 +82,8 @@ class RenewalHelperTest {
                         fees,
                         recordsHelper,
                         nonHapiFeeCharging,
-                        accountsLedger);
+                        accountsLedger,
+                        sideEffectsTracker);
     }
 
     @Test
@@ -120,6 +123,7 @@ class RenewalHelperTest {
         verify(accountsLedger, times(1)).get(key.toGrpcAccountId(), BALANCE);
         verify(accountsLedger, times(1)).get(key.toGrpcAccountId(), EXPIRY);
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
+        verify(sideEffectsTracker).reset();
         assertEquals(key, classificationWork.getPayerNumForLastClassified());
     }
 
@@ -134,6 +138,7 @@ class RenewalHelperTest {
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
         assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
+        verifyNoInteractions(sideEffectsTracker);
     }
 
     @Test
@@ -151,7 +156,8 @@ class RenewalHelperTest {
                         fees,
                         recordsHelper,
                         nonHapiFeeCharging,
-                        accountsLedger);
+                        accountsLedger,
+                        sideEffectsTracker);
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
@@ -167,6 +173,7 @@ class RenewalHelperTest {
         properties.disableContractAutoRenew();
         result = subject.tryToRenewContract(EntityNum.fromLong(fundedExpiredAccountNum), now);
         assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+        verifyNoInteractions(sideEffectsTracker);
     }
 
     @Test
