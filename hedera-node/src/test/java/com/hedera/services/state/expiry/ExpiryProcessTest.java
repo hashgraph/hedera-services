@@ -259,7 +259,7 @@ class ExpiryProcessTest {
 
         final var result = subject.process(brokeExpiredContractNum, now);
 
-        assertEquals(STILL_MORE_TO_DO, result);
+        assertEquals(NO_CAPACITY_LEFT, result);
         verifyNoMoreInteractions(accountGC, recordsHelper);
     }
 
@@ -275,7 +275,7 @@ class ExpiryProcessTest {
 
         final var result = subject.process(brokeExpiredAccountNum, now);
 
-        assertEquals(STILL_MORE_TO_DO, result);
+        assertEquals(NO_CAPACITY_LEFT, result);
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
         verify(recordsHelper)
                 .streamCryptoRemovalStep(false, expiredNum, null, partiallyFinishedReturns);
