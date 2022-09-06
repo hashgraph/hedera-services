@@ -23,7 +23,6 @@ import static java.util.stream.Collectors.toList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
@@ -72,7 +71,6 @@ class ExpiryRecordsHelperTest {
                 new ExpiryRecordsHelper(
                         recordStreaming,
                         syntheticTxnFactory,
-                        new MockGlobalDynamicProps(),
                         consensusTimeTracker,
                         sideEffectsTracker);
     }
