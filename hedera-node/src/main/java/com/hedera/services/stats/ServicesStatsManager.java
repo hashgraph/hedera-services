@@ -50,6 +50,7 @@ public class ServicesStatsManager {
 
     static final String STATS_UPDATE_THREAD_NAME_TPL = "StatsUpdateThread%d";
 
+    private final ExpiryStats expiryStats;
     private final HapiOpCounters opCounters;
     private final MiscRunningAvgs runningAvgs;
     private final MiscSpeedometers speedometers;
@@ -62,6 +63,7 @@ public class ServicesStatsManager {
 
     @Inject
     public ServicesStatsManager(
+            final ExpiryStats expiryStats,
             final HapiOpCounters opCounters,
             final ThrottleGauges throttleGauges,
             final MiscRunningAvgs runningAvgs,
@@ -74,6 +76,7 @@ public class ServicesStatsManager {
         this.storage = storage;
         this.bytecode = bytecode;
         this.localProperties = localProperties;
+        this.expiryStats = expiryStats;
         this.opCounters = opCounters;
         this.runningAvgs = runningAvgs;
         this.speedometers = speedometers;
@@ -84,6 +87,7 @@ public class ServicesStatsManager {
 
     public void initializeFor(final Platform platform) {
         opCounters.registerWith(platform);
+        expiryStats.registerWith(platform);
         runningAvgs.registerWith(platform);
         speedometers.registerWith(platform);
         throttleGauges.registerWith(platform);

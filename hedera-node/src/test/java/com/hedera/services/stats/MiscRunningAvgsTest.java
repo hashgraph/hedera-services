@@ -35,8 +35,6 @@ class MiscRunningAvgsTest {
     @Mock private Platform platform;
 
     @Mock private RunningAverageMetric gasPerSec;
-    @Mock private RunningAverageMetric waitMs;
-    @Mock private RunningAverageMetric retries;
     @Mock private RunningAverageMetric submitSizes;
     @Mock private RunningAverageMetric queueSize;
     @Mock private RunningAverageMetric hashS;
@@ -44,8 +42,6 @@ class MiscRunningAvgsTest {
 
     @BeforeEach
     void setup() {
-        platform = mock(Platform.class);
-
         subject = new MiscRunningAvgs(halfLife);
     }
 
@@ -55,22 +51,18 @@ class MiscRunningAvgsTest {
 
         subject.registerWith(platform);
 
-        verify(platform, times(6)).getOrCreateMetric(any());
+        verify(platform, times(4)).getOrCreateMetric(any());
     }
 
     @Test
     void recordsToExpectedAvgs() {
         setMocks();
 
-        subject.recordAccountLookupRetries(1);
-        subject.recordAccountRetryWaitMs(2.0);
         subject.recordHandledSubmitMessageSize(3);
         subject.writeQueueSizeRecordStream(4);
         subject.hashQueueSizeRecordStream(5);
         subject.recordGasPerConsSec(6L);
 
-        verify(retries).update(1.0);
-        verify(waitMs).update(2.0);
         verify(submitSizes).update(3.0);
         verify(queueSize).update(4.0);
         verify(hashS).update(5);
@@ -78,8 +70,6 @@ class MiscRunningAvgsTest {
     }
 
     private void setMocks() {
-        subject.setAccountLookupRetries(retries);
-        subject.setAccountRetryWaitMs(waitMs);
         subject.setHandledSubmitMessageSize(submitSizes);
         subject.setWriteQueueSizeRecordStream(queueSize);
         subject.setHashQueueSizeRecordStream(hashS);
