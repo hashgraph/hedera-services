@@ -23,6 +23,7 @@ import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
 import java.util.function.Supplier;
@@ -40,12 +41,14 @@ public class EntityAutoExpiry {
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final Supplier<SequenceNumber> seqNo;
     private final ConsensusTimeTracker consensusTimeTracker;
+    private final ExpiryStats expiryStats;
 
     private int maxIdsToScan;
     private int maxEntitiesToProcess;
 
     @Inject
     public EntityAutoExpiry(
+            final ExpiryStats expiryStats,
             final HederaNumbers hederaNumbers,
             final ExpiryThrottle expiryThrottle,
             final ExpiryProcess expiryProcess,
@@ -55,6 +58,7 @@ public class EntityAutoExpiry {
             final ConsensusTimeTracker consensusTimeTracker,
             final Supplier<SequenceNumber> seqNo) {
         this.seqNo = seqNo;
+        this.expiryStats = expiryStats;
         this.networkCtx = networkCtx;
         this.networkCtxManager = networkCtxManager;
         this.expiryThrottle = expiryThrottle;
@@ -81,6 +85,7 @@ public class EntityAutoExpiry {
         maxIdsToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
         maxEntitiesToProcess = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
         if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
+            expiryStats.includeIdsScannedInLastConsSec(curNetworkCtx.idsScannedThisSecond());
             curNetworkCtx.clearAutoRenewSummaryCounts();
         }
 

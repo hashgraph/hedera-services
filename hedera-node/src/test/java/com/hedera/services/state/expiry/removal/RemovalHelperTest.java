@@ -20,8 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
@@ -31,6 +30,7 @@ import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -60,6 +60,7 @@ class RemovalHelperTest {
     @Mock private AccountGC accountGC;
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryStats expiryStats;
 
     private EntityLookup lookup;
     private ClassificationWork classifier;
@@ -73,7 +74,9 @@ class RemovalHelperTest {
         lookup = new EntityLookup(() -> accounts);
         classifier = new ClassificationWork(properties, lookup, expiryThrottle);
 
-        subject = new RemovalHelper(classifier, properties, contractGC, accountGC, recordsHelper);
+        subject =
+                new RemovalHelper(
+                        expiryStats, classifier, properties, contractGC, accountGC, recordsHelper);
     }
 
     @Test
@@ -100,6 +103,7 @@ class RemovalHelperTest {
 
         var result = subject.tryToRemoveAccount(expiredNum);
 
+        verify(expiryStats, never()).countRemovedContract();
         verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, null, finishedReturns);
         assertEquals(ExpiryProcessResult.DONE, result);
     }
@@ -139,6 +143,7 @@ class RemovalHelperTest {
 
         verify(recordsHelper)
                 .streamCryptoRemovalStep(true, expiredNum, autoRenewId, finishedReturns);
+        verify(expiryStats).countRemovedContract();
         assertEquals(ExpiryProcessResult.DONE, result);
     }
 

@@ -16,7 +16,7 @@
 package com.hedera.services.state.expiry;
 
 import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -31,6 +31,7 @@ import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,7 @@ class EntityAutoExpiryTest {
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
     @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryStats expiryStats;
 
     private EntityAutoExpiry subject;
 
@@ -60,6 +62,7 @@ class EntityAutoExpiryTest {
     void setUp() {
         subject =
                 new EntityAutoExpiry(
+                        expiryStats,
                         mockHederaNums,
                         expiryThrottle,
                         expiryProcess,
@@ -116,12 +119,14 @@ class EntityAutoExpiryTest {
         given(networkCtxManager.currentTxnIsFirstInConsensusSecond()).willReturn(true);
         givenWrapNum(aNum + 123);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(anyLong(), instantNow)).willReturn(NOTHING_TO_DO);
+        given(expiryProcess.process(anyLong(), any())).willReturn(NOTHING_TO_DO);
+        given(networkCtx.idsScannedThisSecond()).willReturn(666L);
 
         // when:
         subject.execute(instantNow);
 
         // then:
+        verify(expiryStats).includeIdsScannedInLastConsSec(666L);
         verify(networkCtx).clearAutoRenewSummaryCounts();
     }
 
@@ -133,7 +138,7 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(anyLong(), instantNow)).willReturn(NOTHING_TO_DO);
+        given(expiryProcess.process(anyLong(), eq(instantNow))).willReturn(NOTHING_TO_DO);
 
         // when:
         subject.execute(instantNow);

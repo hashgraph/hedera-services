@@ -15,7 +15,6 @@
  */
 package com.hedera.services.stats;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -60,7 +59,7 @@ class ExpiryStatsTest {
 
         subject.countRemovedContract();
         subject.countRenewedContract();
-        subject.incorporateLastConsSec(5);
+        subject.includeIdsScannedInLastConsSec(5L);
 
         verify(contractsRemoved).increment();
         verify(contractsRenewed).increment();

@@ -23,6 +23,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -34,14 +35,17 @@ public class RemovalHelper implements RemovalWork {
     private final ContractGC contractGC;
     private final AccountGC accountGC;
     private final ExpiryRecordsHelper recordsHelper;
+    private final ExpiryStats expiryStats;
 
     @Inject
     public RemovalHelper(
+            final ExpiryStats expiryStats,
             final ClassificationWork classifier,
             final GlobalDynamicProperties properties,
             final ContractGC contractGC,
             final AccountGC accountGC,
             final ExpiryRecordsHelper recordsHelper) {
+        this.expiryStats = expiryStats;
         this.classifier = classifier;
         this.properties = properties;
         this.contractGC = contractGC;
@@ -75,6 +79,13 @@ public class RemovalHelper implements RemovalWork {
             final var autoRenewId = isContract ? lastClassified.getAutoRenewAccount() : null;
             recordsHelper.streamCryptoRemovalStep(isContract, num, autoRenewId, gcOutcome);
         }
-        return gcOutcome.finished() ? DONE : STILL_MORE_TO_DO;
+        if (gcOutcome.finished()) {
+            if (isContract) {
+                expiryStats.countRemovedContract();
+            }
+            return DONE;
+        } else {
+            return STILL_MORE_TO_DO;
+        }
     }
 }

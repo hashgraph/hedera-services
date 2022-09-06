@@ -35,6 +35,7 @@ import com.hedera.services.state.expiry.renewal.RenewalHelper;
 import com.hedera.services.state.expiry.renewal.RenewalWork;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -96,6 +97,7 @@ class ExpiryProcessTest {
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryStats expiryStats;
     private EntityLookup lookup;
     private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
     private RenewalWork renewalWork;
@@ -112,10 +114,21 @@ class ExpiryProcessTest {
         lookup = new EntityLookup(() -> accounts);
         renewalWork =
                 new RenewalHelper(
-                        lookup, expiryThrottle, classifier, dynamicProperties, fees, recordsHelper);
+                        expiryStats,
+                        lookup,
+                        expiryThrottle,
+                        classifier,
+                        dynamicProperties,
+                        fees,
+                        recordsHelper);
         removalWork =
                 new RemovalHelper(
-                        classifier, dynamicProperties, contractGC, accountGC, recordsHelper);
+                        expiryStats,
+                        classifier,
+                        dynamicProperties,
+                        contractGC,
+                        accountGC,
+                        recordsHelper);
     }
 
     @Test

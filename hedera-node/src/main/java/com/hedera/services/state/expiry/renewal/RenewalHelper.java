@@ -27,6 +27,7 @@ import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
@@ -51,9 +52,11 @@ public class RenewalHelper implements RenewalWork {
     private final ExpiryRecordsHelper recordsHelper;
     private final EntityLookup lookup;
     private final ExpiryThrottle expiryThrottle;
+    private final ExpiryStats expiryStats;
 
     @Inject
     public RenewalHelper(
+            final ExpiryStats expiryStats,
             final EntityLookup lookup,
             final ExpiryThrottle expiryThrottle,
             final ClassificationWork classifier,
@@ -61,6 +64,7 @@ public class RenewalHelper implements RenewalWork {
             final FeeCalculator fees,
             final ExpiryRecordsHelper recordsHelper) {
         this.lookup = lookup;
+        this.expiryStats = expiryStats;
         this.expiryThrottle = expiryThrottle;
         this.classifier = classifier;
         this.dynamicProperties = dynamicProperties;
@@ -103,6 +107,7 @@ public class RenewalHelper implements RenewalWork {
         final var oldExpiry = expired.getExpiry();
         renewWith(renewalFee, renewalPeriod);
 
+        expiryStats.countRenewedContract();
         recordsHelper.streamCryptoRenewal(
                 account, renewalFee, oldExpiry + renewalPeriod, isContract, payer.getKey());
         return DONE;
@@ -113,7 +118,7 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @VisibleForTesting
-    void renewWith(long fee, long renewalPeriod) {
+    void renewWith(final long fee, long renewalPeriod) {
         assertPayerAccountForRenewalCanAfford(fee);
 
         final var mutableAccount = lookup.getMutableAccount(classifier.getLastClassifiedNum());

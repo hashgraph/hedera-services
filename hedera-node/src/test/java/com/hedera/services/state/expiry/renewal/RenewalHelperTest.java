@@ -34,6 +34,7 @@ import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -52,6 +53,7 @@ class RenewalHelperTest {
     @Mock private FeeCalculator fees;
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryStats expiryStats;
 
     private EntityLookup lookup;
     private ClassificationWork classificationWork;
@@ -63,6 +65,7 @@ class RenewalHelperTest {
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
         subject =
                 new RenewalHelper(
+                        expiryStats,
                         lookup,
                         expiryThrottle,
                         classificationWork,
@@ -98,6 +101,7 @@ class RenewalHelperTest {
         // then:
         verify(accounts, times(2)).getForModify(key);
         verify(accounts).getForModify(fundingKey);
+        verify(expiryStats).countRenewedContract();
         assertEquals(key, classificationWork.getPayerNumForLastClassified());
     }
 
@@ -123,6 +127,7 @@ class RenewalHelperTest {
 
         subject =
                 new RenewalHelper(
+                        expiryStats,
                         lookup,
                         expiryThrottle,
                         classificationWork,

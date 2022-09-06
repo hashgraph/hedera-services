@@ -61,8 +61,8 @@ public class ExpiryStats {
         contractsRenewed.increment();
     }
 
-    public void incorporateLastConsSec(final int idsScanned) {
-        idsScannedPerConsSec.update(idsScanned);
+    public void includeIdsScannedInLastConsSec(final long n) {
+        idsScannedPerConsSec.update(n);
     }
 
     public static final class Descriptions {
