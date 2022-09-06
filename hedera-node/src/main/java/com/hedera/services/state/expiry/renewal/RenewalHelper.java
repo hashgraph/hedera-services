@@ -15,14 +15,14 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.*;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
@@ -69,7 +69,7 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @Override
-    public EntityProcessResult tryToRenewContract(
+    public ExpiryProcessResult tryToRenewContract(
             final EntityNum contract, final Instant cycleTime) {
         if (!dynamicProperties.shouldAutoRenewContracts()) {
             return NOTHING_TO_DO;
@@ -78,14 +78,14 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @Override
-    public EntityProcessResult tryToRenewAccount(final EntityNum account, final Instant cycleTime) {
+    public ExpiryProcessResult tryToRenewAccount(final EntityNum account, final Instant cycleTime) {
         if (!dynamicProperties.shouldAutoRenewAccounts()) {
             return NOTHING_TO_DO;
         }
         return renew(account, cycleTime, false);
     }
 
-    private EntityProcessResult renew(
+    private ExpiryProcessResult renew(
             final EntityNum account, final Instant cycleTime, final boolean isContract) {
         assertHasLastClassifiedAccount();
 

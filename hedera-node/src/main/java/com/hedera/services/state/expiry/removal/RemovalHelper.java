@@ -15,12 +15,12 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.DONE;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.NOTHING_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.STILL_MORE_TO_DO;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.utils.EntityNum;
@@ -50,7 +50,7 @@ public class RemovalHelper implements RemovalWork {
     }
 
     @Override
-    public EntityProcessResult tryToRemoveAccount(final EntityNum account) {
+    public ExpiryProcessResult tryToRemoveAccount(final EntityNum account) {
         if (!properties.shouldAutoRenewAccounts()) {
             return NOTHING_TO_DO;
         }
@@ -58,14 +58,14 @@ public class RemovalHelper implements RemovalWork {
     }
 
     @Override
-    public EntityProcessResult tryToRemoveContract(final EntityNum contract) {
+    public ExpiryProcessResult tryToRemoveContract(final EntityNum contract) {
         if (!properties.shouldAutoRenewContracts()) {
             return NOTHING_TO_DO;
         }
         return remove(contract, true);
     }
 
-    private EntityProcessResult remove(final EntityNum num, final boolean isContract) {
+    private ExpiryProcessResult remove(final EntityNum num, final boolean isContract) {
         final var lastClassified = classifier.getLastClassified();
         if (isContract && !contractGC.expireBestEffort(num, lastClassified)) {
             return STILL_MORE_TO_DO;

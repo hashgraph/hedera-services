@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.NOTHING_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.STILL_MORE_TO_DO;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
@@ -30,15 +30,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class AutoExpiryCycle {
-    private static final Logger log = LogManager.getLogger(AutoExpiryCycle.class);
+public class ExpiryProcess {
+    private static final Logger log = LogManager.getLogger(ExpiryProcess.class);
     private final RenewalWork renewalWork;
     private final RemovalWork removalWork;
     private final ClassificationWork classifier;
     private Instant cycleTime = null;
 
     @Inject
-    public AutoExpiryCycle(
+    public ExpiryProcess(
             final ClassificationWork classifier,
             final RenewalWork renewalWork,
             final RemovalWork removalWork) {
@@ -52,7 +52,7 @@ public class AutoExpiryCycle {
         cycleTime = currentConsTime;
     }
 
-    public EntityProcessResult process(final long literalNum) {
+    public ExpiryProcessResult process(final long literalNum) {
         warnIfNotInCycle();
 
         final var entityNum = EntityNum.fromLong(literalNum);

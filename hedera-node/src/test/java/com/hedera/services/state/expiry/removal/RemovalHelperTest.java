@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
@@ -80,11 +80,11 @@ class RemovalHelperTest {
     void doesNothingWhenDisabled() {
         properties.disableAutoRenew();
         var result = subject.tryToRemoveAccount(EntityNum.fromLong(nonExpiredAccountNum));
-        assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
 
         properties.disableContractAutoRenew();
         result = subject.tryToRemoveContract(EntityNum.fromLong(nonExpiredAccountNum));
-        assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
     }
 
     @Test
@@ -101,7 +101,7 @@ class RemovalHelperTest {
         var result = subject.tryToRemoveAccount(expiredNum);
 
         verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, null, finishedReturns);
-        assertEquals(EntityProcessResult.DONE, result);
+        assertEquals(ExpiryProcessResult.DONE, result);
     }
 
     @Test
@@ -118,7 +118,7 @@ class RemovalHelperTest {
         var result = subject.tryToRemoveAccount(expiredNum);
 
         verifyNoInteractions(recordsHelper);
-        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.STILL_MORE_TO_DO, result);
     }
 
     @Test
@@ -139,7 +139,7 @@ class RemovalHelperTest {
 
         verify(recordsHelper)
                 .streamCryptoRemovalStep(true, expiredNum, autoRenewId, finishedReturns);
-        assertEquals(EntityProcessResult.DONE, result);
+        assertEquals(ExpiryProcessResult.DONE, result);
     }
 
     private final Instant now = Instant.ofEpochSecond(1_234_567L);

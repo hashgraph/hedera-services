@@ -15,8 +15,25 @@
  */
 package com.hedera.services.state.expiry;
 
-public enum EntityProcessResult {
+/**
+ * Summarizes the result of processing an {@code 0.0.X} id that might refer to an expiring entity.
+ */
+public enum ExpiryProcessResult {
+    /**
+     * Either the id did not refer to an entity; or that entity is not expired.
+     */
     NOTHING_TO_DO,
+    /**
+     * The id referred to an expiring entity, but its auto-renewal or auto-removal work could
+     * not be completed in the current process step.
+     */
     STILL_MORE_TO_DO,
-    DONE
+    /**
+     * The id referred to an expiring entity, and its auto-renewal or auto-removal work is complete.
+     */
+    DONE,
+    /**
+     * The expiry throttle bucket was full, and nothing can be inferred about the given id.
+     */
+    NO_CAPACITY_NOW
 }
