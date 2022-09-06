@@ -115,6 +115,9 @@ public class ServicesTxnManager {
 
         if (processFailed) {
             attemptRollback(accessor, consensusTime, submittingMember);
+            if (ledger.getAccountsLedger().isInTransaction()) {
+                attemptRecordStreaming();
+            }
         } else {
             attemptCommit(accessor, consensusTime, submittingMember);
             if (createdStreamableRecord) {
