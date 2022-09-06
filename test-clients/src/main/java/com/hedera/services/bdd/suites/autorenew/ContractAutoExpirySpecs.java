@@ -133,7 +133,8 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 
                         // Any transaction will do
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("trigger"),
-                        getTxnRecord("trigger").logged())
+                        getTxnRecord("trigger").andAllChildRecords().logged()
+                )
                 .then(
                         assertionsHold(
                                 (spec, opLog) -> {

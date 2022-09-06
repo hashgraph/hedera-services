@@ -19,6 +19,7 @@ import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.synthFromBody;
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.ConsensusTimeTracker;
@@ -41,17 +42,20 @@ public class ExpiryRecordsHelper {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final GlobalDynamicProperties dynamicProperties;
     private final ConsensusTimeTracker consensusTimeTracker;
+    private final SideEffectsTracker sideEffectsTracker;
 
     @Inject
     public ExpiryRecordsHelper(
             final RecordStreaming recordStreaming,
             final SyntheticTxnFactory syntheticTxnFactory,
             final GlobalDynamicProperties dynamicProperties,
-            final ConsensusTimeTracker consensusTimeTracker) {
+            final ConsensusTimeTracker consensusTimeTracker,
+            final SideEffectsTracker sideEffectsTracker) {
         this.recordStreaming = recordStreaming;
         this.dynamicProperties = dynamicProperties;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.consensusTimeTracker = consensusTimeTracker;
+        this.sideEffectsTracker = sideEffectsTracker;
     }
 
     public void streamCryptoRemovalStep(
@@ -104,7 +108,8 @@ public class ExpiryRecordsHelper {
         final var expirableTxnRecord =
                 forTouchedAccount(grpcId, eventTime, payerForExpiry.toEntityId())
                         .setMemo(memo)
-                        .setHbarAdjustments(feeXfers(fee, payerId))
+                        .setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
+                        .setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
                         .setFee(fee)
                         .build();
         stream(expirableTxnRecord, synthBody, eventTime);
@@ -117,13 +122,6 @@ public class ExpiryRecordsHelper {
         final var rso =
                 new RecordStreamObject(expiringRecord, synthFromBody(synthBody.build()), at);
         recordStreaming.streamSystemRecord(rso);
-    }
-
-    private CurrencyAdjustments feeXfers(final long amount, final AccountID payer) {
-        final var funding = dynamicProperties.fundingAccount();
-        return new CurrencyAdjustments(
-                new long[] {amount, -amount},
-                new long[] {funding.getAccountNum(), payer.getAccountNum()});
     }
 
     private ExpirableTxnRecord.Builder forTouchedAccount(
