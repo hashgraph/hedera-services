@@ -116,7 +116,7 @@ class EntityAutoExpiryTest {
         given(networkCtxManager.currentTxnIsFirstInConsensusSecond()).willReturn(true);
         givenWrapNum(aNum + 123);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(anyLong())).willReturn(NOTHING_TO_DO);
+        given(expiryProcess.process(anyLong(), instantNow)).willReturn(NOTHING_TO_DO);
 
         // when:
         subject.execute(instantNow);
@@ -133,18 +133,16 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(anyLong())).willReturn(NOTHING_TO_DO);
+        given(expiryProcess.process(anyLong(), instantNow)).willReturn(NOTHING_TO_DO);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(expiryProcess).beginCycle(instantNow);
         for (long i = aNum; i < aNum + numToScan; i++) {
-            verify(expiryProcess).process(i);
+            verify(expiryProcess).process(i, instantNow);
         }
         // and:
-        verify(expiryProcess).endCycle();
         verify(networkCtx).updateLastScannedEntity(aNum + numToScan - 1);
     }
 
@@ -155,16 +153,16 @@ class EntityAutoExpiryTest {
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
         givenWrapNum(aNum + numToScan + 1);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(aNum)).willReturn(STILL_MORE_TO_DO).willReturn(DONE);
+        given(expiryProcess.process(aNum, instantNow))
+                .willReturn(STILL_MORE_TO_DO)
+                .willReturn(DONE);
         mockDynamicProps.setMaxToTouch(1);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(expiryProcess).beginCycle(instantNow);
-        verify(expiryProcess, times(2)).process(aNum);
-        verify(expiryProcess).endCycle();
+        verify(expiryProcess, times(2)).process(aNum, instantNow);
         verifyNoMoreInteractions(expiryProcess);
         verify(networkCtx).updateAutoRenewSummaryCounts(1, 1);
         verify(networkCtx).updateLastScannedEntity(aNum);
@@ -177,7 +175,7 @@ class EntityAutoExpiryTest {
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
         givenWrapNum(aNum + numToScan + 1);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(aNum))
+        given(expiryProcess.process(aNum, instantNow))
                 .willReturn(STILL_MORE_TO_DO)
                 .willReturn(STILL_MORE_TO_DO)
                 .willReturn(STILL_MORE_TO_DO)
@@ -187,9 +185,7 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verify(expiryProcess).beginCycle(instantNow);
-        verify(expiryProcess, times(4)).process(aNum);
-        verify(expiryProcess).endCycle();
+        verify(expiryProcess, times(4)).process(aNum, instantNow);
         verifyNoMoreInteractions(expiryProcess);
         verify(networkCtx).updateLastScannedEntity(aNum - 1);
     }
@@ -202,20 +198,18 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(aNum)).willReturn(DONE);
-        given(expiryProcess.process(bNum)).willReturn(DONE);
+        given(expiryProcess.process(aNum, instantNow)).willReturn(DONE);
+        given(expiryProcess.process(bNum, instantNow)).willReturn(DONE);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(expiryProcess).beginCycle(instantNow);
         for (long i = aNum; i < cNum; i++) {
-            verify(expiryProcess).process(i);
+            verify(expiryProcess).process(i, instantNow);
         }
         // and:
-        verify(expiryProcess, never()).process(cNum);
-        verify(expiryProcess).endCycle();
+        verify(expiryProcess, never()).process(cNum, instantNow);
         verify(networkCtx).updateLastScannedEntity(bNum);
     }
 
@@ -227,7 +221,7 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(aNum))
+        given(expiryProcess.process(aNum, instantNow))
                 .willAnswer(
                         i -> {
                             given(consensusTimeTracker.hasMoreStandaloneRecordTime())
@@ -239,11 +233,9 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verify(expiryProcess).beginCycle(instantNow);
-        verify(expiryProcess).process(aNum);
+        verify(expiryProcess).process(aNum, instantNow);
         // and:
-        verify(expiryProcess, never()).process(bNum);
-        verify(expiryProcess).endCycle();
+        verify(expiryProcess, never()).process(bNum, instantNow);
         verify(networkCtx).updateLastScannedEntity(aNum);
     }
 
@@ -255,23 +247,21 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum + numToScan - 2);
-        given(expiryProcess.process(aNum + numToScan - 1)).willReturn(NOTHING_TO_DO);
-        given(expiryProcess.process(aNum - 1)).willReturn(NOTHING_TO_DO);
-        given(expiryProcess.process(aNum)).willReturn(DONE);
-        given(expiryProcess.process(bNum)).willReturn(DONE);
+        given(expiryProcess.process(aNum + numToScan - 1, instantNow)).willReturn(NOTHING_TO_DO);
+        given(expiryProcess.process(aNum - 1, instantNow)).willReturn(NOTHING_TO_DO);
+        given(expiryProcess.process(aNum, instantNow)).willReturn(DONE);
+        given(expiryProcess.process(bNum, instantNow)).willReturn(DONE);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(expiryProcess).beginCycle(instantNow);
-        verify(expiryProcess).process(aNum + numToScan - 1);
+        verify(expiryProcess).process(aNum + numToScan - 1, instantNow);
         for (long i = aNum; i < cNum; i++) {
-            verify(expiryProcess).process(i);
+            verify(expiryProcess).process(i, instantNow);
         }
         // and:
-        verify(expiryProcess, never()).process(cNum);
-        verify(expiryProcess).endCycle();
+        verify(expiryProcess, never()).process(cNum, instantNow);
         verify(networkCtx).updateLastScannedEntity(bNum);
         // and:
         verify(networkCtx).updateAutoRenewSummaryCounts(4, 2);

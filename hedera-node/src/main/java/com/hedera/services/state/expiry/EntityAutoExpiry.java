@@ -83,7 +83,6 @@ public class EntityAutoExpiry {
         if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
             curNetworkCtx.clearAutoRenewSummaryCounts();
         }
-        expiryProcess.beginCycle(currentConsTime);
 
         int idsScanned = 0;
         int entitiesProcessed = 0;
@@ -96,7 +95,7 @@ public class EntityAutoExpiry {
                 idsScanned++;
             }
             // Each processing attempt will generate at most one child record
-            result = expiryProcess.process(scanNum);
+            result = expiryProcess.process(scanNum, currentConsTime);
             if (result == NOTHING_TO_DO) {
                 advanceScan = true;
             } else {
@@ -107,7 +106,6 @@ public class EntityAutoExpiry {
             }
         }
 
-        expiryProcess.endCycle();
         curNetworkCtx.updateAutoRenewSummaryCounts(idsScanned, entitiesProcessed);
         curNetworkCtx.updateLastScannedEntity(advanceScan ? scanNum : scanNum - 1);
     }
