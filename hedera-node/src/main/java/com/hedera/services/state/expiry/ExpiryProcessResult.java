@@ -25,8 +25,8 @@ public enum ExpiryProcessResult {
      * The id referred to an expiring entity, but its auto-renewal or auto-removal work could not be
      * completed in the current process step.
      *
-     * <p><b>IMPORTANT:</b> Right now, the only reason that auto-renewal or auto-removal work will not
-     * complete for an entity is {@link ExpiryProcessResult#NO_CAPACITY_LEFT}. But it is quite
+     * <p><b>IMPORTANT:</b> Right now, the only reason that auto-renewal or auto-removal work will
+     * not complete for an entity is {@link ExpiryProcessResult#NO_CAPACITY_LEFT}. But it is quite
      * conceivable we will use this result value in the future.
      */
     STILL_MORE_TO_DO,

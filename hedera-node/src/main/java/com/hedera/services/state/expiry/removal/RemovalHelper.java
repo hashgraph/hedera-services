@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.expiry.removal;
 
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
@@ -23,8 +25,6 @@ import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 
 @Singleton
 public class RemovalHelper implements RemovalWork {
