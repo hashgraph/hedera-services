@@ -184,7 +184,7 @@ class EntityAutoExpiryTest {
                 .willReturn(STILL_MORE_TO_DO)
                 .willReturn(STILL_MORE_TO_DO)
                 .willReturn(STILL_MORE_TO_DO)
-                .willReturn(NO_CAPACITY_NOW);
+                .willReturn(NO_CAPACITY_LEFT);
 
         // when:
         subject.execute(instantNow);

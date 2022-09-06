@@ -15,9 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.DONE;
-import static com.hedera.services.state.expiry.ExpiryProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.ExpiryProcessResult.STILL_MORE_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -142,13 +140,13 @@ class ExpiryProcessTest {
     }
 
     @Test
-    void stillMoreToDoIfCannotClassify() {
+    void noCapacityNow() {
         given(classifier.classify(EntityNum.fromLong(nonExpiredAccountNum), now))
                 .willReturn(COME_BACK_LATER);
 
         var result = subject.process(nonExpiredAccountNum, now);
 
-        assertEquals(STILL_MORE_TO_DO, result);
+        assertEquals(NO_CAPACITY_LEFT, result);
         verifyNoMoreInteractions(classifier);
     }
 

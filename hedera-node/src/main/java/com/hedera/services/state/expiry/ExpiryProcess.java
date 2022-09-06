@@ -15,8 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.ExpiryProcessResult.STILL_MORE_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
@@ -46,7 +45,7 @@ public class ExpiryProcess {
         final var entityNum = EntityNum.fromLong(literalNum);
         final var result = classifier.classify(entityNum, now);
         return switch (result) {
-            case COME_BACK_LATER -> STILL_MORE_TO_DO;
+            case COME_BACK_LATER -> NO_CAPACITY_LEFT;
 
             case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(entityNum, now);
             case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);

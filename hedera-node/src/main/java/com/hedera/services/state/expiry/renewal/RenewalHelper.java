@@ -96,7 +96,7 @@ public class RenewalHelper implements RenewalWork {
         final var payer = classifier.getPayerForLastClassified();
         final var expired = classifier.getLastClassified();
         if (!expiryThrottle.allow(workFor(payer, expired))) {
-            return STILL_MORE_TO_DO;
+            return NO_CAPACITY_LEFT;
         }
 
         final long reqPeriod = expired.getAutoRenewSecs();

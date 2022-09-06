@@ -15,10 +15,6 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.DONE;
-import static com.hedera.services.state.expiry.ExpiryProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.ExpiryProcessResult.STILL_MORE_TO_DO;
-
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
@@ -27,6 +23,8 @@ import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 
 @Singleton
 public class RemovalHelper implements RemovalWork {
@@ -72,7 +70,7 @@ public class RemovalHelper implements RemovalWork {
     private ExpiryProcessResult remove(final EntityNum num, final boolean isContract) {
         final var lastClassified = classifier.getLastClassified();
         if (isContract && !contractGC.expireBestEffort(num, lastClassified)) {
-            return STILL_MORE_TO_DO;
+            return NO_CAPACITY_LEFT;
         }
         final var gcOutcome = accountGC.expireBestEffort(num, lastClassified);
         if (gcOutcome.needsExternalizing()) {
@@ -85,7 +83,7 @@ public class RemovalHelper implements RemovalWork {
             }
             return DONE;
         } else {
-            return STILL_MORE_TO_DO;
+            return NO_CAPACITY_LEFT;
         }
     }
 }

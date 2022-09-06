@@ -115,7 +115,7 @@ class RenewalHelperTest {
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(ExpiryProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
     }
 
     @Test
@@ -137,7 +137,7 @@ class RenewalHelperTest {
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(ExpiryProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
     }
 
     @Test

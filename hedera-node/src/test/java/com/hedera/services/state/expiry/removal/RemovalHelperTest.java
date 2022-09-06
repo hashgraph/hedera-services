@@ -122,7 +122,7 @@ class RemovalHelperTest {
         var result = subject.tryToRemoveAccount(expiredNum);
 
         verifyNoInteractions(recordsHelper);
-        assertEquals(ExpiryProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
     }
 
     @Test
@@ -145,6 +145,20 @@ class RemovalHelperTest {
                 .streamCryptoRemovalStep(true, expiredNum, autoRenewId, finishedReturns);
         verify(expiryStats).countRemovedContract();
         assertEquals(ExpiryProcessResult.DONE, result);
+    }
+
+    @Test
+    void shortCircuitsIfContractGcCantFinish() {
+        properties.enableAutoRenew();
+        final var expiredNum = EntityNum.fromLong(expiredDeletedContractNum);
+
+        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
+
+        classifier.classify(expiredNum, now);
+
+        var result = subject.tryToRemoveContract(expiredNum);
+
+        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
     }
 
     private final Instant now = Instant.ofEpochSecond(1_234_567L);

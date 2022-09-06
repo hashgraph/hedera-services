@@ -121,7 +121,7 @@ public class EntityAutoExpiry {
             final int entitiesProcessed) {
         return idsScanned < maxIdsToScan
                 && entitiesProcessed < maxEntitiesToProcess
-                && result != NO_CAPACITY_NOW
+                && result != NO_CAPACITY_LEFT
                 && consensusTimeTracker.hasMoreStandaloneRecordTime();
     }
 
