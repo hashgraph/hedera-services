@@ -420,7 +420,7 @@ class StakingAccountsCommitInterceptorTest {
         assertEquals(0L, stakingInfo.get(node1Id).getRewardSumHistory()[0]);
         assertEquals(0L, stakingInfo.get(node0Id).getRewardSumHistory()[1]);
         assertEquals(0L, stakingInfo.get(node1Id).getRewardSumHistory()[1]);
-        verify(rewardCalculator).reset();
+        verify(rewardCalculator, times(3)).reset();
     }
 
     @Test
