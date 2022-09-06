@@ -51,6 +51,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -552,6 +553,44 @@ class ServicesStateTest {
         verify(appBuilder).selfId(selfId.getId());
         // and:
         assertTrue(APPS.includes(selfId.getId()));
+
+        // cleanup:
+        ServicesState.setAppBuilder(DaggerServicesApp::builder);
+    }
+
+    @Test
+    void genesisWhenVirtualNftsEnabled() {
+        // setup:
+        subject = new ServicesState(bootstrapProperties);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
+                .willReturn(true);
+        ServicesState.setAppBuilder(() -> appBuilder);
+
+        given(addressBook.getSize()).willReturn(3);
+        given(addressBook.getAddress(anyLong())).willReturn(address);
+        given(address.getMemo()).willReturn(bookMemo);
+        given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
+        given(appBuilder.crypto(any())).willReturn(appBuilder);
+        given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
+        given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
+        given(appBuilder.platform(platform)).willReturn(appBuilder);
+        given(appBuilder.selfId(1L)).willReturn(appBuilder);
+        given(appBuilder.build()).willReturn(app);
+        // and:
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(app.sysAccountsCreator()).willReturn(accountsCreator);
+        given(app.workingState()).willReturn(workingState);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+
+        // when:
+        subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, null);
+        setAllChildren();
+
+        // then:
+        assertTrue(subject.uniqueTokens().isVirtual());
 
         // cleanup:
         ServicesState.setAppBuilder(DaggerServicesApp::builder);
