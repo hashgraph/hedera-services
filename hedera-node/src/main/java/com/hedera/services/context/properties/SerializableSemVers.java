@@ -24,11 +24,13 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.SoftwareVersion;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 public class SerializableSemVers implements SoftwareVersion {
     private static final String IS_INCOMPARABLE_MSG = " cannot be compared to ";
+    private static final Pattern ALPHA_PRE_PATTERN = Pattern.compile("alpha[.](\\d+)");
     private static boolean currentVersionHasPatchMigrationRecords = false;
     public static final int RELEASE_027_VERSION = 1;
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0bL;
@@ -37,9 +39,9 @@ public class SerializableSemVers implements SoftwareVersion {
             Comparator.comparingInt(SemanticVersion::getMajor)
                     .thenComparingInt(SemanticVersion::getMinor)
                     .thenComparingInt(SemanticVersion::getPatch)
-                    // We never deploy versions with `pre` or `build` parts to prod envs,
-                    // so just give precedence to the version that doesn't have one
-                    .thenComparingInt(semver -> semver.getPre().isBlank() ? 1 : 0)
+                    .thenComparingInt(semver -> alphaNumberOf(semver.getPre()))
+                    // We never deploy versions with `build` parts to prod envs, so
+                    // just give precedence to the version that doesn't have one
                     .thenComparingInt(semver -> semver.getBuild().isBlank() ? 1 : 0);
     public static final Comparator<SerializableSemVers> FULL_COMPARATOR =
             Comparator.comparing(SerializableSemVers::getServices, SEM_VER_COMPARATOR)
@@ -203,6 +205,12 @@ public class SerializableSemVers implements SoftwareVersion {
             sb.append("+").append(semVer.getBuild());
         }
         return sb.toString();
+    }
+
+    private static int alphaNumberOf(@NotNull final String pre) {
+        final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
+        // alpha versions come before everything else
+        return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
     }
 
     @VisibleForTesting
