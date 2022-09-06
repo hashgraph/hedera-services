@@ -23,10 +23,6 @@ description = "Hedera Services Node"
 subprojects {
     project(":hedera-node:hedera-app")
     project(":hedera-node:hedera-app-api")
-
-    apply {
-        plugin("com.hedera.hashgraph.hedera-conventions")
-    }
 }
 
 dependencies {
