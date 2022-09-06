@@ -16,7 +16,6 @@
 package com.hedera.services.stats;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 

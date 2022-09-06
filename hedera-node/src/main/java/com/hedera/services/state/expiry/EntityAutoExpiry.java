@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.expiry;
 
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.ConsensusTimeTracker;
@@ -22,14 +24,11 @@ import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttling.ExpiryThrottle;
-
 import java.time.Instant;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 
 @Singleton
 public class EntityAutoExpiry {

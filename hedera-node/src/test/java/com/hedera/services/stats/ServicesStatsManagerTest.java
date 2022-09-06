@@ -59,8 +59,7 @@ class ServicesStatsManagerTest {
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
     @Mock private ThrottleGauges throttleGauges;
     @Mock private EntityUtilGauges entityUtilGauges;
-    @Mock
-    private ExpiryStats expiryStats;
+    @Mock private ExpiryStats expiryStats;
 
     ServicesStatsManager subject;
 
