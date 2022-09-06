@@ -27,6 +27,7 @@ import static com.hedera.services.contracts.execution.traceability.ContractActio
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -89,7 +91,9 @@ public class HederaTracer implements HederaOperationTracer {
                 action -> {
                     action.setCallOperationType(toCallOperationType(initialFrame.getType()));
                     action.setCallingAccount(
-                            EntityId.fromAddress(initialFrame.getOriginatorAddress()));
+                            EntityId.fromAddress(
+                                    asMirrorAddress(
+                                            initialFrame.getOriginatorAddress(), initialFrame)));
                 });
     }
 
@@ -99,7 +103,10 @@ public class HederaTracer implements HederaOperationTracer {
                 action -> {
                     action.setCallOperationType(
                             toCallOperationType(parentFrame.getCurrentOperation().getOpcode()));
-                    action.setCallingContract(EntityId.fromAddress(nextFrame.getSenderAddress()));
+                    action.setCallingContract(
+                            EntityId.fromAddress(
+                                    asMirrorAddress(
+                                            parentFrame.getContractAddress(), parentFrame)));
                 });
     }
 
@@ -112,12 +119,15 @@ public class HederaTracer implements HederaOperationTracer {
                         messageFrame.getInputData().toArray(),
                         messageFrame.getValue().toLong(),
                         messageFrame.getMessageStackDepth());
-        // code can be empty when calling precompiles too, but we handle
-        // that in tracePrecompileCall, after precompile execution is completed
+        final var recipient =
+                EntityId.fromAddress(
+                        asMirrorAddress(messageFrame.getContractAddress(), messageFrame));
         if (Code.EMPTY.equals(messageFrame.getCode())) {
-            action.setRecipientAccount(EntityId.fromAddress(messageFrame.getContractAddress()));
+            // code can be empty when calling precompiles too, but we handle
+            // that in tracePrecompileCall, after precompile execution is completed
+            action.setRecipientAccount(recipient);
         } else {
-            action.setRecipientContract(EntityId.fromAddress(messageFrame.getContractAddress()));
+            action.setRecipientContract(recipient);
         }
         actionConfig.accept(action);
 
@@ -184,6 +194,10 @@ public class HederaTracer implements HederaOperationTracer {
         frame.setExceptionalHaltReason(haltReason);
     }
 
+    public List<SolidityAction> getActions() {
+        return allActions;
+    }
+
     private ContractActionType toContractActionType(final MessageFrame.Type type) {
         return switch (type) {
             case CONTRACT_CREATION -> CREATE;
@@ -207,7 +221,9 @@ public class HederaTracer implements HederaOperationTracer {
         return type == Type.CONTRACT_CREATION ? OP_CREATE : OP_CALL;
     }
 
-    public List<SolidityAction> getActions() {
-        return allActions;
+    private Address asMirrorAddress(final Address addressOrAlias, final MessageFrame messageFrame) {
+        final var aliases =
+                ((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).aliases();
+        return aliases.resolveForEvm(addressOrAlias);
     }
 }
