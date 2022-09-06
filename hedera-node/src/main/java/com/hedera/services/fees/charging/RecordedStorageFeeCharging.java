@@ -16,15 +16,11 @@
 package com.hedera.services.fees.charging;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.exceptions.ValidationUtils.validateResourceLimit;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -57,8 +53,6 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
 
     // Used to create the synthetic record if itemizing is enabled
     private final EntityCreator creator;
-    // Used to distribute charged rent to collection accounts in correct percentages
-    private final FeeDistribution feeDistribution;
     // Used to get the current exchange rate
     private final HbarCentExchange exchange;
     // Used to track the storage fee payments in a succeeding child record
@@ -69,23 +63,25 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
     private final TransactionContext txnCtx;
     // Used to get the storage slot lifetime and pricing tiers
     private final GlobalDynamicProperties dynamicProperties;
+    // Used to charge the auto-renewal fee
+    private final NonHapiFeeCharging nonHapiFeeCharging;
 
     @Inject
     public RecordedStorageFeeCharging(
             final EntityCreator creator,
-            final FeeDistribution feeDistribution,
             final HbarCentExchange exchange,
             final RecordsHistorian recordsHistorian,
             final TransactionContext txnCtx,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final GlobalDynamicProperties dynamicProperties) {
+            final GlobalDynamicProperties dynamicProperties,
+            final NonHapiFeeCharging nonHapiFeeCharging) {
         this.txnCtx = txnCtx;
         this.creator = creator;
         this.exchange = exchange;
-        this.feeDistribution = feeDistribution;
         this.recordsHistorian = recordsHistorian;
         this.dynamicProperties = dynamicProperties;
         this.syntheticTxnFactory = syntheticTxnFactory;
+        this.nonHapiFeeCharging = nonHapiFeeCharging;
     }
 
     /** {@inheritDoc} */
@@ -108,6 +104,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
             final var sideEffects = new SideEffectsTracker();
             final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffects);
             wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
+
             chargeStorageFeesInternal(
                     totalKvPairs, newUsageInfos, storagePriceTiers, wrappedAccounts);
             wrappedAccounts.commit();
@@ -143,49 +140,18 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
                                     storagePriceTiers.priceOfPendingUsage(
                                             rate, totalKvPairs, lifetime, usageInfo);
                             if (fee > 0) {
-                                pay(id, fee, accounts);
+                                final var autoRenewId =
+                                        (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
+                                nonHapiFeeCharging.chargeNonHapiFee(
+                                        autoRenewId,
+                                        id,
+                                        fee,
+                                        accounts,
+                                        INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
                             }
                         }
                     });
         }
-    }
-
-    private void pay(
-            final AccountID id,
-            final long fee,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-        var leftToPay = fee;
-        final var autoRenewId = (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
-        if (autoRenewId != null && !MISSING_ENTITY_ID.equals(autoRenewId)) {
-            final var grpcId = autoRenewId.toGrpcAccountId();
-            if (accounts.contains(grpcId) && !(boolean) accounts.get(grpcId, IS_DELETED)) {
-                final var debited =
-                        charge(autoRenewId.toGrpcAccountId(), leftToPay, false, accounts);
-                leftToPay -= debited;
-            }
-        }
-        if (leftToPay > 0) {
-            charge(id, leftToPay, true, accounts);
-        }
-    }
-
-    private long charge(
-            final AccountID id,
-            final long amount,
-            final boolean isLastResort,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-        long paid;
-        final var balance = (long) accounts.get(id, BALANCE);
-        if (amount > balance) {
-            validateResourceLimit(!isLastResort, INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
-            accounts.set(id, BALANCE, 0L);
-            paid = balance;
-        } else {
-            accounts.set(id, BALANCE, balance - amount);
-            paid = amount;
-        }
-        feeDistribution.distributeChargedFee(paid, accounts);
-        return paid;
     }
 
     private AccountID keyFor(final Long num) {
