@@ -29,7 +29,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
-import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
@@ -111,7 +111,7 @@ class RenewalHelperTest {
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.STILL_MORE_TO_DO, result);
     }
 
     @Test
@@ -132,18 +132,18 @@ class RenewalHelperTest {
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.STILL_MORE_TO_DO, result);
     }
 
     @Test
     void doesNothingWhenDisabled() {
         properties.disableAutoRenew();
         var result = subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
 
         properties.disableContractAutoRenew();
         result = subject.tryToRenewContract(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
     }
 
     @Test

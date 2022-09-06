@@ -15,9 +15,9 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.DONE;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.NOTHING_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.STILL_MORE_TO_DO;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,7 +49,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AutoExpiryCycleTest {
+class ExpiryProcessTest {
     private final Instant now = Instant.ofEpochSecond(1_234_567L);
     private final long requestedRenewalPeriod = 3601L;
     private final long nonZeroBalance = 2L;
@@ -101,12 +101,12 @@ class AutoExpiryCycleTest {
     private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
     private RenewalWork renewalWork;
     private RemovalWork removalWork;
-    private AutoExpiryCycle subject;
+    private ExpiryProcess subject;
 
     @BeforeEach
     void setUp() {
         setUpPreRequisites();
-        subject = new AutoExpiryCycle(classifier, renewalWork, removalWork);
+        subject = new ExpiryProcess(classifier, renewalWork, removalWork);
     }
 
     private void setUpPreRequisites() {
