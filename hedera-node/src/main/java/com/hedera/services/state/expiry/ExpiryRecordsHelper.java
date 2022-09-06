@@ -20,7 +20,6 @@ import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.synthFromBody;
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
@@ -40,7 +39,6 @@ import javax.inject.Singleton;
 public class ExpiryRecordsHelper {
     private final RecordStreaming recordStreaming;
     private final SyntheticTxnFactory syntheticTxnFactory;
-    private final GlobalDynamicProperties dynamicProperties;
     private final ConsensusTimeTracker consensusTimeTracker;
     private final SideEffectsTracker sideEffectsTracker;
 
@@ -48,11 +46,9 @@ public class ExpiryRecordsHelper {
     public ExpiryRecordsHelper(
             final RecordStreaming recordStreaming,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final GlobalDynamicProperties dynamicProperties,
             final ConsensusTimeTracker consensusTimeTracker,
             final SideEffectsTracker sideEffectsTracker) {
         this.recordStreaming = recordStreaming;
-        this.dynamicProperties = dynamicProperties;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.consensusTimeTracker = consensusTimeTracker;
         this.sideEffectsTracker = sideEffectsTracker;

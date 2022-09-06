@@ -19,7 +19,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.state.expiry.EntityProcessResult.*;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;

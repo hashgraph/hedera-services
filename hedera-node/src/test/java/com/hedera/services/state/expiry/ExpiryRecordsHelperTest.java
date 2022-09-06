@@ -183,9 +183,10 @@ class ExpiryRecordsHelperTest {
         given(syntheticTxnFactory.synthAccountAutoRenew(expiredNum, newExpiry))
                 .willReturn(mockBody);
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
-        given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(new CurrencyAdjustments(
-                new long[] {fee, -fee},
-                new long[] {funding.getAccountNum(), 3}));
+        given(sideEffectsTracker.getNetTrackedHbarChanges())
+                .willReturn(
+                        new CurrencyAdjustments(
+                                new long[] {fee, -fee}, new long[] {funding.getAccountNum(), 3}));
 
         subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false, expiredNum);
 
@@ -207,9 +208,10 @@ class ExpiryRecordsHelperTest {
                                 expiredNum, newExpiry, expiredNum.toGrpcAccountId()))
                 .willReturn(mockBody);
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
-        given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(new CurrencyAdjustments(
-                new long[] {fee, -fee},
-                new long[] {funding.getAccountNum(), 3}));
+        given(sideEffectsTracker.getNetTrackedHbarChanges())
+                .willReturn(
+                        new CurrencyAdjustments(
+                                new long[] {fee, -fee}, new long[] {funding.getAccountNum(), 3}));
 
         subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true, expiredNum);
 
