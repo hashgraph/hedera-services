@@ -23,12 +23,13 @@ import static java.util.stream.Collectors.toList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
 import com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns;
 import com.hedera.services.state.logic.RecordStreaming;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.RecordStreamObject;
@@ -60,6 +61,7 @@ class ExpiryRecordsHelperTest {
     @Mock private RecordStreaming recordStreaming;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
+    @Mock private SideEffectsTracker sideEffectsTracker;
 
     private ExpiryRecordsHelper subject;
 
@@ -69,8 +71,8 @@ class ExpiryRecordsHelperTest {
                 new ExpiryRecordsHelper(
                         recordStreaming,
                         syntheticTxnFactory,
-                        new MockGlobalDynamicProps(),
-                        consensusTimeTracker);
+                        consensusTimeTracker,
+                        sideEffectsTracker);
     }
 
     @Test
@@ -179,6 +181,10 @@ class ExpiryRecordsHelperTest {
         given(syntheticTxnFactory.synthAccountAutoRenew(expiredNum, newExpiry))
                 .willReturn(mockBody);
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
+        given(sideEffectsTracker.getNetTrackedHbarChanges())
+                .willReturn(
+                        new CurrencyAdjustments(
+                                new long[] {fee, -fee}, new long[] {funding.getAccountNum(), 3}));
 
         subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false, expiredNum);
 
@@ -200,6 +206,10 @@ class ExpiryRecordsHelperTest {
                                 expiredNum, newExpiry, expiredNum.toGrpcAccountId()))
                 .willReturn(mockBody);
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
+        given(sideEffectsTracker.getNetTrackedHbarChanges())
+                .willReturn(
+                        new CurrencyAdjustments(
+                                new long[] {fee, -fee}, new long[] {funding.getAccountNum(), 3}));
 
         subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true, expiredNum);
 
