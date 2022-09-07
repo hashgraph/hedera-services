@@ -73,6 +73,7 @@ class TokenPrecompileReadOperationsTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private MessageFrame frame;
+    @Mock private AccessorFactory accessorFactory;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private DecodingFacade decoder;
@@ -91,7 +92,6 @@ class TokenPrecompileReadOperationsTest {
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokenMerkleMap;
     @Mock private AssetsLoader assetLoader;
-    @Mock private AccessorFactory accessorFactory;
     private MerkleToken merkleToken;
     private final TokenID tokenID = asToken("0.0.5");
 

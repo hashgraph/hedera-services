@@ -19,15 +19,21 @@ import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
+import com.hedera.services.fees.charging.FeeDistribution;
+import com.hedera.services.fees.charging.NonHapiFeeCharging;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
-import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.expiry.removal.*;
 import com.hedera.services.state.expiry.renewal.RenewalHelper;
 import com.hedera.services.state.expiry.renewal.RenewalWork;
@@ -37,6 +43,7 @@ import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.List;
@@ -96,10 +103,14 @@ class ExpiryProcessTest {
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private ExpiryStats expiryStats;
-    private EntityLookup lookup;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private FeeDistribution feeDistribution;
+    @Mock private SideEffectsTracker sideEffectsTracker;
     private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
     private RenewalWork renewalWork;
     private RemovalWork removalWork;
+    private NonHapiFeeCharging nonHapiFeeCharging;
+
     private ExpiryProcess subject;
 
     @BeforeEach
@@ -109,16 +120,18 @@ class ExpiryProcessTest {
     }
 
     private void setUpPreRequisites() {
-        lookup = new EntityLookup(() -> accounts);
+        nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         renewalWork =
                 new RenewalHelper(
                         expiryStats,
-                        lookup,
                         expiryThrottle,
                         classifier,
                         dynamicProperties,
                         fees,
-                        recordsHelper);
+                        recordsHelper,
+                        nonHapiFeeCharging,
+                        accountsLedger,
+                        sideEffectsTracker);
         removalWork =
                 new RemovalHelper(
                         expiryStats,
@@ -168,6 +181,7 @@ class ExpiryProcessTest {
         // then:
         assertEquals(NOTHING_TO_DO, result);
         verifyNoMoreInteractions(classifier);
+        verifyNoMoreInteractions(sideEffectsTracker);
     }
 
     @Test
@@ -297,13 +311,11 @@ class ExpiryProcessTest {
         given(classifier.getPayerNumForLastClassified()).willReturn(key);
         given(expiryThrottle.allow(any())).willReturn(true);
 
-        given(lookup.getMutableAccount(key)).willReturn(mockAccount);
-        given(lookup.getMutableAccount(EntityNum.fromLong(fundingAccountNum)))
-                .willReturn(fundingAccount);
-        given(accounts.getForModify(EntityNum.fromLong(fundingAccountNum)))
-                .willReturn(fundingAccount);
-        given(accounts.getForModify(EntityNum.fromLong(fundedExpiredAccountNum)))
-                .willReturn(mockAccount);
+        given(
+                        accountsLedger.get(
+                                EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
+                                AccountProperty.BALANCE))
+                .willReturn(nonZeroBalance);
 
         given(fees.assessCryptoAutoRenewal(mockAccount, requestedRenewalPeriod, now, mockAccount))
                 .willReturn(new RenewAssessment(fee, actualRenewalPeriod));
@@ -312,9 +324,10 @@ class ExpiryProcessTest {
 
         assertEquals(DONE, result);
 
+        verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         verify(recordsHelper)
                 .streamCryptoRenewal(
-                        key, fee, now.getEpochSecond() - 1 + actualRenewalPeriod, false, key);
+                        key, fee, now.getEpochSecond() + actualRenewalPeriod, false, key);
     }
 
     @Test
@@ -332,10 +345,11 @@ class ExpiryProcessTest {
         given(fees.assessCryptoAutoRenewal(mockContract, requestedRenewalPeriod, now, mockContract))
                 .willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 
-        given(accounts.getForModify(EntityNum.fromLong(fundedExpiredContractNum)))
-                .willReturn(mockContract);
-        given(accounts.getForModify(EntityNum.fromLong(fundingAccountNum)))
-                .willReturn(fundingAccount);
+        given(
+                        accountsLedger.get(
+                                EntityNum.fromLong(fundedExpiredContractNum).toGrpcAccountId(),
+                                AccountProperty.BALANCE))
+                .willReturn(nonZeroBalance);
 
         given(classifier.getPayerNumForLastClassified())
                 .willReturn(EntityNum.fromLong(fundedExpiredContractNum));
@@ -345,9 +359,10 @@ class ExpiryProcessTest {
 
         assertEquals(DONE, result);
 
+        verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         verify(recordsHelper)
                 .streamCryptoRenewal(
-                        key, fee, now.getEpochSecond() - 1 + actualRenewalPeriod, true, key);
+                        key, fee, now.getEpochSecond() + actualRenewalPeriod, true, key);
     }
 
     @Test

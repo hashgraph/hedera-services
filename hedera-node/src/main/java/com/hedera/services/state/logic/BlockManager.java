@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
@@ -47,6 +48,7 @@ public class BlockManager {
     private static final Logger log = LogManager.getLogger(BlockManager.class);
 
     private final long blockPeriodMs;
+    private final boolean logEveryTransaction;
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final Supplier<RecordsRunningHashLeaf> runningHashLeaf;
 
@@ -64,10 +66,11 @@ public class BlockManager {
             final Supplier<RecordsRunningHashLeaf> runningHashLeaf) {
         this.networkCtx = networkCtx;
         this.runningHashLeaf = runningHashLeaf;
-
-        blockPeriodMs =
+        this.blockPeriodMs =
                 bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD)
                         * Units.SECONDS_TO_MILLISECONDS;
+        this.logEveryTransaction =
+                bootstrapProperties.getBooleanProperty(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION);
     }
 
     /** Clears all provisional block metadata for the current transaction. */
@@ -154,6 +157,10 @@ public class BlockManager {
             return provisionalFinishedBlockHash;
         }
         return networkCtx.get().getBlockHashByNumber(blockNo);
+    }
+
+    public boolean shouldLogEveryTransaction() {
+        return this.logEveryTransaction;
     }
 
     // --- Internal helpers ---
