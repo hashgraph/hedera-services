@@ -49,11 +49,9 @@ public class SidecarWatcher {
 
     private boolean hasSeenFirst = false;
     private FileAlterationMonitor monitor;
-    private FileAlterationObserver observer;
 
     public void watch() throws Exception {
-        observer = new FileAlterationObserver(recordStreamFolderPath.toFile());
-        monitor = new FileAlterationMonitor(POLLING_INTERVAL_MS);
+        final var observer = new FileAlterationObserver(recordStreamFolderPath.toFile());
         final var listener =
                 new FileAlterationListenerAdaptor() {
                     @Override
@@ -85,6 +83,7 @@ public class SidecarWatcher {
                     }
                 };
         observer.addListener(listener);
+        monitor = new FileAlterationMonitor(POLLING_INTERVAL_MS);
         monitor.addObserver(observer);
         monitor.start();
     }
