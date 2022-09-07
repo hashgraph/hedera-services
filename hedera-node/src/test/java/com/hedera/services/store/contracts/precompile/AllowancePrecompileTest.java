@@ -19,15 +19,10 @@ import static com.hedera.services.store.contracts.precompile.impl.AllowancePreco
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.store.contracts.precompile.impl.AllowancePrecompile;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,23 +38,9 @@ class AllowancePrecompileTest {
     private static final long ACCOUNT_NUM_ALLOWANCE_SPENDER = 0x602;
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
-    private MockedStatic<AllowancePrecompile> allowancePrecompile;
-
-    @BeforeEach
-    void setUp() {
-        allowancePrecompile = Mockito.mockStatic(AllowancePrecompile.class);
-    }
-
-    @AfterEach
-    void closeMocks() {
-        allowancePrecompile.close();
-    }
 
     @Test
     void decodeAllowanceInputERC() {
-        allowancePrecompile
-                .when(() -> decodeTokenAllowance(ALLOWANCE_INPUT_ERC, TOKEN_ID, identity()))
-                .thenCallRealMethod();
         final var decodedInput = decodeTokenAllowance(ALLOWANCE_INPUT_ERC, TOKEN_ID, identity());
 
         assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenID().getTokenNum());
@@ -69,9 +50,6 @@ class AllowancePrecompileTest {
 
     @Test
     void decodeAllowanceInputHAPI() {
-        allowancePrecompile
-                .when(() -> decodeTokenAllowance(ALLOWANCE_INPUT_HAPI, null, identity()))
-                .thenCallRealMethod();
         final var decodedInput = decodeTokenAllowance(ALLOWANCE_INPUT_HAPI, null, identity());
 
         assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenID().getTokenNum());

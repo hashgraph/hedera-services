@@ -20,15 +20,10 @@ import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,26 +39,9 @@ class SetApprovalForAllPrecompileTest {
     private static final long ACCOUNT_NUM_APPROVE_ALL_TO = 0x640;
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
-    private MockedStatic<SetApprovalForAllPrecompile> setApprovalForAllPrecompile;
-
-    @BeforeEach
-    void setUp() {
-        setApprovalForAllPrecompile = Mockito.mockStatic(SetApprovalForAllPrecompile.class);
-    }
-
-    @AfterEach
-    void closeMocks() {
-        setApprovalForAllPrecompile.close();
-    }
 
     @Test
     void decodeSetApprovalForAllERC() {
-        setApprovalForAllPrecompile
-                .when(
-                        () ->
-                                decodeSetApprovalForAll(
-                                        SET_APPROVAL_FOR_ALL_INPUT_ERC, TOKEN_ID, identity()))
-                .thenCallRealMethod();
         final var decodedInput =
                 decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT_ERC, TOKEN_ID, identity());
 
@@ -74,12 +52,6 @@ class SetApprovalForAllPrecompileTest {
 
     @Test
     void decodeSetApprovalForAllHAPI() {
-        setApprovalForAllPrecompile
-                .when(
-                        () ->
-                                decodeSetApprovalForAll(
-                                        SET_APPROVAL_FOR_ALL_INPUT_HAPI, null, identity()))
-                .thenCallRealMethod();
         final var decodedInput =
                 decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT_HAPI, null, identity());
 

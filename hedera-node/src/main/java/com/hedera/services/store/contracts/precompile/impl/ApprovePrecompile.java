@@ -261,6 +261,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         final var offset = impliedTokenId == null ? 1 : 0;
         final Tuple decodedArguments;
         final TokenID tokenId;
+
         if (offset == 0) {
             decodedArguments =
                     decodeFunctionCall(
@@ -276,20 +277,24 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                     decodeFunctionCall(input, HAPI_APPROVE_NFT_SELECTOR, HAPI_APPROVE_NFT_DECODER);
             tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
         }
+
         final var ledgerFungible = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
         final var spender =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+
         if (isFungible) {
             if (!ledgerFungible) {
                 throw new IllegalArgumentException("Token is not a fungible token");
             }
             final var amount = (BigInteger) decodedArguments.get(offset + 1);
+
             return new ApproveWrapper(tokenId, spender, amount, BigInteger.ZERO, isFungible);
         } else {
             if (ledgerFungible) {
                 throw new IllegalArgumentException("Token is not an NFT");
             }
             final var serialNumber = (BigInteger) decodedArguments.get(offset + 1);
+
             return new ApproveWrapper(tokenId, spender, BigInteger.ZERO, serialNumber, isFungible);
         }
     }

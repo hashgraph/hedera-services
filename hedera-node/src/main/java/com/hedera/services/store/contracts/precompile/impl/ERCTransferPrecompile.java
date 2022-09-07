@@ -193,22 +193,27 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         final var from =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
         final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+
         if (isFungible) {
             final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers =
                     new ArrayList<>();
             final var amount = (BigInteger) decodedArguments.get(2);
+
             addSignedAdjustment(fungibleTransfers, token, to, amount.longValue());
+
             if (from.equals(operatorId.toGrpcAccountId())) {
                 addSignedAdjustment(fungibleTransfers, token, from, -amount.longValue());
             } else {
                 addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValue());
             }
+
             return Collections.singletonList(
                     new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
         } else {
             final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
             final var serialNo = ((BigInteger) decodedArguments.get(2)).longValue();
             final var ownerId = ledgers.ownerIfPresent(NftId.fromGrpc(token, serialNo));
+
             if (operatorId.equals(ownerId)) {
                 nonFungibleTransfers.add(
                         new SyntheticTxnFactory.NftExchange(serialNo, token, from, to));
@@ -216,6 +221,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 nonFungibleTransfers.add(
                         SyntheticTxnFactory.NftExchange.fromApproval(serialNo, token, from, to));
             }
+
             return Collections.singletonList(
                     new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
         }

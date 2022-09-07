@@ -26,17 +26,12 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,30 +51,10 @@ class ERCTransferPrecompileTest {
     private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
-    private MockedStatic<ERCTransferPrecompile> ercTransferPrecompile;
     @Mock private WorldLedgers ledgers;
-
-    @BeforeEach
-    void setUp() {
-        ercTransferPrecompile = Mockito.mockStatic(ERCTransferPrecompile.class);
-    }
-
-    @AfterEach
-    void closeMocks() {
-        ercTransferPrecompile.close();
-    }
 
     @Test
     void decodeTransferInput() {
-        ercTransferPrecompile
-                .when(
-                        () ->
-                                decodeERCTransfer(
-                                        TRANSFER_INPUT,
-                                        TOKEN_ID,
-                                        AccountID.getDefaultInstance(),
-                                        identity()))
-                .thenCallRealMethod();
         final var decodedInput =
                 decodeERCTransfer(
                         TRANSFER_INPUT, TOKEN_ID, AccountID.getDefaultInstance(), identity());
@@ -92,17 +67,7 @@ class ERCTransferPrecompileTest {
     @Test
     void decodeTransferFromFungibleInputUsingApprovalIfNotOwner() {
         final var notOwner = new EntityId(0, 0, 1002);
-        ercTransferPrecompile
-                .when(
-                        () ->
-                                decodeERCTransferFrom(
-                                        TRANSFER_FROM_FUNGIBLE_INPUT,
-                                        TOKEN_ID,
-                                        true,
-                                        identity(),
-                                        ledgers,
-                                        notOwner))
-                .thenCallRealMethod();
+
         final var decodedInput =
                 decodeERCTransferFrom(
                         TRANSFER_FROM_FUNGIBLE_INPUT,
@@ -122,17 +87,7 @@ class ERCTransferPrecompileTest {
     @Test
     void decodeTransferFromFungibleInputDoesntUseApprovalIfFromIsOperator() {
         final var fromOp = new EntityId(0, 0, 1450);
-        ercTransferPrecompile
-                .when(
-                        () ->
-                                decodeERCTransferFrom(
-                                        TRANSFER_FROM_FUNGIBLE_INPUT,
-                                        TOKEN_ID,
-                                        true,
-                                        identity(),
-                                        ledgers,
-                                        fromOp))
-                .thenCallRealMethod();
+
         final var decodedInput =
                 decodeERCTransferFrom(
                         TRANSFER_FROM_FUNGIBLE_INPUT, TOKEN_ID, true, identity(), ledgers, fromOp);
@@ -147,17 +102,7 @@ class ERCTransferPrecompileTest {
     @Test
     void decodeTransferFromNonFungibleInputUsingApprovalIfNotOwner() {
         final var notOwner = new EntityId(0, 0, 1002);
-        ercTransferPrecompile
-                .when(
-                        () ->
-                                decodeERCTransferFrom(
-                                        TRANSFER_FROM_NON_FUNGIBLE_INPUT,
-                                        TOKEN_ID,
-                                        false,
-                                        identity(),
-                                        ledgers,
-                                        notOwner))
-                .thenCallRealMethod();
+
         final var decodedInput =
                 decodeERCTransferFrom(
                         TRANSFER_FROM_NON_FUNGIBLE_INPUT,
@@ -178,17 +123,6 @@ class ERCTransferPrecompileTest {
     void decodeTransferFromNonFungibleInputIfOwner() {
         final var callerId = new EntityId(0, 0, 1001);
         given(ledgers.ownerIfPresent(any())).willReturn(callerId);
-        ercTransferPrecompile
-                .when(
-                        () ->
-                                decodeERCTransferFrom(
-                                        TRANSFER_FROM_NON_FUNGIBLE_INPUT,
-                                        TOKEN_ID,
-                                        false,
-                                        identity(),
-                                        ledgers,
-                                        callerId))
-                .thenCallRealMethod();
 
         final var decodedInput =
                 decodeERCTransferFrom(

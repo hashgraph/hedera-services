@@ -25,18 +25,13 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,31 +54,10 @@ class ApprovePrecompileTest {
     private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
-    private MockedStatic<ApprovePrecompile> approvePrecompile;
     @Mock private WorldLedgers ledgers;
-
-    @BeforeEach
-    void setUp() {
-        approvePrecompile = Mockito.mockStatic(ApprovePrecompile.class);
-    }
-
-    @AfterEach
-    void closeMocks() {
-        approvePrecompile.close();
-    }
 
     @Test
     void decodeApproveForNFTERC() {
-        approvePrecompile
-                .when(
-                        () ->
-                                decodeTokenApprove(
-                                        APPROVE_NFT_INPUT_ERC,
-                                        TOKEN_ID,
-                                        false,
-                                        identity(),
-                                        ledgers))
-                .thenCallRealMethod();
         final var decodedInput =
                 decodeTokenApprove(APPROVE_NFT_INPUT_ERC, TOKEN_ID, false, identity(), ledgers);
 
@@ -94,16 +68,6 @@ class ApprovePrecompileTest {
 
     @Test
     void decodeApproveForTokenERC() {
-        approvePrecompile
-                .when(
-                        () ->
-                                decodeTokenApprove(
-                                        APPROVE_TOKEN_INPUT_ERC,
-                                        TOKEN_ID,
-                                        true,
-                                        identity(),
-                                        ledgers))
-                .thenCallRealMethod();
         given(ledgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
         final var decodedInput =
                 decodeTokenApprove(APPROVE_TOKEN_INPUT_ERC, TOKEN_ID, true, identity(), ledgers);
@@ -115,12 +79,6 @@ class ApprovePrecompileTest {
     @Test
     void decodeApproveForNFTHAPI() {
         UnaryOperator<byte[]> identity = identity();
-        approvePrecompile
-                .when(
-                        () ->
-                                decodeTokenApprove(
-                                        APPROVE_NFT_INPUT_HAPI, null, false, identity, ledgers))
-                .thenCallRealMethod();
         given(ledgers.typeOf(any()))
                 .willReturn(TokenType.NON_FUNGIBLE_UNIQUE)
                 .willReturn(TokenType.FUNGIBLE_COMMON);
@@ -139,12 +97,6 @@ class ApprovePrecompileTest {
     @Test
     void decodeApproveForTokenAHPI() {
         UnaryOperator<byte[]> identity = identity();
-        approvePrecompile
-                .when(
-                        () ->
-                                decodeTokenApprove(
-                                        APPROVE_TOKEN_INPUT_HAPI, null, true, identity, ledgers))
-                .thenCallRealMethod();
         given(ledgers.typeOf(any()))
                 .willReturn(TokenType.FUNGIBLE_COMMON)
                 .willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
