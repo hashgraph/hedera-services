@@ -115,7 +115,8 @@ public class ServicesTxnManager {
 
         if (processFailed) {
             attemptRollback(accessor, consensusTime, submittingMember);
-            if (ledger.getAccountsLedger().isInTransaction()) {
+            if (!ledger.getAccountsLedger().isInTransaction()) {
+                // the FAIL_INVALID record created during rollback should be streamed
                 attemptRecordStreaming();
             }
         } else {
