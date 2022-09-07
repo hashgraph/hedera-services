@@ -28,6 +28,7 @@ import com.hedera.services.txns.schedule.ScheduleProcessing;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -83,6 +84,14 @@ public class StandardProcessLogic implements ProcessLogic {
     public void incorporateConsensusTxn(
             Transaction platformTxn, Instant consensusTime, long submittingMember) {
         try {
+            // Deduct 1000 nanos from the consensusTime allotted by platform, to accommodate the
+            // preceding,
+            // following child records and any long term scheduled transactions triggered by the
+            // current transaction
+            // in the balance file with consensus timestamp X to include all transactions whose
+            // consensus time T <= X.
+            consensusTime = consensusTime.minusNanos(EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS);
+
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
             accessor.setStateView(workingView);
             if (!invariantChecks.holdFor(accessor, consensusTime, submittingMember)) {
