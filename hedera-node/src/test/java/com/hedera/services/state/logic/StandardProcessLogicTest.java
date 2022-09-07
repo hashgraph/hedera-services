@@ -47,8 +47,6 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.time.Instant;
-
-import com.swirlds.platform.internal.EventImpl;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -120,7 +118,8 @@ class StandardProcessLogicTest {
         given(expandHandleSpan.accessorFor(txn)).willReturn(accessor);
         given(invariantChecks.holdFor(accessor, reducedConsensusNow, member)).willReturn(true);
         given(consensusTimeTracker.firstTransactionTime()).willReturn(reducedConsensusNow);
-        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow)).willReturn(true);
+        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow))
+                .willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
         txn.add(HederaKeyActivation.VALID_IMPLICIT_SIG);
@@ -201,7 +200,8 @@ class StandardProcessLogicTest {
         given(expandHandleSpan.accessorFor(txn)).willReturn(accessor);
         given(invariantChecks.holdFor(accessor, reducedConsensusNow, member)).willReturn(true);
         given(txnCtx.triggeredTxn()).willReturn(triggeredAccessor);
-        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow)).willReturn(true);
+        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow))
+                .willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
         subject.incorporateConsensusTxn(txn, consensusNow, member);
@@ -214,7 +214,8 @@ class StandardProcessLogicTest {
         verify(consensusTimeTracker).firstTransactionTime();
         verify(consensusTimeTracker).nextTransactionTime(false);
         verify(consensusTimeTracker).reset(reducedConsensusNow);
-        verify(scheduleProcessing).triggerNextTransactionExpiringAsNeeded(reducedConsensusNow, null, true);
+        verify(scheduleProcessing)
+                .triggerNextTransactionExpiringAsNeeded(reducedConsensusNow, null, true);
     }
 
     @Test
@@ -245,7 +246,8 @@ class StandardProcessLogicTest {
         given(invariantChecks.holdFor(accessor, reducedConsensusNow, member)).willReturn(true);
         given(consensusTimeTracker.nextTransactionTime(true)).willReturn(reducedConsensusNow);
         given(consensusTimeTracker.isFirstUsed()).willReturn(true);
-        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow)).willReturn(true);
+        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow))
+                .willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
         subject.incorporateConsensusTxn(txn, consensusNow, member);
@@ -275,14 +277,17 @@ class StandardProcessLogicTest {
         given(consensusTimeTracker.nextTransactionTime(false)).willReturn(triggeredConsensusNow);
         given(expandHandleSpan.accessorFor(txn)).willReturn(accessor);
         given(invariantChecks.holdFor(accessor, reducedConsensusNow, member)).willReturn(true);
-        given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(reducedConsensusNow, null, false))
+        given(
+                        scheduleProcessing.triggerNextTransactionExpiringAsNeeded(
+                                reducedConsensusNow, null, false))
                 .willReturn(triggeredAccessor);
         given(
                         scheduleProcessing.triggerNextTransactionExpiringAsNeeded(
                                 reducedConsensusNow, triggeredAccessor, true))
                 .willReturn(null);
         given(txnCtx.triggeredTxn()).willReturn(null);
-        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow)).willReturn(true);
+        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow))
+                .willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
         subject.incorporateConsensusTxn(txn, consensusNow, member);
@@ -299,7 +304,8 @@ class StandardProcessLogicTest {
         inOrder.verify(txnManager).process(triggeredAccessor, triggeredConsensusNow, member);
         inOrder.verify(consensusTimeTracker).hasMoreTransactionTime(false);
         inOrder.verify(scheduleProcessing)
-                .triggerNextTransactionExpiringAsNeeded(reducedConsensusNow, triggeredAccessor, true);
+                .triggerNextTransactionExpiringAsNeeded(
+                        reducedConsensusNow, triggeredAccessor, true);
         inOrder.verify(autoRenewal).execute(reducedConsensusNow);
     }
 
@@ -322,14 +328,17 @@ class StandardProcessLogicTest {
         given(consensusTimeTracker.nextTransactionTime(false)).willReturn(triggeredConsensusNow);
         given(expandHandleSpan.accessorFor(txn)).willReturn(accessor);
         given(invariantChecks.holdFor(accessor, reducedConsensusNow, member)).willReturn(true);
-        given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(reducedConsensusNow, null, false))
+        given(
+                        scheduleProcessing.triggerNextTransactionExpiringAsNeeded(
+                                reducedConsensusNow, null, false))
                 .willReturn(triggeredAccessor);
         given(
                         scheduleProcessing.triggerNextTransactionExpiringAsNeeded(
                                 reducedConsensusNow, triggeredAccessor, false))
                 .willReturn(triggeredAccessor);
         given(txnCtx.triggeredTxn()).willReturn(null);
-        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow)).willReturn(true);
+        given(scheduleProcessing.shouldProcessScheduledTransactions(reducedConsensusNow))
+                .willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(4L);
 
         subject.incorporateConsensusTxn(txn, consensusNow, member);
@@ -348,21 +357,24 @@ class StandardProcessLogicTest {
 
         inOrder.verify(consensusTimeTracker, times(1)).hasMoreTransactionTime(false);
         inOrder.verify(scheduleProcessing, times(1))
-                .triggerNextTransactionExpiringAsNeeded(reducedConsensusNow, triggeredAccessor, false);
+                .triggerNextTransactionExpiringAsNeeded(
+                        reducedConsensusNow, triggeredAccessor, false);
         inOrder.verify(consensusTimeTracker, times(1)).nextTransactionTime(false);
         inOrder.verify(txnManager, times(1))
                 .process(triggeredAccessor, triggeredConsensusNow, member);
 
         inOrder.verify(consensusTimeTracker, times(1)).hasMoreTransactionTime(false);
         inOrder.verify(scheduleProcessing, times(1))
-                .triggerNextTransactionExpiringAsNeeded(reducedConsensusNow, triggeredAccessor, false);
+                .triggerNextTransactionExpiringAsNeeded(
+                        reducedConsensusNow, triggeredAccessor, false);
         inOrder.verify(consensusTimeTracker, times(1)).nextTransactionTime(false);
         inOrder.verify(txnManager, times(1))
                 .process(triggeredAccessor, triggeredConsensusNow, member);
 
         inOrder.verify(consensusTimeTracker, times(1)).hasMoreTransactionTime(false);
         inOrder.verify(scheduleProcessing, times(1))
-                .triggerNextTransactionExpiringAsNeeded(reducedConsensusNow, triggeredAccessor, false);
+                .triggerNextTransactionExpiringAsNeeded(
+                        reducedConsensusNow, triggeredAccessor, false);
         inOrder.verify(consensusTimeTracker, times(1)).nextTransactionTime(false);
         inOrder.verify(txnManager, times(1))
                 .process(triggeredAccessor, triggeredConsensusNow, member);
