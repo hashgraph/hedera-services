@@ -302,10 +302,14 @@ class TreasuryReturnHelperTest {
         nonFungibleToken.setTreasury(treasuryNum.toEntityId());
     }
 
-    private final NftId aNftKey = NftId.withDefaultShardRealm(nonFungibleTokenNum.longValue(), 666L);
+    private final NftId aNftKey =
+            NftId.withDefaultShardRealm(nonFungibleTokenNum.longValue(), 666L);
     private final EntityNumPair bNftKey =
             EntityNumPair.fromLongs(deletedTokenNum.longValue(), 777L);
-    private final UniqueTokenAdapter someNft = UniqueTokenAdapter.wrap(
-            new MerkleUniqueToken(
-                    expiredAccountNum.toEntityId(), "A".getBytes(), RichInstant.MISSING_INSTANT));
+    private final UniqueTokenAdapter someNft =
+            UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(
+                            expiredAccountNum.toEntityId(),
+                            "A".getBytes(),
+                            RichInstant.MISSING_INSTANT));
 }

@@ -73,9 +73,7 @@ public class TreasuryReturnHelper {
     }
 
     EntityNumPair finishNft(
-            final boolean burn,
-            final NftId rootKey,
-            final UniqueTokenMapAdapter nfts) {
+            final boolean burn, final NftId rootKey, final UniqueTokenMapAdapter nfts) {
         final NftNumPair nextKey;
         if (burn) {
             final var burnedNft = nfts.get(rootKey);

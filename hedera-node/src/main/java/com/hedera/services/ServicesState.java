@@ -590,8 +590,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     @FunctionalInterface
     interface NftLinksRepair {
         void rebuildOwnershipLists(
-                MerkleMap<EntityNum, MerkleAccount> accounts,
-                UniqueTokenMapAdapter uniqueTokens);
+                MerkleMap<EntityNum, MerkleAccount> accounts, UniqueTokenMapAdapter uniqueTokens);
     }
 
     @FunctionalInterface

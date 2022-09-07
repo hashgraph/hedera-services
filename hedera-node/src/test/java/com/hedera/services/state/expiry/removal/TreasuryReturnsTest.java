@@ -319,7 +319,8 @@ class TreasuryReturnsTest {
                                 any(List.class),
                                 any(List.class)))
                 .willReturn(true);
-        given(returnHelper.finishNft(false, aNftKey.asNftNumPair().nftId(), nfts)).willReturn(bNftKey);
+        given(returnHelper.finishNft(false, aNftKey.asNftNumPair().nftId(), nfts))
+                .willReturn(bNftKey);
         if (includeBRemoval) {
             given(
                             returnHelper.updateNftReturns(
@@ -330,7 +331,8 @@ class TreasuryReturnsTest {
                                     any(List.class),
                                     any(List.class)))
                     .willReturn(false);
-            given(returnHelper.finishNft(true, bNftKey.asNftNumPair().nftId(), nfts)).willReturn(null);
+            given(returnHelper.finishNft(true, bNftKey.asNftNumPair().nftId(), nfts))
+                    .willReturn(null);
         }
     }
 

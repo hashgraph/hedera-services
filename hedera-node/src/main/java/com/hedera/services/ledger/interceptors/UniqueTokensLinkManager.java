@@ -20,9 +20,9 @@ import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValu
 import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
 import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
-import com.hedera.services.state.expiry.UniqueTokensListMutation;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
+import com.hedera.services.state.expiry.UniqueTokensListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
