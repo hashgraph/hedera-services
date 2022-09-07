@@ -15,21 +15,27 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.state.expiry.EntityProcessResult.*;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.charging.NonHapiFeeCharging;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
-import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import java.time.Instant;
 import java.util.List;
 import javax.inject.Inject;
@@ -49,23 +55,29 @@ public class RenewalHelper implements RenewalWork {
     private final GlobalDynamicProperties dynamicProperties;
     private final FeeCalculator fees;
     private final ExpiryRecordsHelper recordsHelper;
-    private final EntityLookup lookup;
     private final ExpiryThrottle expiryThrottle;
+    private final NonHapiFeeCharging nonHapiFeeCharging;
+    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private final SideEffectsTracker sideEffectsTracker;
 
     @Inject
     public RenewalHelper(
-            final EntityLookup lookup,
             final ExpiryThrottle expiryThrottle,
             final ClassificationWork classifier,
             final GlobalDynamicProperties dynamicProperties,
             final FeeCalculator fees,
-            final ExpiryRecordsHelper recordsHelper) {
-        this.lookup = lookup;
+            final ExpiryRecordsHelper recordsHelper,
+            final NonHapiFeeCharging nonHapiFeeCharging,
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final SideEffectsTracker sideEffectsTracker) {
         this.expiryThrottle = expiryThrottle;
         this.classifier = classifier;
         this.dynamicProperties = dynamicProperties;
         this.fees = fees;
         this.recordsHelper = recordsHelper;
+        this.nonHapiFeeCharging = nonHapiFeeCharging;
+        this.accountsLedger = accountsLedger;
+        this.sideEffectsTracker = sideEffectsTracker;
     }
 
     @Override
@@ -101,6 +113,8 @@ public class RenewalHelper implements RenewalWork {
         final long renewalPeriod = assessment.renewalPeriod();
         final long renewalFee = assessment.fee();
         final var oldExpiry = expired.getExpiry();
+
+        sideEffectsTracker.reset();
         renewWith(renewalFee, renewalPeriod);
 
         recordsHelper.streamCryptoRenewal(
@@ -116,20 +130,23 @@ public class RenewalHelper implements RenewalWork {
     void renewWith(long fee, long renewalPeriod) {
         assertPayerAccountForRenewalCanAfford(fee);
 
-        final var mutableAccount = lookup.getMutableAccount(classifier.getLastClassifiedNum());
-        final long newExpiry = mutableAccount.getExpiry() + renewalPeriod;
-        mutableAccount.setExpiry(newExpiry);
+        final var lastClassifiedAccount = classifier.getLastClassifiedNum().toGrpcAccountId();
+        final var payerForLastClassified =
+                classifier.getPayerNumForLastClassified().toGrpcAccountId();
 
-        final var mutablePayerForRenew =
-                lookup.getMutableAccount(classifier.getPayerNumForLastClassified());
-        final long newBalance = mutablePayerForRenew.getBalance() - fee;
-        mutablePayerForRenew.setBalanceUnchecked(newBalance);
+        accountsLedger.begin();
+        final long newExpiry =
+                ((long) accountsLedger.get(lastClassifiedAccount, EXPIRY)) + renewalPeriod;
+        accountsLedger.set(lastClassifiedAccount, EXPIRY, newExpiry);
 
-        final var fundingAccount = dynamicProperties.fundingAccount();
-        final var fundingId = fromAccountId(fundingAccount);
-        final var mutableFundingAccount = lookup.getMutableAccount(fundingId);
-        final long newFundingBalance = mutableFundingAccount.getBalance() + fee;
-        mutableFundingAccount.setBalanceUnchecked(newFundingBalance);
+        nonHapiFeeCharging.chargeNonHapiFee(
+                EntityId.fromGrpcAccountId(payerForLastClassified),
+                lastClassifiedAccount,
+                fee,
+                accountsLedger,
+                INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES);
+
+        accountsLedger.commit();
 
         log.debug("Renewed {} at a price of {}tb", classifier.getLastClassifiedNum(), fee);
     }
