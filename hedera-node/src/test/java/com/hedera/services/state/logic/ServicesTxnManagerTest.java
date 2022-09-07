@@ -29,9 +29,12 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.MigrationRecordsManager;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -61,6 +64,7 @@ class ServicesTxnManagerTest {
     @Mock private Runnable triggeredProcessLogic;
     @Mock private SignedTxnAccessor accessor;
     @Mock private HederaLedger ledger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     @Mock private RecordCache recordCache;
     @Mock private TransactionContext txnCtx;
     @Mock private RecordsHistorian recordsHistorian;
@@ -178,6 +182,8 @@ class ServicesTxnManagerTest {
         given(txnCtx.accessor()).willReturn(accessor);
         given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
         willThrow(IllegalStateException.class).given(ledger).begin();
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.isInTransaction()).willReturn(false);
 
         // when:
         subject.process(accessor, consensusTime, submittingMember);
@@ -186,7 +192,7 @@ class ServicesTxnManagerTest {
         inOrder.verify(ledger).begin();
         inOrder.verify(txnCtx).setStatus(ResponseCodeEnum.FAIL_INVALID);
         inOrder.verify(ledger).rollback();
-        inOrder.verify(recordStreaming, never()).streamUserTxnRecords();
+        inOrder.verify(recordStreaming).streamUserTxnRecords();
         // and:
         assertThat(
                 logCaptor.errorLogs(),
@@ -201,6 +207,8 @@ class ServicesTxnManagerTest {
         given(txnCtx.effectivePayer()).willReturn(effectivePayer);
         given(txnCtx.accessor()).willReturn(accessor);
         given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.isInTransaction()).willReturn(true);
         // and:
         willThrow(IllegalStateException.class).given(ledger).commit();
 
