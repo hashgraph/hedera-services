@@ -107,6 +107,7 @@ public class UniqueTokenAdapter implements FastCopyable {
      *
      * @return whether the underlying instance is immutable.
      */
+    @Override
     public boolean isImmutable() {
         return isVirtual ? uniqueTokenValue.isImmutable() : merkleUniqueToken.isImmutable();
     }
