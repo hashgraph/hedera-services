@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -39,8 +40,10 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -62,6 +65,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -70,7 +74,7 @@ class TypedTokenStoreTest {
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private AccountStore accountStore;
     @Mock private BackingStore<TokenID, MerkleToken> tokens;
-    @Mock private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
+    @Mock private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
     @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
     private TypedTokenStore subject;
@@ -289,7 +293,8 @@ class TypedTokenStoreTest {
         final var expectedNewUniqTokenId2 =
                 NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
         final var expectedNewUniqToken =
-                new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime);
+                UniqueTokenAdapter.wrap(
+                        new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime));
         final var expectedPastUniqTokenId =
                 NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
         final var expectedPastUniqTokenId2 =
@@ -321,11 +326,16 @@ class TypedTokenStoreTest {
         assertEquals(expectedReplacementToken, merkleToken);
         // and:
         verify(sideEffectsTracker).trackTokenChanges(modelToken);
-        verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
+        ArgumentCaptor<UniqueTokenAdapter> argumentCaptor =
+                ArgumentCaptor.forClass(UniqueTokenAdapter.class);
+        verify(uniqueTokens).put(eq(expectedNewUniqTokenId), argumentCaptor.capture());
+        assertEquals(expectedNewUniqToken, argumentCaptor.getValue());
+
         verify(uniqueTokens)
                 .put(
-                        NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo),
-                        expectedNewUniqToken);
+                        eq(NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo)),
+                        argumentCaptor.capture());
+        assertEquals(expectedNewUniqToken, argumentCaptor.getValue());
         verify(uniqueTokens).remove(expectedPastUniqTokenId);
 
         // when:
@@ -348,7 +358,8 @@ class TypedTokenStoreTest {
         assertEquals(expectedReplacementToken2, merkleToken);
         // and:
         verify(sideEffectsTracker).trackTokenChanges(modelToken);
-        verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);
+        verify(uniqueTokens).put(eq(expectedNewUniqTokenId2), argumentCaptor.capture());
+        assertEquals(expectedNewUniqToken, argumentCaptor.getValue());
         verify(uniqueTokens).remove(expectedPastUniqTokenId2);
     }
 
@@ -393,8 +404,48 @@ class TypedTokenStoreTest {
         nft2.setCreationTime(MISSING_INSTANT);
         nft2.setSpender(autoRenewId);
 
-        final var mut1 = new MerkleUniqueToken(treasuryId.asEntityId(), meta1, MISSING_INSTANT);
-        final var mut2 = new MerkleUniqueToken(miscId.asEntityId(), meta2, MISSING_INSTANT);
+        final var mut1 =
+                UniqueTokenAdapter.wrap(
+                        new MerkleUniqueToken(treasuryId.asEntityId(), meta1, MISSING_INSTANT));
+        final var mut2 =
+                UniqueTokenAdapter.wrap(
+                        new MerkleUniqueToken(miscId.asEntityId(), meta2, MISSING_INSTANT));
+        given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
+        given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
+
+        subject.persistNft(nft1);
+        subject.persistNft(nft2);
+
+        mut1.setSpender(autoRenewId.asEntityId());
+        mut2.setSpender(autoRenewId.asEntityId());
+
+        verify(uniqueTokens).put(nftId1, mut1);
+        verify(uniqueTokens).put(nftId2, mut2);
+    }
+
+    @Test
+    void persistsNftsUsingUniqueTokenValueWorksAsExpected() {
+        final var nftId1 = new NftId(1, 2, 3, 1);
+        final var nftId2 = new NftId(1, 2, 3, 2);
+        final var nft1 = new UniqueToken(IdUtils.asModelId("1.2.3"), 1L);
+        final var nft2 = new UniqueToken(IdUtils.asModelId("1.2.3"), 2L);
+        final var meta1 = "aa".getBytes(StandardCharsets.UTF_8);
+        final var meta2 = "bb".getBytes(StandardCharsets.UTF_8);
+        nft1.setOwner(treasuryId);
+        nft1.setMetadata(meta1);
+        nft1.setCreationTime(MISSING_INSTANT);
+        nft1.setSpender(autoRenewId);
+        nft2.setOwner(miscId);
+        nft2.setMetadata(meta2);
+        nft2.setCreationTime(MISSING_INSTANT);
+        nft2.setSpender(autoRenewId);
+
+        final var mut1 =
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(treasuryId.num(), 0, meta1, MISSING_INSTANT));
+        final var mut2 =
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(miscId.num(), 0, meta2, MISSING_INSTANT));
         given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
         given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
 
