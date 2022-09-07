@@ -130,7 +130,6 @@ public class SidecarWatcher {
         var max = 20;
         while (!expectedSidecars.isEmpty() && max >= 0) {
             Thread.sleep(500);
-            observer.checkAndNotify();
             max--;
         }
     }
