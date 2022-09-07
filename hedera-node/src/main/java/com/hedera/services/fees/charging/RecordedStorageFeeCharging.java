@@ -17,8 +17,7 @@ package com.hedera.services.fees.charging;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
-import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
@@ -135,7 +134,13 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
                     (num, usageInfo) -> {
                         if (usageInfo.hasPositiveUsageDelta()) {
                             final var id = keyFor(num);
-                            final var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;
+                            var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;
+                            if (lifetime < 0) {
+                                // This is possible if the contract is expired with funds, but
+                                // hasn't been visited recently in the auto-renew cycle; we can
+                                // use its auto-renew period as an approximation
+                                lifetime = (long) accounts.get(id, AUTO_RENEW_PERIOD);
+                            }
                             final var fee =
                                     storagePriceTiers.priceOfPendingUsage(
                                             rate, totalKvPairs, lifetime, usageInfo);

@@ -16,7 +16,6 @@
 package com.hedera.services.state.expiry.renewal;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
 import static com.hedera.services.state.expiry.renewal.RenewalHelper.SELF_RENEWAL_WORK;
 import static com.hedera.services.state.expiry.renewal.RenewalHelper.SUPPORTED_RENEWAL_WORK;
@@ -90,17 +89,11 @@ class RenewalHelperTest {
     void renewsLastClassifiedAsRequested() {
         // setup:
         var key = EntityNum.fromLong(fundedExpiredAccountNum);
-        var fundingKey = EntityNum.fromInt(98);
 
         givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
         givenPresent(98, fundingAccount);
         given(expiryThrottle.allow(any(), any(Instant.class))).willReturn(true);
         given(expiryThrottle.allow(any())).willReturn(true);
-        given(
-                        accountsLedger.get(
-                                EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
-                                EXPIRY))
-                .willReturn(1234567L);
         given(
                         accountsLedger.get(
                                 EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
@@ -117,13 +110,18 @@ class RenewalHelperTest {
                 .willReturn(new RenewAssessment(nonZeroBalance, 3600L));
 
         // and:
-        subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
+        final var targetNum = EntityNum.fromLong(fundedExpiredAccountNum);
+        expiredAccountNonZeroBalance.setKey(targetNum);
+        subject.tryToRenewAccount(targetNum, now);
 
         // then:
         verify(accountsLedger, times(1)).get(key.toGrpcAccountId(), BALANCE);
-        verify(accountsLedger, times(1)).get(key.toGrpcAccountId(), EXPIRY);
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         verify(sideEffectsTracker).reset();
+        final var expectedNewExpiry = now.getEpochSecond() + 3600L;
+        verify(recordsHelper)
+                .streamCryptoRenewal(
+                        targetNum, nonZeroBalance, expectedNewExpiry, false, targetNum);
         assertEquals(key, classificationWork.getPayerNumForLastClassified());
     }
 
