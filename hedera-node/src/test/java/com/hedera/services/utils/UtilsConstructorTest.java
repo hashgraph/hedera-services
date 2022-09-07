@@ -50,11 +50,7 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.merkle.internals.ByteUtils;
-import com.hedera.services.state.migration.LegacyStateChildIndices;
-import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
-import com.hedera.services.state.migration.ReleaseTwentySixMigration;
-import com.hedera.services.state.migration.StateChildIndices;
-import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.migration.*;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.state.virtual.KeyPackingUtils;
@@ -123,6 +119,7 @@ class UtilsConstructorTest {
                             MerkleAccount.ChildIndices.class,
                             BitPackUtils.class,
                             LegacyStateChildIndices.class,
+                            ReleaseThirtyMigration.class,
                             ReleaseTwentySixMigration.class,
                             StateChildIndices.class,
                             StateVersions.class,

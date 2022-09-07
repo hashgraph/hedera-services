@@ -15,18 +15,18 @@
  */
 package com.hedera.services.state.expiry.classification;
 
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_ACCOUNT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.OTHER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.throttling.ExpiryThrottle;
+import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -36,43 +36,71 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ClassificationWork {
+    public static final List<MapAccessType> CLASSIFICATION_WORK = List.of(ACCOUNTS_GET);
+
     private final GlobalDynamicProperties dynamicProperties;
     private final EntityLookup lookup;
+    private final ExpiryThrottle expiryThrottle;
     private EntityNum lastClassifiedNum;
-    private MerkleAccount lastClassified = null;
-    private EntityNum payerForAutoRenewNum;
-    private MerkleAccount payerAccountForAutoRenew = null;
+    private MerkleAccount lastClassified;
+    private EntityNum payerNum;
+    private MerkleAccount payer;
 
     @Inject
     public ClassificationWork(
-            final GlobalDynamicProperties dynamicProperties, final EntityLookup lookup) {
+            final GlobalDynamicProperties dynamicProperties,
+            final EntityLookup lookup,
+            final ExpiryThrottle expiryThrottle) {
         this.dynamicProperties = dynamicProperties;
+        this.expiryThrottle = expiryThrottle;
         this.lookup = lookup;
     }
 
-    public ClassificationResult classify(final EntityNum candidateNum, final long now) {
+    public ClassificationResult classify(final EntityNum candidateNum, final Instant now) {
+        if (!expiryThrottle.allow(CLASSIFICATION_WORK, now)) {
+            return COME_BACK_LATER;
+        }
+
+        payer = null;
+        payerNum = null;
+        lastClassified = null;
         lastClassifiedNum = candidateNum;
-        if (!lookup.accountsContainsKey(lastClassifiedNum)) {
+
+        lastClassified = lookup.getImmutableAccount(lastClassifiedNum);
+        if (lastClassified == null) {
             return OTHER;
         } else {
-            lastClassified = lookup.getImmutableAccount(lastClassifiedNum);
+            final var longNow = now.getEpochSecond();
             final long expiry = lastClassified.getExpiry();
-            if (expiry > now) {
+            if (expiry > longNow) {
                 return OTHER;
             }
+
             final var isContract = lastClassified.isSmartContract();
-            if (lastClassified.getBalance() > 0) {
-                return isContract
-                        ? EXPIRED_CONTRACT_READY_TO_RENEW
-                        : EXPIRED_ACCOUNT_READY_TO_RENEW;
-            }
             if (lastClassified.isDeleted()) {
                 return isContract
                         ? DETACHED_CONTRACT_GRACE_PERIOD_OVER
                         : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
             }
+            if (isContract) {
+                if (!expiryThrottle.allow(CLASSIFICATION_WORK)) {
+                    return COME_BACK_LATER;
+                }
+                resolveClassifiedContractPayer();
+            } else {
+                payer = lastClassified;
+                payerNum = lastClassifiedNum;
+            }
+
+            if (payer.getBalance() > 0) {
+                return isContract
+                        ? EXPIRED_CONTRACT_READY_TO_RENEW
+                        : EXPIRED_ACCOUNT_READY_TO_RENEW;
+            }
+
+            // The effective payer for the expired crypto account has zero balance
             final long gracePeriodEnd = expiry + dynamicProperties.autoRenewGracePeriod();
-            if (gracePeriodEnd > now) {
+            if (gracePeriodEnd > longNow) {
                 return isContract ? DETACHED_CONTRACT : DETACHED_ACCOUNT;
             }
             if (lastClassified.isTokenTreasury()) {
@@ -84,47 +112,35 @@ public class ClassificationWork {
         }
     }
 
-    public MerkleAccount getLastClassified() {
-        return lastClassified;
-    }
-
     public EntityNum getLastClassifiedNum() {
         return lastClassifiedNum;
     }
 
-    public EntityNum getPayerNumForAutoRenew() {
-        return payerForAutoRenewNum;
-    }
-
-    public MerkleAccount getPayerAccountForAutoRenew() {
-        return payerAccountForAutoRenew;
-    }
-
-    /**
-     * If there is an autoRenewAccount on the contract with non-zero hbar balance and not deleted,
-     * uses that account for paying autorenewal fee. Else uses contract's hbar funds for renewal.
-     *
-     * @return resolved payer for renewal
-     */
-    public MerkleAccount resolvePayerForAutoRenew() {
-        if (lastClassified.isSmartContract() && lastClassified.hasAutoRenewAccount()) {
-            payerForAutoRenewNum = lastClassified.getAutoRenewAccount().asNum();
-            payerAccountForAutoRenew = lookup.getImmutableAccount(payerForAutoRenewNum);
-            if (isValid(payerAccountForAutoRenew)) {
-                return payerAccountForAutoRenew;
-            }
-        }
-        payerForAutoRenewNum = lastClassifiedNum;
-        payerAccountForAutoRenew = lastClassified;
+    public MerkleAccount getLastClassified() {
         return lastClassified;
     }
 
-    /**
-     * Checks if autoRenewAccount is not deleted and has non-zero hbar balance
-     *
-     * @param payer autoRenewAccount on contract
-     * @return if the account is valid
-     */
+    public EntityNum getPayerNumForLastClassified() {
+        return payerNum;
+    }
+
+    public MerkleAccount getPayerForLastClassified() {
+        return payer;
+    }
+
+    private void resolveClassifiedContractPayer() {
+        if (lastClassified.hasAutoRenewAccount()) {
+            payerNum = Objects.requireNonNull(lastClassified.getAutoRenewAccount()).asNum();
+            payer = lookup.getImmutableAccount(payerNum);
+            if (isValid(payer)) {
+                return;
+            }
+        }
+        payerNum = lastClassifiedNum;
+        payer = lastClassified;
+    }
+
+    @VisibleForTesting
     boolean isValid(final MerkleAccount payer) {
         return payer != null && !payer.isDeleted() && payer.getBalance() > 0;
     }

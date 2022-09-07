@@ -15,6 +15,7 @@
  */
 package com.hedera.services.context.init;
 
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -25,6 +26,7 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.context.MutableStateChildren;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.stream.RecordStreamManager;
@@ -32,7 +34,6 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import java.util.Set;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,12 +48,13 @@ class StateInitializationFlowTest {
     @Mock private HederaFs hfs;
     @Mock private RunningHash runningHash;
     @Mock private ServicesState activeState;
+    @Mock private BootstrapProperties bootstrapProperties;
     @Mock private RecordsRunningHashLeaf runningHashLeaf;
     @Mock private MutableStateChildren workingState;
     @Mock private RecordStreamManager recordStreamManager;
     @Mock private FileUpdateInterceptor aFileInterceptor;
     @Mock private FileUpdateInterceptor bFileInterceptor;
-    @Mock private Consumer<HederaNumbers> staticNumbersHolder;
+    @Mock private StateInitializationFlow.NumberConfigurer numberConfigurer;
 
     private StateInitializationFlow subject;
 
@@ -74,12 +76,13 @@ class StateInitializationFlowTest {
         given(runningHash.getHash()).willReturn(hash);
         given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
         given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
+        given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT)).willReturn(100L);
 
         // when:
-        subject.runWith(activeState);
+        subject.runWith(activeState, bootstrapProperties);
 
         // then:
-        verify(staticNumbersHolder).accept(defaultNumbers);
+        verify(numberConfigurer).configureNumbers(defaultNumbers, 100L);
         verify(workingState).updateFrom(activeState);
         verify(recordStreamManager).setInitialHash(hash);
         verify(hfs).register(aFileInterceptor);
@@ -96,24 +99,25 @@ class StateInitializationFlowTest {
         given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
         given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
         given(hfs.numRegisteredInterceptors()).willReturn(5);
+        given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT)).willReturn(100L);
 
         // when:
-        subject.runWith(activeState);
+        subject.runWith(activeState, bootstrapProperties);
 
         // then:
         verify(workingState).updateFrom(activeState);
         verify(recordStreamManager).setInitialHash(hash);
         verify(hfs, never()).register(any());
-        verify(staticNumbersHolder).accept(defaultNumbers);
+        verify(numberConfigurer).configureNumbers(defaultNumbers, 100L);
 
         cleanupMockNumInitialization();
     }
 
     private void setupMockNumInitialization() {
-        StateInitializationFlow.setStaticNumbersHolder(staticNumbersHolder);
+        StateInitializationFlow.setNumberConfigurer(numberConfigurer);
     }
 
     private void cleanupMockNumInitialization() {
-        StateInitializationFlow.setStaticNumbersHolder(STATIC_PROPERTIES::setNumbersFrom);
+        StateInitializationFlow.setNumberConfigurer(STATIC_PROPERTIES::configureNumbers);
     }
 }

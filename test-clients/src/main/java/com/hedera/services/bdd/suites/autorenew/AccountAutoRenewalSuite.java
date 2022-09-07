@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -60,15 +61,18 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
     }
 
     @Override
+    @SuppressWarnings("java:S3878")
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                accountAutoRemoval(),
-                accountAutoRenewal(),
-                maxNumberOfEntitiesToRenewOrDeleteWorks(),
-                numberOfEntitiesToScanWorks(),
-                autoDeleteAfterGracePeriod(),
-                accountAutoRenewalSuiteCleanup(),
-                freezeAtTheEnd());
+                new HapiApiSpec[] {
+                    accountAutoRemoval(),
+                    accountAutoRenewal(),
+                    maxNumberOfEntitiesToRenewOrDeleteWorks(),
+                    numberOfEntitiesToScanWorks(),
+                    autoDeleteAfterGracePeriod(),
+                    accountAutoRenewalSuiteCleanup(),
+                    freezeAtTheEnd(),
+                });
     }
 
     private HapiApiSpec accountAutoRemoval() {
@@ -85,7 +89,8 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
                 .when(
                         sleepFor(1_500L),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
-                                .via(TRIGGERING_TRANSACTION))
+                                .via(TRIGGERING_TRANSACTION),
+                        getTxnRecord(TRIGGERING_TRANSACTION).andAllChildRecords().logged())
                 .then(
                         getAccountBalance(autoRemovedAccount)
                                 .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));

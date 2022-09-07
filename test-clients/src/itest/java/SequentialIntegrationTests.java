@@ -15,7 +15,6 @@
  */
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
-import com.hedera.services.bdd.suites.contract.traceability.NewTraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -77,7 +76,6 @@ public class SequentialIntegrationTests extends IntegrationTestBase {
                 extractSpecsFromSuite(CryptoCreateSuite::new),
                 extractSpecsFromSuite(UmbrellaRedux::new),
                 extractSpecsFromSuite(ScheduleCreateSpecs::new),
-                extractSpecsFromSuite(ScheduleSignSpecs::new),
-                extractSpecsFromSuite(NewTraceabilitySuite::new));
+                extractSpecsFromSuite(ScheduleSignSpecs::new));
     }
 }

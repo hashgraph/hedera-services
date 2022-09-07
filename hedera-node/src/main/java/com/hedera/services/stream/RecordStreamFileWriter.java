@@ -16,7 +16,6 @@
 package com.hedera.services.stream;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
@@ -27,6 +26,7 @@ import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
@@ -59,6 +59,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.concurrent.ExecutionException;
+import java.util.zip.GZIPOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,6 +67,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
 
     private static final DigestType currentDigestType = DigestType.SHA_384;
+    private static final String COMPRESSION_EXTENSION = ".gz";
 
     /** < * the current record stream type; used to obtain file extensions and versioning */
     private final RecordStreamType streamType;
@@ -151,6 +153,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private RecordStreamFile.Builder recordStreamFileBuilder;
     private SidecarFile.Builder sidecarFileBuilder;
     private final EnumSet<SidecarType> sidecarTypesInCurrentSidecar;
+    private final GlobalDynamicProperties dynamicProperties;
 
     public RecordStreamFileWriter(
             final String dirPath,
@@ -159,7 +162,8 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             final boolean startWriteAtCompleteWindow,
             final RecordStreamType streamType,
             final String sidecarDirPath,
-            final int maxSidecarFileSize)
+            final int maxSidecarFileSize,
+            final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException {
         this.dirPath = dirPath;
         this.logPeriodMs = logPeriodMs;
@@ -173,6 +177,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         this.sidecarTypesInCurrentSidecar = EnumSet.noneOf(SidecarType.class);
         this.sidecarFileId = 1;
         this.maxSidecarFileSize = maxSidecarFileSize;
+        this.dynamicProperties = globalDynamicProperties;
     }
 
     @Override
@@ -256,9 +261,14 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     public void closeCurrentAndSign() {
         if (recordStreamFileBuilder != null) {
-            // generate recordFile name
+            // generate record file name
             assertFirstTxnInstantIsKnown();
-            final var recordFile = new File(generateRecordFilePath(firstTxnInstant));
+            final var uncompressedRecordFilePath = generateRecordFilePath(firstTxnInstant);
+            final var recordFile =
+                    new File(
+                            dynamicProperties.shouldCompressRecordFilesOnCreation()
+                                    ? uncompressedRecordFilePath + COMPRESSION_EXTENSION
+                                    : uncompressedRecordFilePath);
             final var recordFileNameShort = recordFile.getName(); // for logging purposes
             if (recordFile.exists() && !recordFile.isDirectory()) {
                 LOG.debug(
@@ -319,10 +329,18 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
                 // create record file
                 try (FileOutputStream stream = new FileOutputStream(recordFile, false);
+                        GZIPOutputStream gzipStream =
+                                dynamicProperties.shouldCompressRecordFilesOnCreation()
+                                        ? new GZIPOutputStream(stream)
+                                        : null;
                         SerializableDataOutputStream dos =
                                 new SerializableDataOutputStream(
                                         new BufferedOutputStream(
-                                                new HashingOutputStream(streamDigest, stream)))) {
+                                                new HashingOutputStream(
+                                                        streamDigest,
+                                                        gzipStream != null
+                                                                ? gzipStream
+                                                                : stream)))) {
                     LOG.debug(
                             OBJECT_STREAM_FILE.getMarker(),
                             "Stream file created {}",
@@ -335,7 +353,12 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
                     // make sure the whole file is written to disk
                     dos.flush();
-                    stream.flush();
+                    if (gzipStream != null) {
+                        // GZIPOutputStream takes care of flushing its wrapped stream
+                        gzipStream.flush();
+                    } else {
+                        stream.flush();
+                    }
                     stream.getChannel().force(true);
                     stream.getFD().sync();
                     LOG.debug(
@@ -365,7 +388,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
                 // if this line is reached, record file has been created successfully, so create its
                 // signature
-                createSignatureFileFor(recordFile);
+                createSignatureFileFor(uncompressedRecordFilePath);
             }
         }
     }
@@ -495,13 +518,18 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      * @return the new sidecar file path
      */
     String generateSidecarFilePath(final Instant consensusTimestamp, final int sidecarId) {
-        return sidecarDirPath
-                + File.separator
-                + convertInstantToStringWithPadding(consensusTimestamp)
-                + "_"
-                + String.format("%02d", sidecarId)
-                + "."
-                + streamType.getSidecarExtension();
+        var sidecarPath =
+                sidecarDirPath
+                        + File.separator
+                        + convertInstantToStringWithPadding(consensusTimestamp)
+                        + "_"
+                        + String.format("%02d", sidecarId)
+                        + "."
+                        + streamType.getSidecarExtension();
+        if (dynamicProperties.shouldCompressRecordFilesOnCreation()) {
+            sidecarPath += COMPRESSION_EXTENSION;
+        }
+        return sidecarPath;
     }
 
     public void setRunningHash(final Hash hash) {
@@ -587,7 +615,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                 .build();
     }
 
-    private void createSignatureFileFor(final File relatedRecordStreamFile) {
+    private void createSignatureFileFor(final String relatedRecordStreamFile) {
         // create proto messages for signature file
         final var fileSignature = generateSignatureObject(streamDigest.digest());
         final var metadataSignature = generateSignatureObject(metadataStreamDigest.digest());
@@ -597,7 +625,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                         .setMetadataSignature(metadataSignature);
 
         // create signature file
-        final var sigFilePath = generateSigFilePath(relatedRecordStreamFile);
+        final var sigFilePath = relatedRecordStreamFile + "_sig";
         try (final var fos = new FileOutputStream(sigFilePath)) {
             // version in signature files is 1 byte, compared to 4 in record files
             fos.write(streamType.getSigFileHeader()[0]);
@@ -610,7 +638,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             LOG.error(
                     EXCEPTION.getMarker(),
                     "closeCurrentAndSign ::  :: Fail to generate signature file for {}",
-                    relatedRecordStreamFile.getName(),
+                    relatedRecordStreamFile,
                     e);
         }
     }
@@ -631,17 +659,28 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private void createSidecarFile(final Builder sidecarFileBuilder, final File sidecarFile)
             throws IOException {
         try (FileOutputStream stream = new FileOutputStream(sidecarFile, false);
+                GZIPOutputStream gzipStream =
+                        dynamicProperties.shouldCompressRecordFilesOnCreation()
+                                ? new GZIPOutputStream(stream)
+                                : null;
                 SerializableDataOutputStream dos =
                         new SerializableDataOutputStream(
                                 new BufferedOutputStream(
-                                        new HashingOutputStream(sidecarStreamDigest, stream)))) {
+                                        new HashingOutputStream(
+                                                sidecarStreamDigest,
+                                                gzipStream != null ? gzipStream : stream)))) {
             // write contents of sidecar
             dos.write(serialize(sidecarFileBuilder));
 
             // make sure the whole sidecar is written to disk before continuing
             // with calculating its hash and saving it as part of the SidecarMetadata
             dos.flush();
-            stream.flush();
+            if (gzipStream != null) {
+                // GZIPOutputStream takes care of flushing its wrapped stream
+                gzipStream.flush();
+            } else {
+                stream.flush();
+            }
             stream.getChannel().force(true);
             stream.getFD().sync();
 

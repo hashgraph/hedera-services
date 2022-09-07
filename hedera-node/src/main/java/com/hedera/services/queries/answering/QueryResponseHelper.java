@@ -15,7 +15,6 @@
  */
 package com.hedera.services.queries.answering;
 
-import static com.hedera.services.context.primitives.StateView.EMPTY_VIEW;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -76,7 +75,7 @@ public class QueryResponseHelper {
             response = answerFlow.satisfyUsing(answer, query);
         } catch (Exception surprising) {
             log.warn("Query flow unable to satisfy query {}!", query, surprising);
-            response = answer.responseGiven(query, EMPTY_VIEW, FAIL_INVALID, 0L);
+            response = answer.responseGiven(query, null, FAIL_INVALID, 0L);
         }
 
         observer.onNext(response);
