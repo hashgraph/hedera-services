@@ -28,11 +28,10 @@ import com.hedera.services.txns.schedule.ScheduleProcessing;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.swirlds.platform.internal.EventImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
