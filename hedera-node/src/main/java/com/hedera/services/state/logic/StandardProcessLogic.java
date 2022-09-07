@@ -31,6 +31,8 @@ import com.swirlds.common.system.transaction.Transaction;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.swirlds.platform.internal.EventImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -83,6 +85,7 @@ public class StandardProcessLogic implements ProcessLogic {
     public void incorporateConsensusTxn(
             Transaction platformTxn, Instant consensusTime, long submittingMember) {
         try {
+            consensusTime = consensusTime.minusNanos(EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS);
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
             accessor.setStateView(workingView);
             if (!invariantChecks.holdFor(accessor, consensusTime, submittingMember)) {
