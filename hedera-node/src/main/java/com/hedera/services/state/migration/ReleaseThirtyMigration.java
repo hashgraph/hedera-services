@@ -83,7 +83,7 @@ public class ReleaseThirtyMigration {
                 () ->
                         contracts.forEach(
                                 (id, account) -> {
-                                    if (account.isSmartContract()) {
+                                    if (account.isSmartContract() && !account.isDeleted()) {
                                         setNewExpiry(lastKnownConsensusSecond, contracts, id);
                                     }
                                 }),

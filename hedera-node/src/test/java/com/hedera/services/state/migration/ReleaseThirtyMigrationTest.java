@@ -25,7 +25,13 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkle.tree.MerkleBinaryTree;
+import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,27 +41,41 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ReleaseThirtyMigrationTest {
     @Mock private ServicesState initializingState;
-    @Mock private MerkleAccount merkleAccount;
 
     @Test
-    void grantsAutoRenewToContracts() {
+    void grantsAutoRenewToNonDeletedContracts() throws ConstructableRegistryException {
+        registerForMerkleMap();
+
+        final var aKey = EntityNum.fromLong(1L);
+        final var bKey = EntityNum.fromLong(2L);
+        final var cKey = EntityNum.fromLong(3L);
+
         final var a = new MerkleAccount();
         a.setExpiry(1234L);
         a.setSmartContract(true);
         final var b = new MerkleAccount();
         b.setExpiry(2345L);
         b.setSmartContract(true);
+        final var c = new MerkleAccount();
+        c.setExpiry(3456L);
+        c.setDeleted(true);
+        c.setSmartContract(true);
         final var accountsMap = new MerkleMap<EntityNum, MerkleAccount>();
-        accountsMap.put(EntityNum.fromLong(1L), a);
-        accountsMap.put(EntityNum.fromLong(2L), b);
+        accountsMap.put(aKey, a);
+        accountsMap.put(bKey, b);
+        accountsMap.put(cKey, c);
         final var instant = Instant.ofEpochSecond(123456789L);
 
         given(initializingState.accounts()).willReturn(accountsMap);
 
         ReleaseThirtyMigration.grantFreeAutoRenew(initializingState, instant);
 
-        assertTrue(a.getExpiry() > 1234L);
-        assertTrue(b.getExpiry() > 2345L);
+        final var newAExpiry = accountsMap.get(aKey).getExpiry();
+        final var newBExpiry = accountsMap.get(bKey).getExpiry();
+        final var newCExpiry = accountsMap.get(cKey).getExpiry();
+        assertTrue(newAExpiry > 1234L);
+        assertTrue(newBExpiry > 2345L);
+        assertEquals(3456L, newCExpiry);
     }
 
     @Test
@@ -108,5 +128,19 @@ class ReleaseThirtyMigrationTest {
         assertEquals(nftId4.asNftNumPair(), uniqueTokens.get(nftId2).getPrev());
         assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftId4).getPrev());
         assertEquals(nftId2.asNftNumPair(), uniqueTokens.get(nftId4).getNext());
+    }
+
+    private static void registerForMerkleMap() throws ConstructableRegistryException {
+        ConstructableRegistry.registerConstructable(
+                new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+        ConstructableRegistry.registerConstructable(
+                new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+        ConstructableRegistry.registerConstructable(
+                new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+        ConstructableRegistry.registerConstructable(
+                new ClassConstructorPair(
+                        MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+        ConstructableRegistry.registerConstructable(
+                new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
     }
 }

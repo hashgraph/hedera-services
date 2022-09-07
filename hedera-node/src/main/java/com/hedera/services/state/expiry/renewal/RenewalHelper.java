@@ -15,18 +15,19 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.*;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
@@ -51,9 +52,11 @@ public class RenewalHelper implements RenewalWork {
     private final ExpiryRecordsHelper recordsHelper;
     private final EntityLookup lookup;
     private final ExpiryThrottle expiryThrottle;
+    private final ExpiryStats expiryStats;
 
     @Inject
     public RenewalHelper(
+            final ExpiryStats expiryStats,
             final EntityLookup lookup,
             final ExpiryThrottle expiryThrottle,
             final ClassificationWork classifier,
@@ -61,6 +64,7 @@ public class RenewalHelper implements RenewalWork {
             final FeeCalculator fees,
             final ExpiryRecordsHelper recordsHelper) {
         this.lookup = lookup;
+        this.expiryStats = expiryStats;
         this.expiryThrottle = expiryThrottle;
         this.classifier = classifier;
         this.dynamicProperties = dynamicProperties;
@@ -69,7 +73,7 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @Override
-    public EntityProcessResult tryToRenewContract(
+    public ExpiryProcessResult tryToRenewContract(
             final EntityNum contract, final Instant cycleTime) {
         if (!dynamicProperties.shouldAutoRenewContracts()) {
             return NOTHING_TO_DO;
@@ -78,21 +82,21 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @Override
-    public EntityProcessResult tryToRenewAccount(final EntityNum account, final Instant cycleTime) {
+    public ExpiryProcessResult tryToRenewAccount(final EntityNum account, final Instant cycleTime) {
         if (!dynamicProperties.shouldAutoRenewAccounts()) {
             return NOTHING_TO_DO;
         }
         return renew(account, cycleTime, false);
     }
 
-    private EntityProcessResult renew(
+    private ExpiryProcessResult renew(
             final EntityNum account, final Instant cycleTime, final boolean isContract) {
         assertHasLastClassifiedAccount();
 
         final var payer = classifier.getPayerForLastClassified();
         final var expired = classifier.getLastClassified();
         if (!expiryThrottle.allow(workFor(payer, expired))) {
-            return STILL_MORE_TO_DO;
+            return NO_CAPACITY_LEFT;
         }
 
         final long reqPeriod = expired.getAutoRenewSecs();
@@ -103,6 +107,7 @@ public class RenewalHelper implements RenewalWork {
         final var oldExpiry = expired.getExpiry();
         renewWith(renewalFee, renewalPeriod);
 
+        expiryStats.countRenewedContract();
         recordsHelper.streamCryptoRenewal(
                 account, renewalFee, oldExpiry + renewalPeriod, isContract, payer.getKey());
         return DONE;
@@ -113,7 +118,7 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @VisibleForTesting
-    void renewWith(long fee, long renewalPeriod) {
+    void renewWith(final long fee, long renewalPeriod) {
         assertPayerAccountForRenewalCanAfford(fee);
 
         final var mutableAccount = lookup.getMutableAccount(classifier.getLastClassifiedNum());

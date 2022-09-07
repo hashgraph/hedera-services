@@ -221,7 +221,7 @@ class MerkleNetworkContextTest {
         assertSame(subjectCopy.expiryUsageSnapshot(), subject.expiryUsageSnapshot());
         assertSame(subjectCopy.getCongestionLevelStarts(), subject.getCongestionLevelStarts());
         assertEquals(subjectCopy.getStateVersion(), stateVersion);
-        assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
+        assertEquals(subjectCopy.idsScannedThisSecond(), entitiesScannedThisSecond);
         assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
         assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
         assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
@@ -293,7 +293,7 @@ class MerkleNetworkContextTest {
         assertSame(subject.getCongestionLevelStarts(), subjectCopy.getCongestionLevelStarts());
         // and:
         assertEquals(subjectCopy.getStateVersion(), stateVersion);
-        assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
+        assertEquals(subjectCopy.idsScannedThisSecond(), entitiesScannedThisSecond);
         assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
         assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
         assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
@@ -338,7 +338,7 @@ class MerkleNetworkContextTest {
         assertEquals(a.expiryUsageSnapshot(), b.expiryUsageSnapshot());
         assertArrayEquals(a.getCongestionLevelStarts(), b.getCongestionLevelStarts());
         assertEquals(a.getStateVersion(), b.getStateVersion());
-        assertEquals(a.getEntitiesScannedThisSecond(), b.getEntitiesScannedThisSecond());
+        assertEquals(a.idsScannedThisSecond(), b.idsScannedThisSecond());
         assertEquals(a.getEntitiesTouchedThisSecond(), b.getEntitiesTouchedThisSecond());
         assertEquals(a.getPreparedUpdateFileNum(), b.getPreparedUpdateFileNum());
         assertArrayEquals(a.getPreparedUpdateFileHash(), b.getPreparedUpdateFileHash());
@@ -694,7 +694,7 @@ class MerkleNetworkContextTest {
                 (int) entitiesScannedThisSecond, (int) entitiesTouchedThisSecond);
 
         // then:
-        assertEquals(2 * entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
+        assertEquals(2 * entitiesScannedThisSecond, subject.idsScannedThisSecond());
         assertEquals(2 * entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
     }
 
@@ -705,7 +705,7 @@ class MerkleNetworkContextTest {
 
         // then:
         assertEquals(0, subject.getEntitiesTouchedThisSecond());
-        assertEquals(0, subject.getEntitiesScannedThisSecond());
+        assertEquals(0, subject.idsScannedThisSecond());
     }
 
     @Test

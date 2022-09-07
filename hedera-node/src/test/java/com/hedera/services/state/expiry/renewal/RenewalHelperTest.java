@@ -29,11 +29,12 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
-import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -52,6 +53,7 @@ class RenewalHelperTest {
     @Mock private FeeCalculator fees;
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryStats expiryStats;
 
     private EntityLookup lookup;
     private ClassificationWork classificationWork;
@@ -63,6 +65,7 @@ class RenewalHelperTest {
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
         subject =
                 new RenewalHelper(
+                        expiryStats,
                         lookup,
                         expiryThrottle,
                         classificationWork,
@@ -98,6 +101,7 @@ class RenewalHelperTest {
         // then:
         verify(accounts, times(2)).getForModify(key);
         verify(accounts).getForModify(fundingKey);
+        verify(expiryStats).countRenewedContract();
         assertEquals(key, classificationWork.getPayerNumForLastClassified());
     }
 
@@ -111,7 +115,7 @@ class RenewalHelperTest {
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
     }
 
     @Test
@@ -123,6 +127,7 @@ class RenewalHelperTest {
 
         subject =
                 new RenewalHelper(
+                        expiryStats,
                         lookup,
                         expiryThrottle,
                         classificationWork,
@@ -132,18 +137,18 @@ class RenewalHelperTest {
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
     }
 
     @Test
     void doesNothingWhenDisabled() {
         properties.disableAutoRenew();
         var result = subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
 
         properties.disableContractAutoRenew();
         result = subject.tryToRenewContract(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
     }
 
     @Test
