@@ -16,8 +16,7 @@
 package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -32,7 +31,7 @@ class StaticPropertiesHolderTest {
     private final HederaNumbers defaultNumbers = new MockHederaNumbers();
 
     @Test
-    void updatesShardAndRealmAsExpected() {
+    void hasExpectedNumbers() {
         // setup:
         final var pretendNumbers = mock(HederaNumbers.class);
         final var expectedAccount = IdUtils.asAccount("0.0.3");
@@ -43,7 +42,7 @@ class StaticPropertiesHolderTest {
         given(pretendNumbers.realm()).willReturn(0L);
 
         // when:
-        STATIC_PROPERTIES.setNumbersFrom(pretendNumbers);
+        STATIC_PROPERTIES.configureNumbers(pretendNumbers, 100);
 
         // then:
         assertEquals(0L, STATIC_PROPERTIES.getShard());
@@ -55,10 +54,15 @@ class StaticPropertiesHolderTest {
         final var key = STATIC_PROPERTIES.scopedContractKeyWith(4L);
         assertInstanceOf(JContractIDKey.class, key);
         assertEquals(4L, key.getContractID().getContractNum());
+        // and:
+        assertFalse(STATIC_PROPERTIES.isThrottleExempt(0));
+        assertFalse(STATIC_PROPERTIES.isThrottleExempt(101));
+        assertTrue(STATIC_PROPERTIES.isThrottleExempt(1));
+        assertTrue(STATIC_PROPERTIES.isThrottleExempt(100));
     }
 
     @AfterEach
     void cleanup() {
-        STATIC_PROPERTIES.setNumbersFrom(defaultNumbers);
+        STATIC_PROPERTIES.configureNumbers(defaultNumbers, 100);
     }
 }

@@ -227,10 +227,14 @@ abstract class EvmTxProcessor {
                 buildInitialFrame(commonInitialFrame, receiver, payload, value);
         messageFrameStack.addFirst(initialFrame);
 
-        final var hederaTracer =
+        HederaTracer hederaTracer =
                 new HederaTracer(
-                        dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
+                        !isStatic
+                                && dynamicProperties
+                                        .enabledSidecars()
+                                        .contains(SidecarType.CONTRACT_ACTION));
         hederaTracer.init(initialFrame);
+
         while (!messageFrameStack.isEmpty()) {
             process(messageFrameStack.peekFirst(), hederaTracer);
         }

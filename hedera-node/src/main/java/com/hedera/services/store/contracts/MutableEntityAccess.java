@@ -19,6 +19,7 @@ import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCod
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
@@ -105,18 +106,13 @@ public class MutableEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isDeleted(final AccountID id) {
-        return ledger.isDeleted(id);
-    }
-
-    @Override
-    public boolean isDetached(final AccountID id) {
-        return ledger.isDetached(id);
-    }
-
-    @Override
     public boolean isExtant(final AccountID id) {
         return ledger.exists(id);
+    }
+
+    @Override
+    public boolean isUsable(AccountID id) {
+        return ledger.usabilityOf(id) == OK;
     }
 
     @Override

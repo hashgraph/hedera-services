@@ -36,6 +36,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
 import java.util.Iterator;
@@ -170,6 +171,12 @@ class MerkleAccountTest {
         final var otherSubject = new MerkleAccount(List.of(state, otherRecords));
 
         assertNotEquals(otherSubject, subject);
+    }
+
+    @Test
+    void namecanGetHeadNftKey() {
+        final var expected = EntityNumPair.fromLongs(lastAssociatedNftNum, lastAssociatedNftSerial);
+        assertEquals(expected, subject.getHeadNftKey());
     }
 
     @Test

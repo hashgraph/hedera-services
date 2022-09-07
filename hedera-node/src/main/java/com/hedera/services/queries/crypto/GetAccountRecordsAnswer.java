@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -65,7 +66,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
     @Override
     public Response responseGiven(
             final Query query,
-            final StateView view,
+            final @Nullable StateView view,
             final ResponseCodeEnum validity,
             final long cost) {
         return responseFor(query, view, validity, cost, null);
@@ -98,7 +99,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
                 response.setAccountID(op.getAccountID());
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
-                setAnswerOnly(response, view, op, queryCtx);
+                setAnswerOnly(response, Objects.requireNonNull(view), op, queryCtx);
             }
         }
 

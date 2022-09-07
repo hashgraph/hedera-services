@@ -21,10 +21,10 @@ import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -33,11 +33,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class EntityAutoRenewal {
-    private static final Logger log = LogManager.getLogger(EntityAutoRenewal.class);
+public class EntityAutoExpiry {
+    private static final Logger log = LogManager.getLogger(EntityAutoExpiry.class);
 
     private final long firstEntityToScan;
-    private final RenewalProcess renewalProcess;
+    private final ExpiryThrottle expiryThrottle;
+    private final AutoExpiryCycle autoExpiryCycle;
     private final NetworkCtxManager networkCtxManager;
     private final GlobalDynamicProperties dynamicProps;
     private final Supplier<MerkleNetworkContext> networkCtx;
@@ -45,9 +46,10 @@ public class EntityAutoRenewal {
     private final ConsensusTimeTracker consensusTimeTracker;
 
     @Inject
-    public EntityAutoRenewal(
+    public EntityAutoExpiry(
             final HederaNumbers hederaNumbers,
-            final RenewalProcess renewalProcess,
+            final ExpiryThrottle expiryThrottle,
+            final AutoExpiryCycle autoExpiryCycle,
             final GlobalDynamicProperties dynamicProps,
             final NetworkCtxManager networkCtxManager,
             final Supplier<MerkleNetworkContext> networkCtx,
@@ -56,7 +58,8 @@ public class EntityAutoRenewal {
         this.seqNo = seqNo;
         this.networkCtx = networkCtx;
         this.networkCtxManager = networkCtxManager;
-        this.renewalProcess = renewalProcess;
+        this.expiryThrottle = expiryThrottle;
+        this.autoExpiryCycle = autoExpiryCycle;
         this.dynamicProps = dynamicProps;
         this.consensusTimeTracker = consensusTimeTracker;
 
@@ -64,6 +67,12 @@ public class EntityAutoRenewal {
     }
 
     public void execute(final Instant currentConsTime) {
+        executeInternal(currentConsTime);
+        // Ensure we capture any capacity used in the expiry throttle
+        networkCtx.get().syncExpiryThrottle(expiryThrottle);
+    }
+
+    private void executeInternal(final Instant currentConsTime) {
         if (!dynamicProps.shouldAutoRenewSomeEntityType()) {
             return;
         }
@@ -87,7 +96,7 @@ public class EntityAutoRenewal {
         if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
             curNetworkCtx.clearAutoRenewSummaryCounts();
         }
-        renewalProcess.beginRenewalCycle(currentConsTime);
+        autoExpiryCycle.beginCycle(currentConsTime);
 
         int i = 1;
         int entitiesTouched = 0;
@@ -100,7 +109,7 @@ public class EntityAutoRenewal {
             if (advanceScan) {
                 scanNum = next(scanNum, wrapNum);
             }
-            if ((result = renewalProcess.process(scanNum)) != NOTHING_TO_DO) {
+            if ((result = autoExpiryCycle.process(scanNum)) != NOTHING_TO_DO) {
                 entitiesTouched++;
                 advanceScan = (result == DONE);
             } else {
@@ -114,7 +123,7 @@ public class EntityAutoRenewal {
             }
         }
 
-        renewalProcess.endRenewalCycle();
+        autoExpiryCycle.endCycle();
         curNetworkCtx.updateAutoRenewSummaryCounts(i - 1, entitiesTouched);
         curNetworkCtx.updateLastScannedEntity(advanceScan ? scanNum : scanNum - 1);
         log.debug(

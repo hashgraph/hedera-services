@@ -52,7 +52,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import java.util.Objects;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
@@ -115,16 +114,14 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isDetached(final AccountID id) {
-        final var account = Objects.requireNonNull(accounts.get(fromAccountId(id)));
+    public boolean isUsable(AccountID id) {
+        final var account = accounts.get(fromAccountId(id));
+        if (account == null || account.isDeleted()) {
+            return false;
+        }
         return validator.expiryStatusGiven(
                         account.getBalance(), account.getExpiry(), account.isSmartContract())
-                != OK;
-    }
-
-    @Override
-    public boolean isDeleted(AccountID id) {
-        return accounts.get(fromAccountId(id)).isDeleted();
+                == OK;
     }
 
     @Override

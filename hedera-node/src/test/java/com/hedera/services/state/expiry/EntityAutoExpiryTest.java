@@ -30,10 +30,10 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class EntityAutoRenewalTest {
+class EntityAutoExpiryTest {
     private final Instant instantNow = Instant.ofEpochSecond(1_234_567L);
     private final HederaNumbers mockHederaNums = new MockHederaNumbers();
     private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
@@ -50,19 +50,21 @@ class EntityAutoRenewalTest {
     private final long aNum = 1002L, bNum = 1003L, cNum = 1004L;
 
     @Mock private SequenceNumber seqNo;
-    @Mock private RenewalProcess renewalProcess;
+    @Mock private AutoExpiryCycle autoExpiryCycle;
     @Mock private NetworkCtxManager networkCtxManager;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
+    @Mock private ExpiryThrottle expiryThrottle;
 
-    private EntityAutoRenewal subject;
+    private EntityAutoExpiry subject;
 
     @BeforeEach
     void setUp() {
         subject =
-                new EntityAutoRenewal(
+                new EntityAutoExpiry(
                         mockHederaNums,
-                        renewalProcess,
+                        expiryThrottle,
+                        autoExpiryCycle,
                         properties,
                         networkCtxManager,
                         () -> networkCtx,
@@ -79,7 +81,8 @@ class EntityAutoRenewalTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(renewalProcess);
+        verifyNoInteractions(autoExpiryCycle);
+        verify(networkCtx).syncExpiryThrottle(expiryThrottle);
 
         // cleanup:
         properties.enableAutoRenew();
@@ -94,7 +97,7 @@ class EntityAutoRenewalTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(renewalProcess);
+        verifyNoInteractions(autoExpiryCycle);
     }
 
     @Test
@@ -106,7 +109,7 @@ class EntityAutoRenewalTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(renewalProcess);
+        verifyNoInteractions(autoExpiryCycle);
     }
 
     @Test
@@ -131,18 +134,18 @@ class EntityAutoRenewalTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(renewalProcess.process(anyLong())).willReturn(NOTHING_TO_DO);
+        given(autoExpiryCycle.process(anyLong())).willReturn(NOTHING_TO_DO);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(renewalProcess).beginRenewalCycle(instantNow);
+        verify(autoExpiryCycle).beginCycle(instantNow);
         for (long i = aNum; i < aNum + numToScan; i++) {
-            verify(renewalProcess).process(i);
+            verify(autoExpiryCycle).process(i);
         }
         // and:
-        verify(renewalProcess).endRenewalCycle();
+        verify(autoExpiryCycle).endCycle();
         verify(networkCtx).updateLastScannedEntity(aNum + numToScan - 1);
     }
 
@@ -153,16 +156,16 @@ class EntityAutoRenewalTest {
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
         givenWrapNum(aNum + numToScan + 1);
         givenLastScanned(aNum - 1);
-        given(renewalProcess.process(aNum)).willReturn(STILL_MORE_TO_DO).willReturn(DONE);
+        given(autoExpiryCycle.process(aNum)).willReturn(STILL_MORE_TO_DO).willReturn(DONE);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(renewalProcess).beginRenewalCycle(instantNow);
-        verify(renewalProcess, times(2)).process(aNum);
-        verify(renewalProcess).endRenewalCycle();
-        verifyNoMoreInteractions(renewalProcess);
+        verify(autoExpiryCycle).beginCycle(instantNow);
+        verify(autoExpiryCycle, times(2)).process(aNum);
+        verify(autoExpiryCycle).endCycle();
+        verifyNoMoreInteractions(autoExpiryCycle);
         verify(networkCtx).updateLastScannedEntity(aNum);
     }
 
@@ -173,16 +176,16 @@ class EntityAutoRenewalTest {
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
         givenWrapNum(aNum + numToScan + 1);
         givenLastScanned(aNum - 1);
-        given(renewalProcess.process(aNum)).willReturn(STILL_MORE_TO_DO);
+        given(autoExpiryCycle.process(aNum)).willReturn(STILL_MORE_TO_DO);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(renewalProcess).beginRenewalCycle(instantNow);
-        verify(renewalProcess, times(2)).process(aNum);
-        verify(renewalProcess).endRenewalCycle();
-        verifyNoMoreInteractions(renewalProcess);
+        verify(autoExpiryCycle).beginCycle(instantNow);
+        verify(autoExpiryCycle, times(2)).process(aNum);
+        verify(autoExpiryCycle).endCycle();
+        verifyNoMoreInteractions(autoExpiryCycle);
         verify(networkCtx).updateLastScannedEntity(aNum - 1);
     }
 
@@ -194,20 +197,20 @@ class EntityAutoRenewalTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(renewalProcess.process(aNum)).willReturn(DONE);
-        given(renewalProcess.process(bNum)).willReturn(DONE);
+        given(autoExpiryCycle.process(aNum)).willReturn(DONE);
+        given(autoExpiryCycle.process(bNum)).willReturn(DONE);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(renewalProcess).beginRenewalCycle(instantNow);
+        verify(autoExpiryCycle).beginCycle(instantNow);
         for (long i = aNum; i < cNum; i++) {
-            verify(renewalProcess).process(i);
+            verify(autoExpiryCycle).process(i);
         }
         // and:
-        verify(renewalProcess, never()).process(cNum);
-        verify(renewalProcess).endRenewalCycle();
+        verify(autoExpiryCycle, never()).process(cNum);
+        verify(autoExpiryCycle).endCycle();
         verify(networkCtx).updateLastScannedEntity(bNum);
     }
 
@@ -219,7 +222,7 @@ class EntityAutoRenewalTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(renewalProcess.process(aNum))
+        given(autoExpiryCycle.process(aNum))
                 .willAnswer(
                         i -> {
                             given(consensusTimeTracker.hasMoreStandaloneRecordTime())
@@ -231,11 +234,11 @@ class EntityAutoRenewalTest {
         subject.execute(instantNow);
 
         // then:
-        verify(renewalProcess).beginRenewalCycle(instantNow);
-        verify(renewalProcess).process(aNum);
+        verify(autoExpiryCycle).beginCycle(instantNow);
+        verify(autoExpiryCycle).process(aNum);
         // and:
-        verify(renewalProcess, never()).process(bNum);
-        verify(renewalProcess).endRenewalCycle();
+        verify(autoExpiryCycle, never()).process(bNum);
+        verify(autoExpiryCycle).endCycle();
         verify(networkCtx).updateLastScannedEntity(aNum);
     }
 
@@ -247,23 +250,23 @@ class EntityAutoRenewalTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum + numToScan - 2);
-        given(renewalProcess.process(aNum + numToScan - 1)).willReturn(NOTHING_TO_DO);
-        given(renewalProcess.process(aNum - 1)).willReturn(NOTHING_TO_DO);
-        given(renewalProcess.process(aNum)).willReturn(DONE);
-        given(renewalProcess.process(bNum)).willReturn(DONE);
+        given(autoExpiryCycle.process(aNum + numToScan - 1)).willReturn(NOTHING_TO_DO);
+        given(autoExpiryCycle.process(aNum - 1)).willReturn(NOTHING_TO_DO);
+        given(autoExpiryCycle.process(aNum)).willReturn(DONE);
+        given(autoExpiryCycle.process(bNum)).willReturn(DONE);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(renewalProcess).beginRenewalCycle(instantNow);
-        verify(renewalProcess).process(aNum + numToScan - 1);
+        verify(autoExpiryCycle).beginCycle(instantNow);
+        verify(autoExpiryCycle).process(aNum + numToScan - 1);
         for (long i = aNum; i < cNum; i++) {
-            verify(renewalProcess).process(i);
+            verify(autoExpiryCycle).process(i);
         }
         // and:
-        verify(renewalProcess, never()).process(cNum);
-        verify(renewalProcess).endRenewalCycle();
+        verify(autoExpiryCycle, never()).process(cNum);
+        verify(autoExpiryCycle).endCycle();
         verify(networkCtx).updateLastScannedEntity(bNum);
         // and:
         verify(networkCtx).updateAutoRenewSummaryCounts(4, 2);

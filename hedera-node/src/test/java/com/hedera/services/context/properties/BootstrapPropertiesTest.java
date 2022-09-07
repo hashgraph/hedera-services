@@ -93,6 +93,7 @@ class BootstrapPropertiesTest {
                     entry(ACCOUNTS_NODE_REWARD_ACCOUNT, 801L),
                     entry(ACCOUNTS_STAKING_REWARD_ACCOUNT, 800L),
                     entry(ACCOUNTS_FREEZE_ADMIN, 58L),
+                    entry(ACCOUNTS_LAST_THROTTLE_EXEMPT, 100L),
                     entry(ACCOUNTS_SYSTEM_ADMIN, 50L),
                     entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
                     entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
@@ -118,6 +119,7 @@ class BootstrapPropertiesTest {
                     entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
                     entry(ENTITIES_MAX_LIFETIME, 3153600000L),
                     entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
+                    entry(EXPIRY_THROTTLE_RESOURCE, "expiry-throttle.json"),
                     entry(
                             FEES_PERCENT_CONGESTION_MULTIPLIERS,
                             CongestionMultipliers.from("90,10x,95,25x,99,100x")),
@@ -141,7 +143,7 @@ class BootstrapPropertiesTest {
                     entry(HEDERA_PROFILES_ACTIVE, Profile.PROD),
                     entry(HEDERA_REALM, 0L),
                     entry(HEDERA_RECORD_STREAM_LOG_DIR, "/opt/hgcapp/recordStreams"),
-                    entry(HEDERA_RECORD_STREAM_SIDE_CAR_DIR, ""),
+                    entry(HEDERA_RECORD_STREAM_SIDE_CAR_DIR, "sidecar"),
                     entry(HEDERA_RECORD_STREAM_LOG_PERIOD, 2L),
                     entry(HEDERA_RECORD_STREAM_IS_ENABLED, true),
                     entry(HEDERA_RECORD_STREAM_QUEUE_CAPACITY, 5000),
@@ -159,14 +161,12 @@ class BootstrapPropertiesTest {
                     entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, 10),
                     entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
                     entry(AUTO_CREATION_ENABLED, true),
-                    entry(AUTO_REMOVE_MAX_PURGED_KV_PAIRS_PER_TOUCH, 10),
-                    entry(AUTO_REMOVE_MAX_RETURNED_NFTS_PER_TOUCH, 10),
-                    entry(AUTO_RENEW_TARGET_TYPES, EnumSet.noneOf(EntityType.class)),
+                    entry(AUTO_RENEW_TARGET_TYPES, EnumSet.of(EntityType.CONTRACT)),
                     entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
                     entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
                     entry(AUTO_RENEW_GRACE_PERIOD, 604800L),
                     entry(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, 8000001L),
-                    entry(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, 6999999L),
+                    entry(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, 2592000L),
                     entry(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, 1800),
                     entry(ISS_RESET_PERIOD, 60),
                     entry(ISS_ROUNDS_TO_LOG, 5000),
@@ -252,8 +252,8 @@ class BootstrapPropertiesTest {
                     entry(HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, 100),
                     entry(HEDERA_ALLOWANCES_IS_ENABLED, true),
                     entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, false),
-                    entry(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION, 5),
-                    entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, 5),
+                    entry(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION, 6),
+                    entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, 6),
                     entry(ACCOUNTS_MAX_NUM, 5_000_000L),
                     entry(CONTRACTS_MAX_NUM, 5_000_000L),
                     entry(CONTRACTS_STORAGE_SLOT_PRICE_TIERS, "0til100M,2000til450M"),
@@ -268,7 +268,10 @@ class BootstrapPropertiesTest {
                     entry(UTIL_PRNG_IS_ENABLED, true),
                     entry(CONTRACTS_SIDECARS, EnumSet.noneOf(SidecarType.class)),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
-                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true));
+                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
+                    entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
+                    entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true));
+    ;
 
     @Test
     void containsProperty() {

@@ -15,26 +15,18 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import static com.hedera.services.state.expiry.removal.FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_REMOVE;
+
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.throttling.ExpiryThrottle;
+import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.MapValueListUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -51,133 +43,52 @@ import javax.inject.Singleton;
  * however---we do not know <i>which serial numbers</i> the expired account owned. The current
  * implementation responds by simply "stranding" any such NFTs; that is, leaving them in state with
  * an {@code owner} field still set to the now-missing account.
- *
- * <p>The full implementation, with NFT treasury return, will be done through the tasks listed in
- * issue https://github.com/hashgraph/hedera-services/issues/3174.
  */
 @Singleton
 public class AccountGC {
+    static final List<MapAccessType> ACCOUNT_REMOVAL_WORK = List.of(ACCOUNTS_REMOVE);
     private final AliasManager aliasManager;
+    private final ExpiryThrottle expiryThrottle;
+    private final TreasuryReturns treasuryReturns;
     private final SigImpactHistorian sigImpactHistorian;
-    private final TreasuryReturnHelper treasuryReturnHelper;
     private final BackingStore<AccountID, MerkleAccount> backingAccounts;
-    private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
-    private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
-    private final GlobalDynamicProperties dynamicProperties;
-
-    private RemovalFacilitation removalFacilitation =
-            MapValueListUtils::removeInPlaceFromMapValueList;
 
     @Inject
     public AccountGC(
             final AliasManager aliasManager,
+            final ExpiryThrottle expiryThrottle,
             final SigImpactHistorian sigImpactHistorian,
-            final TreasuryReturnHelper treasuryReturnHelper,
-            final BackingStore<AccountID, MerkleAccount> backingAccounts,
-            final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-            final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
-            final GlobalDynamicProperties dynamicProperties) {
-        this.tokenRels = tokenRels;
+            final TreasuryReturns treasuryReturns,
+            final BackingStore<AccountID, MerkleAccount> backingAccounts) {
         this.aliasManager = aliasManager;
+        this.expiryThrottle = expiryThrottle;
         this.backingAccounts = backingAccounts;
         this.sigImpactHistorian = sigImpactHistorian;
-        this.treasuryReturnHelper = treasuryReturnHelper;
-        this.uniqueTokens = uniqueTokens;
-        this.dynamicProperties = dynamicProperties;
+        this.treasuryReturns = treasuryReturns;
     }
 
-    public TreasuryReturns expireBestEffort(
-            final EntityNum expiredAccountNum, final MerkleAccount account) {
-        List<EntityId> tokenTypes = Collections.emptyList();
-        List<CurrencyAdjustments> returnTransfers = Collections.emptyList();
-        var expectedRels = account.getNumAssociations();
-        var done = account.getNftsOwned() == 0;
-        if (expectedRels > 0) {
-            tokenTypes = new ArrayList<>();
-            returnTransfers = new ArrayList<>();
-            doTreasuryReturnsWith(
-                    expectedRels,
-                    expiredAccountNum,
-                    account.getLatestAssociation(),
-                    tokenTypes,
-                    returnTransfers,
-                    tokenRels.get());
-            // set num rels to 0 as we remove all associations
-            account.setNumAssociations(0);
-        }
-
-        if (!done) {
-            final var nftsOwned = account.getNftsOwned();
-            returnNftsToTreasury(
-                    nftsOwned,
-                    account.getHeadNftId(),
-                    account.getHeadNftSerialNum(),
-                    uniqueTokens.get());
-
-            final var remainingNfts =
-                    nftsOwned < dynamicProperties.getMaxReturnedNftsPerTouch()
-                            ? 0
-                            : nftsOwned - dynamicProperties.getMaxReturnedNftsPerTouch();
-            account.setNftsOwned(remainingNfts);
-            done = remainingNfts == 0;
-        }
-
-        if (done) {
-            backingAccounts.remove(expiredAccountNum.toGrpcAccountId());
-            sigImpactHistorian.markEntityChanged(expiredAccountNum.longValue());
-            if (aliasManager.forgetAlias(account.getAlias())) {
-                aliasManager.forgetEvmAddress(account.getAlias());
-                sigImpactHistorian.markAliasChanged(account.getAlias());
+    public CryptoGcOutcome expireBestEffort(
+            final EntityNum num, final MerkleAccount expiredAccount) {
+        final var nftReturns = treasuryReturns.returnNftsFrom(expiredAccount);
+        if (nftReturns.finished()) {
+            final var unitReturns = treasuryReturns.returnFungibleUnitsFrom(expiredAccount);
+            if (unitReturns.finished() && expiryThrottle.allow(ACCOUNT_REMOVAL_WORK)) {
+                completeRemoval(num, expiredAccount);
+                return new CryptoGcOutcome(unitReturns, nftReturns, true);
+            } else {
+                return new CryptoGcOutcome(unitReturns, nftReturns, false);
             }
-        }
-
-        return new TreasuryReturns(tokenTypes, returnTransfers, done);
-    }
-
-    private void returnNftsToTreasury(
-            final long nftsOwned,
-            final long headNftNum,
-            final long headSerialNum,
-            final MerkleMap<EntityNumPair, MerkleUniqueToken> currUniqueTokens) {
-        var nftKey = EntityNumPair.fromLongs(headNftNum, headSerialNum);
-        var i = Math.min(nftsOwned, dynamicProperties.getMaxReturnedNftsPerTouch());
-        while (nftKey != null && i-- > 0) {
-            nftKey = treasuryReturnHelper.updateNftReturns(nftKey, currUniqueTokens);
+        } else {
+            return new CryptoGcOutcome(UNFINISHED_NOOP_FUNGIBLE_RETURNS, nftReturns, false);
         }
     }
 
-    private void doTreasuryReturnsWith(
-            final int expectedRels,
-            final EntityNum expiredAccountNum,
-            final EntityNumPair firstRelKey,
-            final List<EntityId> tokenTypes,
-            final List<CurrencyAdjustments> returnTransfers,
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> curRels) {
-        final var listRemoval = new TokenRelsListMutation(expiredAccountNum.longValue(), curRels);
-        var i = expectedRels;
-        var relKey = firstRelKey;
-        while (relKey != null && i-- > 0) {
-            final var rel = curRels.get(relKey);
-            final var tokenNum = relKey.getLowOrderAsNum();
-            final var tokenBalance = rel.getBalance();
-            if (tokenBalance > 0) {
-                treasuryReturnHelper.updateReturns(
-                        expiredAccountNum, tokenNum, tokenBalance, returnTransfers);
-            }
-            // We are always removing the root, hence receiving the new root
-            relKey = removalFacilitation.removeNext(relKey, relKey, listRemoval);
-            tokenTypes.add(tokenNum.toEntityId());
+    private void completeRemoval(final EntityNum num, final MerkleAccount expiredAccount) {
+        backingAccounts.remove(num.toGrpcAccountId());
+        sigImpactHistorian.markEntityChanged(num.longValue());
+        if (aliasManager.forgetAlias(expiredAccount.getAlias())) {
+            aliasManager.forgetEvmAddress(expiredAccount.getAlias());
+            sigImpactHistorian.markAliasChanged(expiredAccount.getAlias());
         }
-    }
-
-    @FunctionalInterface
-    interface RemovalFacilitation {
-        EntityNumPair removeNext(
-                EntityNumPair key, EntityNumPair root, TokenRelsListMutation listRemoval);
-    }
-
-    @VisibleForTesting
-    void setRemovalFacilitation(final RemovalFacilitation removalFacilitation) {
-        this.removalFacilitation = removalFacilitation;
     }
 }

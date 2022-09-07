@@ -44,6 +44,7 @@ public class PropertyNames {
     public static final String ACCOUNTS_EXCHANGE_RATES_ADMIN = "accounts.exchangeRatesAdmin";
     public static final String ACCOUNTS_FEE_SCHEDULE_ADMIN = "accounts.feeSchedulesAdmin";
     public static final String ACCOUNTS_FREEZE_ADMIN = "accounts.freezeAdmin";
+    public static final String ACCOUNTS_LAST_THROTTLE_EXEMPT = "accounts.lastThrottleExempt";
     public static final String ACCOUNTS_NODE_REWARD_ACCOUNT = "accounts.nodeRewardAccount";
     public static final String ACCOUNTS_STAKING_REWARD_ACCOUNT = "accounts.stakingRewardAccount";
     public static final String ACCOUNTS_SYSTEM_ADMIN = "accounts.systemAdmin";
@@ -136,15 +137,12 @@ public class PropertyNames {
             "hedera.recordStream.recordFileVersion";
     public static final String HEDERA_RECORD_STREAM_SIG_FILE_VERSION =
             "hedera.recordStream.signatureFileVersion";
-    public static final String AUTO_REMOVE_MAX_PURGED_KV_PAIRS_PER_TOUCH =
-            "autoRemove.maxPurgedKvPairsPerTouch";
-    public static final String AUTO_REMOVE_MAX_RETURNED_NFTS_PER_TOUCH =
-            "autoRemove.maxReturnedNftsPerTouch";
     public static final String AUTO_RENEW_TARGET_TYPES = "autoRenew.targetTypes";
     public static final String AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN =
             "autorenew.numberOfEntitiesToScan";
     public static final String AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE =
             "autorenew.maxNumberOfEntitiesToRenewOrDelete";
+    public static final String EXPIRY_THROTTLE_RESOURCE = "expiry.throttleResource";
     public static final String AUTO_RENEW_GRACE_PERIOD = "autorenew.gracePeriod";
     public static final String LEDGER_CHANGE_HIST_MEM_SECS = "ledger.changeHistorian.memorySecs";
     public static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION =
@@ -223,6 +221,8 @@ public class PropertyNames {
     public static final String UTIL_PRNG_IS_ENABLED = "utilPrng.isEnabled";
     public static final String HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION =
             "hedera.recordStream.enableTraceabilityMigration";
+    public static final String HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION =
+            "hedera.recordStream.compressFilesOnCreation";
 
     /* ---- Node properties ----- */
     public static final String DEV_ONLY_DEFAULT_NODE_LISTENS = "dev.onlyDefaultNodeListens";
@@ -243,6 +243,8 @@ public class PropertyNames {
     public static final String HEDERA_RECORD_STREAM_LOG_PERIOD = "hedera.recordStream.logPeriod";
     public static final String HEDERA_RECORD_STREAM_QUEUE_CAPACITY =
             "hedera.recordStream.queueCapacity";
+    public static final String HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION =
+            "hedera.recordStream.logEveryTransaction";
     public static final String ISS_RESET_PERIOD = "iss.resetPeriod";
     public static final String ISS_ROUNDS_TO_LOG = "iss.roundsToLog";
     public static final String NETTY_MODE = "netty.mode";

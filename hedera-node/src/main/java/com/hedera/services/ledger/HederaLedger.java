@@ -32,13 +32,14 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -412,6 +413,19 @@ public class HederaLedger {
 
     public boolean isDetached(final AccountID id) {
         return validator.expiryStatusGiven(accountsLedger, id) != OK;
+    }
+
+    public ResponseCodeEnum usabilityOf(final AccountID id) {
+        try {
+            final var isDeleted = (boolean) accountsLedger.get(id, IS_DELETED);
+            if (isDeleted) {
+                final var isContract = (boolean) accountsLedger.get(id, IS_SMART_CONTRACT);
+                return isContract ? CONTRACT_DELETED : ACCOUNT_DELETED;
+            }
+            return validator.expiryStatusGiven(accountsLedger, id);
+        } catch (MissingEntityException ignore) {
+            return INVALID_ACCOUNT_ID;
+        }
     }
 
     public JKey key(AccountID id) {

@@ -207,7 +207,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
             transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
             return false;
         }
-        if (OK != validator.queryableAccountStatus(newAutoRenewAccount, accounts.get())) {
+        if (validator.queryableAccountStatus(newAutoRenewAccount, accounts.get()) != OK) {
             transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
             return false;
         }

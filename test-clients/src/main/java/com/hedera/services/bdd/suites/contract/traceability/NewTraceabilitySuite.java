@@ -63,6 +63,7 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.StringUtils;
@@ -94,6 +95,10 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     @SuppressWarnings("java:S5960")
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
+        if (true) {
+            // This suite cannot run in CI yet
+            return Collections.emptyList();
+        }
         try {
             initialize();
             return List.of(

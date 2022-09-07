@@ -1544,7 +1544,7 @@ jobs:
             
             # Build Platform
             cd /swirlds-platform
-            ./mvnw clean install -DskipTests;
+            ./gradlew assemble --scan
             
             # Build JRS
             cd /swirlds-platform/regression

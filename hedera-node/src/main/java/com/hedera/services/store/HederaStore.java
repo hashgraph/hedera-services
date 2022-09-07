@@ -15,9 +15,7 @@
  */
 package com.hedera.services.store;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.ledger.HederaLedger;
@@ -64,14 +62,6 @@ public abstract class HederaStore {
     }
 
     protected ResponseCodeEnum checkAccountUsability(AccountID aId) {
-        if (!accountsLedger.exists(aId)) {
-            return INVALID_ACCOUNT_ID;
-        } else if (hederaLedger.isDeleted(aId)) {
-            return ACCOUNT_DELETED;
-        } else if (hederaLedger.isDetached(aId)) {
-            return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-        } else {
-            return OK;
-        }
+        return hederaLedger.usabilityOf(aId);
     }
 }
