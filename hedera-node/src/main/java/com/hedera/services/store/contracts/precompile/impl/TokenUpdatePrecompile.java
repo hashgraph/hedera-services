@@ -23,6 +23,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -37,6 +38,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
     private TokenUpdateWrapper updateOp;
+    private final int functionId;
 
     public TokenUpdatePrecompile(
             WorldLedgers ledgers,
@@ -46,7 +48,8 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             SideEffectsTracker sideEffectsTracker,
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils precompilePricingUtils) {
+            PrecompilePricingUtils precompilePricingUtils,
+            final int functionId) {
         super(
                 ledgers,
                 aliases,
@@ -56,11 +59,20 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 precompilePricingUtils);
+
+        this.functionId = functionId;
     }
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        updateOp = decoder.decodeUpdateTokenInfo(input, aliasResolver);
+        updateOp =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> decoder.decodeUpdateTokenInfo(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2 -> decoder
+                            .decodeUpdateTokenInfoV2(input, aliasResolver);
+                    default -> null;
+                };
         transactionBody = syntheticTxnFactory.createTokenUpdate(updateOp);
         return transactionBody;
     }

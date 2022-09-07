@@ -16,51 +16,8 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BURN_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_PAUSE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UNPAUSE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.customFeesWrapper;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungiblePause;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleUnpause;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleWipe;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.getTokenExpiryInfoWrapper;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungiblePause;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleUnpause;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.*;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.*;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -593,6 +550,54 @@ class HTSPrecompiledContractTest {
 
         assertTrue(subject.getPrecompile() instanceof TokenCreatePrecompile);
         verify(tokenCreateWrapper).inheritAutoRenewAccount(autoRenewId);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForCreateFungibleTokenWithFeesV2() {
+        // given
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2));
+        given(decoder.decodeFungibleCreateWithFeesV2(any(), any()))
+                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(input);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForCreateNonFungibleTokenWithFeesV2() {
+        // given
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2));
+        given(decoder.decodeNonFungibleCreateWithFeesV2(any(), any()))
+                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(input);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForCreateFungibleTokenV2() {
+        // given
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_V2));
+        given(decoder.decodeFungibleCreateV2(any(), any()))
+                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(input);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForCreateNonFungibleTokenV2() {
+        // given
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2));
+        given(decoder.decodeNonFungibleCreateV2(any(), any()))
+                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(input);
     }
 
     @Test
