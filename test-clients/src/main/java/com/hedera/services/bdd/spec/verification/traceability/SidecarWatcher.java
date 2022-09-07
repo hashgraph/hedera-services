@@ -126,11 +126,13 @@ public class SidecarWatcher {
     }
 
     public void waitUntilFinished() throws InterruptedException {
-        log.info("Waiting a maximum of 10 seconds for expected sidecars");
-        var retryCount = 20;
-        while (!expectedSidecars.isEmpty() && retryCount >= 0) {
-            Thread.sleep(500);
-            retryCount--;
+        if (!expectedSidecars.isEmpty()) {
+            log.info("Waiting a maximum of 10 seconds for expected sidecars");
+            var retryCount = 20;
+            while (!expectedSidecars.isEmpty() && retryCount >= 0) {
+                Thread.sleep(500);
+                retryCount--;
+            }
         }
     }
 
