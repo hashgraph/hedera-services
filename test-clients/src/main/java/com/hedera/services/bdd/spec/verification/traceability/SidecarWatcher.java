@@ -20,24 +20,19 @@ import com.google.common.collect.Multimap;
 import com.hedera.services.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.sun.nio.file.SensitivityWatchEventModifier;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.regex.Pattern;
+import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
+import org.apache.commons.io.monitor.FileAlterationMonitor;
+import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SidecarWatcher {
-
-    private final Path recordStreamFolderPath;
-    private WatchService watchService;
 
     public SidecarWatcher(final Path recordStreamFolderPath) {
         this.recordStreamFolderPath = recordStreamFolderPath;
@@ -46,81 +41,52 @@ public class SidecarWatcher {
     private static final Logger log = LogManager.getLogger(SidecarWatcher.class);
     private static final Pattern SIDECAR_FILE_REGEX =
             Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}\\.\\d{9}Z_\\d{2}.rcd");
+    private static final int POLLING_INTERVAL_MS = 500;
 
     private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
     private final Multimap<String, MismatchedSidecar> failedSidecars = HashMultimap.create();
+    private final Path recordStreamFolderPath;
 
-    private boolean noMoreIncomingExpectedSidecars = false;
     private boolean hasSeenFirst = false;
-    // watch service creates 2 notifications per sidecar file
-    // parsing the file on the first notification throws an
-    // exception, since the file is not finalized at that point,
-    // so we need to know when the 2nd one is and only then parse
-    private boolean firstEventOfSidecarReceived = false;
+    private FileAlterationMonitor monitor;
+    private FileAlterationObserver observer;
 
-    public void prepareInfrastructure() throws IOException {
-        watchService = FileSystems.getDefault().newWatchService();
-        recordStreamFolderPath.register(
-                watchService,
-                new WatchEvent.Kind[] {StandardWatchEventKinds.ENTRY_MODIFY},
-                SensitivityWatchEventModifier.HIGH);
-    }
-
-    public void watch() throws IOException {
-        for (; ; ) {
-            // wait for key to be signaled
-            WatchKey key;
-            try {
-                key = watchService.take();
-            } catch (InterruptedException x) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-            for (final var event : key.pollEvents()) {
-                final var kind = event.kind();
-                // This key is registered only
-                // for ENTRY_CREATE events,
-                // but an OVERFLOW event can
-                // occur regardless if events
-                // are lost or discarded.
-                if (kind == StandardWatchEventKinds.OVERFLOW) {
-                    continue;
-                }
-                // The filename is the
-                // context of the event.
-                final var ev = (WatchEvent<Path>) event;
-                final var filename = ev.context();
-                final var child = recordStreamFolderPath.resolve(filename);
-                final var newFilePath = child.toString();
-                if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
-                    if (firstEventOfSidecarReceived) {
-                        log.info("New sidecar file: {}", child.getFileName());
-                        final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
-                        onNewSidecarFile(sidecarFile);
-                        if (expectedSidecars.isEmpty() && noMoreIncomingExpectedSidecars) {
-                            return;
+    public void watch() throws Exception {
+        observer = new FileAlterationObserver(recordStreamFolderPath.toFile());
+        monitor = new FileAlterationMonitor(POLLING_INTERVAL_MS);
+        final var listener =
+                new FileAlterationListenerAdaptor() {
+                    @Override
+                    public void onFileCreate(File file) {
+                        final var newFilePath = file.getPath();
+                        if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
+                            log.info("New sidecar file: {}", newFilePath);
+                            final SidecarFile sidecarFile;
+                            try {
+                                sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
+                            } catch (IOException e) {
+                                log.fatal(
+                                        "An error occurred trying to parse sidecar file {}",
+                                        newFilePath);
+                                throw new IllegalStateException();
+                            }
+                            onNewSidecarFile(sidecarFile);
                         }
                     }
-                    firstEventOfSidecarReceived = !firstEventOfSidecarReceived;
-                }
-            }
-            // Reset the key -- this step is critical if you want to
-            // receive further watch events.  If the key is no longer valid,
-            // the directory is inaccessible so exit the loop.
-            final var valid = key.reset();
-            if (!valid) {
-                log.fatal("Error occurred in WatchServiceAPI. Exiting now.");
-                return;
-            }
-        }
-    }
 
-    public void tearDown() {
-        try {
-            watchService.close();
-        } catch (IOException e) {
-            log.warn("Watch service couldn't be closed.");
-        }
+                    @Override
+                    public void onFileDelete(File file) {
+                        // no-op
+                    }
+
+                    @Override
+                    public void onFileChange(File file) {
+                        // no-op
+                    }
+                };
+        observer.addListener(listener);
+        monitor.addObserver(observer);
+        monitor.start();
     }
 
     private void onNewSidecarFile(final SidecarFile sidecarFile) {
@@ -159,8 +125,14 @@ public class SidecarWatcher {
         }
     }
 
-    public void setSuiteFinished() {
-        noMoreIncomingExpectedSidecars = true;
+    public void waitUntilFinished() throws InterruptedException {
+        log.info("Waiting a maximum of 10 seconds for expected sidecars");
+        var max = 20;
+        while (!expectedSidecars.isEmpty() && max >= 0) {
+            Thread.sleep(500);
+            observer.checkAndNotify();
+            max--;
+        }
     }
 
     public void addExpectedSidecar(final ExpectedSidecar newExpectedSidecar) {
@@ -199,5 +171,13 @@ public class SidecarWatcher {
 
     public boolean thereAreNoPendingSidecars() {
         return expectedSidecars.isEmpty();
+    }
+
+    public void tearDown() {
+        try {
+            monitor.stop();
+        } catch (Exception e) {
+            log.warn("Exception thrown when closing monitor.");
+        }
     }
 }
