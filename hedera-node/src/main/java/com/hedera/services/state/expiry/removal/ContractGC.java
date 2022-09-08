@@ -35,14 +35,17 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class ContractGC {
+    private static final Logger log = LogManager.getLogger(ContractGC.class);
     static final List<MapAccessType> BYTECODE_REMOVAL_WORK = List.of(BLOBS_REMOVE);
     static final List<MapAccessType> ROOT_KEY_UPDATE_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
     static final List<MapAccessType> ONLY_SLOT_REMOVAL_WORK = List.of(STORAGE_REMOVE);
     static final List<MapAccessType> NEXT_SLOT_REMOVAL_WORK =
-            List.of(STORAGE_REMOVE, STORAGE_GET, STORAGE_PUT);
+            List.of(STORAGE_REMOVE, STORAGE_GET, STORAGE_GET, STORAGE_PUT);
 
     private final ExpiryThrottle expiryThrottle;
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
@@ -107,9 +110,16 @@ public class ContractGC {
         var n = 0;
         var contractKey = rootKey;
         while (contractKey != null && expiryThrottle.allow(workToRemoveFrom(i)) && i-- > 0) {
-            // We are always removing the root, hence receiving the new root
-            contractKey = removalFacilitation.removeNext(contractKey, contractKey, listRemoval);
-            n++;
+            try {
+                contractKey = removalFacilitation.removeNext(contractKey, contractKey, listRemoval);
+                n++;
+            } catch (Exception unrecoverable) {
+                log.error(
+                        "Unable to reclaim all storage from contract 0.0.{}",
+                        contractNum,
+                        unrecoverable);
+                contractKey = null;
+            }
         }
         if (contractKey == null) {
             // Treat all pairs as removed if we have no more non-null keys

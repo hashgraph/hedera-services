@@ -16,9 +16,10 @@
 package com.hedera.services.stats;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,20 +29,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MiscRunningAvgsTest {
+class ExpiryStatsTest {
     private static final double halfLife = 10.0;
 
     @Mock private Platform platform;
+    @Mock private RunningAverageMetric idsScannedPerConsSec;
+    @Mock private Counter contractsRemoved;
+    @Mock private Counter contractsRenewed;
 
-    @Mock private RunningAverageMetric gasPerSec;
-    @Mock private RunningAverageMetric submitSizes;
-    @Mock private RunningAverageMetric queueSize;
-    @Mock private RunningAverageMetric hashS;
-    private MiscRunningAvgs subject;
+    private ExpiryStats subject;
 
     @BeforeEach
     void setup() {
-        subject = new MiscRunningAvgs(halfLife);
+        subject = new ExpiryStats(halfLife);
     }
 
     @Test
@@ -50,28 +50,25 @@ class MiscRunningAvgsTest {
 
         subject.registerWith(platform);
 
-        verify(platform, times(4)).getOrCreateMetric(any());
+        verify(platform, times(3)).getOrCreateMetric(any());
     }
 
     @Test
-    void recordsToExpectedAvgs() {
+    void recordsToExpectedMetrics() {
         setMocks();
 
-        subject.recordHandledSubmitMessageSize(3);
-        subject.writeQueueSizeRecordStream(4);
-        subject.hashQueueSizeRecordStream(5);
-        subject.recordGasPerConsSec(6L);
+        subject.countRemovedContract();
+        subject.countRenewedContract();
+        subject.includeIdsScannedInLastConsSec(5L);
 
-        verify(submitSizes).update(3.0);
-        verify(queueSize).update(4.0);
-        verify(hashS).update(5);
-        verify(gasPerSec).update(6L);
+        verify(contractsRemoved).increment();
+        verify(contractsRenewed).increment();
+        verify(idsScannedPerConsSec).update(5.0);
     }
 
     private void setMocks() {
-        subject.setHandledSubmitMessageSize(submitSizes);
-        subject.setWriteQueueSizeRecordStream(queueSize);
-        subject.setHashQueueSizeRecordStream(hashS);
-        subject.setGasPerConsSec(gasPerSec);
+        subject.setIdsScannedPerConsSec(idsScannedPerConsSec);
+        subject.setContractsRemoved(contractsRemoved);
+        subject.setContractsRenewed(contractsRenewed);
     }
 }

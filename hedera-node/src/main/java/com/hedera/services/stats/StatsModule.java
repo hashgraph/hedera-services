@@ -29,6 +29,12 @@ import javax.inject.Singleton;
 public final class StatsModule {
     @Provides
     @Singleton
+    public static ExpiryStats provideExpiryStats(final NodeLocalProperties nodeLocalProperties) {
+        return new ExpiryStats(nodeLocalProperties.statsRunningAvgHalfLifeSecs());
+    }
+
+    @Provides
+    @Singleton
     public static MiscRunningAvgs provideMiscRunningAvgs(
             final NodeLocalProperties nodeLocalProperties) {
         return new MiscRunningAvgs(nodeLocalProperties.statsRunningAvgHalfLifeSecs());

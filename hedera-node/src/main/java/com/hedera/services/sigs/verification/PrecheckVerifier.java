@@ -26,7 +26,6 @@ import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
-import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -61,14 +60,19 @@ public class PrecheckVerifier {
      * @return a flag giving the verdict on the precheck sigs for the txn.
      * @throws Exception if the txn doesn't reference valid keys or has malformed sigs.
      */
-    public boolean hasNecessarySignatures(SignedTxnAccessor accessor) throws Exception {
+    public boolean hasNecessarySignatures(final SignedTxnAccessor accessor) throws Exception {
         try {
-            List<JKey> reqKeys = precheckKeyReqs.getRequiredKeys(accessor.getTxn());
-            List<TransactionSignature> availSigs = getAvailSigs(reqKeys, accessor);
+            final var reqKeys = precheckKeyReqs.getRequiredKeys(accessor.getTxn());
+            final var availSigs = getAvailSigs(reqKeys, accessor);
             syncVerifier.verifySync(availSigs);
-            Function<byte[], TransactionSignature> sigsFn = pkToSigMapFrom(availSigs);
-            return reqKeys.stream().allMatch(key -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID));
-        } catch (InvalidPayerAccountException ignore) {
+            final var sigsFn = pkToSigMapFrom(availSigs);
+            for (final var key : reqKeys) {
+                if (!isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID)) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (final InvalidPayerAccountException ignore) {
             return false;
         }
     }

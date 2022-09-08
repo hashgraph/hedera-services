@@ -143,6 +143,7 @@ public class PropertyNames {
     public static final String AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE =
             "autorenew.maxNumberOfEntitiesToRenewOrDelete";
     public static final String EXPIRY_THROTTLE_RESOURCE = "expiry.throttleResource";
+    public static final String EXPIRY_MIN_CYCLE_ENTRY_CAPACITY = "expiry.minCycleEntryCapacity";
     public static final String AUTO_RENEW_GRACE_PERIOD = "autorenew.gracePeriod";
     public static final String LEDGER_CHANGE_HIST_MEM_SECS = "ledger.changeHistorian.memorySecs";
     public static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION =
@@ -243,6 +244,8 @@ public class PropertyNames {
     public static final String HEDERA_RECORD_STREAM_LOG_PERIOD = "hedera.recordStream.logPeriod";
     public static final String HEDERA_RECORD_STREAM_QUEUE_CAPACITY =
             "hedera.recordStream.queueCapacity";
+    public static final String HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION =
+            "hedera.recordStream.logEveryTransaction";
     public static final String ISS_RESET_PERIOD = "iss.resetPeriod";
     public static final String ISS_ROUNDS_TO_LOG = "iss.roundsToLog";
     public static final String NETTY_MODE = "netty.mode";

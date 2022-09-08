@@ -22,8 +22,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doCallRealMethod;
 
+import com.hedera.services.throttling.MapAccessType;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +65,24 @@ class StandardizedPropertySourcesTest {
         assertEquals(expected, mockSubject.getNodeStakeRatiosProperty(name));
 
         assertEquals(Collections.emptyMap(), PropertySource.AS_NODE_STAKE_RATIOS.apply(""));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getsExpectedAccessList() {
+        final var prop = "ACCOUNTS_GET,STORAGE_PUT";
+        final List<MapAccessType> accesses =
+                (List<MapAccessType>) PropertySource.AS_ACCESS_LIST.apply(prop);
+        final List<MapAccessType> expected =
+                List.of(MapAccessType.ACCOUNTS_GET, MapAccessType.STORAGE_PUT);
+        assertEquals(expected, accesses);
+
+        final var name = "accessList";
+        final var mockSubject = Mockito.mock(PropertySource.class);
+        doCallRealMethod().when(mockSubject).getAccessListProperty(name);
+        given(mockSubject.getProperty(name)).willReturn(expected);
+        doCallRealMethod().when(mockSubject).getTypedProperty(List.class, name);
+        assertEquals(expected, mockSubject.getAccessListProperty(name));
     }
 
     @Test

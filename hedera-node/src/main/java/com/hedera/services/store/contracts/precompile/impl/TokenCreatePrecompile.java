@@ -173,6 +173,14 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                             .decodeNonFungibleCreate(input, aliasResolver);
                     case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decoder
                             .decodeNonFungibleCreateWithFees(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2 -> decoder
+                            .decodeFungibleCreateV2(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2 -> decoder
+                            .decodeFungibleCreateWithFeesV2(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2 -> decoder
+                            .decodeNonFungibleCreateV2(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2 -> decoder
+                            .decodeNonFungibleCreateWithFeesV2(input, aliasResolver);
                     default -> null;
                 };
 

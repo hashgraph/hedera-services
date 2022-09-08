@@ -19,7 +19,7 @@ import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -198,9 +198,11 @@ public class EvmLog implements SelfSerializable {
         if (contractId != null) {
             grpc.setContractID(contractId.toGrpcContractId());
         }
-        grpc.setBloom(ByteString.copyFrom(bloom));
-        grpc.setData(ByteString.copyFrom(data));
-        grpc.addAllTopic(topics.stream().map(ByteString::copyFrom).toList());
+        grpc.setBloom(ByteStringUtils.wrapUnsafely(bloom));
+        grpc.setData(ByteStringUtils.wrapUnsafely(data));
+        for (final var topic : topics) {
+            grpc.addTopic(ByteStringUtils.wrapUnsafely(topic));
+        }
         return grpc.build();
     }
 

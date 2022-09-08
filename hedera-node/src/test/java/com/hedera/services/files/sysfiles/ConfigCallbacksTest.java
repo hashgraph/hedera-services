@@ -15,8 +15,9 @@
  */
 package com.hedera.services.files.sysfiles;
 
-import static com.hedera.services.context.properties.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.services.throttling.MapAccessType.STORAGE_PUT;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
@@ -30,10 +31,12 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +53,7 @@ class ConfigCallbacksTest {
     private static final long node2MaxStake = 300L;
     private static final String literalBlockValues =
             "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
+    private static final List<MapAccessType> minReqUnitOfWork = List.of(ACCOUNTS_GET, STORAGE_PUT);
     private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
 
     @Mock private ExpiryThrottle expiryThrottle;
@@ -89,6 +93,8 @@ class ConfigCallbacksTest {
         givenWellKnownStakingInfos();
         given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(hbarFloat);
         given(properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE)).willReturn(expiryResourceLoc);
+        given(properties.getAccessListProperty(EXPIRY_MIN_CYCLE_ENTRY_CAPACITY))
+                .willReturn(minReqUnitOfWork);
         given(addressBook.getSize()).willReturn(numNodes);
         given(dynamicProps.knownBlockValues()).willReturn(blockValues);
         given(dynamicProps.nodeMaxMinStakeRatios()).willReturn(Map.of(0L, 2L, 1L, 8L));
@@ -100,7 +106,7 @@ class ConfigCallbacksTest {
 
         // then:
         verify(propertySources).reloadFrom(config);
-        verify(expiryThrottle).rebuildFromResource(expiryResourceLoc);
+        verify(expiryThrottle).rebuildGiven(expiryResourceLoc, minReqUnitOfWork);
         verify(dynamicProps).reload();
         verify(functionalityThrottling, times(3)).applyGasConfig();
         verify(networkCtx).renumberBlocksToMatch(blockValues);

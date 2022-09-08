@@ -28,7 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
@@ -44,11 +44,11 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
     private final OptionValidator validator;
 
     private BalanceChange balanceChange;
-    private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
 
     public MerkleAccountScopedCheck(
             final OptionValidator validator,
-            final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
+            final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger) {
         this.validator = validator;
         this.nftsLedger = nftsLedger;
     }
