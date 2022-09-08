@@ -28,7 +28,7 @@ import com.hedera.services.store.models.NftId;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import org.junit.jupiter.api.Test;
 
-public class StoresModuleTest {
+class StoresModuleTest {
     @Test
     void testTransactionalLedgerWhenVirtualNftsEnabled() {
         final var bootstrapProperties = mock(BootstrapProperties.class);
