@@ -65,9 +65,11 @@ latest development changes for the upcoming release.
 2. `main` - This will have the `production-ready` code in it. In most cases release engineering will be working with it.
 
 ### Creating issues on GitHub
-Any feature/bugfix that need to be addressed, should be associated to an issue in GitHub.
-The issue should be added to `Services Sprint Tracking` and the associated project type in `Projects` tab.
-It should also have the targeted milestone set on it.
+GitHub's [issues](https://github.com/hashgraph/hedera-services/issues) are used as the primary method for tracking project
+changes.
+Any actionable item that need to be addressed, should be associated to an issue in GitHub.
+The issue should be added to `Services Sprint Tracking` (if it is targeted to be addressed in the current sprint)
+and the associated project type in `Projects` tab. It should also have the targeted milestone set on it.
 
 <p>
     <img src="./assets/labels-on-issue.png"/>
@@ -79,8 +81,7 @@ It should also have the targeted milestone set on it.
 As per the development model, every developer should create a feature branch from `develop` branch for working on an 
 issue targeted for the current release. 
 
-The `develop` branch should be up-to-date with all the features going into the
-next release.
+The `develop` branch should be up-to-date with all the features going into the next release.
 
 #### As a developer, I would like to create a branch to work on the feature NOT targeted for upcoming release
 As per the development model, every developer should create a feature branch to work from `develop` branch. But, the 
