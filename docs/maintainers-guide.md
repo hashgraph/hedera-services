@@ -26,7 +26,7 @@ Open the Gradle tool window, and run `Tasks/build/assemble` in the root project:
 
 ## GPG set up
 Every commit being pushed to the repository should be verified. So it is important to set up GPG keys before contributing to the repository.
-Use the following tutorials to set up a GPG key. Be sure to enable Vigilant Mode in github.
+Use the following tutorials to set up a GPG key. Be sure to enable Vigilant Mode and adding GPG key in GitHub.
 
 - Github
     - [Github - Generating a new GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key)
@@ -37,3 +37,20 @@ Use the following tutorials to set up a GPG key. Be sure to enable Vigilant Mode
 - IntelliJ IDEA (if you use IntelliJ to interact with git)
     - [IntelliJ - Signing Commits with GPG Keys](https://www.jetbrains.com/help/idea/set-up-GPG-commit-signing.html)
     - [IntelliJ Official YouTube - GPG Commit Signing (10:59)](https://youtu.be/RBhz-8fZN9A?t=659)
+
+## Development Model
+We follow [GitFlow branching model](https://nvie.com/posts/a-successful-git-branching-model/) for the development.
+
+### User Stories
+
+#### As a developer I would like to create a branch to work on the feature for the upcoming release
+As per the development model, every developer should create a feature branch to work from `develop` branch. 
+The `develop` branch should be up-to-date with all the features going into the next release.
+
+#### As a developer I would like to create a branch to work on the feature NOT targeted for upcoming release
+As per the development model, every developer should create a feature branch to work from `develop` branch. 
+But the feature branch should NOT be merged into `develop` until the decision is made if the feature is going 
+into upcoming release.
+
+#### As a developer I would like to merge my feature targeted for upcoming release
+
