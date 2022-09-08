@@ -41,13 +41,13 @@ public class SidecarWatcher {
     private static final Logger log = LogManager.getLogger(SidecarWatcher.class);
     private static final Pattern SIDECAR_FILE_REGEX =
             Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}\\.\\d{9}Z_\\d{2}.rcd");
-    private static final int POLLING_INTERVAL_MS = 500;
+    private static final int POLLING_INTERVAL_MS = 250;
 
     private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
     private final Multimap<String, MismatchedSidecar> failedSidecars = HashMultimap.create();
     private final Path recordStreamFolderPath;
 
-    private boolean hasSeenFirst = false;
+    private boolean hasSeenFirstExpectedSidecar = false;
     private FileAlterationMonitor monitor;
 
     public void watch() throws Exception {
@@ -64,8 +64,9 @@ public class SidecarWatcher {
                                 sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
                             } catch (IOException e) {
                                 log.fatal(
-                                        "An error occurred trying to parse sidecar file {}",
-                                        newFilePath);
+                                        "An error occurred trying to parse sidecar file {} - {}",
+                                        newFilePath,
+                                        e);
                                 throw new IllegalStateException();
                             }
                             onNewSidecarFile(sidecarFile);
@@ -90,7 +91,7 @@ public class SidecarWatcher {
 
     private void onNewSidecarFile(final SidecarFile sidecarFile) {
         for (final var actualSidecar : sidecarFile.getSidecarRecordsList()) {
-            if (hasSeenFirst) {
+            if (hasSeenFirstExpectedSidecar) {
                 assertIncomingSidecar(actualSidecar);
             } else {
                 // sidecar records from different suites can be present in the sidecar
@@ -104,7 +105,7 @@ public class SidecarWatcher {
                         .expectedSidecarRecord()
                         .getConsensusTimestamp()
                         .equals(actualSidecar.getConsensusTimestamp())) {
-                    hasSeenFirst = true;
+                    hasSeenFirstExpectedSidecar = true;
                     assertIncomingSidecar(actualSidecar);
                 }
             }
@@ -124,12 +125,18 @@ public class SidecarWatcher {
         }
     }
 
-    public void waitUntilFinished() throws InterruptedException {
+    public void waitUntilFinished() {
         if (!expectedSidecars.isEmpty()) {
             log.info("Waiting a maximum of 10 seconds for expected sidecars");
             var retryCount = 20;
             while (!expectedSidecars.isEmpty() && retryCount >= 0) {
-                Thread.sleep(500);
+                try {
+                    Thread.sleep(POLLING_INTERVAL_MS);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Interrupted while waiting for sidecars.");
+                    return;
+                }
                 retryCount--;
             }
         }

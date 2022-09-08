@@ -93,11 +93,6 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         try {
             initialize();
-            return List.of(
-                    traceabilityE2EScenario1(),
-                    vanillaBytecodeSidecar(),
-                    vanillaBytecodeSidecar2(),
-                    assertSidecars());
         } catch (Exception e) {
             log.warn("An exception occurred initializing watch service", e);
             return List.of(
@@ -111,6 +106,11 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                             "Watch service couldn't be"
                                                                     + " initialized."))));
         }
+        return List.of(
+                traceabilityE2EScenario1(),
+                vanillaBytecodeSidecar(),
+                vanillaBytecodeSidecar2(),
+                assertSidecars());
     }
 
     private HapiApiSpec traceabilityE2EScenario1() {
