@@ -16,7 +16,7 @@ From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just c
 Make sure you are using JDK17 as the project SDK:
 
 <p>
-    <img src="./assets/sdk-17.png"/>
+    <img src="assets/jdk-17.png"/>
 </p>
 
 Open the Gradle tool window, and run `Tasks/build/assemble` in the root project:

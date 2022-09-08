@@ -1,29 +1,35 @@
 # Maintainers-Guide
 
 ## IntelliJ set up
-Install IntelliJ for development using the jetbrains toolbox, instead of installing directly for upgrading to latest 
-version easily.
-Download at [https://www.jetbrains.com/lp/toolbox/](https://www.jetbrains.com/lp/toolbox/) and select the correct 
-version. If you are on an M1/M2 chipset, select **.dmg (macOs Applie Silicon)**.
+Install IntelliJ for development using the [jetbrains toolbox](https://www.jetbrains.com/lp/toolbox/), 
+instead of installing directly. It is helpful for upgrading to the latest version easily.
+If you are on an M1/M2 chipset, select **.dmg (macOs Apple Silicon)**.
 
 Once you have the jetbrains toolbox installed, open it up. Install **Intellij IDEA Ultimate**.
 
 ## Clone repository set up
 
-Clone this repository:
+Clone this repository using:
 ```
 git clone git@github.com:hashgraph/hedera-services.git
 ```
 
 From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just cloned.
 
-Make sure you are using JDK17 as the project SDK:
+Make sure you are using JDK17 as the project SDK. You can download JDK-17.0.3 for mac [here](https://adoptium.net/temurin/releases/).
 
 <p>
-    <img src="./assets/sdk-17.png"/>
+    <img src="assets/jdk-17.png"/>
 </p>
 
-Open the Gradle tool window, and run `Tasks/build/assemble` in the root project:
+## Gradle
+Once the repository is opened in IntelliJ, we recommend using either the Gradle command line 
+`(./gradlew spotlessApply)`  or the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides) 
+to format your code. 
+Please make sure to set your code style under `IntelliJ IDEA -> Preferences -> google-java-format Settings -> Code Style` 
+to the `Android Open Source Project (AOSP)` style if using the IntelliJ plugin.
+
+Open the Gradle tool window, and run `Tasks/build/assemble` to on the root project.
 
 ## GPG set up
 Every commit being pushed to the repository should be verified. So it is important to set up GPG keys before 
@@ -84,7 +90,9 @@ Also add the following labels on the pull request :
 PR should be merged after an approving review and all the checks are passed.
 
 NOTE: Any feature that is not going into the upcoming release should stay in the feature branch and should not be merged
-to `develop`
+to `develop`.
+NOTE: Please use either the Gradle command line`(./gradlew spotlessApply)`  or the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
+to format your code to avoid failing checks in CI pipeline.
 
 #### As a release engineer, I would like to create a release branch
 
