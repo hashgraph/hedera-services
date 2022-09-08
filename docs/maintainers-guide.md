@@ -1,35 +1,38 @@
 # Maintainers-Guide
 
+This document outlines the process and key notes for a maintainer to contribute to the repository .
+
 ## IntelliJ set up
-Install IntelliJ for development using the [jetbrains toolbox](https://www.jetbrains.com/lp/toolbox/), 
-instead of installing directly. It is helpful for upgrading to the latest version easily.
-If you are on an M1/M2 chipset, select **.dmg (macOs Apple Silicon)**.
+IntelliJ is used for most of the development lifecycle.
+Install IntelliJ using the [jetbrains toolbox](https://www.jetbrains.com/lp/toolbox/), instead of installing directly.
+If you are on an M1/M2 chipset, select **.dmg (macOs Apple Silicon)**. Once you have the jetbrains toolbox installed, 
+open it and Install **Intellij IDEA Ultimate**.
 
-Once you have the jetbrains toolbox installed, open it up. Install **Intellij IDEA Ultimate**.
+## JDK
+Download JDK-17.0.3 for mac [here](https://adoptium.net/temurin/releases/).
 
-## Clone repository set up
-
+## Cloning repository
 Clone this repository using:
 ```
 git clone git@github.com:hashgraph/hedera-services.git
 ```
 
 From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just cloned.
-
-Make sure you are using JDK17 as the project SDK. You can download JDK-17.0.3 for mac [here](https://adoptium.net/temurin/releases/).
+Make sure you are using JDK17 as the project SDK. 
 
 <p>
     <img src="assets/jdk-17.png"/>
 </p>
 
 ## Gradle
-Once the repository is opened in IntelliJ, we recommend using either the Gradle command line 
-`(./gradlew spotlessApply)`  or the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides) 
-to format your code. 
-Please make sure to set your code style under `IntelliJ IDEA -> Preferences -> google-java-format Settings -> Code Style` 
+Once the repository is opened in IntelliJ, start using either the Gradle command line 
+`(./gradlew spotlessApply)`  or set up the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides) 
+in IntelliJ to format your code. 
+Make sure to set your code style under `IntelliJ IDEA -> Preferences -> google-java-format Settings -> Code Style` 
 to the `Android Open Source Project (AOSP)` style if using the IntelliJ plugin.
 
-Open the Gradle tool window, and run `Tasks/build/assemble` to on the root project.
+To build the project from Intellij, open the Gradle tool window and run `Tasks/build/assemble` to on the root project.
+If you are using command line use `./gradlew assemble`.
 
 ## GPG set up
 Every commit being pushed to the repository should be verified. So it is important to set up GPG keys before 
@@ -50,20 +53,20 @@ Use the following tutorials to set up a GPG key.
     - [IntelliJ Official YouTube - GPG Commit Signing (10:59)](https://youtu.be/RBhz-8fZN9A?t=659)
 
 ## Development Model
-We follow [GitFlow branching model](https://nvie.com/posts/a-successful-git-branching-model/) for the development.
+We follow [GitFlow branching model](https://nvie.com/posts/a-successful-git-branching-model/) for the development life cycle.
 
 <p>
     <img src="./assets/gitflow-branching-model.png"/>
 </p>
 
-As per this model , there will be 2 long-lived branches:
+As per this model, there will be 2 long-lived branches:
 1. `develop` - This will be the default branch developers will be working on. It will always be up-to-date with the 
 latest development changes for the upcoming release.
 2. `main` - This will have the `production-ready` code in it. In most cases release engineering will be working with it.
 
 ### Creating issues on GitHub
-Any feature/bugfix that will be worked on in the release cycle, should be associated to an issue in GitHub.
-The issue should be associated to the `Services Sprint Tracking` and the associated project type in `Projects` tab.
+Any feature/bugfix that need to be addressed, should be associated to an issue in GitHub.
+The issue should be added to `Services Sprint Tracking` and the associated project type in `Projects` tab.
 It should also have the targeted milestone set on it.
 
 <p>
@@ -73,8 +76,11 @@ It should also have the targeted milestone set on it.
 ### User Stories
 
 #### As a developer, I would like to create a branch to work on the feature for the upcoming release
-As per the development model, every developer should create a feature branch to work from `develop` branch. The 
-`develop` branch should be up-to-date with all the features going into the next release.
+As per the development model, every developer should create a feature branch from `develop` branch for working on an 
+issue targeted for the current release. 
+
+The `develop` branch should be up-to-date with all the features going into the
+next release.
 
 #### As a developer, I would like to create a branch to work on the feature NOT targeted for upcoming release
 As per the development model, every developer should create a feature branch to work from `develop` branch. But, the 
@@ -122,3 +128,17 @@ back into the current `release` branch(if the release branch is still open), and
 
 At the end of release cycle, release engineering will merge the release branch for current release into `main`and tag 
 release from the `main` branch.
+
+## Naming convention for branches
+The branch names should have the issue number related to the feature/bugfix for easier tracking. 
+The naming should be as follows:
+
+```IssueNo-targetBranchSymbol-short description of the issue```
+
+the `targetBranchSymbol` above is `D` for `develop` branch and `M` for main branch.
+
+Eg: If the Issue number is `100` and the feature is targeted to be merged to `develop` branch, the branch name should be named as
+ `0100-D-some-description`
+If the Issue number is `100` and the hotfix is targeted to be merged to `main` branch, the branch name should be named as
+`0100-M-some-description`
+
