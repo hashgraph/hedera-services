@@ -77,6 +77,7 @@ class TokenPrecompileReadOperationsTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private MessageFrame frame;
+    @Mock private AccessorFactory accessorFactory;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;

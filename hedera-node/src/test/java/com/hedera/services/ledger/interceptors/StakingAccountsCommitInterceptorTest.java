@@ -131,6 +131,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(new EntityChangeSet<>());
 
         verifyNoInteractions(networkCtx);
+        verifyNoInteractions(rewardCalculator);
     }
 
     @Test
@@ -176,6 +177,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(NA, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -197,6 +199,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(counterpartyBalance, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -218,6 +221,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(counterpartyBalance, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -239,6 +243,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(counterpartyBalance / 5, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -256,6 +261,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -276,6 +282,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -296,6 +303,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -412,6 +420,7 @@ class StakingAccountsCommitInterceptorTest {
         assertEquals(0L, stakingInfo.get(node1Id).getRewardSumHistory()[0]);
         assertEquals(0L, stakingInfo.get(node0Id).getRewardSumHistory()[1]);
         assertEquals(0L, stakingInfo.get(node1Id).getRewardSumHistory()[1]);
+        verify(rewardCalculator, times(3)).reset();
     }
 
     @Test

@@ -269,6 +269,7 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_SIDECARS, EnumSet.noneOf(SidecarType.class)),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
                     entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
+                    entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
                     entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true));
     ;
 

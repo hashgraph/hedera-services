@@ -15,54 +15,54 @@
  */
 package com.hedera.services.ledger.properties;
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public enum NftProperty implements BeanProperty<MerkleUniqueToken> {
+public enum NftProperty implements BeanProperty<UniqueTokenAdapter> {
     OWNER {
         @Override
-        public BiConsumer<MerkleUniqueToken, Object> setter() {
+        public BiConsumer<UniqueTokenAdapter, Object> setter() {
             return (t, o) -> t.setOwner((EntityId) o);
         }
 
         @Override
-        public Function<MerkleUniqueToken, Object> getter() {
-            return MerkleUniqueToken::getOwner;
+        public Function<UniqueTokenAdapter, Object> getter() {
+            return UniqueTokenAdapter::getOwner;
         }
     },
     CREATION_TIME {
         @Override
-        public BiConsumer<MerkleUniqueToken, Object> setter() {
+        public BiConsumer<UniqueTokenAdapter, Object> setter() {
             return (t, o) -> t.setPackedCreationTime((long) o);
         }
 
         @Override
-        public Function<MerkleUniqueToken, Object> getter() {
-            return MerkleUniqueToken::getPackedCreationTime;
+        public Function<UniqueTokenAdapter, Object> getter() {
+            return UniqueTokenAdapter::getPackedCreationTime;
         }
     },
     METADATA {
         @Override
-        public BiConsumer<MerkleUniqueToken, Object> setter() {
+        public BiConsumer<UniqueTokenAdapter, Object> setter() {
             return (t, o) -> t.setMetadata((byte[]) o);
         }
 
         @Override
-        public Function<MerkleUniqueToken, Object> getter() {
-            return MerkleUniqueToken::getMetadata;
+        public Function<UniqueTokenAdapter, Object> getter() {
+            return UniqueTokenAdapter::getMetadata;
         }
     },
     SPENDER {
         @Override
-        public BiConsumer<MerkleUniqueToken, Object> setter() {
+        public BiConsumer<UniqueTokenAdapter, Object> setter() {
             return (t, o) -> t.setSpender((EntityId) o);
         }
 
         @Override
-        public Function<MerkleUniqueToken, Object> getter() {
-            return MerkleUniqueToken::getSpender;
+        public Function<UniqueTokenAdapter, Object> getter() {
+            return UniqueTokenAdapter::getSpender;
         }
     },
 }

@@ -134,6 +134,7 @@ class HederaSStoreOperationTest {
         verify(frame).incrementGasRefund(storageRefundAmount);
         verify(mutableAccount).setStorageValue(key, value);
         verify(frame).storageWasUpdated(key, value);
+        verify(frame).warmUpStorage(recipient, key);
     }
 
     @Test
@@ -151,6 +152,7 @@ class HederaSStoreOperationTest {
         given(frame.getMessageFrameStack()).willReturn(messageStack);
         given(updater.parentUpdater()).willReturn(Optional.empty());
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of(CONTRACT_STATE_CHANGE));
+        given(mutableAccount.getAddress()).willReturn(unaliasedRecipient);
 
         final var actual = subject.execute(frame, evm);
 
@@ -158,11 +160,13 @@ class HederaSStoreOperationTest {
         verify(frame).incrementGasRefund(storageRefundAmount);
         verify(mutableAccount).setStorageValue(key, value);
         verify(frame).storageWasUpdated(key, value);
+        verify(frame).warmUpStorage(unaliasedRecipient, key);
     }
 
     private void givenStackItemsAndMutableRecipientAccount() {
         givenStackItemsAndRecipientAccount();
         given(evmAccount.getMutable()).willReturn(mutableAccount);
+        given(mutableAccount.getAddress()).willReturn(recipient);
         given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(storageCost);
     }
 
@@ -199,4 +203,5 @@ class HederaSStoreOperationTest {
     private static final long sufficientRemainingGas = EIP_1706_MINIMUM + 1L;
     private static final long insufficientRemainingGas = EIP_1706_MINIMUM - 1L;
     private static final Address recipient = Address.ALTBN128_ADD;
+    private static final Address unaliasedRecipient = Address.BLS12_G2MULTIEXP;
 }

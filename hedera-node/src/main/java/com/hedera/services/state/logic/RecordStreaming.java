@@ -15,12 +15,17 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+
 import com.google.common.annotations.VisibleForTesting;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Publishes records to the Platform-managed record stream, using the {@link
@@ -38,6 +43,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class RecordStreaming {
+    private static final Logger log = LogManager.getLogger(RecordStreaming.class);
     public static final long PENDING_USER_TXN_BLOCK_NO = -1;
 
     private final BlockManager blockManager;
@@ -112,9 +118,43 @@ public class RecordStreaming {
     }
 
     private void stream(final RecordStreamObject rso) {
+        if (blockManager.shouldLogEveryTransaction()) {
+            logTransaction(rso);
+        }
         while (!nonBlockingHandoff.offer(rso)) {
             // Cannot proceed until we have handed off the record.
         }
+    }
+
+    private void logTransaction(final RecordStreamObject rso) {
+        final var consTimestamp = rso.getTimestamp().toString();
+        final var blockNumber = rso.getStreamAlignment();
+        final var txId = rso.getTransactionRecord().getTransactionID();
+        final var txIdString =
+                txId.getAccountID().getShardNum()
+                        + "."
+                        + txId.getAccountID().getRealmNum()
+                        + "."
+                        + txId.getAccountID().getAccountNum()
+                        + "-"
+                        + txId.getTransactionValidStart().getSeconds()
+                        + "-"
+                        + txId.getTransactionValidStart().getNanos();
+        final var status = rso.getTransactionRecord().getReceipt().getStatus().toString();
+        var type = "UNRECOGNIZED";
+
+        try {
+            final var transaction = rso.getTransaction();
+            final var txBody = extractTransactionBody(transaction);
+            type = txBody.getDataCase().toString();
+        } catch (InvalidProtocolBufferException e) {
+            log.error("Couldn't get transaction body", e);
+        }
+
+        final var logString =
+                "Consensus timestamp: {}, Block number: {}, Transaction ID: {}, Transaction"
+                        + " type: {}, Status: {}";
+        log.info(logString, consTimestamp, blockNumber, txIdString, type, status);
     }
 
     @VisibleForTesting

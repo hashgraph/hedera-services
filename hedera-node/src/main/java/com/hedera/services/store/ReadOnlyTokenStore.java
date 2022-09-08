@@ -27,7 +27,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -66,13 +66,13 @@ import org.apache.commons.lang3.tuple.Pair;
 public class ReadOnlyTokenStore {
     protected final AccountStore accountStore;
     protected final BackingStore<TokenID, MerkleToken> tokens;
-    protected final BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
+    protected final BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
     protected final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
     public ReadOnlyTokenStore(
             final AccountStore accountStore,
             final BackingStore<TokenID, MerkleToken> tokens,
-            final BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
+            final BackingStore<NftId, UniqueTokenAdapter> uniqueTokens,
             final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels) {
         this.tokens = tokens;
         this.tokenRels = tokenRels;
@@ -296,8 +296,8 @@ public class ReadOnlyTokenStore {
         validateFalse(merkleToken.isPaused(), code);
     }
 
-    private void validateUsable(MerkleUniqueToken merkleUniqueToken) {
-        validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
+    private void validateUsable(UniqueTokenAdapter uniqueTokenAdapter) {
+        validateTrue(uniqueTokenAdapter != null, INVALID_NFT_ID);
     }
 
     private void initModelAccounts(
@@ -334,11 +334,18 @@ public class ReadOnlyTokenStore {
         token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
     }
 
-    private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
-        uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
-        uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
-        uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
-        uniqueToken.setSpender(immutableUniqueToken.getSpender().asId());
+    private void initModelFields(UniqueToken uniqueToken, UniqueTokenAdapter immutableUniqueToken) {
+        if (immutableUniqueToken.isVirtual()) {
+            uniqueToken.setCreationTime(immutableUniqueToken.uniqueTokenValue().getCreationTime());
+            uniqueToken.setMetadata(immutableUniqueToken.uniqueTokenValue().getMetadata());
+            uniqueToken.setOwner(immutableUniqueToken.uniqueTokenValue().getOwner().asId());
+            uniqueToken.setSpender(immutableUniqueToken.uniqueTokenValue().getSpender().asId());
+        } else {
+            uniqueToken.setCreationTime(immutableUniqueToken.merkleUniqueToken().getCreationTime());
+            uniqueToken.setMetadata(immutableUniqueToken.merkleUniqueToken().getMetadata());
+            uniqueToken.setOwner(immutableUniqueToken.merkleUniqueToken().getOwner().asId());
+            uniqueToken.setSpender(immutableUniqueToken.merkleUniqueToken().getSpender().asId());
+        }
     }
 
     private TokenRelationship buildTokenRelationship(

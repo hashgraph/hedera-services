@@ -36,7 +36,6 @@ import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitIntercept
 import com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
 import com.hedera.services.ledger.interceptors.TokensCommitInterceptor;
-import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -47,6 +46,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
@@ -74,8 +74,8 @@ public interface StoresModule {
 
     @Binds
     @Singleton
-    BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(
-            TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger);
+    BackingStore<NftId, UniqueTokenAdapter> bindBackingNfts(
+            TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger);
 
     @Binds
     @Singleton
@@ -83,13 +83,11 @@ public interface StoresModule {
 
     @Provides
     @Singleton
-    static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
-            final UsageLimits usageLimits,
-            final UniqueTokensLinkManager uniqueTokensLinkManager,
+    static TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> provideNftsLedger(
             final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens) {
         return new TransactionalLedger<>(
                 NftProperty.class,
-                MerkleUniqueToken::new,
+                UniqueTokenAdapter::newEmptyMerkleToken,
                 new BackingNfts(uniqueTokens),
                 new ChangeSummaryManager<>());
     }
