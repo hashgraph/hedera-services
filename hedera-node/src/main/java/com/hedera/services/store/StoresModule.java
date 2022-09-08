@@ -71,7 +71,7 @@ public interface StoresModule {
 
     @Binds
     @Singleton
-    BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(
+    BackingStore<NftId, UniqueTokenAdapter> bindBackingNfts(
             TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger);
 
     @Binds
