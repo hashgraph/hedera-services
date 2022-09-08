@@ -11,20 +11,15 @@ Clone this repository:
 git clone git@github.com:hashgraph/hedera-services.git
 ```
 
-From IntelliJ, choose `File -> Open` and navigate to the the top-level _pom.xml_ 
-under the _hedera-services/_ directory you just cloned. Open it as a project:
+From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just cloned. 
+
+Make sure you are using JDK17 as the project SDK:
 
 <p>
-    <img src="./assets/import-dialogue.png"/>
+    <img src="./assets/sdk-17.png"/>
 </p>
 
-Make sure you are using OpenJDK12 as the project SDK:
-
-<p>
-    <img src="./assets/sdk-12.png"/>
-</p>
-
-Open the Maven tool window, and run `mvn install -PdevSetup` in the root project:
+Open the Gradle tool window, and run `Tasks/build/assemble` in the root project:
 
 This will both, 
 <ol>
