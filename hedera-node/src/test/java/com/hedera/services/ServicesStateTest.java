@@ -748,6 +748,35 @@ class ServicesStateTest {
     }
 
     @Test
+    void nonGenesisInitHandlesNftMigration() {
+        subject = new ServicesState(bootstrapProperties);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
+                .willReturn(true);
+
+        final var vmap = mock(VirtualMap.class);
+        setAllMmsTo(mock(MerkleMap.class));
+        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+        subject.setChild(StateChildIndices.STORAGE, vmap);
+        subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
+
+        final var when = Instant.ofEpochSecond(1_234_567L, 890);
+        given(dualState.getFreezeTime()).willReturn(when);
+        given(dualState.getLastFrozenTime()).willReturn(when);
+
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+        // and:
+        APPS.save(selfId.getId(), app);
+
+        // when:
+        subject.init(platform, addressBook, dualState, RESTART, currentVersion);
+        assertTrue(subject.uniqueTokens().isVirtual());
+    }
+
+    @Test
     void copySetsMutabilityAsExpected() {
         // when:
         final var copy = subject.copy();
