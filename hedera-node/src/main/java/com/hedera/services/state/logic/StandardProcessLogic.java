@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
@@ -28,7 +30,6 @@ import com.hedera.services.txns.schedule.ScheduleProcessing;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -90,7 +91,7 @@ public class StandardProcessLogic implements ProcessLogic {
             // current transaction
             // in the balance file with consensus timestamp X to include all transactions whose
             // consensus time T <= X.
-            consensusTime = consensusTime.minusNanos(EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS);
+            consensusTime = consensusTime.minusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS);
 
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
             accessor.setStateView(workingView);
