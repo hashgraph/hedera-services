@@ -257,8 +257,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                     new MerkleScheduledTransactions(
                             ((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
         }
-        final var bootstrapProps =
-                bootstrapProperties == null ? new BootstrapProperties() : bootstrapProperties;
+        final var bootstrapProps = getBootstrapProperties();
         enabledVirtualNft =
                 bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
@@ -272,8 +271,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 "Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 
         // Create the top-level children in the Merkle tree
-        final var bootstrapProps =
-                bootstrapProperties == null ? new BootstrapProperties() : bootstrapProperties;
+        final var bootstrapProps = getBootstrapProperties();
         final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
         enabledVirtualNft =
                 bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
@@ -578,8 +576,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                     vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
         }
         if (FIRST_027X_VERSION.isAfter(deserializedVersion)) {
-            final var bootstrapProps =
-                    bootstrapProperties == null ? new BootstrapProperties() : bootstrapProperties;
+            final var bootstrapProps = getBootstrapProperties();
             setChild(
                     StateChildIndices.STAKING_INFO,
                     stakingInfoBuilder.buildStakingInfoMap(addressBook(), bootstrapProps));
@@ -607,6 +604,10 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     boolean shouldMigrateNfts() {
         return enabledVirtualNft && !uniqueTokens().isVirtual();
+    }
+
+    private BootstrapProperties getBootstrapProperties() {
+        return bootstrapProperties == null ? new BootstrapProperties() : bootstrapProperties;
     }
 
     @FunctionalInterface
