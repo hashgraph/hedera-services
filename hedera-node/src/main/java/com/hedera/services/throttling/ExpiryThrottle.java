@@ -47,7 +47,7 @@ public class ExpiryThrottle {
 
     private final HybridResouceLoader resourceLoader;
 
-    private long usageCapForCycleEntry;
+    private long minFreeReq;
     private ThrottleConfig config;
 
     @Inject
@@ -60,7 +60,7 @@ public class ExpiryThrottle {
             return true;
         }
         config.throttle.leakUntil(now);
-        return config.throttle.used() > usageCapForCycleEntry;
+        return config.throttle.capacityFree() < minFreeReq;
     }
 
     public boolean allow(final List<MapAccessType> accessTypes) {
@@ -92,9 +92,7 @@ public class ExpiryThrottle {
             }
         }
         if (config != null) {
-            final var minFreeReq =
-                    config.throttle.clampedCapacityRequiredFor(requiredOps(minUnitOfWork));
-            usageCapForCycleEntry = config.throttle.capacity() - minFreeReq;
+            minFreeReq = config.throttle.clampedCapacityRequiredFor(requiredOps(minUnitOfWork));
         }
     }
 

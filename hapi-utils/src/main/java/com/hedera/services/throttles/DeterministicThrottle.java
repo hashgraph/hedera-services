@@ -153,6 +153,10 @@ public class DeterministicThrottle {
         return delegate.bucket().totalCapacity();
     }
 
+    public long capacityFree() {
+        return delegate.bucket().capacityFree();
+    }
+
     public UsageSnapshot usageSnapshot() {
         final var bucket = delegate.bucket();
         return new UsageSnapshot(bucket.capacityUsed(), lastDecisionTime);

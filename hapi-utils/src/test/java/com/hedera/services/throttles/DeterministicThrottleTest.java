@@ -223,11 +223,13 @@ class DeterministicThrottleTest {
         final int burstPeriod = 6;
         final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
         final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+        final var capacity = subject.capacity();
 
         subject.allow(1, originalDecision);
         final var state = subject.usageSnapshot();
 
         assertEquals(CAPACITY_UNITS_PER_TXN, state.used());
+        assertEquals(capacity - CAPACITY_UNITS_PER_TXN, subject.capacityFree());
         assertEquals(originalDecision, state.lastDecisionTime());
     }
 
