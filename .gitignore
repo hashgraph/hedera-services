@@ -71,7 +71,9 @@ hedera-node/swirlds-tmp
 .circleci/*.yml-excerpt
 hedera-node/data/jasperdb/
 hedera-node/temp/
+hedera-node/hedera-mono-service/temp/
 hedera-node/swirlds-tmp/
+hedera-node/hedera-mono-service/swirlds-tmp/
 hedera-node/*.csv
 hedera-node/swirlds.jar
 hedera-node/build.sh
