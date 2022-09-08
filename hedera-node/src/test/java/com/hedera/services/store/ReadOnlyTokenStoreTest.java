@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -35,7 +34,10 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -60,7 +62,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ReadOnlyTokenStoreTest {
     @Mock private AccountStore accountStore;
     @Mock private BackingStore<TokenID, MerkleToken> tokens;
-    @Mock private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
+    @Mock private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
     @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
     private ReadOnlyTokenStore subject;
@@ -232,11 +234,39 @@ class ReadOnlyTokenStoreTest {
     @Test
     void loadsUniqueTokens() {
         final var aToken = new Token(miscId);
-        final var merkleUniqueToken = mock(MerkleUniqueToken.class);
+        final var uniqueTokenHolder =
+                UniqueTokenAdapter.wrap(
+                        new MerkleUniqueToken(
+                                new EntityId(Id.DEFAULT),
+                                new byte[0],
+                                RichInstant.MISSING_INSTANT));
+        uniqueTokenHolder.setSpender(new EntityId(Id.DEFAULT));
         final var serialNumbers = List.of(1L, 2L);
-        given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
-        given(merkleUniqueToken.getSpender()).willReturn(new EntityId(Id.DEFAULT));
-        given(uniqueTokens.getImmutableRef(any())).willReturn(merkleUniqueToken);
+        given(uniqueTokens.getImmutableRef(any())).willReturn(uniqueTokenHolder);
+
+        subject.loadUniqueTokens(aToken, serialNumbers);
+
+        assertEquals(2, aToken.getLoadedUniqueTokens().size());
+
+        given(uniqueTokens.getImmutableRef(any())).willReturn(null);
+        assertThrows(
+                InvalidTransactionException.class,
+                () -> subject.loadUniqueTokens(aToken, serialNumbers));
+    }
+
+    @Test
+    void loadsUniqueTokensVirtual() {
+        final var aToken = new Token(miscId);
+        final var uniqueTokenHolder =
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(
+                                Id.DEFAULT.num(),
+                                Id.DEFAULT.num(),
+                                new byte[0],
+                                RichInstant.MISSING_INSTANT));
+        uniqueTokenHolder.setSpender(new EntityId(Id.DEFAULT));
+        final var serialNumbers = List.of(1L, 2L);
+        given(uniqueTokens.getImmutableRef(any())).willReturn(uniqueTokenHolder);
 
         subject.loadUniqueTokens(aToken, serialNumbers);
 

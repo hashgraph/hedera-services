@@ -15,7 +15,6 @@
  */
 package com.hedera.services.txns.crypto.validators;
 
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
@@ -48,8 +47,10 @@ import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
@@ -89,9 +90,9 @@ class DeleteAllowanceChecksTest {
     @Mock private OptionValidator validator;
     @Mock private MerkleToken merkleToken;
     @Mock private MerkleAccount ownerMerkleAccount;
-    @Mock private MerkleUniqueToken merkleUniqueToken;
     @Mock private UniqueToken uniqueToken;
 
+    UniqueTokenAdapter uniqueTokenAdapter;
     DeleteAllowanceChecks subject;
 
     private final AccountID spender1 = asAccount("0.0.123");
@@ -371,7 +372,15 @@ class DeleteAllowanceChecksTest {
         given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
         final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
         final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
-        final BackingStore<NftId, MerkleUniqueToken> nfts = mock(BackingNfts.class);
+        final BackingStore<NftId, UniqueTokenAdapter> nfts = mock(BackingNfts.class);
+
+        uniqueTokenAdapter =
+                UniqueTokenAdapter.wrap(
+                        new MerkleUniqueToken(
+                                EntityId.fromGrpcAccountId(ownerId),
+                                new byte[0],
+                                RichInstant.MISSING_INSTANT));
+
         BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> rels =
                 mock(BackingTokenRels.class);
         given(view.asReadOnlyAccountStore()).willReturn(store);
@@ -383,14 +392,12 @@ class DeleteAllowanceChecksTest {
 
         given(store.getImmutableRef(ownerId)).willReturn(ownerMerkleAccount);
         given(tokens.getImmutableRef(nftToken)).willReturn(merkleToken);
-        given(nfts.getImmutableRef(nft1)).willReturn(merkleUniqueToken);
-        given(nfts.getImmutableRef(nft2)).willReturn(merkleUniqueToken);
+        given(nfts.getImmutableRef(nft1)).willReturn(uniqueTokenAdapter);
+        given(nfts.getImmutableRef(nft2)).willReturn(uniqueTokenAdapter);
         given(rels.contains(Pair.of(ownerId, nftToken))).willReturn(true);
 
         given(merkleToken.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
         given(ownerMerkleAccount.state()).willReturn(new MerkleAccountState());
-        given(merkleUniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
-        given(merkleUniqueToken.getSpender()).willReturn(MISSING_ID.asEntityId());
         given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
     }
 }

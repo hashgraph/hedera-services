@@ -20,9 +20,13 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BURN_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
@@ -593,6 +597,54 @@ class HTSPrecompiledContractTest {
 
         assertTrue(subject.getPrecompile() instanceof TokenCreatePrecompile);
         verify(tokenCreateWrapper).inheritAutoRenewAccount(autoRenewId);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForCreateFungibleTokenWithFeesV2() {
+        // given
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2));
+        given(decoder.decodeFungibleCreateWithFeesV2(any(), any()))
+                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(input);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForCreateNonFungibleTokenWithFeesV2() {
+        // given
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2));
+        given(decoder.decodeNonFungibleCreateWithFeesV2(any(), any()))
+                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(input);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForCreateFungibleTokenV2() {
+        // given
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_V2));
+        given(decoder.decodeFungibleCreateV2(any(), any()))
+                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(input);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForCreateNonFungibleTokenV2() {
+        // given
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2));
+        given(decoder.decodeNonFungibleCreateV2(any(), any()))
+                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(input);
     }
 
     @Test
