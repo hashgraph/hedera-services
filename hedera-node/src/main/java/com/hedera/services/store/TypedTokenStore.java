@@ -25,6 +25,7 @@ import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
@@ -70,7 +71,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
     public TypedTokenStore(
             final AccountStore accountStore,
             final BackingStore<TokenID, MerkleToken> tokens,
-            final BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
+            final BackingStore<NftId, UniqueTokenAdapter> uniqueTokens,
             final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
             final SideEffectsTracker sideEffectsTracker) {
         super(accountStore, tokens, uniqueTokens, tokenRels);
@@ -191,8 +192,9 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
     private void persistMinted(List<UniqueToken> nfts) {
         for (final var nft : nfts) {
             final var merkleNft =
-                    new MerkleUniqueToken(
-                            MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
+                    UniqueTokenAdapter.wrap(
+                            new MerkleUniqueToken(
+                                    MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime()));
             uniqueTokens.put(
                     NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()),
                     merkleNft);
@@ -230,12 +232,25 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
         mutableToken.setExpiry(token.getExpiry());
     }
 
-    private void mapModelChanges(UniqueToken nft, MerkleUniqueToken mutableNft) {
-        mutableNft.setOwner(nft.getOwner().asEntityId());
-        mutableNft.setSpender(nft.getSpender().asEntityId());
-        mutableNft.setMetadata(nft.getMetadata());
-        final var creationTime = nft.getCreationTime();
-        mutableNft.setPackedCreationTime(
-                packedTime(creationTime.getSeconds(), creationTime.getNanos()));
+    private void mapModelChanges(UniqueToken nft, UniqueTokenAdapter mutableNft) {
+        if (mutableNft.isVirtual()) {
+            mutableNft.uniqueTokenValue().setOwner(nft.getOwner().asEntityId());
+            mutableNft.uniqueTokenValue().setSpender(nft.getSpender().asEntityId());
+            mutableNft.uniqueTokenValue().setMetadata(nft.getMetadata());
+            final var creationTime = nft.getCreationTime();
+            mutableNft
+                    .uniqueTokenValue()
+                    .setPackedCreationTime(
+                            packedTime(creationTime.getSeconds(), creationTime.getNanos()));
+        } else {
+            mutableNft.merkleUniqueToken().setOwner(nft.getOwner().asEntityId());
+            mutableNft.merkleUniqueToken().setSpender(nft.getSpender().asEntityId());
+            mutableNft.merkleUniqueToken().setMetadata(nft.getMetadata());
+            final var creationTime = nft.getCreationTime();
+            mutableNft
+                    .merkleUniqueToken()
+                    .setPackedCreationTime(
+                            packedTime(creationTime.getSeconds(), creationTime.getNanos()));
+        }
     }
 }

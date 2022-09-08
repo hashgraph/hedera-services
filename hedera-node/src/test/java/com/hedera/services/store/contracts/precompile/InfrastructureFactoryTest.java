@@ -33,7 +33,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -88,7 +88,7 @@ class InfrastructureFactoryTest {
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private DissociationFactory dissociationFactory;
     @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
@@ -96,7 +96,7 @@ class InfrastructureFactoryTest {
 
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
     @Mock private BackingStore<TokenID, MerkleToken> tokens;
-    @Mock private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
+    @Mock private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
     @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
     @Mock private MessageFrame frame;
     @Mock private ViewGasCalculator gasCalculator;

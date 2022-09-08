@@ -345,11 +345,6 @@ class AutoExpiryCycleTest {
         given(
                         accountsLedger.get(
                                 EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
-                                AccountProperty.EXPIRY))
-                .willReturn(now.getEpochSecond() - 1);
-        given(
-                        accountsLedger.get(
-                                EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
                                 AccountProperty.BALANCE))
                 .willReturn(nonZeroBalance);
 
@@ -364,7 +359,7 @@ class AutoExpiryCycleTest {
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         verify(recordsHelper)
                 .streamCryptoRenewal(
-                        key, fee, now.getEpochSecond() - 1 + actualRenewalPeriod, false, key);
+                        key, fee, now.getEpochSecond() + actualRenewalPeriod, false, key);
     }
 
     @Test
@@ -385,11 +380,6 @@ class AutoExpiryCycleTest {
         given(
                         accountsLedger.get(
                                 EntityNum.fromLong(fundedExpiredContractNum).toGrpcAccountId(),
-                                AccountProperty.EXPIRY))
-                .willReturn(now.getEpochSecond() - 1);
-        given(
-                        accountsLedger.get(
-                                EntityNum.fromLong(fundedExpiredContractNum).toGrpcAccountId(),
                                 AccountProperty.BALANCE))
                 .willReturn(nonZeroBalance);
 
@@ -405,7 +395,7 @@ class AutoExpiryCycleTest {
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         verify(recordsHelper)
                 .streamCryptoRenewal(
-                        key, fee, now.getEpochSecond() - 1 + actualRenewalPeriod, true, key);
+                        key, fee, now.getEpochSecond() + actualRenewalPeriod, true, key);
     }
 
     @Test
