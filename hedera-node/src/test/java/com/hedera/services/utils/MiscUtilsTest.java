@@ -270,8 +270,7 @@ class MiscUtilsTest {
         final var actual =
                 MiscUtils.csvList(
                         "ACCOUNTS_GET,ACCOUNTS_GET,ACCOUNTS_GET,STORAGE_REMOVE",
-                        MapAccessType::valueOf,
-                        MapAccessType.class);
+                        MapAccessType::valueOf);
         assertEquals(expected, actual);
     }
 

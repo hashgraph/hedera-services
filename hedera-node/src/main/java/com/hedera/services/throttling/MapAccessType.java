@@ -65,6 +65,6 @@ public enum MapAccessType {
     TOKEN_ASSOCIATIONS_GET_FOR_MODIFY;
 
     public static List<MapAccessType> csvAccessList(final String propertyValue) {
-        return MiscUtils.csvList(propertyValue, MapAccessType::valueOf, MapAccessType.class);
+        return MiscUtils.csvList(propertyValue, MapAccessType::valueOf);
     }
 }

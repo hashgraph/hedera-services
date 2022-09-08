@@ -17,7 +17,6 @@ package com.hedera.services.state.expiry.removal;
 
 import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -96,7 +95,7 @@ class RemovalHelperTest {
 
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount))
                 .willReturn(finishedReturns);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
 
         classifier.classify(expiredNum, now);
 
@@ -114,7 +113,7 @@ class RemovalHelperTest {
 
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount))
                 .willReturn(unfinishedReturns);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
 
         classifier.classify(expiredNum, now);
 
@@ -132,7 +131,7 @@ class RemovalHelperTest {
         given(contractGC.expireBestEffort(expiredNum, expiredDeletedContract)).willReturn(true);
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedContract))
                 .willReturn(finishedReturns);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         final var autoRenewId = EntityId.fromNum(12345);
         expiredDeletedContract.setAutoRenewAccount(autoRenewId);
 
@@ -151,7 +150,7 @@ class RemovalHelperTest {
         properties.enableAutoRenew();
         final var expiredNum = EntityNum.fromLong(expiredDeletedContractNum);
 
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
 
         classifier.classify(expiredNum, now);
 

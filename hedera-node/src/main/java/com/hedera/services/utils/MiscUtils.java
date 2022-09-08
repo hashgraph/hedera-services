@@ -965,18 +965,18 @@ public final class MiscUtils {
     }
 
     public static <T extends Enum<T>> List<T> csvList(
-            final String propertyValue, final Function<String, T> parser, final Class<T> type) {
-        return csvStream(propertyValue, parser, type).toList();
+            final String propertyValue, final Function<String, T> parser) {
+        return csvStream(propertyValue, parser).toList();
     }
 
     public static <T extends Enum<T>> Set<T> csvSet(
             final String propertyValue, final Function<String, T> parser, final Class<T> type) {
-        return csvStream(propertyValue, parser, type)
+        return csvStream(propertyValue, parser)
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
     }
 
     private static <T extends Enum<T>> Stream<T> csvStream(
-            final String propertyValue, final Function<String, T> parser, final Class<T> type) {
+            final String propertyValue, final Function<String, T> parser) {
         return Arrays.stream(propertyValue.split(","))
                 .map(String::strip)
                 .filter(desc -> desc.length() > 0)
