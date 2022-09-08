@@ -32,7 +32,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -58,7 +60,7 @@ public class GetFileContentsAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         var op = query.getFileGetContents();
         var target = op.getFileID();
 
@@ -74,7 +76,8 @@ public class GetFileContentsAnswer implements AnswerService {
             } else {
                 /* Include cost here to satisfy legacy regression tests. */
                 response.setHeader(answerOnlyHeader(OK, cost));
-                response.setFileContents(from(target, view.contentsOf(target)));
+                response.setFileContents(
+                        from(target, Objects.requireNonNull(view).contentsOf(target)));
             }
         }
         return Response.newBuilder().setFileGetContents(response).build();

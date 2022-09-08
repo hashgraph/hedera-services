@@ -132,8 +132,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
@@ -254,6 +253,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.commons.codec.DecoderException;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -261,6 +261,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
+    @Test
+    void canRunWithLoggedDuration() {
+        final var mockLogger = mock(Logger.class);
+        final var desc = "nothing";
+        MiscUtils.withLoggedDuration(() -> {}, mockLogger, desc);
+        verify(mockLogger).info("Starting {}", desc);
+        verify(mockLogger).info("Done with {} in {}ms", desc, 0L);
+    }
 
     @Test
     void canUnpackTime() {

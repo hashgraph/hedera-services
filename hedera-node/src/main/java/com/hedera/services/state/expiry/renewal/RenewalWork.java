@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,47 +16,11 @@
 package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.state.expiry.EntityProcessResult;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
-import javax.annotation.Nullable;
 
 /** Provides the logic needed for the account and contract auto-renewal cycle */
 public interface RenewalWork {
-    /**
-     * Returns mutable expiring entity using {@code getForModify()} on the accounts {@link
-     * com.swirlds.merkle.map.MerkleMap}.
-     *
-     * @return mutable expiring entity
-     */
-    @Nullable
-    MerkleAccount tryToGetNextMutableExpiryCandidate();
-
-    /**
-     * Returns mutable payer for the auto-renewal of an entity using {@code getForModify} on the
-     * accounts {@link com.swirlds.merkle.map.MerkleMap}.
-     *
-     * @return mutable payer
-     */
-    MerkleAccount getMutableAutoRenewPayer();
-
-    /**
-     * Returns immutable expiring entity using {@code get()} on the accounts {@link
-     * com.swirlds.merkle.map.MerkleMap}.
-     *
-     * @return immutable expiring entity
-     */
-    @Nullable
-    MerkleAccount tryToGetNextExpiryCandidate();
-
-    /**
-     * Returns immutable payer for the auto-renewal of an entity using {@code get()} on the accounts
-     * {@link com.swirlds.merkle.map.MerkleMap}.
-     *
-     * @return immutable payer
-     */
-    MerkleAccount getAutoRenewPayer();
-
     /**
      * Tries to renew an account and returns {@code EntityProcessResult.DONE} if it is successful.
      * If the auto-renewal for accounts is not enabled, returns {@code

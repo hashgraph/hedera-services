@@ -20,19 +20,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractUndelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -286,9 +274,16 @@ public class ContractDeleteSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec deleteWorksWithMutableContract() {
+        final var tbdFile = "FTBD";
+        final var tbdContract = "CTBD";
         return defaultHapiSpec("DeleteWorksWithMutableContract")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when()
+                .given(
+                        fileCreate(tbdFile),
+                        fileDelete(tbdFile),
+                        createDefaultContract(tbdContract)
+                                .bytecode(tbdFile)
+                                .hasKnownStatus(FILE_DELETED))
+                .when(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .then(
                         contractDelete(CONTRACT),
                         getContractInfo(CONTRACT).has(contractWith().isDeleted()));

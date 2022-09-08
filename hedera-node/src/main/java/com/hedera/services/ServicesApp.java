@@ -39,7 +39,6 @@ import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.sigs.SigsModule;
-import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateModule;
 import com.hedera.services.state.expiry.ExpiryModule;
@@ -120,8 +119,6 @@ public interface ServicesApp {
     DualStateAccessor dualStateAccessor();
 
     VirtualMapFactory virtualMapFactory();
-
-    SigReqsManager sigReqsManager();
 
     RecordStreamManager recordStreamManager();
 

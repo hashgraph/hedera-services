@@ -23,11 +23,11 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.MapValueListMutation;
 import org.jetbrains.annotations.Nullable;
 
-public class UniqueTokensListRemoval implements MapValueListMutation<NftId, UniqueTokenAdapter> {
+public class UniqueTokensListMutation implements MapValueListMutation<NftId, UniqueTokenAdapter> {
 
     final UniqueTokenMapAdapter uniqueTokens;
 
-    public UniqueTokensListRemoval(final UniqueTokenMapAdapter uniqueTokens) {
+    public UniqueTokensListMutation(final UniqueTokenMapAdapter uniqueTokens) {
         this.uniqueTokens = uniqueTokens;
     }
 

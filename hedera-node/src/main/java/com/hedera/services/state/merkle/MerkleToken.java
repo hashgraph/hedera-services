@@ -49,6 +49,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
     static final int RELEASE_0160_VERSION = 3;
@@ -219,12 +220,12 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                 .add("symbol", symbol)
                 .add("name", name)
                 .add("memo", memo)
-                .add("treasury", treasury.toAbbrevString())
+                .add("treasury", readableEntityId(treasury))
                 .add("maxSupply", maxSupply)
                 .add("totalSupply", totalSupply)
                 .add("decimals", decimals)
                 .add("lastUsedSerialNumber", lastUsedSerialNumber)
-                .add("autoRenewAccount", readableAutoRenewAccount())
+                .add("autoRenewAccount", readableEntityId(autoRenewAccount))
                 .add("autoRenewPeriod", autoRenewPeriod)
                 .add("adminKey", describe(adminKey))
                 .add("kycKey", describe(kycKey))
@@ -240,8 +241,8 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                 .toString();
     }
 
-    private String readableAutoRenewAccount() {
-        return Optional.ofNullable(autoRenewAccount).map(EntityId::toAbbrevString).orElse("<N/A>");
+    private String readableEntityId(@Nullable final EntityId id) {
+        return Optional.ofNullable(id).map(EntityId::toAbbrevString).orElse("<N/A>");
     }
 
     /* --- MerkleLeaf --- */

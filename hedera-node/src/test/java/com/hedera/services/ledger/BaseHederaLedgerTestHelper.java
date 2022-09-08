@@ -34,7 +34,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingTokenRels;
@@ -72,7 +71,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class BaseHederaLedgerTestHelper {
     protected OptionValidator validator = TEST_VALIDATOR;
-    protected MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 
     protected long GENESIS_BALANCE = 50_000_000_000L;
     protected long NEXT_ID = 1_000_000L;

@@ -31,6 +31,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
@@ -120,7 +121,7 @@ public class SyntheticTxnFactory {
         this.dynamicProperties = dynamicProperties;
     }
 
-    public TransactionBody.Builder synthCryptoTransfer(final CurrencyAdjustments adjustments) {
+    public TransactionBody.Builder synthHbarTransfer(final CurrencyAdjustments adjustments) {
         final var opBuilder = CryptoTransferTransactionBody.newBuilder();
         final var nums = adjustments.getAccountNums();
         final var changes = adjustments.getHbars();
@@ -132,6 +133,38 @@ public class SyntheticTxnFactory {
                                     .setAccountID(AccountID.newBuilder().setAccountNum(nums[i]))
                                     .setAmount(changes[i]));
         }
+        return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
+    }
+
+    public TransactionBody.Builder synthTokenTransfer(final CryptoGcOutcome cryptoGcOutcome) {
+        final var opBuilder = CryptoTransferTransactionBody.newBuilder();
+
+        final var fungibleReturns = cryptoGcOutcome.fungibleTreasuryReturns();
+        for (int i = 0, n = fungibleReturns.numReturns(); i < n; i++) {
+            final var unitReturn = fungibleReturns.transfers().get(i);
+            opBuilder.addTokenTransfers(
+                    TokenTransferList.newBuilder()
+                            .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId())
+                            .addTransfers(
+                                    aaWith(
+                                            unitReturn.getAccountNums()[0],
+                                            unitReturn.getHbars()[0]))
+                            .addTransfers(
+                                    aaWith(
+                                            unitReturn.getAccountNums()[1],
+                                            unitReturn.getHbars()[1]))
+                            .build());
+        }
+
+        final var nonFungibleReturns = cryptoGcOutcome.nonFungibleTreasuryReturns();
+        for (int i = 0, n = nonFungibleReturns.numReturns(); i < n; i++) {
+            final var listBuilder =
+                    TokenTransferList.newBuilder()
+                            .setToken(nonFungibleReturns.tokenTypes().get(i).toGrpcTokenId());
+            nonFungibleReturns.exchanges().get(i).addToGrpc(listBuilder);
+            opBuilder.addTokenTransfers(listBuilder);
+        }
+
         return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
     }
 
@@ -195,13 +228,13 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder synthContractAutoRenew(
-            final EntityNum contractNum, final long newExpiry, final AccountID payerForAutoRenew) {
+            final EntityNum contractNum, final long newExpiry, final AccountID payerForExpiry) {
         final var op =
                 ContractUpdateTransactionBody.newBuilder()
                         .setContractID(contractNum.toGrpcContractID())
                         .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
         return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(payerForAutoRenew))
+                .setTransactionID(TransactionID.newBuilder().setAccountID(payerForExpiry))
                 .setContractUpdateInstance(op);
     }
 
@@ -751,16 +784,16 @@ public class SyntheticTxnFactory {
     }
 
     /**
-     * Merges the fungible and non-fungible transfers from one token transfer list into another. (Of
+     * Merges the fungible and non-fungible exchanges from one token transfer list into another. (Of
      * course, at most one of these merges can be sensible; a token cannot be both fungible _and_
      * non-fungible.)
      *
-     * <p>Fungible transfers are "merged" by summing up all the amount fields for each unique
+     * <p>Fungible exchanges are "merged" by summing up all the amount fields for each unique
      * account id that appears in either list. NFT exchanges are "merged" by checking that each
      * exchange from either list appears at most once.
      *
-     * @param to the builder to merge source transfers into
-     * @param from a source of fungible transfers and NFT exchanges
+     * @param to the builder to merge source exchanges into
+     * @param from a source of fungible exchanges and NFT exchanges
      * @return the consolidated target builder
      */
     static TokenTransferList.Builder mergeTokenTransfers(
@@ -840,5 +873,12 @@ public class SyntheticTxnFactory {
             op.setFunctionParameters(ByteStringUtils.wrapUnsafely(ethTxData.callData()));
         }
         return TransactionBody.newBuilder().setContractCall(op);
+    }
+
+    private AccountAmount aaWith(final long num, final long amount) {
+        return AccountAmount.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(num).build())
+                .setAmount(amount)
+                .build();
     }
 }

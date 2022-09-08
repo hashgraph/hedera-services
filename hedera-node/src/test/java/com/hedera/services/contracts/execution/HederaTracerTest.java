@@ -34,7 +34,9 @@ import static org.mockito.Mockito.*;
 
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaTracer;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -70,6 +72,10 @@ class HederaTracerTest {
 
     @Mock private MessageFrame messageFrame;
 
+    @Mock private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock private ContractAliases contractAliases;
+
     @Mock private OperationTracer.ExecuteOperation eo;
 
     private HederaTracer subject;
@@ -93,6 +99,10 @@ class HederaTracerTest {
         given(topLevelMessageFrame.getRemainingGas()).willReturn(initialGas);
         given(topLevelMessageFrame.getInputData()).willReturn(input);
         given(topLevelMessageFrame.getValue()).willReturn(value);
+        given(topLevelMessageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
 
         // trace top level frame
         subject.init(topLevelMessageFrame);
@@ -119,13 +129,14 @@ class HederaTracerTest {
         final var firstChildFrame = mock(MessageFrame.class);
         given(firstChildFrame.getType()).willReturn(Type.CONTRACT_CREATION);
         given(firstChildFrame.getCode()).willReturn(Code.EMPTY);
-        given(firstChildFrame.getSenderAddress()).willReturn(contract);
         given(firstChildFrame.getContractAddress()).willReturn(accountReceiver);
         final long initialGasChild = initialGas - 500L;
         given(firstChildFrame.getRemainingGas()).willReturn(initialGasChild);
         given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);
         given(firstChildFrame.getValue()).willReturn(Wei.ZERO);
         given(firstChildFrame.getMessageStackDepth()).willReturn(1);
+        given(firstChildFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(contractAliases.resolveForEvm(accountReceiver)).willReturn(accountReceiver);
         dequeMock.addFirst(firstChildFrame);
         given(topLevelMessageFrame.getMessageFrameStack()).willReturn(dequeMock);
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
@@ -161,16 +172,17 @@ class HederaTracerTest {
         final var childFrame2 = mock(MessageFrame.class);
         given(childFrame2.getCode()).willReturn(Code.EMPTY);
         given(childFrame2.getType()).willReturn(Type.MESSAGE_CALL);
-        given(childFrame2.getSenderAddress()).willReturn(contract);
         given(childFrame2.getContractAddress()).willReturn(accountReceiver);
         given(childFrame2.getRemainingGas()).willReturn(500L);
         given(childFrame2.getInputData()).willReturn(Bytes.EMPTY);
         given(childFrame2.getValue()).willReturn(Wei.of(543L));
         given(childFrame2.getMessageStackDepth()).willReturn(1);
+        given(childFrame2.getWorldUpdater()).willReturn(worldUpdater);
         dequeMock.addFirst(childFrame2);
         // trace second child
         subject.traceExecution(topLevelMessageFrame, eo);
         verify(eo, times(6)).execute();
+        verify(topLevelMessageFrame, times(3)).getContractAddress();
         // assert call depth is correct
         assertEquals(3, subject.getActions().size());
         assertEquals(1, subject.getActions().get(2).getCallDepth());
@@ -294,6 +306,10 @@ class HederaTracerTest {
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
         given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(accountReceiver)).willReturn(accountReceiver);
         subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
@@ -344,6 +360,10 @@ class HederaTracerTest {
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
         given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
         subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.CODE_SUCCESS);
@@ -371,6 +391,10 @@ class HederaTracerTest {
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
         given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
         subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.COMPLETED_SUCCESS);
@@ -426,6 +450,10 @@ class HederaTracerTest {
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
 
         subject.init(messageFrame);
 
@@ -443,6 +471,10 @@ class HederaTracerTest {
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
 
         subject.init(messageFrame);
 
@@ -557,6 +589,10 @@ class HederaTracerTest {
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
         subject.init(messageFrame);
         // after some operations, the top level message frame spawns a child
         final Deque<MessageFrame> dequeMock = new ArrayDeque<>();
@@ -564,11 +600,12 @@ class HederaTracerTest {
         final var firstChildFrame = mock(MessageFrame.class);
         given(firstChildFrame.getType()).willReturn(Type.CONTRACT_CREATION);
         given(firstChildFrame.getCode()).willReturn(Code.EMPTY);
-        given(firstChildFrame.getSenderAddress()).willReturn(contract);
         given(firstChildFrame.getContractAddress()).willReturn(accountReceiver);
         given(firstChildFrame.getRemainingGas()).willReturn(initialGas);
         given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);
         given(firstChildFrame.getValue()).willReturn(Wei.ZERO);
+        given(firstChildFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(contractAliases.resolveForEvm(accountReceiver)).willReturn(accountReceiver);
         dequeMock.addFirst(firstChildFrame);
         given(messageFrame.getMessageFrameStack()).willReturn(dequeMock);
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
@@ -583,6 +620,10 @@ class HederaTracerTest {
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
         given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
 
         subject.traceExecution(messageFrame, eo);
     }

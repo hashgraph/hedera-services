@@ -22,6 +22,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.legacy.core.jproto.JEd25519Key.ED25519_BYTE_LENGTH;
+import static com.hedera.services.txns.crypto.CryptoCreateTransitionLogic.MAX_CHARGEABLE_AUTO_ASSOCIATIONS;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -93,7 +94,7 @@ class CryptoCreateTransitionLogicTest {
     private static final Long BALANCE = 1_234L;
     private static final String MEMO = "The particular is pounded til it is man";
     private static final int MAX_AUTO_ASSOCIATIONS = 1234;
-    private static final int MAX_TOKEN_ASSOCIATIONS = 12345;
+    private static final int MAX_TOKEN_ASSOCIATIONS = 2345;
     private static final AccountID PROXY = AccountID.newBuilder().setAccountNum(4_321L).build();
     private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
     private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
@@ -237,9 +238,18 @@ class CryptoCreateTransitionLogicTest {
 
     @Test
     void rejectsInvalidMaxAutomaticAssociations() {
-        givenInvalidMaxAutoAssociations();
+        givenInvalidMaxAutoAssociations(MAX_TOKEN_ASSOCIATIONS + 1);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
         given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
+
+        assertEquals(
+                REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
+                subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsTooManyMaxAutomaticAssociations() {
+        givenInvalidMaxAutoAssociations(MAX_CHARGEABLE_AUTO_ASSOCIATIONS + 1);
 
         assertEquals(
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
@@ -458,7 +468,7 @@ class CryptoCreateTransitionLogicTest {
                         .build();
     }
 
-    private void givenInvalidMaxAutoAssociations() {
+    private void givenInvalidMaxAutoAssociations(final int n) {
         cryptoCreateTxn =
                 TransactionBody.newBuilder()
                         .setCryptoCreateAccount(
@@ -473,8 +483,7 @@ class CryptoCreateTransitionLogicTest {
                                         .setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
                                         .setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
                                         .setKey(KEY)
-                                        .setMaxAutomaticTokenAssociations(
-                                                MAX_TOKEN_ASSOCIATIONS + 1))
+                                        .setMaxAutomaticTokenAssociations(n))
                         .build();
     }
 

@@ -27,6 +27,7 @@ import picocli.CommandLine.ParentCommand;
         name = "sysfiles",
         subcommands = {
             picocli.CommandLine.HelpCommand.class,
+            SpecialFileHashCommand.class,
             SysFileDownloadCommand.class,
             SysFileUploadCommand.class
         },
