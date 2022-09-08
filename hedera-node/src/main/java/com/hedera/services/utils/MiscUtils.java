@@ -152,7 +152,6 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFO
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFOS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
-import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
@@ -398,7 +397,7 @@ public final class MiscUtils {
                 .entrySet()
                 .stream()
                 .filter(e -> e.getValue() != 0)
-                .sorted(comparing(Map.Entry::getKey, HederaLedger.ACCOUNT_ID_COMPARATOR))
+                .sorted(Map.Entry.comparingByKey(HederaLedger.ACCOUNT_ID_COMPARATOR))
                 .map(
                         e ->
                                 AccountAmount.newBuilder()

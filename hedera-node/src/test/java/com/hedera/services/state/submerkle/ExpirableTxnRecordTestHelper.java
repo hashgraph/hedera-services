@@ -23,6 +23,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +69,7 @@ public class ExpirableTxnRecordTestHelper {
                         .collect(toList());
         final var builder =
                 ExpirableTxnRecord.newBuilder()
-                        .setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
+                        .setReceipt(fromGrpc(record.getReceipt()))
                         .setTxnHash(record.getTransactionHash().toByteArray())
                         .setTxnId(TxnId.fromGrpc(record.getTransactionID()))
                         .setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
@@ -111,5 +112,46 @@ public class ExpirableTxnRecordTestHelper {
                     MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()));
         }
         return builder.build();
+    }
+
+    /* ---  Helpers --- */
+    public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
+        final var effRates =
+                grpc.hasExchangeRate() ? ExchangeRates.fromGrpc(grpc.getExchangeRate()) : null;
+        String status = grpc.getStatus() != null ? grpc.getStatus().name() : null;
+        EntityId accountId =
+                grpc.hasAccountID() ? EntityId.fromGrpcAccountId(grpc.getAccountID()) : null;
+        EntityId jFileID = grpc.hasFileID() ? EntityId.fromGrpcFileId(grpc.getFileID()) : null;
+        EntityId jContractID =
+                grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null;
+        EntityId topicId = grpc.hasTopicID() ? EntityId.fromGrpcTopicId(grpc.getTopicID()) : null;
+        EntityId tokenId = grpc.hasTokenID() ? EntityId.fromGrpcTokenId(grpc.getTokenID()) : null;
+        EntityId scheduleId =
+                grpc.hasScheduleID() ? fromGrpcScheduleId(grpc.getScheduleID()) : null;
+        long runningHashVersion =
+                Math.max(
+                        TxnReceipt.MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
+        long newTotalSupply = grpc.getNewTotalSupply();
+        long[] serialNumbers = grpc.getSerialNumbersList().stream().mapToLong(l -> l).toArray();
+        TxnId scheduledTxnId =
+                grpc.hasScheduledTransactionID()
+                        ? TxnId.fromGrpc(grpc.getScheduledTransactionID())
+                        : null;
+        return TxnReceipt.newBuilder()
+                .setStatus(status)
+                .setAccountId(accountId)
+                .setFileId(jFileID)
+                .setContractId(jContractID)
+                .setTokenId(tokenId)
+                .setScheduleId(scheduleId)
+                .setExchangeRates(effRates)
+                .setTopicId(topicId)
+                .setTopicSequenceNumber(grpc.getTopicSequenceNumber())
+                .setTopicRunningHash(grpc.getTopicRunningHash().toByteArray())
+                .setRunningHashVersion(runningHashVersion)
+                .setNewTotalSupply(newTotalSupply)
+                .setScheduledTxnId(scheduledTxnId)
+                .setSerialNumbers(serialNumbers)
+                .build();
     }
 }

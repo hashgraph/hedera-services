@@ -45,12 +45,11 @@ public class TxnReceipt implements SelfSerializable {
 
     public static final String SUCCESS_LITERAL = SUCCESS.name();
     public static final String REVERTED_SUCCESS_LITERAL = REVERTED_SUCCESS.name();
+    public static final long MISSING_RUNNING_HASH_VERSION = 0L;
 
     static final TxnId MISSING_SCHEDULED_TXN_ID = null;
     static final byte[] MISSING_RUNNING_HASH = null;
-    static final long[] MISSING_SERIAL_NUMBERS = null;
     static final long MISSING_TOPIC_SEQ_NO = 0L;
-    static final long MISSING_RUNNING_HASH_VERSION = 0L;
     static final long MISSING_NEW_TOTAL_SUPPLY = -1L;
 
     static final int RELEASE_0160_VERSION = 7;
@@ -94,9 +93,8 @@ public class TxnReceipt implements SelfSerializable {
         this.scheduledTxnId = builder.scheduledTxnId;
 
         final var hasSerialNumbers =
-                (builder.serialNumbers != MISSING_SERIAL_NUMBERS)
-                        && (builder.serialNumbers.length > 0);
-        this.serialNumbers = hasSerialNumbers ? builder.serialNumbers : MISSING_SERIAL_NUMBERS;
+                (builder.serialNumbers != null) && (builder.serialNumbers.length > 0);
+        this.serialNumbers = hasSerialNumbers ? builder.serialNumbers : null;
     }
 
     /* --- SelfSerializable --- */
@@ -294,46 +292,6 @@ public class TxnReceipt implements SelfSerializable {
         this.accountId = accountId;
     }
 
-    /* ---  Helpers --- */
-    public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
-        final var effRates =
-                grpc.hasExchangeRate() ? ExchangeRates.fromGrpc(grpc.getExchangeRate()) : null;
-        String status = grpc.getStatus() != null ? grpc.getStatus().name() : null;
-        EntityId accountId =
-                grpc.hasAccountID() ? EntityId.fromGrpcAccountId(grpc.getAccountID()) : null;
-        EntityId jFileID = grpc.hasFileID() ? EntityId.fromGrpcFileId(grpc.getFileID()) : null;
-        EntityId jContractID =
-                grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null;
-        EntityId topicId = grpc.hasTopicID() ? EntityId.fromGrpcTopicId(grpc.getTopicID()) : null;
-        EntityId tokenId = grpc.hasTokenID() ? EntityId.fromGrpcTokenId(grpc.getTokenID()) : null;
-        EntityId scheduleId =
-                grpc.hasScheduleID() ? EntityId.fromGrpcScheduleId(grpc.getScheduleID()) : null;
-        long runningHashVersion =
-                Math.max(MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
-        long newTotalSupply = grpc.getNewTotalSupply();
-        long[] serialNumbers = grpc.getSerialNumbersList().stream().mapToLong(l -> l).toArray();
-        TxnId scheduledTxnId =
-                grpc.hasScheduledTransactionID()
-                        ? TxnId.fromGrpc(grpc.getScheduledTransactionID())
-                        : MISSING_SCHEDULED_TXN_ID;
-        return TxnReceipt.newBuilder()
-                .setStatus(status)
-                .setAccountId(accountId)
-                .setFileId(jFileID)
-                .setContractId(jContractID)
-                .setTokenId(tokenId)
-                .setScheduleId(scheduleId)
-                .setExchangeRates(effRates)
-                .setTopicId(topicId)
-                .setTopicSequenceNumber(grpc.getTopicSequenceNumber())
-                .setTopicRunningHash(grpc.getTopicRunningHash().toByteArray())
-                .setRunningHashVersion(runningHashVersion)
-                .setNewTotalSupply(newTotalSupply)
-                .setScheduledTxnId(scheduledTxnId)
-                .setSerialNumbers(serialNumbers)
-                .build();
-    }
-
     public TransactionReceipt toGrpc() {
         return convert(this);
     }
@@ -398,9 +356,10 @@ public class TxnReceipt implements SelfSerializable {
             builder.setScheduledTransactionID(txReceipt.getScheduledTxnId().toGrpc());
         }
 
-        if (txReceipt.getSerialNumbers() != MISSING_SERIAL_NUMBERS) {
-            builder.addAllSerialNumbers(
-                    Arrays.stream(txReceipt.getSerialNumbers()).boxed().toList());
+        if (txReceipt.getSerialNumbers() != null) {
+            for (final var serialNo : txReceipt.getSerialNumbers()) {
+                builder.addSerialNumbers(serialNo);
+            }
         }
         return builder.build();
     }
