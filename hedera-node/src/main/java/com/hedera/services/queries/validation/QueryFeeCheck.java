@@ -33,11 +33,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class QueryFeeCheck {
@@ -53,29 +53,35 @@ public class QueryFeeCheck {
     }
 
     public ResponseCodeEnum nodePaymentValidity(
-            List<AccountAmount> transfers, long queryFee, AccountID node) {
+            @NotNull final List<AccountAmount> transfers,
+            final long queryFee,
+            final AccountID node) {
         var plausibility = transfersPlausibility(transfers);
         if (plausibility != OK) {
             return plausibility;
         }
 
-        long netPayment =
-                -1
-                        * transfers.stream()
-                                .mapToLong(AccountAmount::getAmount)
-                                .filter(amount -> amount < 0)
-                                .sum();
+        long netPayment = 0;
+        boolean nodeReceivesSome = false;
+        boolean nodeReceivesEnough = true;
+        for (final var adjust : transfers) {
+            final var amount = adjust.getAmount();
+            if (amount < 0) {
+                netPayment += -amount;
+            } else if (adjust.getAccountID().equals(node)) {
+                nodeReceivesSome = true;
+                if (amount < queryFee) {
+                    nodeReceivesEnough = false;
+                }
+            }
+        }
         if (netPayment < queryFee) {
             return INSUFFICIENT_TX_FEE;
         }
-        // number of beneficiaries in query transfer transaction can be greater than one.
-        // validate if node gets the required query payment
-        if (transfers.stream()
-                .noneMatch(adj -> adj.getAmount() >= 0 && adj.getAccountID().equals(node))) {
+        if (!nodeReceivesSome) {
             return INVALID_RECEIVING_NODE_ACCOUNT;
         }
-        if (transfers.stream()
-                .anyMatch(adj -> adj.getAccountID().equals(node) && adj.getAmount() < queryFee)) {
+        if (!nodeReceivesEnough) {
             return INSUFFICIENT_TX_FEE;
         }
 
@@ -83,29 +89,23 @@ public class QueryFeeCheck {
     }
 
     ResponseCodeEnum transfersPlausibility(List<AccountAmount> transfers) {
-        if (Optional.ofNullable(transfers).map(List::size).orElse(0) == 0) {
+        if (transfers.isEmpty()) {
             return INVALID_ACCOUNT_AMOUNTS;
         }
 
-        var basicPlausibility =
-                transfers.stream()
-                        .map(this::adjustmentPlausibility)
-                        .filter(status -> status != OK)
-                        .findFirst()
-                        .orElse(OK);
-        if (basicPlausibility != OK) {
-            return basicPlausibility;
+        long net = 0L;
+        for (final var adjust : transfers) {
+            final var plausibility = adjustmentPlausibility(adjust);
+            if (plausibility != OK) {
+                return plausibility;
+            }
+            try {
+                net = Math.addExact(net, adjust.getAmount());
+            } catch (final ArithmeticException ignore) {
+                return INVALID_ACCOUNT_AMOUNTS;
+            }
         }
-
-        try {
-            long net =
-                    transfers.stream()
-                            .mapToLong(AccountAmount::getAmount)
-                            .reduce(0L, Math::addExact);
-            return (net == 0) ? OK : INVALID_ACCOUNT_AMOUNTS;
-        } catch (ArithmeticException ignore) {
-            return INVALID_ACCOUNT_AMOUNTS;
-        }
+        return (net == 0) ? OK : INVALID_ACCOUNT_AMOUNTS;
     }
 
     ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {

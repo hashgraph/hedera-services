@@ -143,6 +143,7 @@ public class PropertyNames {
     public static final String AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE =
             "autorenew.maxNumberOfEntitiesToRenewOrDelete";
     public static final String EXPIRY_THROTTLE_RESOURCE = "expiry.throttleResource";
+    public static final String EXPIRY_MIN_CYCLE_ENTRY_CAPACITY = "expiry.minCycleEntryCapacity";
     public static final String AUTO_RENEW_GRACE_PERIOD = "autorenew.gracePeriod";
     public static final String LEDGER_CHANGE_HIST_MEM_SECS = "ledger.changeHistorian.memorySecs";
     public static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION =

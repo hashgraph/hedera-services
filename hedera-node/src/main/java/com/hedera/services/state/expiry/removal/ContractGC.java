@@ -45,7 +45,7 @@ public class ContractGC {
     static final List<MapAccessType> ROOT_KEY_UPDATE_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
     static final List<MapAccessType> ONLY_SLOT_REMOVAL_WORK = List.of(STORAGE_REMOVE);
     static final List<MapAccessType> NEXT_SLOT_REMOVAL_WORK =
-            List.of(STORAGE_REMOVE, STORAGE_GET, STORAGE_PUT);
+            List.of(STORAGE_REMOVE, STORAGE_GET, STORAGE_GET, STORAGE_PUT);
 
     private final ExpiryThrottle expiryThrottle;
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;

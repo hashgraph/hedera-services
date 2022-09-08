@@ -84,9 +84,19 @@ class EntityAutoExpiryTest {
         // then:
         verifyNoInteractions(expiryProcess);
         verify(networkCtx).syncExpiryThrottle(expiryThrottle);
+    }
 
-        // cleanup:
-        mockDynamicProps.enableAutoRenew();
+    @Test
+    void abortsIfExpiryThrottleCannotSupportMinUnitOfWork() {
+        given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
+        given(expiryThrottle.stillLacksMinFreeCapAfterLeakingUntil(instantNow)).willReturn(true);
+
+        // when:
+        subject.execute(instantNow);
+
+        // then:
+        verifyNoInteractions(expiryProcess);
+        verify(networkCtx).syncExpiryThrottle(expiryThrottle);
     }
 
     @Test
