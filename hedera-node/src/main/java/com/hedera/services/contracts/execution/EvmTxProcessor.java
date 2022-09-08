@@ -121,7 +121,7 @@ abstract class EvmTxProcessor {
         MainnetPrecompiledContracts.populateForIstanbul(
                 precompileContractRegistry, this.gasCalculator);
 
-        EVM evm = evms.get("v0.30").get();
+        EVM evm = evms.get(dynamicProperties.evmVersion()).get();
 
         this.messageCallProcessor =
                 new HederaMessageCallProcessor(

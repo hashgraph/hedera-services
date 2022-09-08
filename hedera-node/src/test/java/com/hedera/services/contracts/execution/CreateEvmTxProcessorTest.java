@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.CodeCache;
@@ -96,6 +97,7 @@ class CreateEvmTxProcessorTest {
         var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
+        when(globalDynamicProperties.evmVersion()).thenReturn("v0.30");
         Map<String, Provider<EVM>> evms =
                 Map.of(
                         "v0.30",

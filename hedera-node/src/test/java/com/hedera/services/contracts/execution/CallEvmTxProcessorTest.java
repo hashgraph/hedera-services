@@ -33,6 +33,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -131,6 +132,7 @@ class CallEvmTxProcessorTest {
         var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
+        when(globalDynamicProperties.evmVersion()).thenReturn("v0.30");
         Map<String, Provider<EVM>> evms =
                 Map.of(
                         "v0.30",

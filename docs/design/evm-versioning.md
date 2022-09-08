@@ -7,7 +7,7 @@ between these major versions via configuration parameters instead of code change
 
 The Ethereum Virtual Machine is regularly updated on Ethereum Mainnet via a series of "Forks" where the behavior of the
 EVM changes. These can range from gas schedule changes to new operations to new data formats for the EVM. One major
-feature of each fork is that there is a well established impact on backwards compatibility that is only comprimised when
+feature of each fork is that there is a well established impact on backwards compatibility that is only compromised when
 security demands it.
 
 In order for off-chain evaluation of these prior EVMs to work we also need to preserve a way to re-create the EVM
@@ -15,7 +15,7 @@ classes in such a way so that the other instances can re-create the execution at
 
 ## Goals
 
-- Allow EVM "versions" to be switched by dnyamic system properties
+- Allow EVM "versions" to be switched by dynamic system properties
 - Allow EVM infrastructure to be committed to production code without requiring it to be activated at consensus.
 - Allow older versions of the EVM to remain accessible for
 
@@ -33,7 +33,7 @@ version of the EVM. Using a provider will result in just-in-time construction of
 versions of the EVM to exist in-memory.  (Done via `@IntoMap` bindings for the EVM and injected
 as `Map&lt;String, Provider&lt;EVM>>`).
 
-Finally, the required differences will be populated into separate sub-modules, using a version appropriate dagger
+Finally, the required differences will be populated into separate submodules, using a version appropriate dagger
 qualifier.
 
 ## Non-Functional Requirements
@@ -42,7 +42,7 @@ A standard dynamic property will be used to configure the EVM at startup (`contr
 to the last activated version on mainnet in the event the value is not set.
 
 EVM versions will follow the format `v&lt;major>.&lt;minor>`, corresponding to the released version of hedera. for
-example, the earliest version supported by this regeme is `v0.30` with a planned update for `v0.31`. Not every hedera
+example, the earliest version supported by this regime is `v0.30` with a planned update for `v0.31`. Not every hedera
 version will have a new EVM version. Only when EVM compatability is impacted for object replay will a new version be
 set.
 
@@ -57,6 +57,6 @@ document which major hardfork corresponds to each internal version.
 
 ## Open Questions
 
-The exact timing of versions that correspond to Ethereum Mainet forks is out of scope of this doument
+The exact timing of versions that correspond to Ethereum Mainnet forks is out of scope of this document
 
 ## Acceptance Tests
