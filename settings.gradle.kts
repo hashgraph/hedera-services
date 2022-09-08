@@ -25,6 +25,7 @@ include(":hapi-fees")
 include(":hedera-node")
 include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-api")
+include(":hedera-node:hedera-mono-service")
 include(":test-clients")
 
 // Enable Gradle Build Scan
