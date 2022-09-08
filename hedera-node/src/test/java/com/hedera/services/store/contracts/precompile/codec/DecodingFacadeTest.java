@@ -941,40 +941,16 @@ class DecodingFacadeTest {
         assertEquals(BigInteger.valueOf(4), decodedInput.getDecimals());
         assertExpectedKeys(decodedInput);
 
-        assertTrue(decodedInput.isFungible());
-        assertEquals("MyTokenV2", decodedInput.getName());
-        assertEquals("MTKV2", decodedInput.getSymbol());
-        assertEquals(AccountID.newBuilder().setAccountNum(1L).build(), decodedInput.getTreasury());
-        assertEquals("memoV2", decodedInput.getMemo());
-        assertFalse(decodedInput.isSupplyTypeFinite());
-        assertEquals(9223372036854775807L, decodedInput.getMaxSupply());
-        assertFalse(decodedInput.isFreezeDefault());
-        assertEquals(8000000, decodedInput.getExpiry().autoRenewPeriod());
-        assertEquals(
-                AccountID.newBuilder().setAccountNum(4L).build(),
-                decodedInput.getExpiry().autoRenewAccount());
-        assertEquals(0L, decodedInput.getExpiry().second());
+        assertExpectedFungibleTokenCreateStructV2(decodedInput);
     }
 
     @Test
-    void decodeFungibleCreate4WithFeesInputV2() {
+    void decodeFungibleCreateWithFeesInputV2() {
         final var decodedInput =
                 subject.decodeFungibleCreateWithFeesV2(
                         CREATE_FUNGIBLE_WITH_FEES_INPUT_V2, identity());
 
-        assertTrue(decodedInput.isFungible());
-        assertEquals("MyTokenV2", decodedInput.getName());
-        assertEquals("MTKV2", decodedInput.getSymbol());
-        assertEquals(AccountID.newBuilder().setAccountNum(1L).build(), decodedInput.getTreasury());
-        assertEquals("memoV2", decodedInput.getMemo());
-        assertFalse(decodedInput.isSupplyTypeFinite());
-        assertEquals(9223372036854775807L, decodedInput.getMaxSupply());
-        assertFalse(decodedInput.isFreezeDefault());
-        assertEquals(8000000, decodedInput.getExpiry().autoRenewPeriod());
-        assertEquals(
-                AccountID.newBuilder().setAccountNum(4L).build(),
-                decodedInput.getExpiry().autoRenewAccount());
-        assertEquals(0L, decodedInput.getExpiry().second());
+        assertExpectedFungibleTokenCreateStructV2(decodedInput);
 
         assertEquals(decodedInput.getInitSupply(), BigInteger.valueOf(9223372036854775807L));
         assertEquals(decodedInput.getDecimals(), BigInteger.valueOf(4));
@@ -1301,6 +1277,22 @@ class DecodingFacadeTest {
         assertEquals(5554, decodedInput.getExpiry().autoRenewPeriod());
         assertEquals(
                 AccountID.newBuilder().setAccountNum(2L).build(),
+                decodedInput.getExpiry().autoRenewAccount());
+        assertEquals(0L, decodedInput.getExpiry().second());
+    }
+
+    private void assertExpectedFungibleTokenCreateStructV2(final TokenCreateWrapper decodedInput) {
+        assertTrue(decodedInput.isFungible());
+        assertEquals("MyTokenV2", decodedInput.getName());
+        assertEquals("MTKV2", decodedInput.getSymbol());
+        assertEquals(AccountID.newBuilder().setAccountNum(1L).build(), decodedInput.getTreasury());
+        assertEquals("memoV2", decodedInput.getMemo());
+        assertFalse(decodedInput.isSupplyTypeFinite());
+        assertEquals(9223372036854775807L, decodedInput.getMaxSupply());
+        assertFalse(decodedInput.isFreezeDefault());
+        assertEquals(8000000, decodedInput.getExpiry().autoRenewPeriod());
+        assertEquals(
+                AccountID.newBuilder().setAccountNum(4L).build(),
                 decodedInput.getExpiry().autoRenewAccount());
         assertEquals(0L, decodedInput.getExpiry().second());
     }
