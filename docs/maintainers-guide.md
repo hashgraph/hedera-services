@@ -33,17 +33,19 @@ Open the Gradle tool window, and run `Tasks/build/assemble` to on the root proje
 
 ## GPG set up
 Every commit being pushed to the repository should be verified. So it is important to set up GPG keys before 
-contributing to the repository. Use the following tutorials to set up a GPG key. 
+contributing to the repository. 
 
-*Be sure to enable Vigilant Mode and adding GPG key in GitHub*.
+Use the following tutorials to set up a GPG key. 
 
-- Github
+**Be sure to enable Vigilant Mode and adding GPG key in GitHub**.
+
+- **Github**
     - [Github - Generating a new GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key)
     - [Github - Adding a GPG key to your Github account](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account)
     - [Github - Configuring your Git CLI for GPG commit signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)
     - [Github - Signing Commits with the Git CLI](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
     - [Github - Vigilant Mode](https://docs.github.com/en/authentication/managing-commit-signature-verification/displaying-verification-statuses-for-all-of-your-commits) ‼️
-- IntelliJ IDEA (if you use IntelliJ to interact with git)
+- **IntelliJ IDEA (if you use IntelliJ to interact with git)**
     - [IntelliJ - Signing Commits with GPG Keys](https://www.jetbrains.com/help/idea/set-up-GPG-commit-signing.html)
     - [IntelliJ Official YouTube - GPG Commit Signing (10:59)](https://youtu.be/RBhz-8fZN9A?t=659)
 
