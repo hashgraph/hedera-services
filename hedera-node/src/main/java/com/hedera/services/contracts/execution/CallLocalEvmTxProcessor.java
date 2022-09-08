@@ -25,14 +25,14 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
-import java.util.Set;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
@@ -50,15 +50,10 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Set<Operation> hederaOperations,
+            final Map<String, Provider<EVM>> evms,
             final Map<String, PrecompiledContract> precompiledContractMap,
             final AliasManager aliasManager) {
-        super(
-                livePricesSource,
-                dynamicProperties,
-                gasCalculator,
-                hederaOperations,
-                precompiledContractMap);
+        super(livePricesSource, dynamicProperties, gasCalculator, evms, precompiledContractMap);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }

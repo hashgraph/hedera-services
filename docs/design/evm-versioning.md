@@ -1,0 +1,62 @@
+# EVM Versioning
+
+## Purpose
+
+Provide a code infrastructure to enable multiple "versions" or configurations of the EVM, and to enable switching
+between these major versions via configuration parameters instead of code changes.
+
+The Ethereum Virtual Machine is regularly updated on Ethereum Mainnet via a series of "Forks" where the behavior of the
+EVM changes. These can range from gas schedule changes to new operations to new data formats for the EVM. One major
+feature of each fork is that there is a well established impact on backwards compatibility that is only comprimised when
+security demands it.
+
+In order for off-chain evaluation of these prior EVMs to work we also need to preserve a way to re-create the EVM
+classes in such a way so that the other instances can re-create the execution at
+
+## Goals
+
+- Allow EVM "versions" to be switched by dnyamic system properties
+- Allow EVM infrastructure to be committed to production code without requiring it to be activated at consensus.
+- Allow older versions of the EVM to remain accessible for
+
+## Non Goals
+
+- Switching the EVM version dynamically at runtime. EVM will be locked in at system startup
+
+## Architecture
+
+First, the EVM object will be created by dagger injection. Previously these were constructed in the EVM Processor for
+each HederaTransaction Type, where Dagger provided the operations and gas calculator and the EVM was created in situ.
+
+Second, the dagger injection will be done via a map of providers, keyed by a text string corresponding to the advertised
+version of the EVM. Using a provider will result in just-in-time construction of the object and will not cause multiple
+versions of the EVM to exist in-memory.  (Done via `@IntoMap` bindings for the EVM and injected
+as `Map&lt;String, Provider&lt;EVM>>`).
+
+Finally, the required differences will be populated into separate sub-modules, using a version appropriate dagger
+qualifier.
+
+## Non-Functional Requirements
+
+A standard dynamic property will be used to configure the EVM at startup (`contracts.evm.version`) and will be defaulted
+to the last activated version on mainnet in the event the value is not set.
+
+EVM versions will follow the format `v&lt;major>.&lt;minor>`, corresponding to the released version of hedera. for
+example, the earliest version supported by this regeme is `v0.30` with a planned update for `v0.31`. Not every hedera
+version will have a new EVM version. Only when EVM compatability is impacted for object replay will a new version be
+set.
+
+It is expected that there will be a new version for each major Ethereum Mainnet hard fork. A table will be kept here to
+document which major hardfork corresponds to each internal version.
+
+|  Hedera Version | Ethereum Fork | Comments                                                                              |
+|----------------:|:--------------|:--------------------------------------------------------------------------------------|
+|         `v0.30` | `London`      |                                                                                       |
+|         `v0.31` | `Paris`       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses   |
+|               ? | `Shanghai`    | Expected Q2 2023 or later                                                             |
+
+## Open Questions
+
+The exact timing of versions that correspond to Ethereum Mainet forks is out of scope of this doument
+
+## Acceptance Tests

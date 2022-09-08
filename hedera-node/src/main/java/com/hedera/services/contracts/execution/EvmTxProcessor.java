@@ -20,7 +20,6 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.traceability.HederaTracer;
@@ -40,11 +39,10 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import javax.annotation.Nullable;
+import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -54,10 +52,6 @@ import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.EvmConfiguration;
-import org.hyperledger.besu.evm.operation.ChainIdOperation;
-import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -66,10 +60,10 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
- * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals
- * upon instantiation. Provides a base {@link EvmTxProcessor#execute(Account, Address, long, long,
- * long, Bytes, boolean, boolean, Address, BigInteger, long, Account)} method that handles the
- * end-to-end execution of a EVM transaction.
+ * Abstract processor of EVM transactions that prepares the {@link EVM} and all the peripherals upon
+ * instantiation. Provides a base {@link EvmTxProcessor#execute(Account, Address, long, long, long,
+ * Bytes, boolean, boolean, Address, BigInteger, long, Account)} method that handles the end-to-end
+ * execution of an EVM transaction.
  */
 abstract class EvmTxProcessor {
     private static final int MAX_STACK_SIZE = 1024;
@@ -80,8 +74,6 @@ abstract class EvmTxProcessor {
     private BlockMetaSource blockMetaSource;
     private HederaMutableWorldState worldState;
 
-    @Nullable private Bytes32 lastChainId;
-    private final OperationRegistry operationRegistry;
     private final GasCalculator gasCalculator;
     private final LivePricesSource livePricesSource;
     private final AbstractMessageProcessor messageCallProcessor;
@@ -92,14 +84,14 @@ abstract class EvmTxProcessor {
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Set<Operation> hederaOperations,
+            final Map<String, Provider<EVM>> evms,
             final Map<String, PrecompiledContract> precompiledContractMap) {
         this(
                 null,
                 livePricesSource,
                 dynamicProperties,
                 gasCalculator,
-                hederaOperations,
+                evms,
                 precompiledContractMap,
                 null);
     }
@@ -117,7 +109,7 @@ abstract class EvmTxProcessor {
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Set<Operation> hederaOperations,
+            final Map<String, Provider<EVM>> evms,
             final Map<String, PrecompiledContract> precompiledContractMap,
             final BlockMetaSource blockMetaSource) {
         this.worldState = worldState;
@@ -125,15 +117,11 @@ abstract class EvmTxProcessor {
         this.dynamicProperties = dynamicProperties;
         this.gasCalculator = gasCalculator;
 
-        operationRegistry = new OperationRegistry();
-        // We always register the latest ChainIdOperation before any execute(), so use ZERO here
-        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
-        hederaOperations.forEach(operationRegistry::put);
-
-        final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
         final var precompileContractRegistry = new PrecompileContractRegistry();
         MainnetPrecompiledContracts.populateForIstanbul(
                 precompileContractRegistry, this.gasCalculator);
+
+        EVM evm = evms.get("v0.30").get();
 
         this.messageCallProcessor =
                 new HederaMessageCallProcessor(
@@ -174,7 +162,6 @@ abstract class EvmTxProcessor {
             final BigInteger userOfferedGasPrice,
             final long maxGasAllowanceInTinybars,
             final Account relayer) {
-        ensureLatestChainId();
         final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
         final Wei upfrontCost = gasCost.add(value);
         final long intrinsicGas =
@@ -421,14 +408,6 @@ abstract class EvmTxProcessor {
         return new ChargingResult(mutableSender, mutableRelayer, allowanceCharged);
     }
 
-    private void ensureLatestChainId() {
-        final var curChainId = dynamicProperties.chainIdBytes32();
-        if (!curChainId.equals(lastChainId)) {
-            lastChainId = curChainId;
-            operationRegistry.put(new ChainIdOperation(gasCalculator, curChainId));
-        }
-    }
-
     private long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
         long gasUsedByTransaction = txGasLimit - initialFrame.getRemainingGas();
         /* Return leftover gas */
@@ -454,10 +433,6 @@ abstract class EvmTxProcessor {
                 isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
     }
 
-    protected long storageByteHoursTinyBarsGiven(final Instant consensusTime) {
-        return livePricesSource.currentGasPrice(consensusTime, getFunctionType());
-    }
-
     protected abstract HederaFunctionality getFunctionType();
 
     protected abstract MessageFrame buildInitialFrame(
@@ -470,14 +445,9 @@ abstract class EvmTxProcessor {
     }
 
     private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type) {
-        switch (type) {
-            case MESSAGE_CALL:
-                return messageCallProcessor;
-            case CONTRACT_CREATION:
-                return contractCreationProcessor;
-            default:
-                throw new IllegalStateException(
-                        "Request for unsupported message processor type " + type);
-        }
+        return switch (type) {
+            case MESSAGE_CALL -> messageCallProcessor;
+            case CONTRACT_CREATION -> contractCreationProcessor;
+        };
     }
 }

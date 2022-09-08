@@ -27,15 +27,15 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Singleton
@@ -50,7 +50,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Set<Operation> hederaOperations,
+            final Map<String, Provider<EVM>> evms,
             final Map<String, PrecompiledContract> precompiledContractMap,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
@@ -59,7 +59,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
                 livePricesSource,
                 dynamicProperties,
                 gasCalculator,
-                hederaOperations,
+                evms,
                 precompiledContractMap,
                 blockMetaSource);
         this.codeCache = codeCache;

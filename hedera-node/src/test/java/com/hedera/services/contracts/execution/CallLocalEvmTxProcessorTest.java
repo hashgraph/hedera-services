@@ -35,22 +35,26 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
+import java.math.BigInteger;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
@@ -81,13 +85,20 @@ class CallLocalEvmTxProcessorTest {
     private final Account sender = new Account(new Id(0, 0, 1002));
     private final Account receiver = new Account(new Id(0, 0, 1006));
     private final Address receiverAddress = receiver.getId().asEvmAddress();
-    private final Instant consensusTime = Instant.now();
 
     private CallLocalEvmTxProcessor callLocalEvmTxProcessor;
 
     @BeforeEach
-    private void setup() {
+    public void setup() {
         CommonProcessorSetup.setup(gasCalculator);
+
+        var operationRegistry = new OperationRegistry();
+        MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        operations.forEach(operationRegistry::put);
+        Map<String, Provider<EVM>> evms =
+                Map.of(
+                        "v0.30",
+                        () -> new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT));
 
         callLocalEvmTxProcessor =
                 new CallLocalEvmTxProcessor(
@@ -95,7 +106,7 @@ class CallLocalEvmTxProcessorTest {
                         livePricesSource,
                         globalDynamicProperties,
                         gasCalculator,
-                        operations,
+                        evms,
                         precompiledContractMap,
                         aliasManager);
 
@@ -104,12 +115,11 @@ class CallLocalEvmTxProcessorTest {
     }
 
     @Test
-    void assertSuccessExecutе() {
+    void assertSuccessExecute() {
         givenValidMock();
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
         final var receiverAddress = receiver.getId().asEvmAddress();
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         var result =
                 callLocalEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY);
@@ -141,7 +151,6 @@ class CallLocalEvmTxProcessorTest {
         given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
         given(updater.getOrCreate(any())).willReturn(evmAccount);
         given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         assertFailsWith(
                 () ->

@@ -29,11 +29,11 @@ class ContractsModuleTest {
 
     @Test
     void logOperationsAreProvided() {
-        final var log0 = ContractsModule.provideLog0Operation(gasCalculator);
-        final var log1 = ContractsModule.provideLog1Operation(gasCalculator);
-        final var log2 = ContractsModule.provideLog2Operation(gasCalculator);
-        final var log3 = ContractsModule.provideLog3Operation(gasCalculator);
-        final var log4 = ContractsModule.provideLog4Operation(gasCalculator);
+        final var log0 = ContractsV_0_30Operations.provideLog0Operation(gasCalculator);
+        final var log1 = ContractsV_0_30Operations.provideLog1Operation(gasCalculator);
+        final var log2 = ContractsV_0_30Operations.provideLog2Operation(gasCalculator);
+        final var log3 = ContractsV_0_30Operations.provideLog3Operation(gasCalculator);
+        final var log4 = ContractsV_0_30Operations.provideLog4Operation(gasCalculator);
 
         assertEquals("LOG0", log0.getName());
         assertEquals("LOG1", log1.getName());

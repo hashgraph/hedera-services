@@ -38,7 +38,6 @@ package com.hedera.services.contracts.operation;
  */
 
 import java.util.function.BiPredicate;
-import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -55,7 +54,6 @@ public class HederaBalanceOperation extends BalanceOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
 
-    @Inject
     public HederaBalanceOperation(
             GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
         super(gasCalculator);

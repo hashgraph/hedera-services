@@ -40,7 +40,6 @@ package com.hedera.services.contracts.operation;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiPredicate;
-import javax.inject.Inject;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -62,7 +61,6 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
 
-    @Inject
     public HederaExtCodeHashOperation(
             GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
         super(gasCalculator);

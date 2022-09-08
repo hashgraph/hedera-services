@@ -40,16 +40,20 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
@@ -80,15 +84,22 @@ class CreateEvmTxProcessorTest {
     private final Account receiver = new Account(new Id(0, 0, 1006));
     private final Account relayer = new Account(new Id(0, 0, 1007));
     private final Instant consensusTime = Instant.now();
-    private final long expiry = 123456L;
     private final int MAX_GAS_LIMIT = 10_000_000;
     private final int MAX_REFUND_PERCENT = 20;
     private final long INTRINSIC_GAS_COST = 290_000L;
     private final long GAS_LIMIT = 300_000L;
 
     @BeforeEach
-    private void setup() {
+    public void setup() {
         CommonProcessorSetup.setup(gasCalculator);
+
+        var operationRegistry = new OperationRegistry();
+        MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        operations.forEach(operationRegistry::put);
+        Map<String, Provider<EVM>> evms =
+                Map.of(
+                        "v0.30",
+                        () -> new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT));
 
         createEvmTxProcessor =
                 new CreateEvmTxProcessor(
@@ -97,7 +108,7 @@ class CreateEvmTxProcessorTest {
                         codeCache,
                         globalDynamicProperties,
                         gasCalculator,
-                        operations,
+                        evms,
                         precompiledContractMap,
                         blockMetaSource);
     }
@@ -106,7 +117,6 @@ class CreateEvmTxProcessorTest {
     void assertSuccessfulExecution() {
         givenValidMock(true);
         givenSenderWithBalance(350_000L);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -129,7 +139,6 @@ class CreateEvmTxProcessorTest {
         var senderMutableAccount = mock(MutableAccount.class);
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
         given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         var result =
                 createEvmTxProcessor.executeEth(
@@ -152,7 +161,6 @@ class CreateEvmTxProcessorTest {
         givenValidMock(true);
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
         givenSenderWithBalance(350_000L);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -173,7 +181,6 @@ class CreateEvmTxProcessorTest {
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
                 .willReturn(INTRINSIC_GAS_COST);
         givenSenderWithBalance(350_000L);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -195,7 +202,6 @@ class CreateEvmTxProcessorTest {
         given(gasCalculator.mLoadOperationGasCost(any(), anyLong())).willReturn(30L);
         given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(5000L);
         givenSenderWithBalance(350_000L);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         // when:
         var result =
@@ -262,7 +268,6 @@ class CreateEvmTxProcessorTest {
     void throwsWhenSenderCannotCoverUpfrontCost() {
         givenInvalidMock();
         givenSenderWithBalance(123);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         Address receiver = this.receiver.getId().asEvmAddress();
         assertFailsWith(
@@ -276,7 +281,6 @@ class CreateEvmTxProcessorTest {
     void throwsWhenIntrinsicGasCostExceedsGasLimit() {
         givenInvalidMock();
         givenExtantSender();
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         Address receiver = this.receiver.getId().asEvmAddress();
         assertFailsWith(
@@ -292,7 +296,6 @@ class CreateEvmTxProcessorTest {
         givenExtantSender();
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
                 .willReturn(MAX_GAS_LIMIT + 1L);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         Address receiver = this.receiver.getId().asEvmAddress();
         assertFailsWith(

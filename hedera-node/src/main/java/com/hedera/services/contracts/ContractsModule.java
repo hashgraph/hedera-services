@@ -21,27 +21,12 @@ import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFr
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
-import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
+import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
-import com.hedera.services.contracts.operation.HederaBalanceOperation;
-import com.hedera.services.contracts.operation.HederaCallCodeOperation;
-import com.hedera.services.contracts.operation.HederaCallOperation;
-import com.hedera.services.contracts.operation.HederaCreate2Operation;
-import com.hedera.services.contracts.operation.HederaCreateOperation;
-import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
-import com.hedera.services.contracts.operation.HederaExtCodeCopyOperation;
-import com.hedera.services.contracts.operation.HederaExtCodeHashOperation;
-import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
-import com.hedera.services.contracts.operation.HederaLogOperation;
-import com.hedera.services.contracts.operation.HederaSLoadOperation;
-import com.hedera.services.contracts.operation.HederaSStoreOperation;
-import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
-import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -68,21 +53,34 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
-import dagger.multibindings.IntoSet;
 import dagger.multibindings.StringKey;
+import java.math.BigInteger;
 import java.util.Map;
-import java.util.function.BiPredicate;
+import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import javax.inject.Qualifier;
 import javax.inject.Singleton;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-@Module(includes = {StoresModule.class})
+@Module(
+        includes = {
+            StoresModule.class,
+            ContractsV_0_30Operations.class,
+            ContractsV_0_31Operations.class
+        })
 public interface ContractsModule {
+
+    @Qualifier
+    @interface V_0_30 {}
+
+    @Qualifier
+    @interface V_0_31 {}
+
     @Binds
     @Singleton
     ContractStorageLimits provideContractStorageLimits(UsageLimits usageLimits);
@@ -136,112 +134,9 @@ public interface ContractsModule {
                 ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
     }
 
-    @Provides
-    @Singleton
-    @IntoSet
-    static Operation provideLog0Operation(final GasCalculator gasCalculator) {
-        return new HederaLogOperation(0, gasCalculator);
-    }
-
-    @Provides
-    @Singleton
-    @IntoSet
-    static Operation provideLog1Operation(final GasCalculator gasCalculator) {
-        return new HederaLogOperation(1, gasCalculator);
-    }
-
-    @Provides
-    @Singleton
-    @IntoSet
-    static Operation provideLog2Operation(final GasCalculator gasCalculator) {
-        return new HederaLogOperation(2, gasCalculator);
-    }
-
-    @Provides
-    @Singleton
-    @IntoSet
-    static Operation provideLog3Operation(final GasCalculator gasCalculator) {
-        return new HederaLogOperation(3, gasCalculator);
-    }
-
-    @Provides
-    @Singleton
-    @IntoSet
-    static Operation provideLog4Operation(final GasCalculator gasCalculator) {
-        return new HederaLogOperation(4, gasCalculator);
-    }
-
     @Binds
     @Singleton
     GasCalculator bindHederaGasCalculatorV20(GasCalculatorHederaV22 gasCalculator);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindBalanceOperation(HederaBalanceOperation balance);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindCallCodeOperation(HederaCallCodeOperation callCode);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindCallOperation(HederaCallOperation call);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindCreateOperation(HederaCreateOperation create);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindCreate2Operation(HederaCreate2Operation create2);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindDelegateCallOperation(HederaDelegateCallOperation delegateCall);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindExtCodeCopyOperation(HederaExtCodeCopyOperation extCodeCopy);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindExtCodeHashOperation(HederaExtCodeHashOperation extCodeHash);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindExtCodeSizeOperation(HederaExtCodeSizeOperation extCodeSize);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindSelfDestructOperation(HederaSelfDestructOperation selfDestruct);
-
-    @Provides
-    @Singleton
-    @IntoSet
-    static Operation provideSStoreOperation(
-            final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
-        return new HederaSStoreOperation(FRONTIER_MINIMUM, gasCalculator, dynamicProperties);
-    }
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindHederaSLoadOperation(HederaSLoadOperation sload);
-
-    @Binds
-    @Singleton
-    @IntoSet
-    Operation bindStaticCallOperation(HederaStaticCallOperation staticCall);
 
     @Binds
     @Singleton
@@ -264,13 +159,27 @@ public interface ContractsModule {
 
     @Provides
     @Singleton
-    static BiPredicate<Address, MessageFrame> provideAddressValidator(
-            final Map<String, PrecompiledContract> precompiledContractMap) {
-        final var precompiles =
-                precompiledContractMap.keySet().stream()
-                        .map(Address::fromHexString)
-                        .collect(Collectors.toSet());
-        return (address, frame) ->
-                precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
+    @IntoMap
+    @StringKey("v0.30")
+    static EVM provideV30EVM(@V_0_30 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
+        var operationRegistry = new OperationRegistry();
+        // ChainID will be overridden
+        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        hederaOperations.forEach(operationRegistry::put);
+
+        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey("v0.31")
+    static EVM provideV31EVM(@V_0_31 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
+        var operationRegistry = new OperationRegistry();
+        // ChainID will be overridden
+        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        hederaOperations.forEach(operationRegistry::put);
+
+        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
     }
 }

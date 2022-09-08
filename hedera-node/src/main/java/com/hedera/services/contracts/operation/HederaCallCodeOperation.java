@@ -41,7 +41,6 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import java.util.Map;
 import java.util.function.BiPredicate;
-import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -65,7 +64,6 @@ public class HederaCallCodeOperation extends CallCodeOperation {
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Map<String, PrecompiledContract> precompiledContractMap;
 
-    @Inject
     public HederaCallCodeOperation(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
