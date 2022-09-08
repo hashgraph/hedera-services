@@ -186,18 +186,12 @@ import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -968,6 +962,25 @@ public final class MiscUtils {
                 break;
             }
         }
+    }
+
+    public static <T extends Enum<T>> List<T> csvList(
+            final String propertyValue, final Function<String, T> parser, final Class<T> type) {
+        return csvStream(propertyValue, parser, type).toList();
+    }
+
+    public static <T extends Enum<T>> Set<T> csvSet(
+            final String propertyValue, final Function<String, T> parser, final Class<T> type) {
+        return csvStream(propertyValue, parser, type)
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
+    }
+
+    private static <T extends Enum<T>> Stream<T> csvStream(
+            final String propertyValue, final Function<String, T> parser, final Class<T> type) {
+        return Arrays.stream(propertyValue.split(","))
+                .map(String::strip)
+                .filter(desc -> desc.length() > 0)
+                .map(parser);
     }
 
     private static void resetUnconditionally(

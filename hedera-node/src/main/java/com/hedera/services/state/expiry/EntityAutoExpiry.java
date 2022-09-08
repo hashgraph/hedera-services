@@ -75,9 +75,11 @@ public class EntityAutoExpiry {
         networkCtx.get().syncExpiryThrottle(expiryThrottle);
     }
 
-    private void executeInternal(final Instant currentConsTime) {
+    private void executeInternal(final Instant now) {
         final long wrapNum = seqNo.get().current();
-        if (!workToDoFor(wrapNum)) {
+        // If all other conditions are met, has a side effect of draining
+        // the expiry throttle bucket from all the time elapsed until now
+        if (!canDoWorkGiven(wrapNum, now)) {
             return;
         }
 
@@ -100,7 +102,7 @@ public class EntityAutoExpiry {
                 idsScanned++;
             }
             // Each processing attempt will generate at most one child record
-            result = expiryProcess.process(scanNum, currentConsTime);
+            result = expiryProcess.process(scanNum, now);
             if (result == NOTHING_TO_DO) {
                 advanceScan = true;
             } else {
@@ -125,10 +127,11 @@ public class EntityAutoExpiry {
                 && consensusTimeTracker.hasMoreStandaloneRecordTime();
     }
 
-    private boolean workToDoFor(final long wrapNum) {
+    private boolean canDoWorkGiven(final long wrapNum, final Instant now) {
         return wrapNum != firstEntityToScan
                 && dynamicProps.shouldAutoRenewSomeEntityType()
-                && consensusTimeTracker.hasMoreStandaloneRecordTime();
+                && consensusTimeTracker.hasMoreStandaloneRecordTime()
+                && !expiryThrottle.stillLacksMinFreeCapAfterLeakingUntil(now);
     }
 
     private long next(long scanNum, final long wrapNum) {
