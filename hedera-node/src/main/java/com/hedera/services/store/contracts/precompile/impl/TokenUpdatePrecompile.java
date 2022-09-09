@@ -58,9 +58,9 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             TypeFactory.create(
                     "(" + removeBrackets(BYTES32) + "," + HEDERA_TOKEN_STRUCT_DECODER + ")");
     private static final Function TOKEN_UPDATE_INFO_FUNCTION_V2 =
-        new Function("updateTokenInfo(address," + HEDERA_TOKEN_STRUCT_V2 + ")");
+            new Function("updateTokenInfo(address," + HEDERA_TOKEN_STRUCT_V2 + ")");
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V2 =
-        Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V2.selector());
+            Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V2.selector());
     private TokenUpdateWrapper updateOp;
     private final int functionId;
 
@@ -88,12 +88,13 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
         updateOp =
-            switch (functionId) {
-                case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> decodeUpdateTokenInfo(
-                    input, aliasResolver);
-                case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2 -> decodeUpdateTokenInfoV2(input, aliasResolver);
-                default -> null;
-            };
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> decodeUpdateTokenInfo(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2 -> decodeUpdateTokenInfoV2(
+                            input, aliasResolver);
+                    default -> null;
+                };
         transactionBody = syntheticTxnFactory.createTokenUpdate(updateOp);
         return transactionBody;
     }
@@ -148,20 +149,20 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
      * @return TokenUpdateWrapper codec
      */
     public static TokenUpdateWrapper decodeUpdateTokenInfoV2(
-        Bytes input, UnaryOperator<byte[]> aliasResolver) {
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-            decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR_V2, TOKEN_UPDATE_INFO_DECODER);
+                decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR_V2, TOKEN_UPDATE_INFO_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final Tuple hederaTokenStruct = decodedArguments.get(1);
         final var tokenName = (String) hederaTokenStruct.get(0);
         final var tokenSymbol = (String) hederaTokenStruct.get(1);
         final var tokenTreasury =
-            convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
+                convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
         final var tokenMemo = (String) hederaTokenStruct.get(3);
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return new TokenUpdateWrapper(
-            tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
+                tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
     }
 }
