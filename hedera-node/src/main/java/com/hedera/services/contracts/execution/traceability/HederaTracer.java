@@ -152,6 +152,9 @@ public class HederaTracer implements HederaOperationTracer {
                     .ifPresentOrElse(
                             bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
                             () -> action.setRevertReason(new byte[0]));
+            if (frame.getType().equals(Type.CONTRACT_CREATION)) {
+                action.setRecipientContract(null);
+            }
         } else if (frameState == State.EXCEPTIONAL_HALT) {
             // exceptional exits always burn all gas
             action.setGasUsed(action.getGas());
@@ -173,6 +176,9 @@ public class HederaTracer implements HederaOperationTracer {
                 }
             } else {
                 action.setError(new byte[0]);
+            }
+            if (frame.getType().equals(Type.CONTRACT_CREATION)) {
+                action.setRecipientContract(null);
             }
         }
     }
