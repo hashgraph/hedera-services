@@ -20,11 +20,6 @@ plugins {
 
 description = "Hedera Services Node"
 
-subprojects {
-    project(":hedera-node:hedera-app")
-    project(":hedera-node:hedera-app-api")
-}
-
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
