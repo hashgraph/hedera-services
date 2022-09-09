@@ -770,12 +770,13 @@ public class NewTraceabilitySuite extends HapiApiSuite {
 
     private HapiApiSpec traceabilityE2EScenario18() {
         return defaultHapiSpec("traceabilityE2EScenario18")
-                .given(
-                        uploadInitCode(REVERTING_CONTRACT),
+                .given(uploadInitCode(REVERTING_CONTRACT))
+                .when(
                         contractCreate(REVERTING_CONTRACT, 6)
                                 .via(FIRST_CREATE_TXN)
                                 .gas(53050)
-                                .hasKnownStatus(INSUFFICIENT_GAS),
+                                .hasKnownStatus(INSUFFICIENT_GAS))
+                .then(
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
@@ -801,9 +802,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                                         .getBytes()))
                                                                         .build())))),
                         expectFailedContractBytecodeSidecarFor(
-                                FIRST_CREATE_TXN, REVERTING_CONTRACT, 6))
-                .when()
-                .then();
+                                FIRST_CREATE_TXN, REVERTING_CONTRACT, 6));
     }
 
     private HapiApiSpec vanillaBytecodeSidecar() {
