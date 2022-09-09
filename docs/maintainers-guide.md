@@ -1,6 +1,6 @@
 # Maintainers-Guide
 
-This document outlines the process and key notes for a maintainer to contribute to the repository .
+This document outlines the process and keynotes for the core maintainers of this repository .
 
 ## IntelliJ set up
 IntelliJ is used for most of the development lifecycle.
@@ -18,21 +18,19 @@ git clone git@github.com:hashgraph/hedera-services.git
 ```
 
 From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just cloned.
-Make sure you are using JDK17 as the project SDK. 
+Make sure you are using JDK17 as the project SDK in IntelliJ. 
 
 <p>
     <img src="assets/jdk-17.png"/>
 </p>
 
 ## Gradle
-Once the repository is opened in IntelliJ, start using either the Gradle command line 
-`(./gradlew spotlessApply)`  or set up the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides) 
-in IntelliJ to format your code. 
-Make sure to set your code style under `IntelliJ IDEA -> Preferences -> google-java-format Settings -> Code Style` 
-to the `Android Open Source Project (AOSP)` style if using the IntelliJ plugin.
+Once the repository is opened in IntelliJ, to build the project from Intellij, open the Gradle tool window and 
+run `Tasks/build/assemble` to on the root project. If you are using command line use `./gradlew assemble`.
 
-To build the project from Intellij, open the Gradle tool window and run `Tasks/build/assemble` to on the root project.
-If you are using command line use `./gradlew assemble`.
+Start using either the Gradle command line 
+`(./gradlew spotlessApply)`  or set up the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides) 
+in IntelliJ to format your code to follow Google Code Style.
 
 ## GPG set up
 Every commit being pushed to the repository should be verified. So it is important to set up GPG keys before 
@@ -53,23 +51,26 @@ Use the following tutorials to set up a GPG key.
     - [IntelliJ Official YouTube - GPG Commit Signing (10:59)](https://youtu.be/RBhz-8fZN9A?t=659)
 
 ## Development Model
-We follow [GitFlow branching model](https://nvie.com/posts/a-successful-git-branching-model/) for the development life cycle.
+[GitFlow branching model](https://nvie.com/posts/a-successful-git-branching-model/) is used for the development life cycle.
 
 <p>
     <img src="./assets/gitflow-branching-model.png"/>
 </p>
 
 As per this model, there will be 2 long-lived branches:
-1. `develop` - This will be the default branch developers will be working on. It will always be up-to-date with the 
-latest development changes for the upcoming release.
-2. `main` - This will have the `production-ready` code in it. In most cases release engineering will be working with it.
+1. `develop` - It will be the default branch for the developers who are contributing to the repository. It will always 
+be up-to-date with the latest development changes for the upcoming release.
+2. `main` - It will have the `production-ready` code in it. In most cases release engineering will be working with it.
 
 ### Creating issues on GitHub
-GitHub's [issues](https://github.com/hashgraph/hedera-services/issues) are used as the primary method for tracking project
-changes.
+GitHub's [issues](https://github.com/hashgraph/hedera-services/issues) are used as the primary method for tracking
+project changes.
 Any actionable item that need to be addressed, should be associated to an issue in GitHub.
 The issue should be added to `Services Sprint Tracking` (if it is targeted to be addressed in the current sprint)
 and the associated project type in `Projects` tab. It should also have the targeted milestone set on it.
+
+For eg: A Documentation issue that is targeted for the current sprint in 0.30.0 release should be associated to 
+`Services Sprint Tracking` and `Documentation` projects, with 0.30 milestone on it.
 
 <p>
     <img src="./assets/labels-on-issue.png"/>
@@ -81,6 +82,11 @@ and the associated project type in `Projects` tab. It should also have the targe
 As per the development model, every developer should create a feature branch from `develop` branch for working on an 
 issue targeted for the current release. 
 
+```
+git checkout develop;
+git checkout -b new-feature
+```
+
 The `develop` branch should be up-to-date with all the features going into the next release.
 
 #### As a developer, I would like to create a branch to work on the feature NOT targeted for upcoming release
@@ -89,23 +95,25 @@ feature branch should NOT be merged into `develop` until the decision is made if
 release.
 
 #### As a developer, I would like to merge my feature branch or bug fix for the upcoming release
-Open a pull request from the feature branch to `develop` branch and add `hashgraph/hedera-services-team` as reviewers.
+Open a pull request (PR) from the feature branch to `develop` branch and add `hashgraph/hedera-services-team` as reviewers.
 
-Also add the following labels on the pull request :
+Also add the following labels on the PR :
 - `CI:UnitTests` - Initiates PR UnitTests needed for the PR to merge
 - `CI:FullStackTests` - Initiates full stack PR checks needed for PR to merge
 - `CI:FinalChecks` - Initiates final checks required for the PR to merge
 
 PR should be merged after an approving review and all the checks are passed.
 
-NOTE: Any feature that is not going into the upcoming release should stay in the feature branch and should not be merged
+NOTE: 
+1. Any feature that is not going into the upcoming release should stay in the feature branch and should not be merged
 to `develop`.
-NOTE: Please use either the Gradle command line`(./gradlew spotlessApply)`  or the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
+2. Please use either the Gradle command line`(./gradlew spotlessApply)`  or the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
 to format your code to avoid failing checks in CI pipeline.
+3. The linked issues should be automatically closed when a PR is merged or closed manually.
 
 #### As a release engineer, I would like to create a release branch
 
-Release branch should be created from `develop` branch at the end of first sprint in the release cycle. This adheres to
+Release branch should be [created](#Creating a branch) from `develop` branch at the end of first sprint in the release cycle. This adheres to
 completing all the development targeted for the upcoming release in the first sprint of release cycle.
 
 Once a release branch is created there _should not_ be any feature developments merged into `release` branch targeted 
@@ -115,14 +123,14 @@ The initial `alpha` tags will be tagged from the release branch created.
 
 #### As a developer, I would like to merge a bugfix/hotfix after release branch is created
 
-Once the release branch is created, only bugfixes or hotfixes should be merged into release branch. To do that, create 
-a `hotfix` from the `release` branch. Once the fix is in the branch, open a pull request to the release branch. Once 
+Once the release branch is created, only bugfixes or hotfixes should be merged into release branch. To do that, [create](#Creating a hotfix branch) 
+a `hotfix` from the `release` branch. Once the fix is in the branch, open a PR to the release branch. Once 
 the fix is merged into `release` branch, it should be cherry-picked into the `develop` branch.
 
 #### As a developer, I would like to merge a bugfix/hotfix from the production code
 
 To fix a bug from one of the previous releases(production code), create a hotfix branch from `main`. Once the fix is in
-the branch, create a pull request targeting to `main`. Once bugfix is merged into `main`and it should be cherry-picked 
+the branch, create a PR targeting to `main`. Once bugfix is merged into `main`and it should be cherry-picked 
 back into the current `release` branch(if the release branch is still open), and also into `develop`.
 
 #### As a release engineer, I would like to tag the main release at the end of release cycle
@@ -143,3 +151,20 @@ Eg: If the Issue number is `100` and the feature is targeted to be merged to `de
 If the Issue number is `100` and the hotfix is targeted to be merged to `main` branch, the branch name should be named as
 `0100-M-some-description`
 
+## Creating a feature branch
+
+To create a branch from `develop` 
+
+```
+git checkout develop;
+git checkout -b new-feature
+```
+
+## Creating a hotfix branch
+
+To create a branch from `release-x`
+
+```
+git checkout release-x;
+git checkout -b hotfix-for-something
+```
