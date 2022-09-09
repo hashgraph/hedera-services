@@ -66,7 +66,7 @@ public class RecordStreamingUtils {
     }
 
     public static SidecarFile readSidecarFile(final String fileLoc) throws IOException {
-        return (SidecarFile.parseFrom(getUncompressedStreamFileBytes(fileLoc)));
+        return SidecarFile.parseFrom(getUncompressedStreamFileBytes(fileLoc));
     }
 
     private static byte[] getUncompressedStreamFileBytes(final String fileLoc) throws IOException {

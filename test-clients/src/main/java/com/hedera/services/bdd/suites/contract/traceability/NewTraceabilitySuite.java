@@ -60,12 +60,9 @@ import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,7 +75,6 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path";
 
     private static SidecarWatcher sidecarWatcher;
-    private static CompletableFuture<Void> sidecarWatcherTask;
     private static final ByteString EMPTY = ByteStringUtils.wrapUnsafely(new byte[0]);
     private static final String TRACEABILITY = "Traceability";
     private static final String FIRST_CREATE_TXN = "FirstCreateTxn";
@@ -95,18 +91,9 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     @SuppressWarnings("java:S5960")
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        if (true) {
-            // This suite cannot run in CI yet
-            return Collections.emptyList();
-        }
         try {
             initialize();
-            return List.of(
-                    traceabilityE2EScenario1(),
-                    vanillaBytecodeSidecar(),
-                    vanillaBytecodeSidecar2(),
-                    assertSidecars());
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.warn("An exception occurred initializing watch service", e);
             return List.of(
                     defaultHapiSpec("initialize")
@@ -119,6 +106,11 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                             "Watch service couldn't be"
                                                                     + " initialized."))));
         }
+        return List.of(
+                traceabilityE2EScenario1(),
+                vanillaBytecodeSidecar(),
+                vanillaBytecodeSidecar2(),
+                assertSidecars());
     }
 
     private HapiApiSpec traceabilityE2EScenario1() {
@@ -757,18 +749,18 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     @SuppressWarnings("java:S5960")
     private HapiApiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
-                // send a dummy transaction to trigger externalization of last sidecars
                 .given(
-                        withOpContext(
-                                (spec, opLog) -> sidecarWatcher.finishWatchingAfterNextSidecar()),
+                        // send a dummy transaction to trigger externalization of last sidecars
                         cryptoCreate("externalizeFinalSidecars").delayBy(2000))
-                .when()
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    sidecarWatcher.waitUntilFinished();
+                                    sidecarWatcher.tearDown();
+                                }))
                 .then(
                         assertionsHold(
                                 (spec, assertLog) -> {
-                                    // wait until assertion thread is finished
-                                    sidecarWatcherTask.join();
-
                                     assertTrue(
                                             sidecarWatcher.thereAreNoMismatchedSidecars(),
                                             sidecarWatcher.getErrors());
@@ -881,27 +873,14 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                 });
     }
 
-    private static void initialize() throws IOException {
+    private static void initialize() throws Exception {
         final var recordStreamFolderPath =
                 HapiApiSpec.isRunningInCi()
                         ? HapiApiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY)
                         : HapiSpecSetup.getDefaultPropertySource()
                                 .get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY);
         sidecarWatcher = new SidecarWatcher(Paths.get(recordStreamFolderPath));
-        sidecarWatcher.prepareInfrastructure();
-        sidecarWatcherTask =
-                CompletableFuture.runAsync(
-                        () -> {
-                            try {
-                                sidecarWatcher.watch();
-                            } catch (IOException e) {
-                                log.fatal(
-                                        "An invalid sidecar file was generated from the consensus"
-                                                + " node.",
-                                        e);
-                            }
-                            sidecarWatcher.tearDown();
-                        });
+        sidecarWatcher.watch();
     }
 
     private ByteString encodeFunctionCall(

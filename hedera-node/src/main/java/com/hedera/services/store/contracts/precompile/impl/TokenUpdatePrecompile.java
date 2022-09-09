@@ -36,6 +36,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
@@ -56,6 +57,7 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             TypeFactory.create(
                     "(" + removeBrackets(BYTES32) + "," + HEDERA_TOKEN_STRUCT_DECODER + ")");
     private TokenUpdateWrapper updateOp;
+    private final int functionId;
 
     public TokenUpdatePrecompile(
             WorldLedgers ledgers,
@@ -64,7 +66,8 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             SideEffectsTracker sideEffectsTracker,
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils precompilePricingUtils) {
+            PrecompilePricingUtils precompilePricingUtils,
+            final int functionId) {
         super(
                 ledgers,
                 aliases,
@@ -73,6 +76,8 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 precompilePricingUtils);
+
+        this.functionId = functionId;
     }
 
     @Override

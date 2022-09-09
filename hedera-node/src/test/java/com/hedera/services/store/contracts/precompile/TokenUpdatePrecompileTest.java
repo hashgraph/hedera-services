@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
@@ -192,6 +193,28 @@ class TokenUpdatePrecompileTest {
     }
 
     @Test
+    void computeCallsSuccessfullyForUpdateFungibleTokenV2() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO_V2));
+        givenFrameContext();
+        given(frame.getBlockValues())
+                .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        givenLedgers();
+        givenMinimalContextForSuccessfulCall();
+        givenMinimalRecordStructureForSuccessfulCall();
+        givenUpdateTokenContextV2();
+        givenPricingUtilsContext();
+        given(updateLogic.validate(any())).willReturn(OK);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance());
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
+
+    @Test
     void failsWithWrongValidityForUpdateFungibleToken() {
         // given
         final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
@@ -269,6 +292,24 @@ class TokenUpdatePrecompileTest {
         tokenUpdatePrecompile
                 .when(() -> decodeUpdateTokenInfo(any(), any()))
                 .thenReturn(updateWrapper);
+        given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+    }
+
+    private void givenUpdateTokenContextV2() {
+        given(
+                        sigsVerifier.hasActiveAdminKey(
+                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                        infrastructureFactory.newTokenUpdateLogic(
+                                hederaTokenStore, wrappedLedgers, sideEffects))
+                .willReturn(updateLogic);
+        given(decoder.decodeUpdateTokenInfoV2(any(), any())).willReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
