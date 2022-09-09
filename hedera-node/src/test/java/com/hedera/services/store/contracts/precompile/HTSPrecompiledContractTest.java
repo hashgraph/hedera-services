@@ -64,6 +64,11 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFun
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
+import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV2;
+import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateWithFeesV2;
+import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateV2;
+import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFees;
+import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV2;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -636,8 +641,9 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForCreateFungibleTokenWithFeesV2() {
         // given
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2));
-        given(decoder.decodeFungibleCreateWithFeesV2(any(), any()))
-                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        tokenCreatePrecompile
+            .when(() -> decodeFungibleCreateWithFeesV2(any(), any()))
+            .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -648,8 +654,9 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForCreateNonFungibleTokenWithFeesV2() {
         // given
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2));
-        given(decoder.decodeNonFungibleCreateWithFeesV2(any(), any()))
-                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        tokenCreatePrecompile
+            .when(() -> decodeNonFungibleCreateWithFeesV2(any(), any()))
+            .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -660,8 +667,9 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForCreateFungibleTokenV2() {
         // given
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_V2));
-        given(decoder.decodeFungibleCreateV2(any(), any()))
-                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        tokenCreatePrecompile
+            .when(() -> decodeFungibleCreateV2(any(), any()))
+            .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -672,8 +680,9 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForCreateNonFungibleTokenV2() {
         // given
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2));
-        given(decoder.decodeNonFungibleCreateV2(any(), any()))
-                .willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+        tokenCreatePrecompile
+            .when(() -> decodeNonFungibleCreateV2(any(), any()))
+            .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 

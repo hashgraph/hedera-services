@@ -64,7 +64,7 @@ public class DecodingFacade {
                     + ","
                     + EXPIRY
                     + ")";
-    private static final String HEDERA_TOKEN_STRUCT_V2 =
+    public static final String HEDERA_TOKEN_STRUCT_V2 =
             "(string,string,address,string,bool,int64,bool,"
                     + TOKEN_KEY
                     + ARRAY_BRACKETS
