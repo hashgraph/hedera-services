@@ -41,6 +41,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
+import org.hyperledger.besu.evm.internal.Words;
 
 public class HederaTracer implements HederaOperationTracer {
 
@@ -158,18 +159,25 @@ public class HederaTracer implements HederaOperationTracer {
             final var exceptionalHaltReasonOptional = frame.getExceptionalHaltReason();
             if (exceptionalHaltReasonOptional.isPresent()) {
                 final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
-                action.setError(
-                        exceptionalHaltReason.getDescription().getBytes(StandardCharsets.UTF_8));
+                action.setError(exceptionalHaltReason.name().getBytes(StandardCharsets.UTF_8));
                 if (exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
-                    if (action.getRecipientAccount() != null) {
-                        action.setInvalidSolidityAddress(
-                                action.getRecipientAccount().toEvmAddress().toArrayUnsafe());
-                        action.setRecipientAccount(null);
-                    } else {
-                        action.setInvalidSolidityAddress(
-                                action.getRecipientContract().toEvmAddress().toArrayUnsafe());
-                        action.setRecipientContract(null);
-                    }
+                    final var syntheticInvalidAction =
+                            new SolidityAction(
+                                    CALL,
+                                    frame.getRemainingGas(),
+                                    null,
+                                    0,
+                                    frame.getMessageStackDepth() + 1);
+                    syntheticInvalidAction.setCallingContract(
+                            EntityId.fromAddress(
+                                    asMirrorAddress(frame.getContractAddress(), frame)));
+                    syntheticInvalidAction.setInvalidSolidityAddress(
+                            Words.toAddress(frame.getStackItem(1)).toArray());
+                    syntheticInvalidAction.setError(
+                            INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
+                    syntheticInvalidAction.setCallOperationType(
+                            toCallOperationType(frame.getCurrentOperation().getOpcode()));
+                    allActions.add(syntheticInvalidAction);
                 }
             } else {
                 action.setError(new byte[0]);
