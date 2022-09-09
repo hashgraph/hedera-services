@@ -98,7 +98,7 @@ public class RenewalHelper implements RenewalWork {
     }
 
     private EntityProcessResult renew(
-            final EntityNum account, final Instant cycleTime, final boolean isContract) {
+            final EntityNum account, final Instant now, final boolean isContract) {
         assertHasLastClassifiedAccount();
 
         final var payer = classifier.getPayerForLastClassified();
@@ -108,17 +108,16 @@ public class RenewalHelper implements RenewalWork {
         }
 
         final long reqPeriod = expired.getAutoRenewSecs();
-        final var assessment = fees.assessCryptoAutoRenewal(expired, reqPeriod, cycleTime, payer);
+        final var assessment = fees.assessCryptoAutoRenewal(expired, reqPeriod, now, payer);
 
         final long renewalPeriod = assessment.renewalPeriod();
         final long renewalFee = assessment.fee();
-        final var oldExpiry = expired.getExpiry();
 
         sideEffectsTracker.reset();
-        renewWith(renewalFee, renewalPeriod);
-
+        final var newExpiry = now.getEpochSecond() + renewalPeriod;
+        renewWith(renewalFee, newExpiry);
         recordsHelper.streamCryptoRenewal(
-                account, renewalFee, oldExpiry + renewalPeriod, isContract, payer.getKey());
+                account, renewalFee, newExpiry, isContract, payer.getKey());
         return DONE;
     }
 
@@ -127,7 +126,7 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @VisibleForTesting
-    void renewWith(long fee, long renewalPeriod) {
+    void renewWith(final long fee, final long newExpiry) {
         assertPayerAccountForRenewalCanAfford(fee);
 
         final var lastClassifiedAccount = classifier.getLastClassifiedNum().toGrpcAccountId();
@@ -135,8 +134,6 @@ public class RenewalHelper implements RenewalWork {
                 classifier.getPayerNumForLastClassified().toGrpcAccountId();
 
         accountsLedger.begin();
-        final long newExpiry =
-                ((long) accountsLedger.get(lastClassifiedAccount, EXPIRY)) + renewalPeriod;
         accountsLedger.set(lastClassifiedAccount, EXPIRY, newExpiry);
 
         nonHapiFeeCharging.chargeNonHapiFee(

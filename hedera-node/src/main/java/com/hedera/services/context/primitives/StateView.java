@@ -59,6 +59,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.state.virtual.ContractKey;
@@ -135,7 +136,7 @@ public class StateView {
 
     private BackingStore<TokenID, MerkleToken> backingTokens = null;
     private BackingStore<AccountID, MerkleAccount> backingAccounts = null;
-    private BackingStore<NftId, MerkleUniqueToken> backingNfts = null;
+    private BackingStore<NftId, UniqueTokenAdapter> backingNfts = null;
     private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = null;
 
     public StateView(
@@ -706,7 +707,7 @@ public class StateView {
         return backingAccounts;
     }
 
-    public BackingStore<NftId, MerkleUniqueToken> asReadOnlyNftStore() {
+    public BackingStore<NftId, UniqueTokenAdapter> asReadOnlyNftStore() {
         if (backingNfts == null) {
             backingNfts = new BackingNfts(stateChildren::uniqueTokens);
         }

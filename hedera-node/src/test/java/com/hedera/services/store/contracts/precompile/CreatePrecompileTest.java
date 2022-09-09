@@ -19,9 +19,13 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_A
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -76,7 +80,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
@@ -141,7 +145,7 @@ class CreatePrecompileTest {
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
-    @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
@@ -390,6 +394,116 @@ class CreatePrecompileTest {
         given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID)))
                 .willReturn(EntityId.fromGrpcAccountId(account));
         given(decoder.decodeNonFungibleCreateWithFees(eq(pretendArguments), any()))
+                .willReturn(tokenCreateWrapper);
+        given(accounts.get(any(), eq(KEY)))
+                .willReturn(
+                        new JContractIDKey(
+                                EntityIdUtils.contractIdFromEvmAddress(contractAddress)));
+
+        prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
+    }
+
+    @Test
+    void createFungibleV2HappyPathWorks() {
+        // test-specific preparations
+        final var tokenCreateWrapper =
+                createTokenCreateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(
+                                        1,
+                                        new KeyValueWrapper(
+                                                false,
+                                                EntityIdUtils.contractIdFromEvmAddress(
+                                                        contractAddress),
+                                                new byte[] {},
+                                                new byte[] {},
+                                                null)),
+                                new TokenKeyWrapper(
+                                        8,
+                                        new KeyValueWrapper(
+                                                false,
+                                                null,
+                                                new byte[] {},
+                                                new byte[] {},
+                                                EntityIdUtils.contractIdFromEvmAddress(
+                                                        contractAddress)))));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_V2));
+        given(decoder.decodeFungibleCreateV2(eq(pretendArguments), any()))
+                .willReturn(tokenCreateWrapper);
+
+        prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
+    }
+
+    @Test
+    void createFungibleWithFeesV2HappyPathWorks() {
+        // test-specific preparations
+        final var tokenCreateWrapper =
+                createTokenCreateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(
+                                        1,
+                                        new KeyValueWrapper(
+                                                false,
+                                                null,
+                                                new byte[] {},
+                                                new byte[] {},
+                                                EntityIdUtils.contractIdFromEvmAddress(
+                                                        contractAddress)))));
+        tokenCreateWrapper.setFixedFees(List.of(fixedFee));
+        tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
+        Bytes pretendArguments =
+                Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2));
+        given(decoder.decodeFungibleCreateWithFeesV2(eq(pretendArguments), any()))
+                .willReturn(tokenCreateWrapper);
+
+        prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
+    }
+
+    @Test
+    void createNonFungibleV2HappyPathWorks() {
+        // test-specific preparations
+        final var tokenCreateWrapper =
+                createNonFungibleTokenCreateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(
+                                        1,
+                                        new KeyValueWrapper(
+                                                false,
+                                                null,
+                                                new byte[] {},
+                                                new byte
+                                                        [JECDSASecp256k1Key
+                                                                .ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
+                                                null))));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2));
+        given(decoder.decodeNonFungibleCreateV2(eq(pretendArguments), any()))
+                .willReturn(tokenCreateWrapper);
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID)))
+                .willReturn(EntityId.fromGrpcAccountId(account));
+        given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
+
+        prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
+    }
+
+    @Test
+    void createNonFungibleV2WithFeesHappyPathWorks() {
+        // test-specific preparations
+        final var tokenCreateWrapper =
+                createNonFungibleTokenCreateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(
+                                        1,
+                                        new KeyValueWrapper(
+                                                true, null, new byte[] {}, new byte[] {}, null))));
+        tokenCreateWrapper.setFixedFees(List.of(fixedFee));
+        tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
+        Bytes pretendArguments =
+                Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2));
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID)))
+                .willReturn(EntityId.fromGrpcAccountId(account));
+        given(decoder.decodeNonFungibleCreateWithFeesV2(eq(pretendArguments), any()))
                 .willReturn(tokenCreateWrapper);
         given(accounts.get(any(), eq(KEY)))
                 .willReturn(
