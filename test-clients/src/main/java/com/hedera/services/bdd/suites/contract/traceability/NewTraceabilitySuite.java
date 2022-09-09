@@ -681,8 +681,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
                         contractCreate(REVERTING_CONTRACT, 6)
-                                .via(FIRST_CREATE_TXN)
-                                .advertisingCreation(),
+                                .via(FIRST_CREATE_TXN),
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
@@ -744,12 +743,6 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                         .copyFromUtf8(
                                                                                                 INVALID_SOLIDITY_ADDRESS
                                                                                                         .name()))
-                                                                        .setInvalidSolidityAddress(
-                                                                                ByteString.copyFrom(
-                                                                                        asSolidityAddress(
-                                                                                                0,
-                                                                                                0,
-                                                                                                0)))
                                                                         .setRecipientContract(
                                                                                 spec.registry()
                                                                                         .getContractId(
