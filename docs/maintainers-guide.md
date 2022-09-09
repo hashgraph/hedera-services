@@ -111,13 +111,6 @@ to format your code to avoid failing checks in CI pipeline.
 Release branch should be created from `develop` branch at the end of first sprint in the release cycle. This adheres to
 completing all the development targeted for the upcoming release in the first sprint of release cycle.
 
-To create a branch from `release-x`
-
-```
-git checkout release-x;
-git checkout -b hotfix-for-something
-```
-
 Once a release branch is created there _should not_ be any feature developments merged into `release` branch targeted 
 for that release.
 
