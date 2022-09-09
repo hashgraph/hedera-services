@@ -680,8 +680,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario21")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
-                        contractCreate(REVERTING_CONTRACT, 6)
-                                .via(FIRST_CREATE_TXN),
+                        contractCreate(REVERTING_CONTRACT, 6).via(FIRST_CREATE_TXN),
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
