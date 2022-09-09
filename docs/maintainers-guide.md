@@ -82,11 +82,6 @@ For eg: A Documentation issue that is targeted for the current sprint in 0.30.0 
 As per the development model, every developer should create a feature branch from `develop` branch for working on an 
 issue targeted for the current release. 
 
-```
-git checkout develop;
-git checkout -b new-feature
-```
-
 The `develop` branch should be up-to-date with all the features going into the next release.
 
 #### As a developer, I would like to create a branch to work on the feature NOT targeted for upcoming release
@@ -113,8 +108,15 @@ to format your code to avoid failing checks in CI pipeline.
 
 #### As a release engineer, I would like to create a release branch
 
-Release branch should be [created](#Creating a branch) from `develop` branch at the end of first sprint in the release cycle. This adheres to
+Release branch should be created from `develop` branch at the end of first sprint in the release cycle. This adheres to
 completing all the development targeted for the upcoming release in the first sprint of release cycle.
+
+To create a branch from `release-x`
+
+```
+git checkout release-x;
+git checkout -b hotfix-for-something
+```
 
 Once a release branch is created there _should not_ be any feature developments merged into `release` branch targeted 
 for that release.
@@ -123,7 +125,7 @@ The initial `alpha` tags will be tagged from the release branch created.
 
 #### As a developer, I would like to merge a bugfix/hotfix after release branch is created
 
-Once the release branch is created, only bugfixes or hotfixes should be merged into release branch. To do that, [create](#Creating a hotfix branch) 
+Once the release branch is created, only bugfixes or hotfixes should be merged into release branch. To do that, create
 a `hotfix` from the `release` branch. Once the fix is in the branch, open a PR to the release branch. Once 
 the fix is merged into `release` branch, it should be cherry-picked into the `develop` branch.
 
@@ -151,20 +153,4 @@ Eg: If the Issue number is `100` and the feature is targeted to be merged to `de
 If the Issue number is `100` and the hotfix is targeted to be merged to `main` branch, the branch name should be named as
 `0100-M-some-description`
 
-## Creating a feature branch
 
-To create a branch from `develop` 
-
-```
-git checkout develop;
-git checkout -b new-feature
-```
-
-## Creating a hotfix branch
-
-To create a branch from `release-x`
-
-```
-git checkout release-x;
-git checkout -b hotfix-for-something
-```
