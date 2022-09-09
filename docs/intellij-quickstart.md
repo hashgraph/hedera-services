@@ -19,7 +19,7 @@ Make sure you are using JDK17 as the project SDK:
     <img src="assets/jdk-17.png"/>
 </p>
 
-Open the Gradle tool window, and run `Tasks/build/assemble` in the root project:
+Run the Gradle `assemble` task in the root project (for example, via the IntelliJ Gradle tool window).
 
 This will both, 
 <ol>

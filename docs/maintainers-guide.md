@@ -4,7 +4,7 @@ This document outlines the process and keynotes for the core maintainers of this
 
 ## IntelliJ set up
 IntelliJ is used for most of the development lifecycle.
-Install IntelliJ using the [jetbrains toolbox](https://www.jetbrains.com/lp/toolbox/), instead of installing directly.
+Install IntelliJ using the [Jetbrains toolbox](https://www.jetbrains.com/lp/toolbox/), instead of installing directly.
 If you are on an M1/M2 chipset, select **.dmg (macOs Apple Silicon)**. Once you have the jetbrains toolbox installed, 
 open it and Install **Intellij IDEA Ultimate**.
 
@@ -57,10 +57,11 @@ Use the following tutorials to set up a GPG key.
     <img src="./assets/gitflow-branching-model.png"/>
 </p>
 
-As per this model, there will be 2 long-lived branches:
-1. `develop` - It will be the default branch for the developers who are contributing to the repository. It will always 
-be up-to-date with the latest development changes for the upcoming release.
-2. `main` - It will have the `production-ready` code in it. In most cases release engineering will be working with it.
+Note especially the roles of the `main` and `develop` branches:
+
+1. `develop` is the default branch, the target of active development, and should at all times should be a viable candidate 
+for the next release.
+2. `main` is a tightly-controlled branch that release engineering uses for final tags deployed to production.
 
 ### Creating issues on GitHub
 GitHub's [issues](https://github.com/hashgraph/hedera-services/issues) are used as the primary method for tracking
@@ -76,11 +77,24 @@ For eg: A Documentation issue that is targeted for the current sprint in 0.30.0 
     <img src="./assets/labels-on-issue.png"/>
 </p>
 
+## Naming convention for branches
+The branch names should have the issue number related to the feature/bugfix for easier tracking.
+The naming should be as follows:
+
+```IssueNo-targetBranchSymbol-short description of the issue```
+
+the `targetBranchSymbol` above is `D` for `develop` branch and `M` for main branch.
+
+Eg: If the Issue number is `100` and the feature is targeted to be merged to `develop` branch, the branch name should be named as
+`0100-D-some-description`
+If the Issue number is `100` and the hotfix is targeted to be merged to `main` branch, the branch name should be named as
+`0100-M-some-description`
+
 ### User Stories
 
 #### As a developer, I would like to create a branch to work on the feature for the upcoming release
 As per the development model, every developer should create a feature branch from `develop` branch for working on an 
-issue targeted for the current release. 
+issue targeted for the current release. The created branch should follow [naming conventions](#Naming convention for branches).
 
 The `develop` branch should be up-to-date with all the features going into the next release.
 
@@ -133,17 +147,5 @@ back into the current `release` branch(if the release branch is still open), and
 At the end of release cycle, release engineering will merge the release branch for current release into `main`and tag 
 release from the `main` branch.
 
-## Naming convention for branches
-The branch names should have the issue number related to the feature/bugfix for easier tracking. 
-The naming should be as follows:
-
-```IssueNo-targetBranchSymbol-short description of the issue```
-
-the `targetBranchSymbol` above is `D` for `develop` branch and `M` for main branch.
-
-Eg: If the Issue number is `100` and the feature is targeted to be merged to `develop` branch, the branch name should be named as
- `0100-D-some-description`
-If the Issue number is `100` and the hotfix is targeted to be merged to `main` branch, the branch name should be named as
-`0100-M-some-description`
 
 
