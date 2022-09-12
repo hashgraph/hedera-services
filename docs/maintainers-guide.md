@@ -1,5 +1,4 @@
 # Maintainers-Guide
-
 This document outlines the process and keynotes for the core maintainers of this repository .
 
 ## IntelliJ set up
@@ -51,7 +50,17 @@ Use the following tutorials to set up a GPG key.
   - [IntelliJ Official YouTube - GPG Commit Signing (10:59)](https://youtu.be/RBhz-8fZN9A?t=659)
 
 ## Development Model
-[GitFlow branching model](https://nvie.com/posts/a-successful-git-branching-model/) is used for the development life cycle.
+The Git Source Code Management(SCM) system treats branches as one of the fundamental constructs for supporting 
+concurrent development and assisting with merge conflict resolution. Due to the fundamental nature and flexibility 
+offered by Git branches, it is critical to have a consistent branching workflow in order to reduce merge conflicts and 
+support automation.
+
+Git commit tags play a critical role in Release Management strategies and automated releases. Tags are affected by
+branches and branch related operations; therefore, it is critical that the branching workflow incorporates a consistent 
+tagging strategy.
+
+[GitFlow branching model](https://nvie.com/posts/a-successful-git-branching-model/) is elected pattern for the 
+development life cycle.
 
 <p>
     <img src="./assets/gitflow-branching-model.png"/>
@@ -75,8 +84,9 @@ There are three types of issues:
   trivial or minor enhancements. If the feature is sufficiently large, complex or requires coordination among multiple
   Hedera projects, it should first go through the Hedera Improvement Proposal process.
 
-Any issue created should be added to [Services Sprint Tracking](https://github.com/orgs/hashgraph/projects/13) (if it is targeted to be addressed in the current sprint)
-and the associated project type in `Projects` tab. It should also have the targeted milestone set on it.
+Any issue created should be added to [Services Sprint Tracking](https://github.com/orgs/hashgraph/projects/13) 
+(if it is targeted to be addressed in the current sprint)and the associated project type in `Projects` tab. It should 
+also have the targeted milestone set on it.
 
 For eg: A Documentation issue that is targeted for the current sprint in 0.30.0 release should be associated to
 [Services Sprint Tracking](https://github.com/orgs/hashgraph/projects/13) and [Documentation](https://github.com/hashgraph/hedera-services/projects/32#card-85521291)
@@ -90,13 +100,13 @@ projects, with 0.30 milestone on it.
 
 #### As a developer, I would like to create a branch to work on the feature for the upcoming release
 As per the development model, every developer should create a feature branch from `develop` branch for working on an
-issue targeted for the current release. The created branch should follow [naming conventions](#naming-convention-for-branches).
+issue targeted for the current release. The created branch should follow [naming conventions](branch-naming-conventions.md).
 
 The `develop` branch should be up-to-date with all the features going into the next release.
 
 #### As a developer, I would like to create a branch to work on the feature NOT targeted for upcoming release
 As per the development model, every developer should create a feature branch to work from `develop` branch. The created
-branch should follow [naming conventions](#naming-convention-for-branches).
+branch should follow [naming conventions](branch-naming-conventions.md).
 But, the feature branch should NOT be merged into `develop` until the decision is made if the feature is going into upcoming
 release.
 
@@ -169,13 +179,3 @@ $ git config --global user.name "Joe Smith"
 $ git config --global user.email "joe.smith@example.com"
 $ git commit -s -m 'Update README'
 ```
-### Naming convention for branches
-The branch names should have the issue number related to the feature/bugfix for easier tracking.
-The naming should be as follows:
-
-```IssueNo-targetBranchSymbol-short description of the issue```
-the `targetBranchSymbol` above is `D` for `develop` branch and `M` for main branch.
-Eg: If the Issue number is `100` and the feature is targeted to be merged to `develop` branch, the branch name should be named as
-`0100-D-some-description`
-If the Issue number is `100` and the hotfix is targeted to be merged to `main` branch, the branch name should be named as
-`0100-M-some-description`
