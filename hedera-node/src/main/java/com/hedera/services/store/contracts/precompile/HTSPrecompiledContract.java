@@ -519,7 +519,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils);
-                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> new TokenUpdatePrecompile(
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO,
+                            AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2 -> new TokenUpdatePrecompile(
                             ledgers,
                             updater.aliases(),
                             decoder,
@@ -527,7 +528,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             sideEffectsTracker,
                             syntheticTxnFactory,
                             infrastructureFactory,
-                            precompilePricingUtils);
+                            precompilePricingUtils,
+                            functionId);
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_KEYS -> new TokenUpdateKeysPrecompile(
                             ledgers,
                             updater.aliases(),
@@ -711,8 +713,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                     case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
                             AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
                             AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
+                            AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES,
+                            AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2,
+                            AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2,
+                            AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2,
                             AbiConstants
-                                    .ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> (dynamicProperties
+                                    .ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2 -> (dynamicProperties
                                     .isHTSPrecompileCreateEnabled())
                             ? new TokenCreatePrecompile(
                                     ledgers,
