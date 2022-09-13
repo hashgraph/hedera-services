@@ -602,11 +602,13 @@ class MigrationRecordsManagerTest {
         verify(transactionContext, never())
                 .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
         assertThat(
-            logCaptor.warnLogs(),
-            contains(
-                Matchers.equalTo(
-                    "Contract 0.0." + contractNum + " has no bytecode in state - no migration"
-                        + " sidecar records will be published.")));
+                logCaptor.warnLogs(),
+                contains(
+                        Matchers.equalTo(
+                                "Contract 0.0."
+                                        + contractNum
+                                        + " has no bytecode in state - no migration"
+                                        + " sidecar records will be published.")));
     }
 
     @Test
