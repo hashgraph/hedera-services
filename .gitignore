@@ -78,9 +78,11 @@ hedera-node/*.csv
 hedera-node/swirlds.jar
 hedera-node/build.sh
 hedera-node/settingsUsed.txt
+hedera-node/hedera-mono-service/settingsUsed.txt
 hedera-node/data/accountBalances/
 hedera-node/database/
 hedera-node/databases/
+hedera-node/hedera-mono-service/data/
 hedera-node/data/apps/
 hedera-node/data/diskFs/
 hedera-node/data/config/*.bin
@@ -105,6 +107,7 @@ hedera-node/src/test/resources/upgrade
 hedera-node/forensics
 hedera-node/pgdata
 hedera-node/temp
+hedera-node/hedera-mono-service/MainNetStats0.csv
 !hedera-node/forensics/start-investigation.py
 hapi-proto/target/
 hapi-proto/src/main/proto/doc/index.html
