@@ -323,7 +323,7 @@ public class MigrationRecordsManager {
                             final var bytecodeSidecar =
                                     generateMigrationBytecodeSidecarFor(contractId);
                             if (bytecodeSidecar == null) {
-                                log.debug(
+                                log.warn(
                                         "Contract 0.0.{} has no bytecode in state - no migration"
                                                 + " sidecar records will be published.",
                                         contractId.getContractNum());

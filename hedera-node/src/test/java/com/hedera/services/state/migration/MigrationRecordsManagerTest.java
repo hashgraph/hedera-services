@@ -592,7 +592,8 @@ class MigrationRecordsManagerTest {
         accounts.clear();
         final var contract = mock(MerkleAccount.class);
         given(contract.isSmartContract()).willReturn(true);
-        final var entityNum = EntityNum.fromLong(1L);
+        final var contractNum = 1L;
+        final var entityNum = EntityNum.fromLong(contractNum);
         accounts.put(entityNum, contract);
 
         subject.publishMigrationRecords(now);
@@ -600,6 +601,12 @@ class MigrationRecordsManagerTest {
         assertTrue(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never())
                 .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
+        assertThat(
+            logCaptor.warnLogs(),
+            contains(
+                Matchers.equalTo(
+                    "Contract 0.0." + contractNum + " has no bytecode in state - no migration"
+                        + " sidecar records will be published.")));
     }
 
     @Test
