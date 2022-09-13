@@ -593,8 +593,10 @@ class MigrationRecordsManagerTest {
         final var contract = mock(MerkleAccount.class);
         given(contract.isSmartContract()).willReturn(true);
         final var contractNum = 1L;
-        final var entityNum = EntityNum.fromLong(contractNum);
-        accounts.put(entityNum, contract);
+        final var contractEntityNum = EntityNum.fromLong(contractNum);
+        accounts.put(contractEntityNum, contract);
+        given(entityAccess.fetchCodeIfPresent(contractEntityNum.toGrpcAccountId()))
+                .willReturn(null);
 
         subject.publishMigrationRecords(now);
 
