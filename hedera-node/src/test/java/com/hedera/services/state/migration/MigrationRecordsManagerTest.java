@@ -581,6 +581,28 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
+    void traceabilityMigrationDoesNotCreateMigrationRecordsForContractWithoutBytecodeInState() {
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        accounts.clear();
+        final var contract = mock(MerkleAccount.class);
+        given(contract.isSmartContract()).willReturn(true);
+        final var entityNum = EntityNum.fromLong(1L);
+        accounts.put(entityNum, contract);
+
+        subject.publishMigrationRecords(now);
+
+        assertTrue(subject.areTraceabilityRecordsStreamed());
+        verify(transactionContext, never())
+                .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
+    }
+
+    @Test
     void doesNotPerformOtherMigrationOnSubsequentCallsIfOnlyTraceabilityNeedsFinishing() {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false).willReturn(true);
