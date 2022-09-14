@@ -706,7 +706,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                 spec.registry()
                                                                                         .getContractId(
                                                                                                 REVERTING_CONTRACT))
-                                                                        .setGasUsed(285)
+                                                                        .setGasUsed(345)
                                                                         .setOutput(EMPTY)
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
@@ -741,7 +741,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                 CallOperationType
                                                                                         .OP_CALL)
                                                                         .setGas(979000)
-                                                                        .setGasUsed(32561)
+                                                                        .setGasUsed(32583)
                                                                         .setRecipientContract(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -764,7 +764,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                 spec.registry()
                                                                                         .getContractId(
                                                                                                 REVERTING_CONTRACT))
-                                                                        .setGas(931890)
+                                                                        .setGas(931868)
                                                                         .setCallDepth(1)
                                                                         .setGasUsed(201)
                                                                         .setRevertReason(EMPTY)
@@ -799,10 +799,10 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setGas(50)
                                                                         .setGasUsed(50)
                                                                         .setError(
-                                                                                ByteStringUtils
-                                                                                        .wrapUnsafely(
-                                                                                                "Out of gas"
-                                                                                                        .getBytes()))
+                                                                                ByteString
+                                                                                        .copyFromUtf8(
+                                                                                                INSUFFICIENT_GAS
+                                                                                                        .name()))
                                                                         .build())))),
                         expectFailedContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, REVERTING_CONTRACT, 6));
@@ -845,8 +845,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                        REVERTING_CONTRACT,
-                                                        "callingWrongAddress")
+                                                                REVERTING_CONTRACT,
+                                                                "callingWrongAddress")
                                                         .gas(1_000_000)
                                                         .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
                                                         .via(TRACEABILITY_TXN))))
