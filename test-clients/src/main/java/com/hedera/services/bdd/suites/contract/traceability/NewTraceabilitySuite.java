@@ -27,12 +27,14 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asSolidityAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.getNestedContractAddress;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;
 import static com.hedera.services.stream.proto.ContractActionType.CREATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -60,12 +62,9 @@ import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,15 +77,21 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path";
 
     private static SidecarWatcher sidecarWatcher;
-    private static CompletableFuture<Void> sidecarWatcherTask;
     private static final ByteString EMPTY = ByteStringUtils.wrapUnsafely(new byte[0]);
     private static final String TRACEABILITY = "Traceability";
+    private static final String REVERTING_CONTRACT = "RevertingContract";
     private static final String FIRST_CREATE_TXN = "FirstCreateTxn";
     private static final String SECOND_CREATE_TXN = "SecondCreateTxn";
     private static final String THIRD_CREATE_TXN = "ThirdCreateTxn";
     private static final String SECOND = "B";
     private static final String THIRD = "C";
     private static final String TRACEABILITY_TXN = "nestedtxn";
+    private static final String GET_ZERO_SLOT = "getSlot0";
+    private static final String GET_FIRST_SLOT = "getSlot1";
+    private static final String GET_SECOND_SLOT = "getSlot2";
+    private static final String SET_ZERO_SLOT = "setSlot0";
+    private static final String SET_FIRST_SLOT = "setSlot1";
+    private static final String SET_SECOND_SLOT = "setSlot2";
 
     public static void main(String... args) {
         new NewTraceabilitySuite().runSuiteSync();
@@ -95,18 +100,9 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     @SuppressWarnings("java:S5960")
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        if (true) {
-            // This suite cannot run in CI yet
-            return Collections.emptyList();
-        }
         try {
             initialize();
-            return List.of(
-                    traceabilityE2EScenario1(),
-                    vanillaBytecodeSidecar(),
-                    vanillaBytecodeSidecar2(),
-                    assertSidecars());
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.warn("An exception occurred initializing watch service", e);
             return List.of(
                     defaultHapiSpec("initialize")
@@ -119,6 +115,12 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                             "Watch service couldn't be"
                                                                     + " initialized."))));
         }
+        return List.of(
+                traceabilityE2EScenario1(),
+                traceabilityE2EScenario21(),
+                vanillaBytecodeSidecar(),
+                vanillaBytecodeSidecar2(),
+                assertSidecars());
     }
 
     private HapiApiSpec traceabilityE2EScenario1() {
@@ -364,7 +366,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot0"))
+                                                                                        GET_ZERO_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -386,7 +388,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot1",
+                                                                                        SET_FIRST_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         55)))
@@ -416,7 +418,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot2"))
+                                                                                        GET_SECOND_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -439,7 +441,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot2",
+                                                                                        SET_SECOND_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         143)))
@@ -498,7 +500,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot0"))
+                                                                                        GET_ZERO_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -553,7 +555,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot0",
+                                                                                        SET_ZERO_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         0)))
@@ -612,7 +614,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "getSlot1"))
+                                                                                        GET_FIRST_SLOT))
                                                                         .build(),
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
@@ -667,10 +669,110 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "setSlot1",
+                                                                                        SET_FIRST_SLOT,
                                                                                         BigInteger
                                                                                                 .valueOf(
                                                                                                         0)))
+                                                                        .build())))));
+    }
+
+    private HapiApiSpec traceabilityE2EScenario21() {
+        return defaultHapiSpec("traceabilityE2EScenario21")
+                .given(
+                        uploadInitCode(REVERTING_CONTRACT),
+                        contractCreate(REVERTING_CONTRACT, 6).via(FIRST_CREATE_TXN),
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        FIRST_CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(197000)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                REVERTING_CONTRACT))
+                                                                        .setGasUsed(345)
+                                                                        .setOutput(EMPTY)
+                                                                        .build())))),
+                        expectContractBytecodeSidecarFor(
+                                FIRST_CREATE_TXN, REVERTING_CONTRACT, REVERTING_CONTRACT, 6))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                REVERTING_CONTRACT,
+                                                                "callingWrongAddress")
+                                                        .gas(1_000_000)
+                                                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
+                                                        .via(TRACEABILITY_TXN))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        TRACEABILITY_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setGas(979000)
+                                                                        .setGasUsed(979000)
+                                                                        .setError(
+                                                                                ByteString
+                                                                                        .copyFromUtf8(
+                                                                                                INVALID_SOLIDITY_ADDRESS
+                                                                                                        .name()))
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                REVERTING_CONTRACT))
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        REVERTING_CONTRACT,
+                                                                                        "callingWrongAddress"))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                REVERTING_CONTRACT))
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallDepth(1)
+                                                                        .setGas(978487)
+                                                                        .setError(
+                                                                                ByteString
+                                                                                        .copyFromUtf8(
+                                                                                                INVALID_SOLIDITY_ADDRESS
+                                                                                                        .name()))
+                                                                        .setInvalidSolidityAddress(
+                                                                                ByteString.copyFrom(
+                                                                                        asSolidityAddress(
+                                                                                                0,
+                                                                                                0,
+                                                                                                0)))
                                                                         .build())))));
     }
 
@@ -757,18 +859,18 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     @SuppressWarnings("java:S5960")
     private HapiApiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
-                // send a dummy transaction to trigger externalization of last sidecars
                 .given(
-                        withOpContext(
-                                (spec, opLog) -> sidecarWatcher.finishWatchingAfterNextSidecar()),
+                        // send a dummy transaction to trigger externalization of last sidecars
                         cryptoCreate("externalizeFinalSidecars").delayBy(2000))
-                .when()
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    sidecarWatcher.waitUntilFinished();
+                                    sidecarWatcher.tearDown();
+                                }))
                 .then(
                         assertionsHold(
                                 (spec, assertLog) -> {
-                                    // wait until assertion thread is finished
-                                    sidecarWatcherTask.join();
-
                                     assertTrue(
                                             sidecarWatcher.thereAreNoMismatchedSidecars(),
                                             sidecarWatcher.getErrors());
@@ -881,27 +983,14 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                 });
     }
 
-    private static void initialize() throws IOException {
+    private static void initialize() throws Exception {
         final var recordStreamFolderPath =
                 HapiApiSpec.isRunningInCi()
                         ? HapiApiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY)
                         : HapiSpecSetup.getDefaultPropertySource()
                                 .get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY);
         sidecarWatcher = new SidecarWatcher(Paths.get(recordStreamFolderPath));
-        sidecarWatcher.prepareInfrastructure();
-        sidecarWatcherTask =
-                CompletableFuture.runAsync(
-                        () -> {
-                            try {
-                                sidecarWatcher.watch();
-                            } catch (IOException e) {
-                                log.fatal(
-                                        "An invalid sidecar file was generated from the consensus"
-                                                + " node.",
-                                        e);
-                            }
-                            sidecarWatcher.tearDown();
-                        });
+        sidecarWatcher.watch();
     }
 
     private ByteString encodeFunctionCall(
