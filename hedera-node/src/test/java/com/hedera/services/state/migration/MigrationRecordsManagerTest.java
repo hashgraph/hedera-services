@@ -581,6 +581,39 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
+    void traceabilityMigrationDoesNotCreateMigrationRecordsForContractWithoutBytecodeInState() {
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        accounts.clear();
+        final var contract = mock(MerkleAccount.class);
+        given(contract.isSmartContract()).willReturn(true);
+        final var contractNum = 1L;
+        final var contractEntityNum = EntityNum.fromLong(contractNum);
+        accounts.put(contractEntityNum, contract);
+        given(entityAccess.fetchCodeIfPresent(contractEntityNum.toGrpcAccountId()))
+                .willReturn(null);
+
+        subject.publishMigrationRecords(now);
+
+        assertTrue(subject.areTraceabilityRecordsStreamed());
+        verify(transactionContext, never())
+                .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(
+                        Matchers.equalTo(
+                                "Contract 0.0."
+                                        + contractNum
+                                        + " has no bytecode in state - no migration"
+                                        + " sidecar records will be published.")));
+    }
+
+    @Test
     void doesNotPerformOtherMigrationOnSubsequentCallsIfOnlyTraceabilityNeedsFinishing() {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false).willReturn(true);
