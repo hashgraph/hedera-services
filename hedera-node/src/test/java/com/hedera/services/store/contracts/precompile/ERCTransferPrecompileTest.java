@@ -29,13 +29,12 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.function.UnaryOperator;
 
 @ExtendWith(MockitoExtension.class)
 class ERCTransferPrecompileTest {
@@ -77,12 +76,7 @@ class ERCTransferPrecompileTest {
 
         assertThrows(
                 ArithmeticException.class,
-                () ->
-                        decodeERCTransfer(
-                                TRANSFER_LONG_OVERFLOWN,
-                                TOKEN_ID,
-                                accId,
-                                aliasResolver));
+                () -> decodeERCTransfer(TRANSFER_LONG_OVERFLOWN, TOKEN_ID, accId, aliasResolver));
     }
 
     @Test
