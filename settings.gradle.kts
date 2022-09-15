@@ -24,6 +24,7 @@ include(":hapi-utils")
 include(":hapi-fees")
 include(":hedera-node")
 include(":test-clients")
+include(":hedera-evm")
 
 // Enable Gradle Build Scan
 gradleEnterprise {
