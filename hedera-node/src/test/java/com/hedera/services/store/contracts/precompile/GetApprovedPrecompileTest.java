@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile.decodeGetApproved;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
@@ -29,6 +30,9 @@ class GetApprovedPrecompileTest {
     private static final Bytes GET_APPROVED_INPUT_ERC =
             Bytes.fromHexString(
                     "0x081812fc0000000000000000000000000000000000000000000000000000000000000001");
+    private static final Bytes GET_APPROVED_LONG_OVERFLOWN =
+            Bytes.fromHexString(
+                    "0x081812fc0000000000000000000000000000000000000000000000010000000000000001");
     private static final Bytes GET_APPROVED_INPUT_HAPI =
             Bytes.fromHexString(
                     "0x098f236600000000000000000000000000000000000000000000000000000000000012340000000000000000000000000000000000000000000000000000000000000001");
@@ -44,6 +48,13 @@ class GetApprovedPrecompileTest {
 
         assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
         assertEquals(1, decodedInput.serialNo());
+    }
+
+    @Test
+    void decodeGetApprovedShouldThrowOnSerialNoOverflown() {
+        assertThrows(
+                ArithmeticException.class,
+                () -> decodeGetApproved(GET_APPROVED_LONG_OVERFLOWN, TOKEN_ID));
     }
 
     @Test

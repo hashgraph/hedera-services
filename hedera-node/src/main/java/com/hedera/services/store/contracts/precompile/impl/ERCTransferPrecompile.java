@@ -173,8 +173,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         final var amount = (BigInteger) decodedArguments.get(1);
 
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-        addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValue());
-        addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValue());
+        addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValueExact());
+        addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValueExact());
 
         return Collections.singletonList(
                 new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
@@ -199,19 +199,19 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                     new ArrayList<>();
             final var amount = (BigInteger) decodedArguments.get(2);
 
-            addSignedAdjustment(fungibleTransfers, token, to, amount.longValue());
+            addSignedAdjustment(fungibleTransfers, token, to, amount.longValueExact());
 
             if (from.equals(operatorId.toGrpcAccountId())) {
-                addSignedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+                addSignedAdjustment(fungibleTransfers, token, from, -amount.longValueExact());
             } else {
-                addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValue());
+                addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValueExact());
             }
 
             return Collections.singletonList(
                     new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
         } else {
             final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
-            final var serialNo = ((BigInteger) decodedArguments.get(2)).longValue();
+            final var serialNo = ((BigInteger) decodedArguments.get(2)).longValueExact();
             final var ownerId = ledgers.ownerIfPresent(NftId.fromGrpc(token, serialNo));
 
             if (operatorId.equals(ownerId)) {

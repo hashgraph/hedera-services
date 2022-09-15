@@ -120,6 +120,6 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
                         : convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final var serialNo = (BigInteger) decodedArguments.get(offset);
-        return new GetApprovedWrapper(tId, serialNo.longValue());
+        return new GetApprovedWrapper(tId, serialNo.longValueExact());
     }
 }

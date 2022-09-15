@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile.decodeOwnerOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
@@ -29,11 +30,19 @@ class OwnerOfPrecompileTest {
     private static final Bytes OWNER_OF_INPUT =
             Bytes.fromHexString(
                     "0x6352211e0000000000000000000000000000000000000000000000000000000000000001");
+    private static final Bytes OWNER_OF_LONG_OVERFLOWN =
+            Bytes.fromHexString(
+                    "0x6352211e0000000000000000000000000000000000000000000000010000000000000001");
 
     @Test
     void decodeOwnerOfInput() {
         final var decodedInput = decodeOwnerOf(OWNER_OF_INPUT);
 
         assertEquals(1, decodedInput.serialNo());
+    }
+
+    @Test
+    void decodeOwnerOfShouldThrowOnTokenIdOverflown() {
+        assertThrows(ArithmeticException.class, () -> decodeOwnerOf(OWNER_OF_LONG_OVERFLOWN));
     }
 }
