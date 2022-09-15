@@ -350,6 +350,34 @@ class HederaTracerTest {
     }
 
     @Test
+    void clearsRecipientOfExceptionallyHaltedCreateFrame() {
+        // given
+        givenTracedExecutingFrame(Type.CONTRACT_CREATION);
+        subject.init(messageFrame);
+        // when
+        given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
+        subject.traceExecution(messageFrame, eo);
+        // then
+        final var solidityAction = subject.getActions().get(0);
+        assertNull(solidityAction.getRecipientAccount());
+        assertNull(solidityAction.getRecipientContract());
+    }
+
+    @Test
+    void clearsRecipientOfRevertedCreateFrame() {
+        // given
+        givenTracedExecutingFrame(Type.CONTRACT_CREATION);
+        subject.init(messageFrame);
+        // when
+        given(messageFrame.getState()).willReturn(State.REVERT);
+        subject.traceExecution(messageFrame, eo);
+        // then
+        final var solidityAction = subject.getActions().get(0);
+        assertNull(solidityAction.getRecipientAccount());
+        assertNull(solidityAction.getRecipientContract());
+    }
+
+    @Test
     void finalizesPrecompileCallAsExpected() {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
