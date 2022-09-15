@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 class BytesComparatorTest {
@@ -28,6 +29,12 @@ class BytesComparatorTest {
         final var first = ByteString.copyFromUtf8("somebytes1").toByteArray();
         final var second = ByteString.copyFromUtf8("somebytes2").toByteArray();
         final var differentSize = ByteString.copyFromUtf8("differentsize").toByteArray();
+        final var smallestAddress =
+                Address.fromHexString("0x000000000000000000000000000000000000077e");
+        final var intermediateAddress =
+                Address.fromHexString("0x0000000000000000000000000000000000000780");
+        final var biggestAddress =
+                Address.fromHexString("0x0000000000000000000000000000000000600000");
 
         var result = subject.compare(Bytes.of(first), Bytes.of(second));
         assertEquals(-1, result);
@@ -45,6 +52,15 @@ class BytesComparatorTest {
         assertEquals(0, result);
 
         result = subject.compare(Bytes.of(differentSize), Bytes.of(first));
+        assertEquals(1, result);
+
+        result = subject.compare(smallestAddress, intermediateAddress);
+        assertEquals(-1, result);
+
+        result = subject.compare(biggestAddress, intermediateAddress);
+        assertEquals(1, result);
+
+        result = subject.compare(biggestAddress, smallestAddress);
         assertEquals(1, result);
     }
 }
