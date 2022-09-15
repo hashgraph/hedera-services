@@ -5,6 +5,6 @@ import java.time.Instant;
 
 public interface LivePricesSource {
 
-  public long currentGasPrice(final Instant now, final HederaFunctionality function)
+  public long currentGasPrice(final Instant now, final HederaFunctionality function);
 
 }

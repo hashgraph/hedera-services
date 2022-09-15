@@ -27,6 +27,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
@@ -103,10 +104,8 @@ abstract class EvmTxProcessor {
     this.gasCalculator = gasCalculator;
 
     operationRegistry = new OperationRegistry();
-    registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(configurationProperties.getChainId()));
-    operationRegistry.put(new HederaSLoadOperation(gasCalculator));
-    operationRegistry.put(new HederaSStoreOperation(1, gasCalculator));
-    operationRegistry.put(new HederaBalanceOperation(gasCalculator, provideAddressValidator(precompiledContractMap)));
+    // We always register the latest ChainIdOperation before any execute(), so use ZERO here
+    registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
     hederaOperations.forEach(operationRegistry::put);
 
     final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
@@ -150,7 +149,7 @@ abstract class EvmTxProcessor {
    * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
    */
   public TransactionProcessingResult execute(
-      final AccountDto sender,
+      final Account sender,
       final Address receiver,
       final long gasPrice,
       final long gasLimit,
@@ -162,7 +161,7 @@ abstract class EvmTxProcessor {
       final Address mirrorReceiver,
       final BigInteger userOfferedGasPrice,
       final long maxGasAllowanceInTinybars,
-      final AccountDto relayer
+      final Account relayer
   ) {
     ensureLatestChainId();
     final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
