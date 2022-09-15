@@ -35,6 +35,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.function.UnaryOperator;
+
 @ExtendWith(MockitoExtension.class)
 class ERCTransferPrecompileTest {
     private static final Bytes TRANSFER_INPUT =
@@ -70,14 +72,17 @@ class ERCTransferPrecompileTest {
 
     @Test
     void decodeTransferShouldThrowOnAmountOverflown() {
+        final var accId = AccountID.getDefaultInstance();
+        final UnaryOperator<byte[]> aliasResolver = identity();
+
         assertThrows(
                 ArithmeticException.class,
                 () ->
                         decodeERCTransfer(
                                 TRANSFER_LONG_OVERFLOWN,
                                 TOKEN_ID,
-                                AccountID.getDefaultInstance(),
-                                identity()));
+                                accId,
+                                aliasResolver));
     }
 
     @Test
@@ -159,6 +164,8 @@ class ERCTransferPrecompileTest {
     @Test
     void decodeTransferFromShouldThrowOnAmountOverflown() {
         final var fromOp = new EntityId(0, 0, 1450);
+        final UnaryOperator<byte[]> aliasResolver = identity();
+
         assertThrows(
                 ArithmeticException.class,
                 () ->
@@ -166,7 +173,7 @@ class ERCTransferPrecompileTest {
                                 TRANSFER_FROM_LONG_OVERFLOWN,
                                 TOKEN_ID,
                                 true,
-                                identity(),
+                                aliasResolver,
                                 ledgers,
                                 fromOp));
     }
