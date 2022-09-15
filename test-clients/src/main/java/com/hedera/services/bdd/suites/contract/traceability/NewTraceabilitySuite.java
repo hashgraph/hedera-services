@@ -16,7 +16,10 @@
 package com.hedera.services.bdd.suites.contract.traceability;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -53,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -121,6 +125,10 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     private static final String SET_ZERO_SLOT = "setSlot0";
     private static final String SET_FIRST_SLOT = "setSlot1";
     private static final String SET_SECOND_SLOT = "setSlot2";
+    private static final String DELEGATE_CALL_ADDRESS_GET_SLOT_2 = "delegateCallAddressGetSlot2";
+    private static final String AUTO_ACCOUNT_TXN = "autoAccount";
+    private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
+    private static final String RUNTIME_CODE = "runtimeBytecode";
 
     public static void main(String... args) {
         new NewTraceabilitySuite().runSuiteSync();
@@ -159,6 +167,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                 traceabilityE2EScenario12(),
                 traceabilityE2EScenario13(),
                 traceabilityE2EScenario14(),
+                traceabilityE2EScenario15(),
                 traceabilityE2EScenario16(),
                 traceabilityE2EScenario17(),
                 traceabilityE2EScenario18(),
@@ -1619,7 +1628,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "delegateCallAddressGetSlot2",
+                                                                                        DELEGATE_CALL_ADDRESS_GET_SLOT_2,
                                                                                         hexedSolidityAddressToHeadlongAddress(
                                                                                                 getNestedContractAddress(
                                                                                                         TRACEABILITY
@@ -2268,7 +2277,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "delegateCallAddressGetSlot2",
+                                                                                        DELEGATE_CALL_ADDRESS_GET_SLOT_2,
                                                                                         hexedSolidityAddressToHeadlongAddress(
                                                                                                 getNestedContractAddress(
                                                                                                         TRACEABILITY
@@ -3083,7 +3092,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .setInput(
                                                                                 encodeFunctionCall(
                                                                                         TRACEABILITY,
-                                                                                        "delegateCallAddressGetSlot2",
+                                                                                        DELEGATE_CALL_ADDRESS_GET_SLOT_2,
                                                                                         hexedSolidityAddressToHeadlongAddress(
                                                                                                 getNestedContractAddress(
                                                                                                         TRACEABILITY
@@ -5740,23 +5749,23 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     private HapiApiSpec traceabilityE2EScenario12() {
         final var contract = "CreateTrivial";
         final var scenario12 = "traceabilityE2EScenario12";
-        final var firstTxn = "firstTxn";
         return defaultHapiSpec(scenario12)
                 .given(uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
-                                .via(firstTxn)
+                                .via(TRACEABILITY_TXN)
                                 .inlineInitCode(
                                         extractBytecodeUnhexed(getResourcePath(contract, ".bin"))))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final HapiGetTxnRecord txnRecord = getTxnRecord(firstTxn);
+                                    final HapiGetTxnRecord txnRecord =
+                                            getTxnRecord(TRACEABILITY_TXN);
                                     allRunFor(
                                             spec,
                                             txnRecord,
                                             expectContractActionSidecarFor(
-                                                    firstTxn,
+                                                    TRACEABILITY_TXN,
                                                     List.of(
                                                             ContractAction.newBuilder()
                                                                     .setCallType(CREATE)
@@ -5776,23 +5785,23 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                     .setOutput(EMPTY)
                                                                     .build())));
                                 }),
-                        expectContractBytecodeSidecarSansInitcodeFor(firstTxn, contract));
+                        expectContractBytecodeSidecarSansInitcodeFor(TRACEABILITY_TXN, contract));
     }
 
     HapiApiSpec traceabilityE2EScenario13() {
         AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("traceabilityE2EScenario13")
                 .given(
-                        overriding("contracts.chainId", "298"),
+                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TXN),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .exposingIdTo(accountIDAtomicReference::set),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TXN).andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT))
                 .when(
                         ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -5834,22 +5843,20 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                 }),
                         expectContractBytecodeWithMinimalFieldsSidecarFor(
                                 FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT),
-                        resetToDefault("contracts.chainId"));
+                        resetToDefault(CHAIN_ID_PROPERTY));
     }
 
     private HapiApiSpec traceabilityE2EScenario14() {
-        final var PAY_RECEIVABLE_CONTRACT = "PayReceivable";
-        final var txn = "payTxn";
         return defaultHapiSpec("traceabilityE2EScenario14")
                 .given(
-                        overriding("contracts.chainId", "298"),
+                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                                .via(AUTO_ACCOUNT_TXN),
+                        getTxnRecord(AUTO_ACCOUNT_TXN).andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT))
                 .when(
                         ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -5860,7 +5867,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                 .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(SUCCESS)
-                                .via(txn))
+                                .via(TRACEABILITY_TXN))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -5873,7 +5880,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                     allRunFor(
                                             spec,
                                             expectContractActionSidecarFor(
-                                                    txn,
+                                                    TRACEABILITY_TXN,
                                                     List.of(
                                                             ContractAction.newBuilder()
                                                                     .setCallType(CREATE)
@@ -5892,9 +5899,232 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                     .setOutput(EMPTY)
                                                                     .build())),
                                             expectContractBytecodeWithMinimalFieldsSidecarFor(
-                                                    txn, PAY_RECEIVABLE_CONTRACT));
+                                                    TRACEABILITY_TXN, PAY_RECEIVABLE_CONTRACT));
                                 }),
-                        resetToDefault("contracts.chainId"));
+                        resetToDefault(CHAIN_ID_PROPERTY));
+    }
+
+    HapiApiSpec traceabilityE2EScenario15() {
+        final String GET_BYTECODE = "getBytecode";
+        final String DEPLOY = "deploy";
+        final var CREATE_2_TXN = "Create2Txn";
+        final var CREATE_TXN = "CreateTxn";
+        final var tcValue = 1_234L;
+        final var contract = "Create2Factory";
+        final var salt = 42;
+        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+        final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+        final AtomicReference<byte[]> bytecodeFromMirror = new AtomicReference<>();
+        final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
+        final String specName = "traceabilityE2EScenario15";
+        return defaultHapiSpec(specName)
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                                .via(CREATE_TXN)
+                                .exposingNumTo(
+                                        num ->
+                                                factoryEvmAddress.set(
+                                                        asHexedSolidityAddress(0, 0, num))),
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(197000)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                contract))
+                                                                        .setGasUsed(587)
+                                                                        .setOutput(EMPTY)
+                                                                        .build())))),
+                        expectContractBytecodeSidecarFor(CREATE_TXN, contract, contract))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCallLocal(
+                                                        contract,
+                                                        GET_BYTECODE,
+                                                        factoryEvmAddress.get(),
+                                                        salt)
+                                                .exposingTypedResultsTo(
+                                                        results -> {
+                                                            final var tcInitcode =
+                                                                    (byte[]) results[0];
+                                                            testContractInitcode.set(tcInitcode);
+                                                            log.info(
+                                                                    "Contract reported TestContract"
+                                                                        + " initcode is {} bytes",
+                                                                    tcInitcode.length);
+                                                        })),
+                        sourcing(
+                                () ->
+                                        contractCallLocal(
+                                                        contract,
+                                                        "getAddress",
+                                                        testContractInitcode.get(),
+                                                        salt)
+                                                .exposingTypedResultsTo(
+                                                        results -> {
+                                                            log.info(
+                                                                    "Contract reported address"
+                                                                            + " results {}",
+                                                                    results);
+                                                            final var expectedAddrBytes =
+                                                                    (byte[]) results[0];
+                                                            final var hexedAddress =
+                                                                    hex(expectedAddrBytes);
+                                                            log.info(
+                                                                    "  --> Expected CREATE2 address"
+                                                                            + " is {}",
+                                                                    hexedAddress);
+                                                            expectedCreate2Address.set(
+                                                                    hexedAddress);
+                                                        })),
+                        overriding("contracts.allowCreate2", "true"),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contract,
+                                                        DEPLOY,
+                                                        testContractInitcode.get(),
+                                                        salt)
+                                                .payingWith(GENESIS)
+                                                .gas(4_000_000L)
+                                                .sending(tcValue)
+                                                .via(CREATE_2_TXN)),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var parentId = spec.registry().getContractId(contract);
+                                    final var childId =
+                                            ContractID.newBuilder()
+                                                    .setContractNum(parentId.getContractNum() + 1L)
+                                                    .build();
+                                    mirrorLiteralId.set("0.0." + childId.getContractNum());
+                                    final var topLevelCallTxnRecord =
+                                            getTxnRecord(CREATE_2_TXN).andAllChildRecords();
+                                    final var hapiGetContractBytecode =
+                                            getContractBytecode(mirrorLiteralId.get())
+                                                    .exposingBytecodeTo(bytecodeFromMirror::set);
+                                    allRunFor(
+                                            spec,
+                                            topLevelCallTxnRecord,
+                                            expectContractStateChangesSidecarFor(
+                                                    CREATE_2_TXN,
+                                                    List.of(
+                                                            StateChange.stateChangeFor(
+                                                                            asContractString(
+                                                                                    childId))
+                                                                    .withStorageChanges(
+                                                                            StorageChange
+                                                                                    .readAndWritten(
+                                                                                            formattedAssertionValue(
+                                                                                                    0L),
+                                                                                            formattedAssertionValue(
+                                                                                                    0L),
+                                                                                            ByteStringUtils
+                                                                                                    .wrapUnsafely(
+                                                                                                            Bytes
+                                                                                                                    .fromHexString(
+                                                                                                                            factoryEvmAddress
+                                                                                                                                    .get())
+                                                                                                                    .trimLeadingZeros()
+                                                                                                                    .toArrayUnsafe())),
+                                                                            StorageChange
+                                                                                    .readAndWritten(
+                                                                                            formattedAssertionValue(
+                                                                                                    1L),
+                                                                                            formattedAssertionValue(
+                                                                                                    0L),
+                                                                                            formattedAssertionValue(
+                                                                                                    salt))))),
+                                            expectContractActionSidecarFor(
+                                                    CREATE_2_TXN,
+                                                    List.of(
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CALL)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CALL)
+                                                                    .setCallingAccount(
+                                                                            TxnUtils.asId(
+                                                                                    GENESIS, spec))
+                                                                    .setGas(3979000)
+                                                                    .setValue(tcValue)
+                                                                    .setRecipientContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            contract))
+                                                                    .setGasUsed(80135)
+                                                                    .setOutput(EMPTY)
+                                                                    .setInput(
+                                                                            encodeFunctionCall(
+                                                                                    contract,
+                                                                                    DEPLOY,
+                                                                                    testContractInitcode
+                                                                                            .get(),
+                                                                                    BigInteger
+                                                                                            .valueOf(
+                                                                                                    salt)))
+                                                                    .build(),
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CREATE)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CREATE2)
+                                                                    .setCallingContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            contract))
+                                                                    .setGas(3883883)
+                                                                    .setRecipientContract(childId)
+                                                                    .setGasUsed(44936)
+                                                                    .setValue(tcValue)
+                                                                    .setOutput(EMPTY)
+                                                                    .setCallDepth(1)
+                                                                    .build())),
+                                            hapiGetContractBytecode);
+                                    sidecarWatcher.addExpectedSidecar(
+                                            new ExpectedSidecar(
+                                                    specName,
+                                                    TransactionSidecarRecord.newBuilder()
+                                                            .setConsensusTimestamp(
+                                                                    topLevelCallTxnRecord
+                                                                            .getChildRecord(0)
+                                                                            .getConsensusTimestamp())
+                                                            .setBytecode(
+                                                                    ContractBytecode.newBuilder()
+                                                                            .setContractId(
+                                                                                    asContract(
+                                                                                            mirrorLiteralId
+                                                                                                    .get()))
+                                                                            .setInitcode(
+                                                                                    ByteStringUtils
+                                                                                            .wrapUnsafely(
+                                                                                                    testContractInitcode
+                                                                                                            .get()))
+                                                                            .setRuntimeBytecode(
+                                                                                    ByteStringUtils
+                                                                                            .wrapUnsafely(
+                                                                                                    bytecodeFromMirror
+                                                                                                            .get()))
+                                                                            .build())
+                                                            .build()));
+                                }))
+                .then();
     }
 
     HapiApiSpec traceabilityE2EScenario16() {
@@ -6192,15 +6422,15 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         final var transferTxn = "payTxn";
         return defaultHapiSpec("traceabilityE2EScenario19")
                 .given(
-                        overriding("contracts.chainId", "298"),
+                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords())
+                                .via(AUTO_ACCOUNT_TXN),
+                        getTxnRecord(AUTO_ACCOUNT_TXN).andAllChildRecords())
                 .when(
                         ethereumCryptoTransfer(RECEIVER, hbarsToSend)
                                 .type(EthTxData.EthTransactionType.EIP1559)
@@ -6243,7 +6473,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                     .setOutput(EMPTY)
                                                                     .build())));
                                 }),
-                        resetToDefault("contracts.chainId"));
+                        resetToDefault(CHAIN_ID_PROPERTY));
     }
 
     private HapiApiSpec traceabilityE2EScenario20() {
@@ -6546,9 +6776,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         return withOpContext(
                 (spec, opLog) -> {
                     final var txnRecord = getTxnRecord(contractCreateTxn);
-                    final String runtimeBytecode = "runtimeBytecode";
                     final var contractBytecode =
-                            getContractBytecode(contractName).saveResultTo(runtimeBytecode);
+                            getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
                     allRunFor(spec, txnRecord, contractBytecode);
                     final var consensusTimestamp =
                             txnRecord.getResponseRecord().getConsensusTimestamp();
@@ -6570,7 +6799,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                     ByteString.copyFrom(
                                                                             spec.registry()
                                                                                     .getBytes(
-                                                                                            runtimeBytecode)))
+                                                                                            RUNTIME_CODE)))
                                                             .build())
                                             .build()));
                 });
@@ -6605,9 +6834,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         return withOpContext(
                 (spec, opLog) -> {
                     final var txnRecord = getTxnRecord(contractCreateTxn).andAllChildRecords();
-                    final String runtimeBytecode = "runtimeBytecode";
                     final var contractBytecode =
-                            getContractBytecode(contractName).saveResultTo(runtimeBytecode);
+                            getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
                     allRunFor(spec, txnRecord, contractBytecode);
                     final var consensusTimestamp =
                             txnRecord.getChildRecord(0).getConsensusTimestamp();
@@ -6627,7 +6855,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                     ByteString.copyFrom(
                                                                             spec.registry()
                                                                                     .getBytes(
-                                                                                            runtimeBytecode)))
+                                                                                            RUNTIME_CODE)))
                                                             .build())
                                             .build()));
                 });
@@ -6638,9 +6866,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         return withOpContext(
                 (spec, opLog) -> {
                     final var txnRecord = getTxnRecord(contractCreateTxn);
-                    final String runtimeBytecode = "runtimeBytecode";
                     final var contractBytecode =
-                            getContractBytecode(contractName).saveResultTo(runtimeBytecode);
+                            getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
                     allRunFor(spec, txnRecord, contractBytecode);
                     final var consensusTimestamp =
                             txnRecord.getResponseRecord().getConsensusTimestamp();
@@ -6660,7 +6887,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                     ByteString.copyFrom(
                                                                             spec.registry()
                                                                                     .getBytes(
-                                                                                            runtimeBytecode)))
+                                                                                            RUNTIME_CODE)))
                                                             .build())
                                             .build()));
                 });
