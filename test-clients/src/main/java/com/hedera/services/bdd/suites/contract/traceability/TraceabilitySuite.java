@@ -101,8 +101,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.CallTransaction;
 
-public class NewTraceabilitySuite extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(NewTraceabilitySuite.class);
+public class TraceabilitySuite extends HapiApiSuite {
+    private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
     private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path";
 
     private static SidecarWatcher sidecarWatcher;
@@ -131,7 +131,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     private static final String RUNTIME_CODE = "runtimeBytecode";
 
     public static void main(String... args) {
-        new NewTraceabilitySuite().runSuiteSync();
+        new TraceabilitySuite().runSuiteSync();
     }
 
     @SuppressWarnings("java:S5960")
