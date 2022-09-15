@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -67,6 +66,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
+    private Optional<ByteString> inlineInitcode = Optional.empty();
 
     public HapiContractCreate exposingNumTo(LongConsumer obs) {
         newNumObserver = Optional.of(obs);
@@ -90,6 +90,11 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 
     public HapiContractCreate advertisingCreation() {
         advertiseCreation = true;
+        return this;
+    }
+
+    public HapiContractCreate inlineInitCode(final ByteString initCode) {
+        inlineInitcode = Optional.of(initCode);
         return this;
     }
 
@@ -276,11 +281,13 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         if (!omitAdminKey && !useDeprecatedAdminKey) {
             generateAdminKey(spec);
         }
-        if (bytecodeFileFn.isPresent()) {
-            bytecodeFile = Optional.of(bytecodeFileFn.get().get());
-        }
-        if (!bytecodeFile.isPresent()) {
-            setBytecodeToDefaultContract(spec);
+        if (inlineInitcode.isEmpty()) {
+            if (bytecodeFileFn.isPresent()) {
+                bytecodeFile = Optional.of(bytecodeFileFn.get().get());
+            }
+            if (!bytecodeFile.isPresent()) {
+                setBytecodeToDefaultContract(spec);
+            }
         }
         Optional<byte[]> params;
         if (explicitHexedParams.isPresent()) {
@@ -293,7 +300,6 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
                                             .encodeArguments(args.get()))
                             : Optional.empty();
         }
-        FileID bytecodeFileId = TxnUtils.asFileId(bytecodeFile.get(), spec);
         ContractCreateTransactionBody opBody =
                 spec.txns()
                         .<ContractCreateTransactionBody, ContractCreateTransactionBody.Builder>body(
@@ -311,7 +317,12 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
                                     } else {
                                         b.setAdminKey(adminKey);
                                     }
-                                    b.setFileID(bytecodeFileId);
+                                    inlineInitcode.ifPresentOrElse(
+                                            b::setInitcode,
+                                            () ->
+                                                    b.setFileID(
+                                                            TxnUtils.asFileId(
+                                                                    bytecodeFile.get(), spec)));
                                     autoRenewPeriodSecs.ifPresent(
                                             p ->
                                                     b.setAutoRenewPeriod(
