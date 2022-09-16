@@ -15,8 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -24,42 +23,46 @@ import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class EntityAutoExpiry {
-    private static final Logger log = LogManager.getLogger(EntityAutoExpiry.class);
-
     private final long firstEntityToScan;
     private final ExpiryThrottle expiryThrottle;
-    private final AutoExpiryCycle autoExpiryCycle;
+    private final ExpiryProcess expiryProcess;
     private final NetworkCtxManager networkCtxManager;
     private final GlobalDynamicProperties dynamicProps;
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final Supplier<SequenceNumber> seqNo;
     private final ConsensusTimeTracker consensusTimeTracker;
+    private final ExpiryStats expiryStats;
+
+    private int maxIdsToScan;
+    private int maxEntitiesToProcess;
 
     @Inject
     public EntityAutoExpiry(
+            final ExpiryStats expiryStats,
             final HederaNumbers hederaNumbers,
             final ExpiryThrottle expiryThrottle,
-            final AutoExpiryCycle autoExpiryCycle,
+            final ExpiryProcess expiryProcess,
             final GlobalDynamicProperties dynamicProps,
             final NetworkCtxManager networkCtxManager,
             final Supplier<MerkleNetworkContext> networkCtx,
             final ConsensusTimeTracker consensusTimeTracker,
             final Supplier<SequenceNumber> seqNo) {
         this.seqNo = seqNo;
+        this.expiryStats = expiryStats;
         this.networkCtx = networkCtx;
         this.networkCtxManager = networkCtxManager;
         this.expiryThrottle = expiryThrottle;
-        this.autoExpiryCycle = autoExpiryCycle;
+        this.expiryProcess = expiryProcess;
         this.dynamicProps = dynamicProps;
         this.consensusTimeTracker = consensusTimeTracker;
 
@@ -72,68 +75,63 @@ public class EntityAutoExpiry {
         networkCtx.get().syncExpiryThrottle(expiryThrottle);
     }
 
-    private void executeInternal(final Instant currentConsTime) {
-        if (!dynamicProps.shouldAutoRenewSomeEntityType()) {
-            return;
-        }
-
+    private void executeInternal(final Instant now) {
         final long wrapNum = seqNo.get().current();
-        if (wrapNum == firstEntityToScan) {
-            /* No non-system entities in the system, can abort */
-            return;
-        }
-
-        if (!consensusTimeTracker.hasMoreStandaloneRecordTime()) {
-            log.debug(
-                    "Auto-renew scan skipped because there are no more standalone record times. {}",
-                    consensusTimeTracker);
+        // If all other conditions are met, has a side effect of draining
+        // the expiry throttle bucket from all the time elapsed until now
+        if (!canDoWorkGiven(wrapNum, now)) {
             return;
         }
 
         final var curNetworkCtx = networkCtx.get();
-        final int maxEntitiesToTouch = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
-        final int maxEntitiesToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
+        maxIdsToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
+        maxEntitiesToProcess = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
         if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
+            expiryStats.includeIdsScannedInLastConsSec(curNetworkCtx.idsScannedThisSecond());
             curNetworkCtx.clearAutoRenewSummaryCounts();
         }
-        autoExpiryCycle.beginCycle(currentConsTime);
 
-        int i = 1;
-        int entitiesTouched = 0;
+        int idsScanned = 0;
+        int entitiesProcessed = 0;
         long scanNum = curNetworkCtx.lastScannedEntity();
         boolean advanceScan = true;
-        EntityProcessResult result;
-        log.debug(
-                "Auto-renew scan beginning from last DONE @ {}, wrapping at {}", scanNum, wrapNum);
-        for (; i <= maxEntitiesToScan; i++) {
+        ExpiryProcessResult result = null;
+        while (canContinueGiven(result, idsScanned, entitiesProcessed)) {
             if (advanceScan) {
                 scanNum = next(scanNum, wrapNum);
+                idsScanned++;
             }
-            if ((result = autoExpiryCycle.process(scanNum)) != NOTHING_TO_DO) {
-                entitiesTouched++;
-                advanceScan = (result == DONE);
-            } else {
+            // Each processing attempt will generate at most one child record
+            result = expiryProcess.process(scanNum, now);
+            if (result == NOTHING_TO_DO) {
                 advanceScan = true;
-            }
-            if ((entitiesTouched >= maxEntitiesToTouch)
-                    || (!consensusTimeTracker.hasMoreStandaloneRecordTime())) {
-                // Allow consistent calculation of num scanned below.
-                i++;
-                break;
+            } else {
+                advanceScan = (result == DONE);
+                if (advanceScan) {
+                    entitiesProcessed++;
+                }
             }
         }
 
-        autoExpiryCycle.endCycle();
-        curNetworkCtx.updateAutoRenewSummaryCounts(i - 1, entitiesTouched);
+        curNetworkCtx.updateAutoRenewSummaryCounts(idsScanned, entitiesProcessed);
         curNetworkCtx.updateLastScannedEntity(advanceScan ? scanNum : scanNum - 1);
-        log.debug(
-                "Auto-renew scan finished at {} with {}/{} scanned/touched (Total this second:"
-                        + " {}/{})",
-                scanNum,
-                i - 1,
-                entitiesTouched,
-                curNetworkCtx.getEntitiesScannedThisSecond(),
-                curNetworkCtx.getEntitiesTouchedThisSecond());
+    }
+
+    private boolean canContinueGiven(
+            final @Nullable ExpiryProcessResult result,
+            final int idsScanned,
+            final int entitiesProcessed) {
+        return idsScanned < maxIdsToScan
+                && entitiesProcessed < maxEntitiesToProcess
+                && result != NO_CAPACITY_LEFT
+                && consensusTimeTracker.hasMoreStandaloneRecordTime();
+    }
+
+    private boolean canDoWorkGiven(final long wrapNum, final Instant now) {
+        return wrapNum != firstEntityToScan
+                && dynamicProps.shouldAutoRenewSomeEntityType()
+                && consensusTimeTracker.hasMoreStandaloneRecordTime()
+                && !expiryThrottle.stillLacksMinFreeCapAfterLeakingUntil(now);
     }
 
     private long next(long scanNum, final long wrapNum) {

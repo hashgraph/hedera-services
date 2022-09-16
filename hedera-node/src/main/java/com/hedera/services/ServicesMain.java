@@ -28,10 +28,10 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.Browser;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,20 +81,6 @@ public class ServicesMain implements SwirldMain {
             app.recordStreamManager().setInFreeze(true);
         } else {
             log.info("Platform {} status set to : {}", nodeId, status);
-        }
-    }
-
-    @Override
-    public void newSignedState(SwirldState signedState, Instant consensusTime, long round) {
-        final var servicesState = (ServicesState) signedState;
-
-        if (app.platformStatus().get() == FREEZE_COMPLETE) {
-            servicesState.logSummary();
-        }
-
-        final var balancesExporter = app.balancesExporter();
-        if (balancesExporter.isTimeToExport(consensusTime)) {
-            balancesExporter.exportBalancesFrom(servicesState, consensusTime, app.nodeId());
         }
     }
 
@@ -155,19 +141,18 @@ public class ServicesMain implements SwirldMain {
     private void configurePlatform() {
         final var platform = app.platform();
         platform.setSleepAfterSync(0L);
-        platform.addSignedStateListener(app.issListener());
         app.statsManager().initializeFor(platform);
     }
 
     private void validateLedgerState() {
         app.ledgerValidator().validate(app.workingState().accounts());
         app.nodeInfo().validateSelfAccountIfStaked();
-        app.notificationEngine()
-                .get()
-                .register(ReconnectCompleteListener.class, app.reconnectListener());
-        app.notificationEngine()
-                .get()
-                .register(StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
+        final var notifications = app.notificationEngine().get();
+        notifications.register(ReconnectCompleteListener.class, app.reconnectListener());
+        notifications.register(
+                StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
+        notifications.register(NewSignedStateListener.class, app.newSignedStateListener());
+        notifications.register(IssListener.class, app.issListener());
     }
 
     private boolean defaultCharsetIsCorrect() {

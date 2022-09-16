@@ -613,7 +613,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     /* --- Getters --- */
-    public long getEntitiesScannedThisSecond() {
+    public long idsScannedThisSecond() {
         return entitiesScannedThisSecond;
     }
 

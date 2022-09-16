@@ -18,6 +18,7 @@ package com.hedera.services.state.migration;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -42,16 +43,39 @@ public class ReleaseThirtyMigration {
             final MerkleMap<EntityNum, MerkleAccount> accounts,
             final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
 
+        // First reset all account owned-NFT-list root pointers
+        withLoggedDuration(
+                () -> {
+                    for (final var accountKey : accounts.keySet()) {
+                        final var mutableAccount = accounts.getForModify(accountKey);
+                        mutableAccount.setHeadNftId(MISSING_ID.num());
+                        mutableAccount.setHeadNftSerialNum(0L);
+                    }
+                },
+                log,
+                "NFT root key reset");
         withLoggedDuration(
                 () -> {
                     for (final var nftId : uniqueTokens.keySet()) {
                         var nft = uniqueTokens.getForModify(nftId);
+                        // Ensure the NFT doesn't have corrupt prev/next pointers
+                        nft.setPrev(MISSING_NFT_NUM_PAIR);
+                        nft.setNext(MISSING_NFT_NUM_PAIR);
+
                         final var owner = nft.getOwner();
                         final var tokenNum = nftId.getHiOrderAsLong();
                         final var serialNum = nftId.getLowOrderAsLong();
 
                         if (!owner.equals(EntityId.MISSING_ENTITY_ID)) {
                             var merkleAccount = accounts.getForModify(owner.asNum());
+                            if (merkleAccount == null) {
+                                log.error(
+                                        "NFT 0.0.{}.{} has missing owner 0.0.{}",
+                                        nftId.getHiOrderAsLong(),
+                                        nftId.getLowOrderAsLong(),
+                                        owner.num());
+                                continue;
+                            }
 
                             if (merkleAccount.getHeadNftTokenNum() != MISSING_ID.num()) {
                                 var currHeadNftNum = merkleAccount.getHeadNftTokenNum();
@@ -83,7 +107,7 @@ public class ReleaseThirtyMigration {
                 () ->
                         contracts.forEach(
                                 (id, account) -> {
-                                    if (account.isSmartContract()) {
+                                    if (account.isSmartContract() && !account.isDeleted()) {
                                         setNewExpiry(lastKnownConsensusSecond, contracts, id);
                                     }
                                 }),

@@ -27,6 +27,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private final CongestionMultipliers differentMultipliers =
             CongestionMultipliers.from("90,11x,95,26x,99,101x");
 
+    private int maxToTouch = 2;
     private int minCongestionPeriod = 2;
     private long gracePeriod = 604800;
     private boolean useAutoRenew = true;
@@ -35,7 +36,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private boolean exportBalances = true;
     private CongestionMultipliers currentMultipliers = defaultMultipliers;
     private boolean throttleByGas;
-    private boolean overwriteFundingAccount = false;
 
     public MockGlobalDynamicProps() {
         super(null, null);
@@ -202,7 +202,11 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     @Override
     public int autoRenewMaxNumberOfEntitiesToRenewOrDelete() {
-        return 2;
+        return maxToTouch;
+    }
+
+    public void setMaxToTouch(int maxToTouch) {
+        this.maxToTouch = maxToTouch;
     }
 
     @Override
