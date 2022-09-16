@@ -1,5 +1,9 @@
 package com.hedera.evm.execution;
 
+import com.hederahashgraph.api.proto.java.AccountID;
+import java.util.Map;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
@@ -37,4 +41,9 @@ public interface HederaWorldUpdater extends WorldUpdater {
   void addSbhRefund(long refund);
 
   void countIdsAllocatedByStacked(int n);
+
+
+  public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getFinalStateChanges();
+
+  public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() ;
 }

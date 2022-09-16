@@ -1,10 +1,13 @@
 package com.hedera.evm.execution;
 
+import static com.hedera.evm.exception.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
+import com.hedera.evm.exception.InvalidTransactionException;
+import com.hedera.evm.exception.ResourceLimitException;
 import com.hedera.evm.execution.traceability.HederaTracer;
 import com.hedera.evm.model.Account;
 import com.hedera.evm.model.Id;
@@ -264,7 +267,7 @@ abstract class EvmTxProcessor {
 
       try {
         updater.commit();
-      } catch (ResolutionException e) {
+      } catch (ResourceLimitException e) {
         // Consume all gas on resource exhaustion, using a clean updater
         final var feesOnlyUpdater = worldState.updater();
         chargeForGas(
@@ -305,7 +308,8 @@ abstract class EvmTxProcessor {
           gasPrice,
           initialFrame.getOutputData(),
           mirrorReceiver,
-          stateChanges);
+          stateChanges,
+          hederaTracer.getActions());
     } else {
       return TransactionProcessingResult.failed(
           gasUsedByTransaction,
@@ -313,7 +317,8 @@ abstract class EvmTxProcessor {
           gasPrice,
           initialFrame.getRevertReason(),
           initialFrame.getExceptionalHaltReason(),
-          stateChanges);
+          stateChanges,
+          hederaTracer.getActions());
     }
   }
 
@@ -321,7 +326,7 @@ abstract class EvmTxProcessor {
       final Address coinbase,
       final long amount,
       final long gasPrice,
-      final HederaWorldState.Updater updater) {
+      final HederaWorldUpdater updater) {
     final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
     mutableCoinbase.incrementBalance(Wei.of(amount * gasPrice));
   }
@@ -338,7 +343,7 @@ abstract class EvmTxProcessor {
       final BigInteger userOfferedGasPrice,
       final Address sender,
       @Nullable final Address relayer,
-      final HederaWorldState.Updater updater) {
+      final HederaWorldUpdater updater) {
     final var senderAccount = updater.getOrCreateSenderAccount(sender);
     final MutableAccount mutableSender = senderAccount.getMutable();
 
@@ -355,16 +360,16 @@ abstract class EvmTxProcessor {
       if (relayer == null) {
         final var senderCanAffordGas =
             mutableSender.getBalance().compareTo(upfrontCost) >= 0;
-        ValidationUtils.validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+        validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
         mutableSender.decrementBalance(gasCost);
       } else {
         final var gasAllowance = Wei.of(maxGasAllowanceInTinybars);
         if (userOfferedGasPrice.equals(BigInteger.ZERO)) {
           // If sender set gas price to 0, relayer pays all the fees
-          ValidationUtils.validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
+          validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
           final var relayerCanAffordGas =
               mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
-          ValidationUtils.validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+          validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
           mutableRelayer.decrementBalance(gasCost);
           allowanceCharged = gasCost;
         } else if (userOfferedGasPrice
@@ -376,13 +381,13 @@ abstract class EvmTxProcessor {
                   userOfferedGasPrice
                       .multiply(BigInteger.valueOf(gasLimit))
                       .divide(WEIBARS_TO_TINYBARS));
-          ValidationUtils.validateTrue(
+          validateTrue(
               mutableSender.getBalance().compareTo(senderFee) >= 0,
               INSUFFICIENT_PAYER_BALANCE);
           final var remainingFee = gasCost.subtract(senderFee);
-          ValidationUtils.validateTrue(
+          validateTrue(
               gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
-          ValidationUtils.validateTrue(
+          validateTrue(
               mutableRelayer.getBalance().compareTo(remainingFee) >= 0,
               INSUFFICIENT_PAYER_BALANCE);
           mutableSender.decrementBalance(senderFee);
@@ -392,20 +397,20 @@ abstract class EvmTxProcessor {
           // If user gas price >= current gas price, sender pays all fees
           final var senderCanAffordGas =
               mutableSender.getBalance().compareTo(gasCost) >= 0;
-          ValidationUtils.validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+          validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
           mutableSender.decrementBalance(gasCost);
         }
         // In any case, the sender must have sufficient balance to pay for any value sent
         final var senderCanAffordValue =
             mutableSender.getBalance().compareTo(Wei.of(value)) >= 0;
-        ValidationUtils.validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
+        validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
       }
     }
     return new ChargingResult(mutableSender, mutableRelayer, allowanceCharged);
   }
 
   private void ensureLatestChainId() {
-    final var curChainId = dynamicProperties.chainIdBytes32();
+    final var curChainId = configurationProperties.chainIdBytes32();
     if (!curChainId.equals(lastChainId)) {
       lastChainId = curChainId;
       operationRegistry.put(new ChainIdOperation(gasCalculator, curChainId));
@@ -424,7 +429,7 @@ abstract class EvmTxProcessor {
     gasUsedByTransaction =
         gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
 
-    final var maxRefundPercent = configurationProperties.getMaxGasRefundPercentage();
+    final var maxRefundPercent = configurationProperties.maxGasRefundPercentage();
     gasUsedByTransaction =
         Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
 
