@@ -149,6 +149,42 @@ class SyntheticTxnFactoryTest {
     }
 
     @Test
+    void synthesizesExpectedBurn() {
+        final var ftId = EntityId.fromIdentityCode(666);
+        final var nftId = EntityId.fromIdentityCode(777);
+        final var nftAdjusts =
+                new NftAdjustments(
+                        new long[] {1},
+                        List.of(EntityId.fromIdentityCode(2)),
+                        List.of(EntityId.fromIdentityCode(98)));
+        final var fungibleAdjusts = new CurrencyAdjustments(new long[] {-123}, new long[] {2});
+        final var fungibleReturns =
+                new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
+        final var nonFungibleReturns =
+                new NonFungibleTreasuryReturns(List.of(nftId), List.of(nftAdjusts), true);
+        final var returns = new CryptoGcOutcome(fungibleReturns, nonFungibleReturns, false);
+
+        final var expected =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(ftId.asId().asGrpcToken())
+                                        .addTransfers(aaWith(2, -123))
+                                        .build())
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(nftId.asId().asGrpcToken())
+                                        .addNftTransfers(nftFromTo(1, 2, 98))
+                                        .build())
+                        .build();
+
+        final var txn = subject.synthTokenTransfer(returns).build();
+        final var op = txn.getCryptoTransfer();
+
+        assertEquals(op, expected);
+    }
+
+    @Test
     void synthesizesExpectedCryptoTransfer() {
         final var adjustments = new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
         final var expected =

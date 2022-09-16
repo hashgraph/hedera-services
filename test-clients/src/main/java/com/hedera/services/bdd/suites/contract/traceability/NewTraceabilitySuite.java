@@ -34,6 +34,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.getNestedContractAddress;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;
 import static com.hedera.services.stream.proto.ContractActionType.CREATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -117,6 +119,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         }
         return List.of(
                 traceabilityE2EScenario1(),
+                traceabilityE2EScenario17(),
+                traceabilityE2EScenario18(),
                 traceabilityE2EScenario21(),
                 vanillaBytecodeSidecar(),
                 vanillaBytecodeSidecar2(),
@@ -676,6 +680,134 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
+    private HapiApiSpec traceabilityE2EScenario17() {
+        return defaultHapiSpec("traceabilityE2EScenario17")
+                .given(
+                        uploadInitCode(REVERTING_CONTRACT),
+                        contractCreate(REVERTING_CONTRACT, 6).via(FIRST_CREATE_TXN),
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        FIRST_CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(197000)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                REVERTING_CONTRACT))
+                                                                        .setGasUsed(345)
+                                                                        .setOutput(EMPTY)
+                                                                        .build())))),
+                        expectContractBytecodeSidecarFor(
+                                FIRST_CREATE_TXN, REVERTING_CONTRACT, REVERTING_CONTRACT, 6))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                REVERTING_CONTRACT,
+                                                                "createContract",
+                                                                BigInteger.valueOf(4))
+                                                        .gas(1_000_000)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                        .via(TRACEABILITY_TXN))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        TRACEABILITY_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setGas(979000)
+                                                                        .setGasUsed(32583)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                REVERTING_CONTRACT))
+                                                                        .setRevertReason(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        REVERTING_CONTRACT,
+                                                                                        "createContract",
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        4)))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                REVERTING_CONTRACT))
+                                                                        .setGas(931868)
+                                                                        .setCallDepth(1)
+                                                                        .setGasUsed(201)
+                                                                        .setRevertReason(EMPTY)
+                                                                        .build())))));
+    }
+
+    private HapiApiSpec traceabilityE2EScenario18() {
+        return defaultHapiSpec("traceabilityE2EScenario18")
+                .given(uploadInitCode(REVERTING_CONTRACT))
+                .when(
+                        contractCreate(REVERTING_CONTRACT, 6)
+                                .via(FIRST_CREATE_TXN)
+                                .gas(53050)
+                                .hasKnownStatus(INSUFFICIENT_GAS))
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        FIRST_CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(50)
+                                                                        .setGasUsed(50)
+                                                                        .setError(
+                                                                                ByteString
+                                                                                        .copyFromUtf8(
+                                                                                                INSUFFICIENT_GAS
+                                                                                                        .name()))
+                                                                        .build())))),
+                        expectFailedContractBytecodeSidecarFor(
+                                FIRST_CREATE_TXN, REVERTING_CONTRACT, 6));
+    }
+
     private HapiApiSpec traceabilityE2EScenario21() {
         return defaultHapiSpec("traceabilityE2EScenario21")
                 .given(
@@ -945,17 +1077,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                     allRunFor(spec, txnRecord, contractBytecode);
                     final var consensusTimestamp =
                             txnRecord.getResponseRecord().getConsensusTimestamp();
-                    final var initCode =
-                            extractBytecodeUnhexed(getResourcePath(binFileName, ".bin"));
-                    final byte[] params =
-                            constructorArgs.length == 0
-                                    ? new byte[] {}
-                                    : CallTransaction.Function.fromJsonInterface(
-                                                    getABIFor(
-                                                            FunctionType.CONSTRUCTOR,
-                                                            StringUtils.EMPTY,
-                                                            binFileName))
-                                            .encodeArguments(constructorArgs);
+                    final var initCode = getInitcode(binFileName, constructorArgs);
                     sidecarWatcher.addExpectedSidecar(
                             new ExpectedSidecar(
                                     spec.getName(),
@@ -968,11 +1090,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                             .getResponseRecord()
                                                                             .getContractCreateResult()
                                                                             .getContractID())
-                                                            .setInitcode(
-                                                                    initCode.concat(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            params)))
+                                                            .setInitcode(initCode)
                                                             .setRuntimeBytecode(
                                                                     ByteString.copyFrom(
                                                                             spec.registry()
@@ -981,6 +1099,44 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                             .build())
                                             .build()));
                 });
+    }
+
+    private CustomSpecAssert expectFailedContractBytecodeSidecarFor(
+            final String contractCreateTxn,
+            final String binFileName,
+            final Object... constructorArgs) {
+        return withOpContext(
+                (spec, opLog) -> {
+                    final var txnRecord = getTxnRecord(contractCreateTxn);
+                    allRunFor(spec, txnRecord);
+                    final var consensusTimestamp =
+                            txnRecord.getResponseRecord().getConsensusTimestamp();
+                    final var initCode = getInitcode(binFileName, constructorArgs);
+                    sidecarWatcher.addExpectedSidecar(
+                            new ExpectedSidecar(
+                                    spec.getName(),
+                                    TransactionSidecarRecord.newBuilder()
+                                            .setConsensusTimestamp(consensusTimestamp)
+                                            .setBytecode(
+                                                    ContractBytecode.newBuilder()
+                                                            .setInitcode(initCode)
+                                                            .build())
+                                            .build()));
+                });
+    }
+
+    private ByteString getInitcode(final String binFileName, final Object... constructorArgs) {
+        final var initCode = extractBytecodeUnhexed(getResourcePath(binFileName, ".bin"));
+        final var params =
+                constructorArgs.length == 0
+                        ? new byte[] {}
+                        : CallTransaction.Function.fromJsonInterface(
+                                        getABIFor(
+                                                FunctionType.CONSTRUCTOR,
+                                                StringUtils.EMPTY,
+                                                binFileName))
+                                .encodeArguments(constructorArgs);
+        return initCode.concat(ByteStringUtils.wrapUnsafely(params));
     }
 
     private static void initialize() throws Exception {

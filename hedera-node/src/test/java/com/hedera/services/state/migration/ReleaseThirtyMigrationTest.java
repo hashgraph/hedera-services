@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -90,19 +91,30 @@ class ReleaseThirtyMigrationTest {
         final EntityNumPair nftId3 = EntityNumPair.fromLongs(2222, 3);
         final EntityNumPair nftId4 = EntityNumPair.fromLongs(2222, 4);
         final EntityNumPair nftId5 = EntityNumPair.fromLongs(2222, 5);
+        final EntityNumPair nftId6 = EntityNumPair.fromLongs(666, 1);
 
         final MerkleAccount account1 = new MerkleAccount();
+        account1.setHeadNftId(2222);
+        account1.setHeadNftSerialNum(3);
         final MerkleAccount account2 = new MerkleAccount();
+        account2.setHeadNftId(2222);
+        account2.setHeadNftSerialNum(1);
         final MerkleUniqueToken nft1 = new MerkleUniqueToken();
         nft1.setOwner(accountNum1.toEntityId());
+        nft1.setPrev(nftId2.asNftNumPair());
+        nft1.setNext(nftId3.asNftNumPair());
         final MerkleUniqueToken nft2 = new MerkleUniqueToken();
         nft2.setOwner(accountNum2.toEntityId());
         final MerkleUniqueToken nft3 = new MerkleUniqueToken();
         nft3.setOwner(accountNum1.toEntityId());
         final MerkleUniqueToken nft4 = new MerkleUniqueToken();
         nft4.setOwner(accountNum2.toEntityId());
+        nft4.setPrev(nftId2.asNftNumPair());
+        nft4.setNext(nftId3.asNftNumPair());
         final MerkleUniqueToken nft5 = new MerkleUniqueToken();
         nft5.setOwner(accountNum1.toEntityId());
+        final MerkleUniqueToken nft6 = new MerkleUniqueToken();
+        nft6.setOwner(new EntityId(0L, 0L, 666L));
 
         accounts.put(accountNum1, account1);
         accounts.put(accountNum2, account2);
@@ -111,6 +123,7 @@ class ReleaseThirtyMigrationTest {
         uniqueTokens.put(nftId3, nft3);
         uniqueTokens.put(nftId4, nft4);
         uniqueTokens.put(nftId5, nft5);
+        uniqueTokens.put(nftId6, nft6);
 
         rebuildNftOwners(accounts, uniqueTokens);
         // keySet() returns values in the order 2,5,4,1,3
