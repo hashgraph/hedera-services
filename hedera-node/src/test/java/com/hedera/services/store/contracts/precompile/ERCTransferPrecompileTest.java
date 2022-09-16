@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.impl.ERCTransferPre
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -28,6 +29,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,15 +41,18 @@ class ERCTransferPrecompileTest {
     private static final Bytes TRANSFER_INPUT =
             Bytes.fromHexString(
                     "0xa9059cbb00000000000000000000000000000000000000000000000000000000000005a50000000000000000000000000000000000000000000000000000000000000002");
-
+    private static final Bytes TRANSFER_LONG_OVERFLOWN =
+            Bytes.fromHexString(
+                    "0xa9059cbb00000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000010000000000000002");
     private static final Bytes TRANSFER_FROM_FUNGIBLE_INPUT =
             Bytes.fromHexString(
                     "0x23b872dd00000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
-
     private static final Bytes TRANSFER_FROM_NON_FUNGIBLE_INPUT =
             Bytes.fromHexString(
                     "0x23b872dd00000000000000000000000000000000000000000000000000000000000003e900000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
-
+    private static final Bytes TRANSFER_FROM_LONG_OVERFLOWN =
+            Bytes.fromHexString(
+                    "0x23b872dd00000000000000000000000000000000000000000000000000000000000003ef00000000000000000000000000000000000000000000000000000000000003f00000000000000000000000000000000000000000000000010000000000000002");
     private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
@@ -62,6 +67,16 @@ class ERCTransferPrecompileTest {
 
         assertTrue(fungibleTransfer.receiver().getAccountNum() > 0);
         assertEquals(2, fungibleTransfer.amount());
+    }
+
+    @Test
+    void decodeTransferShouldThrowOnAmountOverflown() {
+        final var accId = AccountID.getDefaultInstance();
+        final UnaryOperator<byte[]> aliasResolver = identity();
+
+        assertThrows(
+                ArithmeticException.class,
+                () -> decodeERCTransfer(TRANSFER_LONG_OVERFLOWN, TOKEN_ID, accId, aliasResolver));
     }
 
     @Test
@@ -138,5 +153,22 @@ class ERCTransferPrecompileTest {
         assertTrue(nftTransfer.getReceiverAccountID().getAccountNum() > 0);
         assertEquals(1, nftTransfer.getSerialNumber());
         assertFalse(nftTransfer.getIsApproval());
+    }
+
+    @Test
+    void decodeTransferFromShouldThrowOnAmountOverflown() {
+        final var fromOp = new EntityId(0, 0, 1450);
+        final UnaryOperator<byte[]> aliasResolver = identity();
+
+        assertThrows(
+                ArithmeticException.class,
+                () ->
+                        decodeERCTransferFrom(
+                                TRANSFER_FROM_LONG_OVERFLOWN,
+                                TOKEN_ID,
+                                true,
+                                aliasResolver,
+                                ledgers,
+                                fromOp));
     }
 }

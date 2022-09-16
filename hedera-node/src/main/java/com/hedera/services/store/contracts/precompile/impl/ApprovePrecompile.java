@@ -29,7 +29,10 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -139,12 +142,12 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         final var nestedInput = tokenId == null ? input : input.slice(24);
         operatorId = EntityId.fromAddress(senderAddress);
         approveOp = decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver, ledgers);
+
         if (approveOp.isFungible()) {
             transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp);
-            return transactionBody;
         } else {
             final var nftId =
-                    NftId.fromGrpc(approveOp.tokenId(), approveOp.serialNumber().longValue());
+                    NftId.fromGrpc(approveOp.tokenId(), approveOp.serialNumber().longValueExact());
             ownerId = ledgers.ownerIfPresent(nftId);
             // Per the ERC-721 spec, "The zero address indicates there is no approved address"; so
             // translate this approveAllowance into a deleteAllowance
@@ -157,8 +160,9 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                         syntheticTxnFactory.createNonfungibleApproval(
                                 approveOp, ownerId, operatorId);
             }
-            return transactionBody;
         }
+
+        return transactionBody;
     }
 
     @Override
@@ -288,14 +292,14 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             }
             final var amount = (BigInteger) decodedArguments.get(offset + 1);
 
-            return new ApproveWrapper(tokenId, spender, amount, BigInteger.ZERO, isFungible);
+            return new ApproveWrapper(tokenId, spender, amount, BigInteger.ZERO, true);
         } else {
             if (ledgerFungible) {
                 throw new IllegalArgumentException("Token is not an NFT");
             }
             final var serialNumber = (BigInteger) decodedArguments.get(offset + 1);
 
-            return new ApproveWrapper(tokenId, spender, BigInteger.ZERO, serialNumber, isFungible);
+            return new ApproveWrapper(tokenId, spender, BigInteger.ZERO, serialNumber, false);
         }
     }
 
@@ -314,7 +318,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(senderAddress)
                 .forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
-                .forDataItem(BigInteger.valueOf(approveOp.amount().longValue()))
+                .forDataItem(approveOp.amount())
                 .build();
     }
 
@@ -324,7 +328,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(senderAddress)
                 .forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
-                .forIndexedArgument(BigInteger.valueOf(approveOp.serialNumber().longValue()))
+                .forIndexedArgument(approveOp.serialNumber())
                 .build();
     }
 }

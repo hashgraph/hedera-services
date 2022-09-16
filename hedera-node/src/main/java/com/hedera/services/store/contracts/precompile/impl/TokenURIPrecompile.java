@@ -82,6 +82,6 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
 
         final var tokenId = (BigInteger) decodedArguments.get(0);
 
-        return new OwnerOfAndTokenURIWrapper(tokenId.longValue());
+        return new OwnerOfAndTokenURIWrapper(tokenId.longValueExact());
     }
 }
