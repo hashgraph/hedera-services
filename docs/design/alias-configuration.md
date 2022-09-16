@@ -74,7 +74,7 @@ In this flow
 ## Cases
 
 - Crypto Transfer Transaction to EVM address alias should create an account with its alias field set to the EVM address and its key will be empty (to be populated by a signed transaction as part of lazy account create)
-- Crypto Transfer Transaction (without auto creation): to be called with EVM address (the account with this address is already auto lazy created)
+- For any type of signed transaction coming after an initial Crypto Transfer to EVM address e.g. (CryptoTransfer, ContractCreate, ContractCall, EthereumTransaction, TokenAssociation):
   - We need to extract the public key from signature with extractSig
   - After that to use the extracted key for recovering the public address (recoverAddressFromPubKey)
   - Recovered address must match with the alias (public address of the eth account)
