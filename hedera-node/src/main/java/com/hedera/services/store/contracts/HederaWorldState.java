@@ -28,7 +28,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.ArrayList;
@@ -177,8 +176,7 @@ public class HederaWorldState implements HederaMutableWorldState {
     public static class Updater extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>
             implements HederaWorldUpdater {
 
-        Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
-                new TreeMap<>(BytesComparator.INSTANCE);
+        Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();
         GlobalDynamicProperties dynamicProperties;
 
         private int numAllocatedIds = 0;
@@ -209,8 +207,7 @@ public class HederaWorldState implements HederaMutableWorldState {
                 final var storageUpdates = uta.getUpdatedStorage().entrySet();
                 if (!storageUpdates.isEmpty()) {
                     final Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
-                            stateChanges.computeIfAbsent(
-                                    uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
+                            stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>());
                     for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
                         UInt256 key = entry.getKey();
                         UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
