@@ -56,10 +56,6 @@ public class ReleaseThirtyMigration {
                 "NFT root key reset");
         withLoggedDuration(
                 () -> {
-                    for (final var accountKey : accounts.keySet()) {
-                        final var mutableAccount = accounts.getForModify(accountKey);
-                        mutableAccount.setHeadNftId(MISSING_ID.num());
-                    }
                     for (final var nftId : uniqueTokens.keySet()) {
                         var nft = uniqueTokens.getForModify(nftId);
                         // Ensure the NFT doesn't have corrupt prev/next pointers
