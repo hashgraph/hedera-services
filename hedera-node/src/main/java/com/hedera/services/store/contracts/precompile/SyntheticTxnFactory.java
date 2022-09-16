@@ -97,6 +97,7 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -107,6 +108,7 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.apache.tuweni.bytes.Bytes;
 
 @Singleton
@@ -142,18 +144,16 @@ public class SyntheticTxnFactory {
         final var fungibleReturns = cryptoGcOutcome.fungibleTreasuryReturns();
         for (int i = 0, n = fungibleReturns.numReturns(); i < n; i++) {
             final var unitReturn = fungibleReturns.transfers().get(i);
-            opBuilder.addTokenTransfers(
+            final var listBuilder =
                     TokenTransferList.newBuilder()
-                            .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId())
-                            .addTransfers(
-                                    aaWith(
-                                            unitReturn.getAccountNums()[0],
-                                            unitReturn.getHbars()[0]))
-                            .addTransfers(
-                                    aaWith(
-                                            unitReturn.getAccountNums()[1],
-                                            unitReturn.getHbars()[1]))
-                            .build());
+                            .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId());
+            for (int j = 0, m = unitReturn.getHbars().length; j < m; j++) {
+                listBuilder.addTransfers(
+                        aaWith(
+                                unitReturn.getAccountNums()[j],
+                                unitReturn.getHbars()[j]));
+            }
+            opBuilder.addTokenTransfers(listBuilder.build());
         }
 
         final var nonFungibleReturns = cryptoGcOutcome.nonFungibleTreasuryReturns();
@@ -792,7 +792,7 @@ public class SyntheticTxnFactory {
      * account id that appears in either list. NFT exchanges are "merged" by checking that each
      * exchange from either list appears at most once.
      *
-     * @param to the builder to merge source exchanges into
+     * @param to   the builder to merge source exchanges into
      * @param from a source of fungible exchanges and NFT exchanges
      * @return the consolidated target builder
      */
