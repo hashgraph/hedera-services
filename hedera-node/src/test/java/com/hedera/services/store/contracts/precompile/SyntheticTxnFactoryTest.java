@@ -157,8 +157,7 @@ class SyntheticTxnFactoryTest {
                         new long[] {1},
                         List.of(EntityId.fromIdentityCode(2)),
                         List.of(EntityId.fromIdentityCode(98)));
-        final var fungibleAdjusts =
-                new CurrencyAdjustments(new long[] {-123}, new long[] {2});
+        final var fungibleAdjusts = new CurrencyAdjustments(new long[] {-123}, new long[] {2});
         final var fungibleReturns =
                 new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
         final var nonFungibleReturns =

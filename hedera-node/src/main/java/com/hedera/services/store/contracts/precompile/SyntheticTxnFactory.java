@@ -97,7 +97,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -108,7 +107,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.apache.tuweni.bytes.Bytes;
 
 @Singleton
@@ -147,11 +145,11 @@ public class SyntheticTxnFactory {
             final var listBuilder =
                     TokenTransferList.newBuilder()
                             .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId());
+            // This list can have just one entry if the token treasury was missing or deleted,
+            // in which case we just externalize the burning of the expired account's balance
             for (int j = 0, m = unitReturn.getHbars().length; j < m; j++) {
                 listBuilder.addTransfers(
-                        aaWith(
-                                unitReturn.getAccountNums()[j],
-                                unitReturn.getHbars()[j]));
+                        aaWith(unitReturn.getAccountNums()[j], unitReturn.getHbars()[j]));
             }
             opBuilder.addTokenTransfers(listBuilder.build());
         }
@@ -792,7 +790,7 @@ public class SyntheticTxnFactory {
      * account id that appears in either list. NFT exchanges are "merged" by checking that each
      * exchange from either list appears at most once.
      *
-     * @param to   the builder to merge source exchanges into
+     * @param to the builder to merge source exchanges into
      * @param from a source of fungible exchanges and NFT exchanges
      * @return the consolidated target builder
      */

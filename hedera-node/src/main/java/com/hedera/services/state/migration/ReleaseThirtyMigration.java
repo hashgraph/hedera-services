@@ -43,6 +43,7 @@ public class ReleaseThirtyMigration {
             final MerkleMap<EntityNum, MerkleAccount> accounts,
             final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
 
+        // First reset all account owned-NFT-list root pointers
         withLoggedDuration(
                 () -> {
                     for (final var accountKey : accounts.keySet()) {
@@ -61,6 +62,7 @@ public class ReleaseThirtyMigration {
                     }
                     for (final var nftId : uniqueTokens.keySet()) {
                         var nft = uniqueTokens.getForModify(nftId);
+                        // Ensure the NFT doesn't have corrupt prev/next pointers
                         nft.setPrev(MISSING_NFT_NUM_PAIR);
                         nft.setNext(MISSING_NFT_NUM_PAIR);
 
@@ -71,7 +73,8 @@ public class ReleaseThirtyMigration {
                         if (!owner.equals(EntityId.MISSING_ENTITY_ID)) {
                             var merkleAccount = accounts.getForModify(owner.asNum());
                             if (merkleAccount == null) {
-                                log.error("NFT 0.0.{}.{} has missing owner 0.0.{}",
+                                log.error(
+                                        "NFT 0.0.{}.{} has missing owner 0.0.{}",
                                         nftId.getHiOrderAsLong(),
                                         nftId.getLowOrderAsLong(),
                                         owner.num());
