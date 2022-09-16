@@ -265,37 +265,39 @@ abstract class EvmTxProcessor {
         stateChanges = Map.of();
       }
 
-      try {
-        updater.commit();
-      } catch (ResourceLimitException e) {
-        // Consume all gas on resource exhaustion, using a clean updater
-        final var feesOnlyUpdater = worldState.updater();
-        chargeForGas(
-            gasCost,
-            upfrontCost,
-            value,
-            maxGasAllowanceInTinybars,
-            intrinsicGas,
-            gasPrice,
-            gasLimit,
-            isStatic,
-            userOfferedGasPrice,
-            sender.getId().asEvmAddress(),
-            relayer == null ? null : relayer.getId().asEvmAddress(),
-            feesOnlyUpdater);
-        sendToCoinbase(coinbase, gasLimit, gasPrice, feesOnlyUpdater);
-        // We can't go through the top-level commit() because that would
-        // re-try to commit the storage changes
-        feesOnlyUpdater.trackingAccounts().commit();
-        return TransactionProcessingResult.failed(
-            gasLimit,
-            0,
-            gasPrice,
-            Optional.of(e.messageBytes()),
-            Optional.empty(),
-            Collections.emptyMap(),
-            List.of());
-      }
+
+      //TODO: applicable for services. Think for lambda expression
+//      try {
+//        updater.commit();
+//      } catch (ResourceLimitException e) {
+//        // Consume all gas on resource exhaustion, using a clean updater
+//        final var feesOnlyUpdater = worldState.updater();
+//        chargeForGas(
+//            gasCost,
+//            upfrontCost,
+//            value,
+//            maxGasAllowanceInTinybars,
+//            intrinsicGas,
+//            gasPrice,
+//            gasLimit,
+//            isStatic,
+//            userOfferedGasPrice,
+//            sender.getId().asEvmAddress(),
+//            relayer == null ? null : relayer.getId().asEvmAddress(),
+//            feesOnlyUpdater);
+//        sendToCoinbase(coinbase, gasLimit, gasPrice, feesOnlyUpdater);
+//        // We can't go through the top-level commit() because that would
+//        // re-try to commit the storage changes
+//        feesOnlyUpdater.trackingAccounts().commit();
+//        return TransactionProcessingResult.failed(
+//            gasLimit,
+//            0,
+//            gasPrice,
+//            Optional.of(e.messageBytes()),
+//            Optional.empty(),
+//            Collections.emptyMap(),
+//            List.of());
+//      }
 
     }
 

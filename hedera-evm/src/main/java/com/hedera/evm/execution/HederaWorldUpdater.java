@@ -44,6 +44,4 @@ public interface HederaWorldUpdater extends WorldUpdater {
 
 
   public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getFinalStateChanges();
-
-  public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() ;
 }

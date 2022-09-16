@@ -1,5 +1,7 @@
 package com.hedera.evm.execution;
 
+import com.hedera.evm.execution.traceability.SolidityAction;
+import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,20 @@ public class TransactionProcessingResult {
     /** The transaction failed to be completely processed. */
     FAILED
   }
+
+  private final long gasUsed;
+  private final long sbhRefund;
+  private final long gasPrice;
+  private final Status status;
+  private final Bytes output;
+  private final List<Log> logs;
+  private final Optional<Bytes> revertReason;
+  private final Optional<Address> recipient;
+  private final Optional<ExceptionalHaltReason> haltReason;
+  private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+  private final List<SolidityAction> actions;
+
+  private List<ContractID> createdContracts = Collections.emptyList();
 
   public static TransactionProcessingResult failed(
       final long gasUsed,
