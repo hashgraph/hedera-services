@@ -5,7 +5,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.hedera.evm.execution.traceability.HederaTracer;
+import com.hedera.evm.model.Account;
+import com.hedera.evm.model.Id;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.lang.module.ResolutionException;
@@ -27,7 +29,6 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
@@ -185,7 +186,7 @@ abstract class EvmTxProcessor {
             relayer == null ? null : relayer.getId().asEvmAddress(),
             updater);
 
-    final var coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
+    final var coinbase = Id.fromGrpcAccount(configurationProperties.fundingAccount()).asEvmAddress();
     final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
     final var gasAvailable = gasLimit - intrinsicGas;
     final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
@@ -218,7 +219,7 @@ abstract class EvmTxProcessor {
 
     final var hederaTracer =
         new HederaTracer(
-            dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
+            configurationProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
     hederaTracer.init(initialFrame);
 
     while (!messageFrameStack.isEmpty()) {
@@ -255,7 +256,7 @@ abstract class EvmTxProcessor {
       sendToCoinbase(coinbase, gasLimit - refunded, gasPrice, updater);
       initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-      if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+      if (configurationProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
         stateChanges = updater.getFinalStateChanges();
       } else {
         stateChanges = Map.of();
