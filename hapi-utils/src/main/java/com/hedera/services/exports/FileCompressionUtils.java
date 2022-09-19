@@ -26,6 +26,8 @@ import java.util.zip.GZIPInputStream;
  */
 public class FileCompressionUtils {
 
+    private FileCompressionUtils() {}
+
     public static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
 
     public static byte[] readUncompressedFileBytes(final String fileLoc) throws IOException {
