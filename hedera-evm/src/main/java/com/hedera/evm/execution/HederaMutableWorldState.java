@@ -31,7 +31,7 @@ public interface HederaMutableWorldState extends WorldState, WorldView {
      * <p><b>Important: </b>Since the new contract will <i>also</i> be a Hedera entity that has a
      * {@code 0.0.X} id, allocating a new contract address must imply reserving a Hedera entity
      * number. Implementations must be able to return their last reserved number on receiving a
-     * {@link HederaMutableWorldState#reclaimContractId()} call.
+     * call.
      *
      * @param sponsor the address of the sponsor of a new contract
      * @return an appropriate EVM address for the new contract
