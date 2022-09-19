@@ -20,5 +20,5 @@ plugins {
 description = "Hedera Application - Implementation"
 
 dependencies {
-    project(":hedera-node:hedera-app-api")
+    api(project(":hedera-node:hedera-app-api"))
 }
