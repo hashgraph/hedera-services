@@ -13,12 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.evm.execution;
+plugins {
+    id("com.hedera.hashgraph.hedera-conventions")
+}
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
+description = "Hedera Evm"
 
-public interface LivePricesSource {
-
-    public long currentGasPrice(final Instant now, final HederaFunctionality function);
+dependencies {
+    implementation(project(":hapi-utils"))
+    implementation(libs.bundles.besu)
+    implementation(libs.bundles.logging)
+    implementation(libs.commons.lang3)
+    implementation(libs.hapi)
+    implementation(libs.javax.inject)
+    implementation(libs.jackson)
+    implementation(libs.jetbrains.annotation)
+    testImplementation(testLibs.bundles.testing)
 }

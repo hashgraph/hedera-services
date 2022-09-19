@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.evm.execution;
+package com.hedera.evm.exception;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-public interface LivePricesSource {
-
-    public long currentGasPrice(final Instant now, final HederaFunctionality function);
+public class ResourceLimitException extends InvalidTransactionException {
+    public ResourceLimitException(ResponseCodeEnum responseCode) {
+        super(responseCode);
+    }
 }

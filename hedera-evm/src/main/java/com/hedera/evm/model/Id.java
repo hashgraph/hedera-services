@@ -13,12 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.evm.execution;
+package com.hedera.evm.model;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
+import com.hederahashgraph.api.proto.java.AccountID;
+import org.hyperledger.besu.datatypes.Address;
 
-public interface LivePricesSource {
+public record Id(long shard, long realm, long num) {
 
-    public long currentGasPrice(final Instant now, final HederaFunctionality function);
+    // TODO: FIX THIS
+    public Address asEvmAddress() {
+        return Address.fromHexString("TODO");
+    }
+
+    public static Id fromGrpcAccount(final AccountID id) {
+        return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+    }
 }
