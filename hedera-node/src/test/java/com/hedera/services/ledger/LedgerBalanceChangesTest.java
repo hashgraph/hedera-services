@@ -401,7 +401,7 @@ class LedgerBalanceChangesTest {
         backingAccounts.put(payer, payerAccount);
 
         given(txnCtx.activePayer()).willReturn(payer);
-        given(autoCreationLogic.create(any(), eq(accountsLedger)))
+        given(autoCreationLogic.create(any(), eq(accountsLedger), tokenAliasMap))
                 .willAnswer(
                         invocationOnMock -> {
                             final var change = (BalanceChange) invocationOnMock.getArgument(0);

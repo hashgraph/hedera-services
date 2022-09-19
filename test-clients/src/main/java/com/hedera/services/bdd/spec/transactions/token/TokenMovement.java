@@ -311,6 +311,11 @@ public class TokenMovement {
                     token, Optional.of(magician), amount, Optional.empty(), Optional.empty());
         }
 
+        public TokenMovement to(String receiver) {
+            return new TokenMovement(
+                    token, Optional.empty(), amount, Optional.of(receiver), Optional.empty());
+        }
+
         public TokenMovement empty() {
             return new TokenMovement(
                     token, Optional.empty(), amount, Optional.empty(), Optional.empty());

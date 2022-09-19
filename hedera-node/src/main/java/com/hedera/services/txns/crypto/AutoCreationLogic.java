@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -161,25 +162,27 @@ public class AutoCreationLogic {
      *
      * @param change a triggering change with unique alias
      * @param accountsLedger the accounts ledger to use for the provisional creation
+     * @param tokenAliasMap
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final HashMap<ByteString, Integer> tokenAliasMap) {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
         }
         final ByteString alias = getAlias(change);
+        final var maxAutoAssociations = change.isForHbar() ? 0 : tokenAliasMap.get(alias);
 
         final var key = asPrimitiveKeyUnchecked(alias);
-        final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L, change);
+        final var syntheticCreation =
+                syntheticTxnFactory.createAccount(key, 0L, maxAutoAssociations);
         final var fee = autoCreationFeeFor(syntheticCreation);
 
-        final var sideEffects = new SideEffectsTracker();
         final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
         accountsLedger.create(newId);
-
-        setNewValuesInChange(change, newId);
+        replaceAliasWithNewId(change, newId);
 
         JKey jKey = asFcKeyUnchecked(key);
         final var customizer =
@@ -190,14 +193,12 @@ public class AutoCreationLogic {
                         .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
                         .isReceiverSigRequired(false)
                         .isSmartContract(false)
-                        .alias(alias);
-        customizer.maxAutomaticAssociations(getMaxAssociationsForAutoAccount(change));
+                        .alias(alias)
+                        .maxAutomaticAssociations(maxAutoAssociations);
         customizer.customize(newId, accountsLedger);
 
-        sideEffects.trackAutoCreation(newId, alias);
-        if (change.isForToken()) {
-            sideEffects.trackTokenUnitsChange(change.tokenId(), newId, change.getAggregatedUnits());
-        }
+        final var sideEffects = new SideEffectsTracker();
+        trackChanges(newId, alias, change, sideEffects);
 
         final var childRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
@@ -214,16 +215,19 @@ public class AutoCreationLogic {
         return Pair.of(OK, fee);
     }
 
-    public static int getMaxAssociationsForAutoAccount(final BalanceChange change) {
-        if (change.isForFungibleToken()) {
-            return (int) change.getAggregatedUnits();
-        } else if (change.isForNft()) {
-            return 1;
+    private void trackChanges(
+            final AccountID newId,
+            final ByteString alias,
+            final BalanceChange change,
+            final SideEffectsTracker sideEffects) {
+        sideEffects.trackAutoCreation(newId, alias);
+        if (change.isForToken()) {
+            sideEffects.trackTokenUnitsChange(change.tokenId(), newId, change.getAggregatedUnits());
+            sideEffects.trackAutoAssociation(change.tokenId(), newId);
         }
-        return 0;
     }
 
-    private void setNewValuesInChange(final BalanceChange change, final AccountID newId) {
+    private void replaceAliasWithNewId(final BalanceChange change, final AccountID newId) {
         if (change.isForHbar()) {
             change.setNewBalance(change.getAggregatedUnits());
         }
@@ -262,7 +266,7 @@ public class AutoCreationLogic {
     }
 
     private ByteString getAlias(final BalanceChange change) {
-        if (change.hasNonEmptyCounterPartyAlias()) {
+        if (change.isForNft() && change.hasNonEmptyCounterPartyAlias()) {
             return change.counterPartyAccountId().getAlias();
         } else {
             return change.alias();

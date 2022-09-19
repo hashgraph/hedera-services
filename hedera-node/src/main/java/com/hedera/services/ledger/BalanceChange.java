@@ -60,6 +60,8 @@ public class BalanceChange {
     private TokenID tokenId = null;
     private AccountID accountId;
     private AccountID counterPartyAccountId = null;
+
+    private ByteString counterPartyAlias;
     private ResponseCodeEnum codeForInsufficientBalance;
     private ByteString alias;
     private int expectedDecimals = -1;
@@ -183,6 +185,7 @@ public class BalanceChange {
         this.nftId = new NftId(token.shard(), token.realm(), token.num(), serialNo);
         this.accountId = sender;
         this.counterPartyAccountId = receiver;
+        this.counterPartyAlias = receiver.getAlias();
         this.account = Id.fromGrpcAccount(accountId);
         this.alias = accountId.getAlias();
         this.codeForInsufficientBalance = code;
@@ -197,6 +200,7 @@ public class BalanceChange {
 
     public void replaceCounterPartyAliasWith(final AccountID createdId) {
         counterPartyAccountId = createdId;
+        counterPartyAlias = ByteString.EMPTY;
     }
 
     public boolean isForHbar() {
@@ -249,6 +253,10 @@ public class BalanceChange {
 
     public AccountID counterPartyAccountId() {
         return counterPartyAccountId;
+    }
+
+    public ByteString counterPartyAlias() {
+        return counterPartyAlias;
     }
 
     public Id getAccount() {
@@ -336,6 +344,7 @@ public class BalanceChange {
                     .add("serialNo", aggregatedUnits)
                     .add("from", account)
                     .add("to", Id.fromGrpcAccount(counterPartyAccountId))
+                    .add("toAlias", counterPartyAlias.toStringUtf8())
                     .toString();
         }
     }
@@ -357,7 +366,8 @@ public class BalanceChange {
     }
 
     public boolean hasNonEmptyCounterPartyAlias() {
-        return counterPartyAccountId != null
+        return isForNft()
+                && counterPartyAccountId != null
                 && counterPartyAccountId.getAccountNum() == 0
                 && !counterPartyAccountId.getAlias().isEmpty();
     }

@@ -290,6 +290,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
+    public HapiGetTxnRecord hasChildRecord(TransactionRecordAsserts provider) {
+        priorityExpectations = Optional.of(provider);
+        return this;
+    }
+
     public HapiGetTxnRecord hasOnlyPseudoRandomBytes() {
         pseudorandomBytesExpected = true;
         pseudorandomNumberRange = Optional.empty();

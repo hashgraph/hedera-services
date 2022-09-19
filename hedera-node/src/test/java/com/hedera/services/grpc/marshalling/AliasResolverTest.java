@@ -135,7 +135,7 @@ class AliasResolverTest {
         assertEquals(aNum.toGrpcAccountId(), ownershipChange.getSenderAccountID());
         assertEquals(bNum.toGrpcAccountId(), ownershipChange.getReceiverAccountID());
         assertEquals(1L, ownershipChange.getSerialNumber());
-        assertEquals(Map.of(anAlias, aNum, someAlias, MISSING_NUM), subject.tempTokenResolutions());
+        assertEquals(Map.of(anAlias, aNum, someAlias, MISSING_NUM), subject.tokenResolutions());
     }
 
     @Test

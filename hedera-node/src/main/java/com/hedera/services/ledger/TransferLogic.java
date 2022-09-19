@@ -27,6 +27,7 @@ import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
@@ -47,6 +48,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -112,6 +114,7 @@ public class TransferLogic {
     public void doZeroSum(final List<BalanceChange> changes) {
         var validity = OK;
         var autoCreationFee = 0L;
+        final var tokenAliasMap = countTokenAutoCreations(changes);
         for (var change : changes) {
             // If the change consists of any known alias, replace the alias with the account number
             checkIfExistingAlias(change);
@@ -124,7 +127,7 @@ public class TransferLogic {
                                     + change
                                     + " with null autoCreationLogic");
                 }
-                final var result = autoCreationLogic.create(change, accountsLedger);
+                final var result = autoCreationLogic.create(change, accountsLedger, tokenAliasMap);
                 validity = result.getKey();
                 autoCreationFee += result.getValue();
                 if (validity == OK && (change.isForToken())) {
@@ -161,6 +164,19 @@ public class TransferLogic {
             }
             throw new InvalidTransactionException(validity);
         }
+    }
+
+    private HashMap<ByteString, Integer> countTokenAutoCreations(
+            final List<BalanceChange> changes) {
+        final var map = new HashMap<ByteString, Integer>();
+        for (final var change : changes) {
+            if ((change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
+                map.merge(change.counterPartyAccountId().getAlias(), 1, Integer::sum);
+            } else if (change.isForFungibleToken() && change.hasNonEmptyAlias()) {
+                map.merge(change.alias(), 1, Integer::sum);
+            }
+        }
+        return map;
     }
 
     private void payAutoCreationFee(final long autoCreationFee) {

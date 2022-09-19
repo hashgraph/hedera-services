@@ -42,7 +42,7 @@ public class AliasResolver {
     private int perceivedCreations = 0;
     private int perceivedInvalidCreations = 0;
     private Map<ByteString, EntityNum> resolutions = new HashMap<>();
-    private Map<ByteString, EntityNum> tempTokenResolutions = new HashMap<>();
+    private Map<ByteString, EntityNum> tokenResolutions = new HashMap<>();
 
     private enum Result {
         KNOWN_ALIAS,
@@ -69,8 +69,8 @@ public class AliasResolver {
         return resolutions;
     }
 
-    public Map<ByteString, EntityNum> tempTokenResolutions() {
-        return tempTokenResolutions;
+    public Map<ByteString, EntityNum> tokenResolutions() {
+        return tokenResolutions;
     }
 
     public int perceivedMissingAliases() {
@@ -112,7 +112,7 @@ public class AliasResolver {
         final List<TokenTransferList> resolvedTokenAdjusts = new ArrayList<>();
         for (var tokenAdjust : opTokenAdjusts) {
             final var resolvedTokenAdjust = TokenTransferList.newBuilder();
-            tempTokenResolutions.clear();
+            tokenResolutions.clear();
 
             resolvedTokenAdjust.setToken(tokenAdjust.getToken());
             for (final var adjust : tokenAdjust.getTransfersList()) {
@@ -263,7 +263,7 @@ public class AliasResolver {
                         adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();
             }
             resolutions.put(alias, resolution);
-            tempTokenResolutions.put(alias, resolution);
+            tokenResolutions.put(alias, resolution);
         }
         resolvingAction.accept(resolvedAdjust);
         return result;
@@ -283,7 +283,7 @@ public class AliasResolver {
         if (isEvmAddress) {
             return Result.UNKNOWN_EVM_ADDRESS;
         } else {
-            return tempTokenResolutions.containsKey(alias)
+            return tokenResolutions.containsKey(alias)
                     ? Result.REPEATED_UNKNOWN_ALIAS
                     : resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
         }

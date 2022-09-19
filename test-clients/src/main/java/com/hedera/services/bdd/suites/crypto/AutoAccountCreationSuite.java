@@ -20,12 +20,15 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -54,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -138,10 +142,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 //                canGetBalanceAndInfoViaAlias(),
                 //                noStakePeriodStartIfNotStakingToNode(),
                 //                /* -- HTS auto creates -- */
-                //                canAutoCreateWithFungibleTokenTransfersToAlias(),
+                //                canAutoCreateWithFungibleTokenTransfersToAlias()
+                multipleTokenTransfersSucceed()
                 //                canAutoCreateWithNftTransfersToAlias(),
                 //                autoCreateWithNftFallBackFeeFails(),
-                repeatedAliasInSameTransferListFails());
+                //                                repeatedAliasInSameTransferListFails()
+                );
     }
 
     private HapiApiSpec repeatedAliasInSameTransferListFails() {
@@ -268,7 +274,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                         ByteString.copyFromUtf8("c"),
                                         ByteString.copyFromUtf8("d"),
                                         ByteString.copyFromUtf8("e"))),
-                        cryptoCreate(civilian).balance(100 * ONE_HBAR),
+                        cryptoCreate(civilian)
+                                .balance(100 * ONE_HBAR)
+                                .maxAutomaticTokenAssociations(2),
                         cryptoCreate("dummy").balance(10 * ONE_HBAR),
                         cryptoCreate(autoCreateSponsor)
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
@@ -369,63 +377,160 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
+    private HapiApiSpec multipleTokenTransfersSucceed() {
         final var civilian = "somebody";
-        final var autoCreateSponsor = "autoCreateSponsor";
-        final String alias1 = "alias1";
+        final String ANOTHER_ALIAS = "alias";
+        final var initialTokenSupply = 1000;
 
-        return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
+        return defaultHapiSpec("multipleTokenTransfersSucceed")
                 .given(
                         newKeyNamed(VALID_ALIAS),
-                        newKeyNamed(alias1),
+                        newKeyNamed(ANOTHER_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
+                                .initialSupply(initialTokenSupply)
                                 .treasury(TOKEN_TREASURY)
                                 .via("tokenACreateTxn"),
                         tokenCreate(B_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
+                                .initialSupply(initialTokenSupply)
                                 .treasury(TOKEN_TREASURY)
                                 .via("tokenBCreateTxn"),
                         getTxnRecord("tokenACreateTxn")
                                 .hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY),
                         getTxnRecord("tokenBCreateTxn")
                                 .hasNewTokenAssociation(B_TOKEN, TOKEN_TREASURY),
-                        cryptoCreate(civilian).balance(10 * ONE_HBAR),
-                        cryptoCreate(autoCreateSponsor)
-                                .balance(INITIAL_BALANCE * ONE_HBAR)
-                                .maxAutomaticTokenAssociations(1))
+                        cryptoCreate(civilian)
+                                .balance(10 * ONE_HBAR)
+                                .maxAutomaticTokenAssociations(2))
                 .when(
                         cryptoTransfer(
-                                        moving(100, A_TOKEN)
-                                                .between(TOKEN_TREASURY, autoCreateSponsor))
+                                        moving(100, A_TOKEN).between(TOKEN_TREASURY, civilian),
+                                        moving(100, B_TOKEN).between(TOKEN_TREASURY, civilian))
                                 .via("transferAToSponsor"),
-                        getAccountInfo(autoCreateSponsor).logged(),
-                        getAccountInfo(TOKEN_TREASURY).logged(),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasToken(relationshipWith(B_TOKEN).balance(900)),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasToken(relationshipWith(A_TOKEN).balance(900)),
+                        getAccountInfo(civilian).hasToken(relationshipWith(A_TOKEN).balance(100)),
+                        getAccountInfo(civilian).hasToken(relationshipWith(B_TOKEN).balance(100)),
+
+                        /* --- transfer same token type to alias --- */
                         cryptoTransfer(
-                                        moving(10, A_TOKEN).between(autoCreateSponsor, VALID_ALIAS),
-                                        moving(10, A_TOKEN).between(TOKEN_TREASURY, VALID_ALIAS))
-                                .via("failedTransfer")
+                                        moving(10, A_TOKEN).between(civilian, ANOTHER_ALIAS),
+                                        moving(10, B_TOKEN).between(civilian, ANOTHER_ALIAS))
+                                .via("multiTokenXfer")
                                 .payingWith(civilian)
-                                .signedBy(civilian, autoCreateSponsor, VALID_ALIAS, TOKEN_TREASURY)
+                                .signedBy(civilian, ANOTHER_ALIAS)
                                 .logged(),
-                        getTxnRecord("failedTransfer").andAllChildRecords().logged(),
-                        getAliasedAccountInfo(VALID_ALIAS).logged(),
-                        getAccountInfo(autoCreateSponsor).logged(),
-                        getAccountInfo(TOKEN_TREASURY).logged(),
-                        cryptoTransfer(
-                                        moving(10, A_TOKEN).between(autoCreateSponsor, alias1),
-                                        moving(10, B_TOKEN).between(TOKEN_TREASURY, alias1))
-                                .via(TRANSFER_TXN)
+                        getTxnRecord("multiTokenXfer")
+                                .andAllChildRecords()
+                                .hasChildRecordCount(1)
+                                .hasChildRecords(
+                                        recordWith()
+                                                .maxAutoAssociations(2)
+                                                .status(SUCCESS)
+                                                .tokenTransfers(
+                                                        includingFungibleMovement(
+                                                                moving(10, A_TOKEN)
+                                                                        .to(ANOTHER_ALIAS)))
+                                                .tokenTransfers(
+                                                        includingFungibleMovement(
+                                                                moving(10, B_TOKEN)
+                                                                        .to(ANOTHER_ALIAS))))
+                                .logged(),
+                        getAliasedAccountInfo(ANOTHER_ALIAS)
+                                .hasToken(relationshipWith(A_TOKEN).balance(10))
+                                .hasToken(relationshipWith(B_TOKEN).balance(10))
+                                .logged(),
+                        getAccountInfo(civilian)
+                                .hasToken(relationshipWith(A_TOKEN).balance(90))
+                                .hasToken(relationshipWith(B_TOKEN).balance(90))
+                                .has(accountWith().balanceLessThan(10 * ONE_HBAR))
+                                .logged(),
+
+                        /* --- transfer token to created alias */
+                        cryptoTransfer(moving(10, B_TOKEN).between(civilian, VALID_ALIAS))
+                                .via("newXfer")
                                 .payingWith(civilian)
-                                .signedBy(civilian, autoCreateSponsor, alias1, TOKEN_TREASURY)
+                                .signedBy(civilian, VALID_ALIAS, TOKEN_TREASURY),
+                        getTxnRecord("newXfer")
+                                .andAllChildRecords()
+                                .hasChildRecordCount(0)
                                 .logged())
+                .then();
+    }
+
+    private HapiApiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
+        final var civilian = "somebody";
+        final var initialTokenSupply = 1000;
+
+        return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
+                .given(
+                        newKeyNamed(VALID_ALIAS),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(initialTokenSupply)
+                                .treasury(TOKEN_TREASURY)
+                                .via("tokenACreateTxn"),
+                        tokenCreate(B_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(initialTokenSupply)
+                                .treasury(TOKEN_TREASURY)
+                                .via("tokenBCreateTxn"),
+                        getTxnRecord("tokenACreateTxn")
+                                .hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY),
+                        getTxnRecord("tokenBCreateTxn")
+                                .hasNewTokenAssociation(B_TOKEN, TOKEN_TREASURY),
+                        cryptoCreate(civilian)
+                                .balance(10 * ONE_HBAR)
+                                .maxAutomaticTokenAssociations(2))
+                .when(
+                        cryptoTransfer(
+                                        moving(100, A_TOKEN).between(TOKEN_TREASURY, civilian),
+                                        moving(100, B_TOKEN).between(TOKEN_TREASURY, civilian))
+                                .via("transferAToSponsor"),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasToken(relationshipWith(B_TOKEN).balance(900)),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasToken(relationshipWith(A_TOKEN).balance(900)),
+                        getAccountInfo(civilian).hasToken(relationshipWith(A_TOKEN).balance(100)),
+                        getAccountInfo(civilian).hasToken(relationshipWith(B_TOKEN).balance(100)),
+
+                        /* --- transfer same token type to alias --- */
+                        cryptoTransfer(
+                                        moving(10, A_TOKEN).between(civilian, VALID_ALIAS),
+                                        moving(10, A_TOKEN).between(TOKEN_TREASURY, VALID_ALIAS))
+                                .via("sameTokenXfer")
+                                .payingWith(civilian)
+                                .signedBy(civilian, VALID_ALIAS, TOKEN_TREASURY)
+                                .logged(),
+                        getTxnRecord("sameTokenXfer")
+                                .andAllChildRecords()
+                                .hasChildRecordCount(1)
+                                .hasChildRecords(
+                                        recordWith()
+                                                .status(SUCCESS)
+                                                .maxAutoAssociations(1)
+                                                .tokenTransfers(
+                                                        includingFungibleMovement(
+                                                                moving(20, A_TOKEN)
+                                                                        .to(VALID_ALIAS))))
+                                .logged(),
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .hasToken(relationshipWith(A_TOKEN).balance(20)),
+                        getAccountInfo(civilian)
+                                .hasToken(relationshipWith(A_TOKEN).balance(90))
+                                .has(accountWith().balanceLessThan(10 * ONE_HBAR)))
                 .then(
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAccountInfo(autoCreateSponsor).logged(),
-                        getAliasedAccountInfo(alias1).logged());
+                        /* --- transfer another token to created alias */
+                        cryptoTransfer(moving(10, B_TOKEN).between(civilian, VALID_ALIAS))
+                                .via("failedXfer")
+                                .payingWith(civilian)
+                                .signedBy(civilian, VALID_ALIAS, TOKEN_TREASURY)
+                                .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
     }
 
     private HapiApiSpec noStakePeriodStartIfNotStakingToNode() {

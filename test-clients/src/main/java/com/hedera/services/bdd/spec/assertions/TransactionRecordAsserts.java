@@ -313,6 +313,11 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
+    public TransactionRecordAsserts maxAutoAssociations(Integer amount) {
+        registerTypedProvider("automaticTokenAssociations", shouldBe(amount));
+        return this;
+    }
+
     public TransactionRecordAsserts ethereumHash(ByteString hash) {
         registerTypedProvider("ethereumHash", shouldBe(hash));
         return this;

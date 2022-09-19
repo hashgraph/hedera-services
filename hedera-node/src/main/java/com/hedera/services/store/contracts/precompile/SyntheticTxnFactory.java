@@ -21,7 +21,6 @@ import static com.hedera.services.context.properties.PropertyNames.STAKING_REWAR
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.getMaxAssociationsForAutoAccount;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
@@ -30,7 +29,6 @@ import com.google.protobuf.StringValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
@@ -479,9 +477,12 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createAccount(
-            final Key alias, final long balance, final BalanceChange change) {
+            final Key alias, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(alias, balance);
-        baseBuilder.setMaxAutomaticTokenAssociations(getMaxAssociationsForAutoAccount(change));
+
+        if (maxAutoAssociations > 0) {
+            baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
+        }
 
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }

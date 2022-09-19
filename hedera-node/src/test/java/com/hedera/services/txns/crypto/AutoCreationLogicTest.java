@@ -58,6 +58,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,6 +81,7 @@ class AutoCreationLogicTest {
     @Mock private RecordsHistorian recordsHistorian;
 
     private AutoCreationLogic subject;
+    private final HashMap<ByteString, Integer> tokenAliasMap = new HashMap<>();
 
     @BeforeEach
     void setUp() {
@@ -95,26 +97,27 @@ class AutoCreationLogicTest {
                         txnCtx);
 
         subject.setFeeCalculator(feeCalculator);
+        tokenAliasMap.put(alias, 1);
     }
 
     @Test
     void refusesToCreateBeyondMaxNumber() {
         final var input = wellKnownChange();
 
-        final var result = subject.create(input, accountsLedger);
+        final var result = subject.create(input, accountsLedger, tokenAliasMap);
         assertEquals(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, result.getLeft());
     }
 
     @Test
     void happyPathWithHbarChangeWorks() {
         givenCollaborators();
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, wellKnownChange()))
+        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 0))
                 .willReturn(mockSyntheticCreation);
 
         final var input = wellKnownChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
 
-        final var result = subject.create(input, accountsLedger);
+        final var result = subject.create(input, accountsLedger, tokenAliasMap);
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
@@ -135,13 +138,13 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithFungibleTokenChangeWorks() {
         givenCollaborators();
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, wellKnownTokenChange()))
+        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 10))
                 .willReturn(mockSyntheticCreation);
 
         final var input = wellKnownTokenChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
 
-        final var result = subject.create(input, accountsLedger);
+        final var result = subject.create(input, accountsLedger, tokenAliasMap);
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
@@ -174,13 +177,13 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithNonFungibleTokenChangeWorks() {
         givenCollaborators();
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, wellKnownNftChange()))
+        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
 
         final var input = wellKnownNftChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
 
-        final var result = subject.create(input, accountsLedger);
+        final var result = subject.create(input, accountsLedger, tokenAliasMap);
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(20L, input.getAggregatedUnits());

@@ -51,7 +51,6 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
@@ -428,11 +427,7 @@ class SyntheticTxnFactoryTest {
     void createsExpectedCryptoCreate() {
         final var balance = 10L;
         final var alias = KeyFactory.getDefaultInstance().newEd25519();
-        final var result =
-                subject.createAccount(
-                        alias,
-                        balance,
-                        BalanceChange.hbarAdjust(EntityNum.fromLong(10).toId(), 100));
+        final var result = subject.createAccount(alias, balance, 0);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -450,12 +445,7 @@ class SyntheticTxnFactoryTest {
     void fungibleTokenChangeAddsAutoAssociations() {
         final var balance = 10L;
         final var alias = KeyFactory.getDefaultInstance().newEd25519();
-        final var result =
-                subject.createAccount(
-                        alias,
-                        balance,
-                        BalanceChange.tokenAdjust(
-                                EntityNum.fromLong(10).toId(), Id.fromGrpcToken(token), 100));
+        final var result = subject.createAccount(alias, balance, 10);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -483,7 +473,7 @@ class SyntheticTxnFactoryTest {
 
         final var nftChange = changingNftOwnership(Id.fromGrpcToken(token), token, xfer, payer);
 
-        final var result = subject.createAccount(alias, balance, nftChange);
+        final var result = subject.createAccount(alias, balance, 1);
 
         final var txnBody = result.build();
 

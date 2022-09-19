@@ -176,7 +176,7 @@ class TransferLogicTest {
         final var failingTrigger =
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
 
-        given(autoCreationLogic.create(failingTrigger, accountsLedger))
+        given(autoCreationLogic.create(failingTrigger, accountsLedger, tokenAliasMap))
                 .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
         accountsLedger.begin();
         accountsLedger.create(mockCreation);
@@ -203,7 +203,7 @@ class TransferLogicTest {
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         final var secondTrigger =
                 BalanceChange.changingHbar(aliasedAa(secondAlias, secondAmount), payer);
-        given(autoCreationLogic.create(firstTrigger, accountsLedger))
+        given(autoCreationLogic.create(firstTrigger, accountsLedger, tokenAliasMap))
                 .willAnswer(
                         invocationOnMock -> {
                             accountsLedger.create(firstNewAccount);
@@ -212,7 +212,7 @@ class TransferLogicTest {
                             change.setNewBalance(change.getAggregatedUnits());
                             return Pair.of(OK, autoFee);
                         });
-        given(autoCreationLogic.create(secondTrigger, accountsLedger))
+        given(autoCreationLogic.create(secondTrigger, accountsLedger, tokenAliasMap))
                 .willAnswer(
                         invocationOnMock -> {
                             accountsLedger.create(secondNewAccount);
