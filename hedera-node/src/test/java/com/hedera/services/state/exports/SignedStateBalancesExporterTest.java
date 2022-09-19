@@ -60,9 +60,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -295,7 +295,7 @@ class SignedStateBalancesExporterTest {
                 MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
         final var expectedHash =
                 messageDigest.digest(expectedAccountBalances.build().toByteArray());
-        given(signer.apply(expectedHash)).willReturn(sig);
+        given(signer.apply(expectedHash)).willReturn(new Signature(SignatureType.RSA, sig));
 
         // when
         subject.exportBalancesFrom(state, now, nodeId);

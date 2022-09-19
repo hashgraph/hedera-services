@@ -58,8 +58,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import javax.inject.Inject;
-import java.util.function.UnaryOperator;
 import java.util.zip.GZIPOutputStream;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.time.StopWatch;
@@ -107,7 +105,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
             final SystemExits systemExits,
             final @CompositeProps PropertySource properties,
             final Function<byte[], Signature> signer,
-            final GlobalDynamicProperties dynamicProperties) throws NoSuchAlgorithmException {
+            final GlobalDynamicProperties dynamicProperties)
+            throws NoSuchAlgorithmException {
         this.signer = signer;
         this.systemExits = systemExits;
         this.expectedFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);

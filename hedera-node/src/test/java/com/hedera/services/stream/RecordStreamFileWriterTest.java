@@ -15,8 +15,8 @@
  */
 package com.hedera.services.stream;
 
-import static com.swirlds.common.crypto.SignatureType.RSA;
 import static com.hedera.services.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
+import static com.swirlds.common.crypto.SignatureType.RSA;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;

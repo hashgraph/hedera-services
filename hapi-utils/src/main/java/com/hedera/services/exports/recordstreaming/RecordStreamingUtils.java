@@ -40,7 +40,8 @@ public class RecordStreamingUtils {
 
     public static Pair<Integer, Optional<RecordStreamFile>> readRecordStreamFile(
             final String fileLoc) throws IOException {
-        final var uncompressedFileContents = FileCompressionUtils.readUncompressedFileBytes(fileLoc);
+        final var uncompressedFileContents =
+                FileCompressionUtils.readUncompressedFileBytes(fileLoc);
         final var recordFileVersion = ByteBuffer.wrap(uncompressedFileContents, 0, 4).getInt();
         final var recordStreamFile =
                 RecordStreamFile.parseFrom(
