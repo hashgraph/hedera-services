@@ -15,27 +15,27 @@
  */
 package com.hedera.services.ledger.backing;
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.store.models.NftId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class HashMapBackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
-    private Map<NftId, MerkleUniqueToken> nfts = new HashMap<>();
+public class HashMapBackingNfts implements BackingStore<NftId, UniqueTokenAdapter> {
+    private Map<NftId, UniqueTokenAdapter> nfts = new HashMap<>();
 
     @Override
-    public MerkleUniqueToken getRef(NftId id) {
+    public UniqueTokenAdapter getRef(NftId id) {
         return nfts.get(id);
     }
 
     @Override
-    public MerkleUniqueToken getImmutableRef(NftId id) {
+    public UniqueTokenAdapter getImmutableRef(NftId id) {
         return nfts.get(id);
     }
 
     @Override
-    public void put(NftId id, MerkleUniqueToken nft) {
+    public void put(NftId id, UniqueTokenAdapter nft) {
         nfts.put(id, nft);
     }
 

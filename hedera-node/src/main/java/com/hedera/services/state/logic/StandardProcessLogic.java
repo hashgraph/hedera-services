@@ -15,12 +15,14 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.state.expiry.EntityAutoRenewal;
+import com.hedera.services.state.expiry.EntityAutoExpiry;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
@@ -42,7 +44,7 @@ public class StandardProcessLogic implements ProcessLogic {
     private final InvariantChecks invariantChecks;
     private final ConsensusTimeTracker consensusTimeTracker;
     private final ExpandHandleSpan expandHandleSpan;
-    private final EntityAutoRenewal autoRenewal;
+    private final EntityAutoExpiry autoRenewal;
     private final ServicesTxnManager txnManager;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
@@ -57,7 +59,7 @@ public class StandardProcessLogic implements ProcessLogic {
             final InvariantChecks invariantChecks,
             final ExpandHandleSpan expandHandleSpan,
             final ConsensusTimeTracker consensusTimeTracker,
-            final EntityAutoRenewal autoRenewal,
+            final EntityAutoExpiry autoRenewal,
             final ServicesTxnManager txnManager,
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
@@ -83,6 +85,14 @@ public class StandardProcessLogic implements ProcessLogic {
     public void incorporateConsensusTxn(
             Transaction platformTxn, Instant consensusTime, long submittingMember) {
         try {
+            // Deduct 1000 nanos from the consensusTime allotted by platform, to accommodate the
+            // preceding,
+            // following child records and any long term scheduled transactions triggered by the
+            // current transaction
+            // in the balance file with consensus timestamp X to include all transactions whose
+            // consensus time T <= X.
+            consensusTime = consensusTime.minusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS);
+
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
             accessor.setStateView(workingView);
             if (!invariantChecks.holdFor(accessor, consensusTime, submittingMember)) {

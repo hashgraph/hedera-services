@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts;
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.operation.HederaOperationUtil;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -44,17 +46,22 @@ import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.ArrayDeque;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -180,15 +187,6 @@ class HederaWorldStateTest {
     }
 
     @Test
-    void returnsNullForDetached() {
-        given(entityAccess.isExtant(accountId)).willReturn(true);
-        given(entityAccess.isDeleted(accountId)).willReturn(false);
-        given(entityAccess.isDetached(accountId)).willReturn(true);
-
-        assertNull(subject.get(EntityIdUtils.asTypedEvmAddress(accountId)));
-    }
-
-    @Test
     void returnsNullForNull() {
         assertNull(subject.get(null));
     }
@@ -230,20 +228,14 @@ class HederaWorldStateTest {
         objectContractWorksForWorldState(acc);
 
         /* non-existent accounts should resolve to null */
-        given(entityAccess.isExtant(any())).willReturn(false);
+        given(entityAccess.isUsable(any())).willReturn(false);
         var nonExistent = subject.get(Address.RIPEMD160);
-        assertNull(nonExistent);
-
-        given(entityAccess.isExtant(any())).willReturn(true);
-        given(entityAccess.isDeleted(any())).willReturn(true);
-        nonExistent = subject.get(Address.RIPEMD160);
         assertNull(nonExistent);
     }
 
     private void givenWellKnownAccountWithCode(final AccountID account, final Bytes bytecode) {
         given(entityAccess.getBalance(account)).willReturn(balance);
-        given(entityAccess.isExtant(any())).willReturn(true);
-        given(entityAccess.isDeleted(any())).willReturn(false);
+        given(entityAccess.isUsable(any())).willReturn(true);
         if (bytecode != null) {
             given(entityAccess.fetchCodeIfPresent(any())).willReturn(bytecode);
         }
@@ -337,7 +329,7 @@ class HederaWorldStateTest {
         final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
         final var updater = subject.updater();
         // and:
-        given(entityAccess.isExtant(zeroAddress)).willReturn(true);
+        given(entityAccess.isUsable(zeroAddress)).willReturn(true);
         given(entityAccess.getBalance(zeroAddress)).willReturn(balance);
         // and:
         final var expected =
@@ -350,7 +342,7 @@ class HederaWorldStateTest {
         assertEquals(expected.getAddress(), result.getAddress());
         assertEquals(expected.getBalance(), result.getBalance());
         // and:
-        verify(entityAccess).isExtant(zeroAddress);
+        verify(entityAccess).isUsable(zeroAddress);
         verify(entityAccess).getBalance(zeroAddress);
     }
 
@@ -474,6 +466,96 @@ class HederaWorldStateTest {
     }
 
     @Test
+    void stateChangesInUpdaterAreSorted() {
+        givenNonNullWorldLedgers();
+        final var updater = subject.updater();
+        final var smallestAddress =
+                Address.fromHexString("0x000000000000000000000000000000000000077e");
+        final var intermediateAddress =
+                Address.fromHexString("0x0000000000000000000000000000000000000780");
+        final var biggestAddress =
+                Address.fromHexString("0x0000000000000000000000000000000000600000");
+        final var slot0 = Bytes32.fromHexString("0x00");
+        final var slot1 = Bytes32.fromHexString("0x01");
+        final var slot2 = Bytes32.fromHexString("0x02");
+        final var value0 = UInt256.valueOf(18);
+        final var value1 = UInt256.valueOf(16);
+        final var value2 = UInt256.valueOf(17);
+        final var messageFrame = mock(MessageFrame.class);
+        final var mockUpdater = mock(HederaWorldUpdater.class);
+        given(messageFrame.getWorldUpdater()).willReturn(mockUpdater);
+        given(mockUpdater.parentUpdater()).willReturn(Optional.ofNullable(updater));
+        final var messageFrameDeque = new ArrayDeque<MessageFrame>();
+        messageFrameDeque.add(messageFrame);
+        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameDeque);
+        // when:
+        HederaOperationUtil.cacheExistingValue(messageFrame, intermediateAddress, slot1, value1);
+        HederaOperationUtil.cacheExistingValue(messageFrame, intermediateAddress, slot0, value0);
+        HederaOperationUtil.cacheExistingValue(messageFrame, intermediateAddress, slot2, value2);
+        HederaOperationUtil.cacheExistingValue(messageFrame, smallestAddress, slot2, value2);
+        HederaOperationUtil.cacheExistingValue(messageFrame, smallestAddress, slot1, value1);
+        HederaOperationUtil.cacheExistingValue(messageFrame, smallestAddress, slot0, value0);
+        HederaOperationUtil.cacheExistingValue(messageFrame, biggestAddress, slot0, value0);
+        HederaOperationUtil.cacheExistingValue(messageFrame, biggestAddress, slot1, value1);
+        HederaOperationUtil.cacheExistingValue(messageFrame, biggestAddress, slot2, value2);
+        // then:
+        final var stateChangesGrpc =
+                SidecarUtils.createStateChangesSidecarFrom(updater.getStateChanges());
+        final var allStateChanges = stateChangesGrpc.getStateChanges();
+        // first state changes should be for the smallest address
+        final var contractStateChanges0 = allStateChanges.getContractStateChanges(0);
+        assertEquals(
+                smallestAddress,
+                EntityIdUtils.asTypedEvmAddress(contractStateChanges0.getContractId()));
+        final var storageChanges0 = contractStateChanges0.getStorageChangesList();
+        assertEquals(3, storageChanges0.size());
+        // slot order should also be from smallest to biggest
+        assertArrayEquals(
+                slot0.trimLeadingZeros().toArrayUnsafe(),
+                storageChanges0.get(0).getSlot().toByteArray());
+        assertArrayEquals(
+                slot1.trimLeadingZeros().toArrayUnsafe(),
+                storageChanges0.get(1).getSlot().toByteArray());
+        assertArrayEquals(
+                slot2.trimLeadingZeros().toArrayUnsafe(),
+                storageChanges0.get(2).getSlot().toByteArray());
+        // second state changes should be for the intermediate address
+        final var contractStateChanges1 = allStateChanges.getContractStateChanges(1);
+        assertEquals(
+                intermediateAddress,
+                EntityIdUtils.asTypedEvmAddress(contractStateChanges1.getContractId()));
+        final var storageChanges1 = contractStateChanges1.getStorageChangesList();
+        assertEquals(3, storageChanges1.size());
+        // slot order should also be from smallest to biggest
+        assertArrayEquals(
+                slot0.trimLeadingZeros().toArrayUnsafe(),
+                storageChanges1.get(0).getSlot().toByteArray());
+        assertArrayEquals(
+                slot1.trimLeadingZeros().toArrayUnsafe(),
+                storageChanges1.get(1).getSlot().toByteArray());
+        assertArrayEquals(
+                slot2.trimLeadingZeros().toArrayUnsafe(),
+                storageChanges1.get(2).getSlot().toByteArray());
+        // last state changes should be for the biggest address
+        final var contractStateChanges2 = allStateChanges.getContractStateChanges(2);
+        assertEquals(
+                biggestAddress,
+                EntityIdUtils.asTypedEvmAddress(contractStateChanges2.getContractId()));
+        final var storageChanges2 = contractStateChanges2.getStorageChangesList();
+        assertEquals(3, storageChanges2.size());
+        // slot order should also be from smallest to biggest
+        assertArrayEquals(
+                slot0.trimLeadingZeros().toArrayUnsafe(),
+                storageChanges2.get(0).getSlot().toByteArray());
+        assertArrayEquals(
+                slot1.trimLeadingZeros().toArrayUnsafe(),
+                storageChanges2.get(1).getSlot().toByteArray());
+        assertArrayEquals(
+                slot2.trimLeadingZeros().toArrayUnsafe(),
+                storageChanges2.get(2).getSlot().toByteArray());
+    }
+
+    @Test
     void stackedUpdaterPropagatesAllocatedIds() {
         givenNonNullWorldLedgers();
         given(worldLedgers.aliases()).willReturn(aliases);
@@ -560,7 +642,7 @@ class HederaWorldStateTest {
         final var actualSubject = subject.updater();
 
         final var accountId = accountIdFromEvmAddress(someAddress);
-        given(entityAccess.isExtant(accountId)).willReturn(true);
+        given(entityAccess.isUsable(accountId)).willReturn(true);
         given(entityAccess.getBalance(accountId)).willReturn(balance);
 
         actualSubject.getAccount(someAddress);

@@ -16,8 +16,9 @@
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hedera.services.yahcli.suites.Utils.isSpecialFile;
@@ -26,14 +27,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalLong;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,6 +45,7 @@ public class SysFileUploadSuite extends HapiApiSuite {
 
     private final int bytesPerOp;
     private final int appendsPerBurst;
+    private final boolean restartFromFailure;
     private final long sysFileId;
     private final String srcDir;
     private final boolean isDryRun;
@@ -56,18 +58,20 @@ public class SysFileUploadSuite extends HapiApiSuite {
             final Map<String, String> specConfig,
             final String sysFile,
             final boolean isDryRun) {
-        this(NOT_APPLICABLE, NOT_APPLICABLE, srcDir, specConfig, sysFile, isDryRun);
+        this(NOT_APPLICABLE, NOT_APPLICABLE, false, srcDir, specConfig, sysFile, isDryRun);
     }
 
     public SysFileUploadSuite(
             final int bytesPerOp,
             final int appendsPerBurst,
+            final boolean restartFromFailure,
             final String srcDir,
             final Map<String, String> specConfig,
             final String sysFile,
             final boolean isDryRun) {
         this.bytesPerOp = bytesPerOp;
         this.appendsPerBurst = appendsPerBurst;
+        this.restartFromFailure = restartFromFailure;
         this.srcDir = srcDir;
         this.isDryRun = isDryRun;
         this.specConfig = specConfig;
@@ -82,50 +86,67 @@ public class SysFileUploadSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         uploadData = appropriateContents(sysFileId);
-        return isDryRun
-                ? Collections.emptyList()
-                : List.of(
-                        new HapiApiSpec[] {
-                            uploadSysFiles(),
-                        });
+        return isDryRun ? Collections.emptyList() : List.of(uploadSysFiles());
     }
 
     private HapiApiSpec uploadSysFiles() {
         final var name = String.format("UploadSystemFile-%s", sysFileId);
         final var fileId = String.format("0.0.%d", sysFileId);
+        final var isSpecial = isSpecialFile(sysFileId);
+        final AtomicInteger wrappedAppendsToSkip = new AtomicInteger();
 
         return customHapiSpec(name)
                 .withProperties(specConfig)
-                .given()
+                .given(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    if (!restartFromFailure) {
+                                        return;
+                                    }
+                                    final var lookup = getFileInfo("0.0." + sysFileId);
+                                    allRunFor(spec, lookup);
+                                    final var currentHash =
+                                            lookup.getResponse()
+                                                    .getFileGetInfo()
+                                                    .getFileInfo()
+                                                    .getMemo();
+                                    wrappedAppendsToSkip.set(skippedAppendsFor(currentHash));
+                                }))
                 .when()
                 .then(
-                        isSpecialFile(sysFileId)
-                                ? updateSpecialFile(
-                                        DEFAULT_PAYER,
-                                        fileId,
-                                        uploadData,
-                                        bytesPerOp,
-                                        appendsPerBurst)
-                                : updateLargeFile(
-                                        DEFAULT_PAYER,
-                                        fileId,
-                                        uploadData,
-                                        true,
-                                        OptionalLong.of(10_000_000_000L),
-                                        updateOp ->
-                                                updateOp.alertingPre(
-                                                                COMMON_MESSAGES::uploadBeginning)
-                                                        .alertingPost(
-                                                                COMMON_MESSAGES::uploadEnding),
-                                        (appendOp, appendsLeft) ->
-                                                appendOp.alertingPre(
-                                                                COMMON_MESSAGES::appendBeginning)
-                                                        .alertingPost(
-                                                                code ->
-                                                                        COMMON_MESSAGES
-                                                                                .appendEnding(
-                                                                                        code,
-                                                                                        appendsLeft))));
+                        sourcing(
+                                () ->
+                                        isSpecial
+                                                ? updateSpecialFile(
+                                                        DEFAULT_PAYER,
+                                                        fileId,
+                                                        uploadData,
+                                                        bytesPerOp,
+                                                        appendsPerBurst,
+                                                        wrappedAppendsToSkip.get())
+                                                : updateLargeFile(
+                                                        DEFAULT_PAYER,
+                                                        fileId,
+                                                        uploadData,
+                                                        true,
+                                                        OptionalLong.of(10_000_000_000L),
+                                                        updateOp ->
+                                                                updateOp.alertingPre(
+                                                                                COMMON_MESSAGES
+                                                                                        ::uploadBeginning)
+                                                                        .alertingPost(
+                                                                                COMMON_MESSAGES
+                                                                                        ::uploadEnding),
+                                                        (appendOp, appendsLeft) ->
+                                                                appendOp.alertingPre(
+                                                                                COMMON_MESSAGES
+                                                                                        ::appendBeginning)
+                                                                        .alertingPost(
+                                                                                code ->
+                                                                                        COMMON_MESSAGES
+                                                                                                .appendEnding(
+                                                                                                        code,
+                                                                                                        appendsLeft)))));
     }
 
     private ByteString appropriateContents(final Long fileNum) {
@@ -147,6 +168,32 @@ public class SysFileUploadSuite extends HapiApiSuite {
         } catch (IOException e) {
             throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
         }
+    }
+
+    private int skippedAppendsFor(final String hexedCurrentHash) {
+        final var bytesToUpload = uploadData.size();
+
+        int position = Math.min(bytesPerOp, bytesToUpload);
+        int appendsToSkip = 0;
+        do {
+            final var hashSoFar = hexedPrefixHash(position);
+            if (hashSoFar.equals(hexedCurrentHash)) {
+                return appendsToSkip;
+            }
+            appendsToSkip++;
+            final var bytesLeft = bytesToUpload - position;
+            final var bytesThisAppend = Math.min(bytesLeft, bytesPerOp);
+            position += Math.max(1, bytesThisAppend);
+        } while (position <= bytesToUpload);
+        return 0;
+    }
+
+    private String hexedPrefixHash(final int prefixLen) {
+        byte[] hashSoFar =
+                com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf(
+                        ByteStringUtils.unwrapUnsafelyIfPossible(
+                                uploadData.substring(0, prefixLen)));
+        return CommonUtils.hex(hashSoFar);
     }
 
     private ByteString specialFileContents(long num) {

@@ -23,96 +23,64 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
 
 public class MiscRunningAvgs {
+    final double halfLife;
     private RunningAverageMetric gasPerConsSec;
-    private RunningAverageMetric accountRetryWaitMs;
-    private RunningAverageMetric accountLookupRetries;
     private RunningAverageMetric handledSubmitMessageSize;
     private RunningAverageMetric writeQueueSizeRecordStream;
     private RunningAverageMetric hashQueueSizeRecordStream;
 
     public MiscRunningAvgs(final double halfLife) {
-        gasPerConsSec =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.GAS_PER_CONSENSUS_SEC,
-                        Descriptions.GAS_PER_CONSENSUS_SEC,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        accountRetryWaitMs =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.ACCOUNT_RETRY_WAIT_MS,
-                        Descriptions.ACCOUNT_RETRY_WAIT_MS,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        accountLookupRetries =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.ACCOUNT_LOOKUP_RETRIES,
-                        Descriptions.ACCOUNT_LOOKUP_RETRIES,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        handledSubmitMessageSize =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.HANDLED_SUBMIT_MESSAGE_SIZE,
-                        Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        writeQueueSizeRecordStream =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
-                        Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        hashQueueSizeRecordStream =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.HASH_QUEUE_SIZE_RECORD_STREAM,
-                        Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
+        this.halfLife = halfLife;
     }
 
     public void registerWith(final Platform platform) {
-        platform.addAppMetrics(
-                gasPerConsSec,
-                accountRetryWaitMs,
-                accountLookupRetries,
-                handledSubmitMessageSize,
-                writeQueueSizeRecordStream,
-                hashQueueSizeRecordStream);
-    }
-
-    public void recordAccountLookupRetries(final int num) {
-        accountLookupRetries.recordValue(num);
-    }
-
-    public void recordAccountRetryWaitMs(final double time) {
-        accountRetryWaitMs.recordValue(time);
+        gasPerConsSec =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(STAT_CATEGORY, Names.GAS_PER_CONSENSUS_SEC)
+                                .withDescription(Descriptions.GAS_PER_CONSENSUS_SEC)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
+        handledSubmitMessageSize =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(
+                                        STAT_CATEGORY, Names.HANDLED_SUBMIT_MESSAGE_SIZE)
+                                .withDescription(Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
+        writeQueueSizeRecordStream =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(
+                                        STAT_CATEGORY, Names.WRITE_QUEUE_SIZE_RECORD_STREAM)
+                                .withDescription(Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
+        hashQueueSizeRecordStream =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(
+                                        STAT_CATEGORY, Names.HASH_QUEUE_SIZE_RECORD_STREAM)
+                                .withDescription(Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
     }
 
     public void recordHandledSubmitMessageSize(final int bytes) {
-        handledSubmitMessageSize.recordValue(bytes);
+        handledSubmitMessageSize.update(bytes);
     }
 
     public void writeQueueSizeRecordStream(final int num) {
-        writeQueueSizeRecordStream.recordValue(num);
+        writeQueueSizeRecordStream.update(num);
     }
 
     public void hashQueueSizeRecordStream(final int num) {
-        hashQueueSizeRecordStream.recordValue(num);
+        hashQueueSizeRecordStream.update(num);
     }
 
     public void recordGasPerConsSec(final long gas) {
-        gasPerConsSec.recordValue(gas);
+        gasPerConsSec.update(gas);
     }
 
     public static final class Names {
         static final String GAS_PER_CONSENSUS_SEC = "gasPerConsSec";
-        static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
-        static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
         static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
 
         static final String WRITE_QUEUE_SIZE_RECORD_STREAM = "writeQueueSizeRecordStream";
@@ -126,13 +94,8 @@ public class MiscRunningAvgs {
     public static final class Descriptions {
         static final String GAS_PER_CONSENSUS_SEC =
                 "average EVM gas used per second of consensus time";
-        static final String ACCOUNT_RETRY_WAIT_MS =
-                "average time is millis spent waiting to lookup the account number";
-        static final String ACCOUNT_LOOKUP_RETRIES =
-                "average number of retry attempts made to lookup the account number";
         static final String HANDLED_SUBMIT_MESSAGE_SIZE =
                 "average size of the handled HCS submit message transaction";
-
         static final String WRITE_QUEUE_SIZE_RECORD_STREAM =
                 "size of the queue from which we take records and write to RecordStream file";
         static final String HASH_QUEUE_SIZE_RECORD_STREAM =
@@ -146,16 +109,6 @@ public class MiscRunningAvgs {
     @VisibleForTesting
     void setGasPerConsSec(RunningAverageMetric gasPerConsSec) {
         this.gasPerConsSec = gasPerConsSec;
-    }
-
-    @VisibleForTesting
-    void setAccountRetryWaitMs(RunningAverageMetric accountRetryWaitMs) {
-        this.accountRetryWaitMs = accountRetryWaitMs;
-    }
-
-    @VisibleForTesting
-    void setAccountLookupRetries(RunningAverageMetric accountLookupRetries) {
-        this.accountLookupRetries = accountLookupRetries;
     }
 
     @VisibleForTesting

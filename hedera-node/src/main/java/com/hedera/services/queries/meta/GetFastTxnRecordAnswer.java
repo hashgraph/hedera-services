@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordResponse;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -42,7 +43,7 @@ public class GetFastTxnRecordAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         TransactionGetFastRecordQuery op = query.getTransactionGetFastRecord();
         ResponseType type = op.getHeader().getResponseType();
 

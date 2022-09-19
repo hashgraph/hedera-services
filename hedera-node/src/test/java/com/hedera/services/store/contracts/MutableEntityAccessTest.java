@@ -17,10 +17,9 @@ package com.hedera.services.store.contracts;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -40,7 +39,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
@@ -72,7 +71,7 @@ class MutableEntityAccessTest {
             tokenRelsLedger;
 
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-    @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     @Mock private TransactionContext txnCtx;
     @Mock private SignedTxnAccessor accessor;
@@ -162,13 +161,6 @@ class MutableEntityAccessTest {
     }
 
     @Test
-    void delegatesDetachmentTest() {
-        given(ledger.isDetached(id)).willReturn(true);
-
-        assertTrue(subject.isDetached(id));
-    }
-
-    @Test
     void delegatesAlias() {
         final var pretend = ByteString.copyFromUtf8("YAWN");
         given(ledger.alias(id)).willReturn(pretend);
@@ -190,15 +182,17 @@ class MutableEntityAccessTest {
     }
 
     @Test
-    void checksIfDeleted() {
-        // given:
-        given(ledger.isDeleted(id)).willReturn(true);
+    void checksIfUsableOk() {
+        given(ledger.usabilityOf(id)).willReturn(OK);
 
-        // when:
-        assertTrue(subject.isDeleted(id));
+        assertTrue(subject.isUsable(id));
+    }
 
-        // and:
-        verify(ledger).isDeleted(id);
+    @Test
+    void checksIfUsableNotOk() {
+        given(ledger.usabilityOf(id)).willReturn(ACCOUNT_DELETED);
+
+        assertFalse(subject.isUsable(id));
     }
 
     @Test

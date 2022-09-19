@@ -22,7 +22,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -70,10 +69,8 @@ class GetAccountNftInfosAnswerTest {
         Query answerOnly = getQuery(ANSWER_ONLY);
 
         // when:
-        Response costAnswerResponse =
-                subject.responseGiven(costAnswer, StateView.EMPTY_VIEW, OK, 0L);
-        Response answerOnlyResponse =
-                subject.responseGiven(answerOnly, StateView.EMPTY_VIEW, OK, 0L);
+        Response costAnswerResponse = subject.responseGiven(costAnswer, null, OK, 0L);
+        Response answerOnlyResponse = subject.responseGiven(answerOnly, null, OK, 0L);
 
         // then:
         assertEquals(
@@ -90,7 +87,7 @@ class GetAccountNftInfosAnswerTest {
     @Test
     void alwaysUnsupported() {
         // expect:
-        assertEquals(NOT_SUPPORTED, subject.checkValidity(query, StateView.EMPTY_VIEW));
+        assertEquals(NOT_SUPPORTED, subject.checkValidity(query, null));
     }
 
     @Test

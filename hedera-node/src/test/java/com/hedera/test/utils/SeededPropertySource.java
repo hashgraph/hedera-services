@@ -570,6 +570,12 @@ public class SeededPropertySource {
         return seeded;
     }
 
+    public MerkleNetworkContext next0300NetworkContext() {
+        final var base = next0270NetworkContext();
+        base.setExpiryUsageSnapshot(nextUsageSnapshot());
+        return base;
+    }
+
     public Instant[] nextNullableInstants(final int n) {
         return IntStream.range(0, n).mapToObj(i -> nextNullableInstant()).toArray(Instant[]::new);
     }

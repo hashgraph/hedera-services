@@ -47,9 +47,11 @@ public class StateMetadata implements FastCopyable {
     }
 
     @Override
-    public void release() {
+    public boolean release() {
         if (!aliases.isDestroyed()) {
-            aliases.release();
+            return aliases.release();
+        } else {
+            return false;
         }
     }
 

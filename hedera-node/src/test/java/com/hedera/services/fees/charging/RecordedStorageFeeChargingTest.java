@@ -15,10 +15,7 @@
  */
 package com.hedera.services.fees.charging;
 
-import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
@@ -87,24 +84,26 @@ class RecordedStorageFeeChargingTest {
     @Mock private TransactionContext txnCtx;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private FeeDistribution feeDistribution;
+    private NonHapiFeeCharging nonHapiFeeCharging;
 
     private RecordedStorageFeeCharging subject;
-
     private final AccountNumbers numbers = new MockAccountNumbers();
 
     @BeforeEach
     void setUp() {
         final var syntheticTxnFactory = new SyntheticTxnFactory(dynamicProperties);
-        final var feeDistribution = new FeeDistribution(numbers, dynamicProperties);
+        feeDistribution = new FeeDistribution(numbers, dynamicProperties);
+        nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         subject =
                 new RecordedStorageFeeCharging(
                         creator,
-                        feeDistribution,
                         exchange,
                         recordsHistorian,
                         txnCtx,
                         syntheticTxnFactory,
-                        dynamicProperties);
+                        dynamicProperties,
+                        nonHapiFeeCharging);
     }
 
     @Test
@@ -160,6 +159,31 @@ class RecordedStorageFeeChargingTest {
         verify(accountsLedger).set(cContract, BALANCE, 2L);
         verify(accountsLedger).set(funding, BALANCE, expectedACharge);
         verify(accountsLedger).set(funding, BALANCE, expectedACharge + expectedCCharge);
+    }
+
+    @Test
+    void usesAutoRenewPeriodForAncientContract() {
+        givenStandardSetup();
+        final Map<Long, KvUsageInfo> usageInfos = new LinkedHashMap<>();
+        usageInfos.put(aContract.getAccountNum(), nonFreeUsageFor(+2));
+        usageInfos.put(bContract.getAccountNum(), nonFreeUsageFor(-1));
+        final var expectedACharge =
+                STORAGE_PRICE_TIERS.priceOfPendingUsage(
+                        someRate,
+                        NUM_SLOTS_USED,
+                        REFERENCE_LIFETIME,
+                        usageInfos.get(aContract.getAccountNum()));
+        given(accountsLedger.get(funding, BALANCE)).willReturn(0L).willReturn(expectedACharge);
+
+        givenAncientChargeableContract(aContract, -1, REFERENCE_LIFETIME, anAutoRenew);
+        givenAutoRenew(anAutoRenew, expectedACharge + 1);
+
+        subject.chargeStorageRent(NUM_SLOTS_USED, usageInfos, accountsLedger);
+
+        verify(accountsLedger).set(anAutoRenew, BALANCE, 1L);
+        verify(accountsLedger, never()).set(eq(aContract), eq(BALANCE), anyLong());
+        verify(accountsLedger).set(funding, BALANCE, expectedACharge);
+        verify(accountsLedger).set(funding, BALANCE, expectedACharge);
     }
 
     @Test
@@ -623,6 +647,25 @@ class RecordedStorageFeeChargingTest {
             given(accountsLedger.get(id, BALANCE)).willReturn(amount);
         }
         given(accountsLedger.get(id, EXPIRY)).willReturn(now.getEpochSecond() + expiry);
+        if (autoRenewId != null) {
+            given(accountsLedger.get(id, AUTO_RENEW_ACCOUNT_ID))
+                    .willReturn(EntityId.fromGrpcAccountId(autoRenewId));
+        } else {
+            given(accountsLedger.get(id, AUTO_RENEW_ACCOUNT_ID))
+                    .willReturn(EntityId.MISSING_ENTITY_ID);
+        }
+    }
+
+    private void givenAncientChargeableContract(
+            final AccountID id,
+            final long amount,
+            final long expiry,
+            @Nullable AccountID autoRenewId) {
+        if (amount > -1) {
+            given(accountsLedger.get(id, BALANCE)).willReturn(amount);
+        }
+        given(accountsLedger.get(id, EXPIRY)).willReturn(now.getEpochSecond() - expiry);
+        given(accountsLedger.get(id, AUTO_RENEW_PERIOD)).willReturn(expiry);
         if (autoRenewId != null) {
             given(accountsLedger.get(id, AUTO_RENEW_ACCOUNT_ID))
                     .willReturn(EntityId.fromGrpcAccountId(autoRenewId));

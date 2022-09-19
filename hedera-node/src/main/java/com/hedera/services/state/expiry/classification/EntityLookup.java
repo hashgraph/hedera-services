@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,5 @@ public class EntityLookup {
 
     public MerkleAccount getMutableAccount(final EntityNum account) {
         return accounts.get().getForModify(account);
-    }
-
-    public boolean accountsContainsKey(final EntityNum account) {
-        return accounts.get().containsKey(account);
     }
 }

@@ -118,9 +118,7 @@ public class GlobalDynamicProperties {
     private boolean enableAllowances;
     private boolean limitTokenAssociations;
     private boolean enableHTSPrecompileCreate;
-    private int maxPurgedKvPairsPerTouch;
     private KnownBlockValues knownBlockValues;
-    private int maxReturnedNftsPerTouch;
     private long exchangeRateGasReq;
     private long stakingRewardRate;
     private long stakingStartThreshold;
@@ -146,6 +144,7 @@ public class GlobalDynamicProperties {
     private boolean enableTraceabilityMigration;
     private boolean itemizeStorageFees;
     private ContractStoragePriceTiers storagePriceTiers;
+    private boolean compressRecordFilesOnCreation;
 
     @Inject
     public GlobalDynamicProperties(
@@ -257,10 +256,6 @@ public class GlobalDynamicProperties {
         limitTokenAssociations = properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS);
         enableHTSPrecompileCreate =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE);
-        maxPurgedKvPairsPerTouch =
-                properties.getIntProperty(AUTO_REMOVE_MAX_PURGED_KV_PAIRS_PER_TOUCH);
-        maxReturnedNftsPerTouch =
-                properties.getIntProperty(AUTO_REMOVE_MAX_RETURNED_NFTS_PER_TOUCH);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
         exchangeRateGasReq =
                 properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
@@ -298,6 +293,8 @@ public class GlobalDynamicProperties {
                         maxAggregateContractKvPairs,
                         properties.getLongProperty(CONTRACTS_REFERENCE_SLOT_LIFETIME));
         itemizeStorageFees = properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES);
+        compressRecordFilesOnCreation =
+                properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
     }
 
     public int maxTokensPerAccount() {
@@ -604,16 +601,8 @@ public class GlobalDynamicProperties {
         return enableHTSPrecompileCreate;
     }
 
-    public int getMaxPurgedKvPairsPerTouch() {
-        return maxPurgedKvPairsPerTouch;
-    }
-
     public KnownBlockValues knownBlockValues() {
         return knownBlockValues;
-    }
-
-    public int getMaxReturnedNftsPerTouch() {
-        return maxReturnedNftsPerTouch;
     }
 
     public long exchangeRateGasReq() {
@@ -714,5 +703,9 @@ public class GlobalDynamicProperties {
 
     public boolean shouldItemizeStorageFees() {
         return itemizeStorageFees;
+    }
+
+    public boolean shouldCompressRecordFilesOnCreation() {
+        return compressRecordFilesOnCreation;
     }
 }

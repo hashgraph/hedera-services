@@ -15,10 +15,9 @@
  */
 package com.hedera.services.context.properties;
 
-import java.util.Arrays;
-import java.util.EnumSet;
+import static com.hedera.services.utils.MiscUtils.csvSet;
+
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public enum EntityType {
     ACCOUNT,
@@ -29,10 +28,6 @@ public enum EntityType {
     TOPIC;
 
     public static Set<EntityType> csvTypeSet(final String propertyValue) {
-        return Arrays.stream(propertyValue.split(","))
-                .map(String::strip)
-                .filter(desc -> desc.length() > 0)
-                .map(EntityType::valueOf)
-                .collect(Collectors.toCollection(() -> EnumSet.noneOf(EntityType.class)));
+        return csvSet(propertyValue, EntityType::valueOf, EntityType.class);
     }
 }

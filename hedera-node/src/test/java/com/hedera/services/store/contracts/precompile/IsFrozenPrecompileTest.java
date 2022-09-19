@@ -47,7 +47,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -103,7 +103,7 @@ class IsFrozenPrecompileTest {
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-    @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
     @Mock private AccessorFactory accessorFactory;
 
     @Mock

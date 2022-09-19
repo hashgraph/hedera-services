@@ -15,7 +15,7 @@
  */
 package com.hedera.services.files.sysfiles;
 
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.context.properties.PropertyNames.*;
 
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
@@ -24,6 +24,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;
@@ -49,6 +50,7 @@ public class ConfigCallbacks {
     private final HapiOpPermissions hapiOpPermissions;
     private final Supplier<AddressBook> addressBook;
     private final GlobalDynamicProperties dynamicProps;
+    private final ExpiryThrottle expiryThrottle;
     private final FunctionalityThrottling hapiThrottling;
     private final FunctionalityThrottling handleThrottling;
     private final FunctionalityThrottling scheduleThrottling;
@@ -60,6 +62,7 @@ public class ConfigCallbacks {
             final HapiOpPermissions hapiOpPermissions,
             final GlobalDynamicProperties dynamicProps,
             final PropertySources propertySources,
+            final ExpiryThrottle expiryThrottle,
             final @HapiThrottle FunctionalityThrottling hapiThrottling,
             final @HandleThrottle FunctionalityThrottling handleThrottling,
             final @ScheduleThrottle FunctionalityThrottling scheduleThrottling,
@@ -70,6 +73,7 @@ public class ConfigCallbacks {
         this.dynamicProps = dynamicProps;
         this.propertySources = propertySources;
         this.hapiOpPermissions = hapiOpPermissions;
+        this.expiryThrottle = expiryThrottle;
         this.hapiThrottling = hapiThrottling;
         this.handleThrottling = handleThrottling;
         this.scheduleThrottling = scheduleThrottling;
@@ -86,6 +90,9 @@ public class ConfigCallbacks {
             hapiThrottling.applyGasConfig();
             handleThrottling.applyGasConfig();
             scheduleThrottling.applyGasConfig();
+            expiryThrottle.rebuildGiven(
+                    properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE),
+                    properties.getAccessListProperty(EXPIRY_MIN_CYCLE_ENTRY_CAPACITY));
             networkCtx.get().renumberBlocksToMatch(dynamicProps.knownBlockValues());
             updateMinAndMaxStakesWith(
                     properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT),

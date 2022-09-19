@@ -23,15 +23,12 @@ import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOK
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
@@ -47,11 +44,11 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
     private final OptionValidator validator;
 
     private BalanceChange balanceChange;
-    private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
 
     public MerkleAccountScopedCheck(
             final OptionValidator validator,
-            final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
+            final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger) {
         this.validator = validator;
         this.nftsLedger = nftsLedger;
     }
@@ -133,7 +130,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
             @Nullable final Function<AccountProperty, Object> extantProps,
             final Map<AccountProperty, Object> changeSet) {
         if ((boolean) getEffective(IS_DELETED, account, extantProps, changeSet)) {
-            return ResponseCodeEnum.ACCOUNT_DELETED;
+            return ACCOUNT_DELETED;
         }
 
         final var expiry = (long) getEffective(EXPIRY, account, extantProps, changeSet);
@@ -189,6 +186,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
         return OK;
     }
 
+    @SuppressWarnings("unchecked")
     private ResponseCodeEnum validateHbarAllowance(
             @Nullable final MerkleAccount account,
             @Nullable final Function<AccountProperty, Object> extantProps,

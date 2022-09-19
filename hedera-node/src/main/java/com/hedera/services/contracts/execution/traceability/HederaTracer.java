@@ -27,16 +27,21 @@ import static com.hedera.services.contracts.execution.traceability.ContractActio
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
+import org.hyperledger.besu.evm.frame.MessageFrame.Type;
+import org.hyperledger.besu.evm.internal.Words;
 
 public class HederaTracer implements HederaOperationTracer {
 
@@ -60,49 +65,73 @@ public class HederaTracer implements HederaOperationTracer {
     @Override
     public void init(final MessageFrame initialFrame) {
         if (areActionSidecarsEnabled) {
-            // since this is the initial frame, call depth is always 0
-            trackActionFor(initialFrame, 0);
+            trackTopLevelActionFor(initialFrame);
         }
     }
 
     @Override
-    public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
+    public void traceExecution(MessageFrame currentFrame, ExecuteOperation executeOperation) {
         executeOperation.execute();
 
         if (areActionSidecarsEnabled) {
-            final var frameState = frame.getState();
+            final var frameState = currentFrame.getState();
             if (frameState != State.CODE_EXECUTING) {
                 if (frameState == State.CODE_SUSPENDED) {
-                    final var nextFrame = frame.getMessageFrameStack().peek();
-                    trackActionFor(nextFrame, nextFrame.getMessageFrameStack().size() - 1);
+                    final var nextFrame = currentFrame.getMessageFrameStack().peek();
+                    trackInnerActionFor(nextFrame, currentFrame);
                 } else {
-                    finalizeActionFor(currentActionsStack.pop(), frame, frameState);
+                    finalizeActionFor(currentActionsStack.pop(), currentFrame, frameState);
                 }
             }
         }
     }
 
-    private void trackActionFor(final MessageFrame frame, final int callDepth) {
-        // code can be empty when calling precompiles too, but we handle
-        // that in tracePrecompileCall, after precompile execution is completed
-        final var isCallToAccount = Code.EMPTY.equals(frame.getCode());
-        final var isTopLevelEVMTransaction = callDepth == 0;
+    private void trackTopLevelActionFor(final MessageFrame initialFrame) {
+        trackNewAction(
+                initialFrame,
+                action -> {
+                    action.setCallOperationType(toCallOperationType(initialFrame.getType()));
+                    action.setCallingAccount(
+                            EntityId.fromAddress(
+                                    asMirrorAddress(
+                                            initialFrame.getOriginatorAddress(), initialFrame)));
+                });
+    }
+
+    private void trackInnerActionFor(final MessageFrame nextFrame, final MessageFrame parentFrame) {
+        trackNewAction(
+                nextFrame,
+                action -> {
+                    action.setCallOperationType(
+                            toCallOperationType(parentFrame.getCurrentOperation().getOpcode()));
+                    action.setCallingContract(
+                            EntityId.fromAddress(
+                                    asMirrorAddress(
+                                            parentFrame.getContractAddress(), parentFrame)));
+                });
+    }
+
+    private void trackNewAction(
+            final MessageFrame messageFrame, final Consumer<SolidityAction> actionConfig) {
         final var action =
                 new SolidityAction(
-                        toContractActionType(frame.getType()),
-                        isTopLevelEVMTransaction
-                                ? EntityId.fromAddress(frame.getOriginatorAddress())
-                                : null,
-                        !isTopLevelEVMTransaction
-                                ? EntityId.fromAddress(frame.getSenderAddress())
-                                : null,
-                        frame.getRemainingGas(),
-                        frame.getInputData().toArray(),
-                        isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
-                        !isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
-                        frame.getValue().toLong(),
-                        callDepth,
-                        toCallOperationType(frame.getCurrentOperation().getOpcode()));
+                        toContractActionType(messageFrame.getType()),
+                        messageFrame.getRemainingGas(),
+                        messageFrame.getInputData().toArray(),
+                        messageFrame.getValue().toLong(),
+                        messageFrame.getMessageStackDepth());
+        final var recipient =
+                EntityId.fromAddress(
+                        asMirrorAddress(messageFrame.getContractAddress(), messageFrame));
+        if (Code.EMPTY.equals(messageFrame.getCode())) {
+            // code can be empty when calling precompiles too, but we handle
+            // that in tracePrecompileCall, after precompile execution is completed
+            action.setRecipientAccount(recipient);
+        } else {
+            action.setRecipientContract(recipient);
+        }
+        actionConfig.accept(action);
+
         allActions.add(action);
         currentActionsStack.push(action);
     }
@@ -124,27 +153,40 @@ public class HederaTracer implements HederaOperationTracer {
                     .ifPresentOrElse(
                             bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
                             () -> action.setRevertReason(new byte[0]));
+            if (frame.getType().equals(Type.CONTRACT_CREATION)) {
+                action.setRecipientContract(null);
+            }
         } else if (frameState == State.EXCEPTIONAL_HALT) {
             // exceptional exits always burn all gas
             action.setGasUsed(action.getGas());
             final var exceptionalHaltReasonOptional = frame.getExceptionalHaltReason();
             if (exceptionalHaltReasonOptional.isPresent()) {
                 final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
-                action.setError(
-                        exceptionalHaltReason.getDescription().getBytes(StandardCharsets.UTF_8));
+                action.setError(exceptionalHaltReason.name().getBytes(StandardCharsets.UTF_8));
                 if (exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
-                    if (action.getRecipientAccount() != null) {
-                        action.setInvalidSolidityAddress(
-                                action.getRecipientAccount().toEvmAddress().toArrayUnsafe());
-                        action.setRecipientAccount(null);
-                    } else {
-                        action.setInvalidSolidityAddress(
-                                action.getRecipientContract().toEvmAddress().toArrayUnsafe());
-                        action.setRecipientContract(null);
-                    }
+                    final var syntheticInvalidAction =
+                            new SolidityAction(
+                                    CALL,
+                                    frame.getRemainingGas(),
+                                    null,
+                                    0,
+                                    frame.getMessageStackDepth() + 1);
+                    syntheticInvalidAction.setCallingContract(
+                            EntityId.fromAddress(
+                                    asMirrorAddress(frame.getContractAddress(), frame)));
+                    syntheticInvalidAction.setInvalidSolidityAddress(
+                            Words.toAddress(frame.getStackItem(1)).toArray());
+                    syntheticInvalidAction.setError(
+                            INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
+                    syntheticInvalidAction.setCallOperationType(
+                            toCallOperationType(frame.getCurrentOperation().getOpcode()));
+                    allActions.add(syntheticInvalidAction);
                 }
             } else {
                 action.setError(new byte[0]);
+            }
+            if (frame.getType().equals(Type.CONTRACT_CREATION)) {
+                action.setRecipientContract(null);
             }
         }
     }
@@ -166,6 +208,10 @@ public class HederaTracer implements HederaOperationTracer {
         frame.setExceptionalHaltReason(haltReason);
     }
 
+    public List<SolidityAction> getActions() {
+        return allActions;
+    }
+
     private ContractActionType toContractActionType(final MessageFrame.Type type) {
         return switch (type) {
             case CONTRACT_CREATION -> CREATE;
@@ -185,7 +231,13 @@ public class HederaTracer implements HederaOperationTracer {
         };
     }
 
-    public List<SolidityAction> getActions() {
-        return allActions;
+    private CallOperationType toCallOperationType(final Type type) {
+        return type == Type.CONTRACT_CREATION ? OP_CREATE : OP_CALL;
+    }
+
+    private Address asMirrorAddress(final Address addressOrAlias, final MessageFrame messageFrame) {
+        final var aliases =
+                ((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).aliases();
+        return aliases.resolveForEvm(addressOrAlias);
     }
 }
