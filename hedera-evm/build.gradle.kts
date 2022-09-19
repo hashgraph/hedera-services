@@ -1,16 +1,8 @@
 plugins {
     id("com.hedera.hashgraph.hedera-conventions")
-    id("com.hedera.hashgraph.benchmark-conventions")
-    id("maven-publish")
 }
 
 description = "Hedera Evm"
-
-version '0.29.0-SNAPSHOT'
-
-repositories {
-    mavenCentral()
-}
 
 dependencies {
     implementation(project(":hapi-utils"))
@@ -24,6 +16,3 @@ dependencies {
     testImplementation(testLibs.bundles.testing)
 }
 
-test {
-    useJUnitPlatform()
-}
