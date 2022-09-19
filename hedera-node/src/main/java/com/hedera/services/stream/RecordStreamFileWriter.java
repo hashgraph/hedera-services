@@ -644,7 +644,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     }
 
     private SignatureObject generateSignatureObject(final byte[] hash) {
-        final var signature = signer.sign(hash);
+        final var signature = signer.sign(hash).getSignatureBytes();
         return SignatureObject.newBuilder()
                 .setType(SignatureType.SHA_384_WITH_RSA)
                 .setLength(signature.length)

@@ -24,6 +24,7 @@ import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -706,6 +707,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return grpcList;
     }
 
+    @VisibleForTesting
     public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
         throwIfImmutable("Cannot change this token's fee schedule from grpc if it's immutable.");
         feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).toList();

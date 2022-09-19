@@ -1,5 +1,5 @@
 #! /bin/sh
-TAG=${1:-'0.2.6'}
+TAG=${1:-'0.2.7'}
 
 cd ../..
 ./gradlew shadowJar \

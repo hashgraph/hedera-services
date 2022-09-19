@@ -31,6 +31,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -115,11 +116,6 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
     private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
     private int pseudoRandomNumber = MISSING_NUMBER;
-
-    @Override
-    public void release() {
-        /* No-op */
-    }
 
     public ExpirableTxnRecord() {
         /* RuntimeConstructable */
@@ -601,7 +597,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             grpc.setMemo(memo);
         }
         if (txnHash != null && txnHash.length > 0) {
-            grpc.setTransactionHash(ByteString.copyFrom(txnHash));
+            grpc.setTransactionHash(ByteStringUtils.wrapUnsafely(txnHash));
         }
         if (hbarAdjustments != null) {
             grpc.setTransferList(hbarAdjustments.toGrpc());
@@ -622,12 +618,14 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             grpc.setScheduleRef(scheduleRef.toGrpcScheduleId());
         }
         if (assessedCustomFees != NO_CUSTOM_FEES) {
-            grpc.addAllAssessedCustomFees(
-                    assessedCustomFees.stream().map(FcAssessedCustomFee::toGrpc).toList());
+            for (final var customFee : assessedCustomFees) {
+                grpc.addAssessedCustomFees(customFee.toGrpc());
+            }
         }
         if (newTokenAssociations != NO_NEW_TOKEN_ASSOCIATIONS) {
-            grpc.addAllAutomaticTokenAssociations(
-                    newTokenAssociations.stream().map(FcTokenAssociation::toGrpc).toList());
+            for (final var association : newTokenAssociations) {
+                grpc.addAutomaticTokenAssociations(association.toGrpc());
+            }
         }
         if (alias != MISSING_ALIAS) {
             grpc.setAlias(alias);

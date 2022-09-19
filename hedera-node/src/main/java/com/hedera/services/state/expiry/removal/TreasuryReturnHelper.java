@@ -72,7 +72,7 @@ public class TreasuryReturnHelper {
         }
     }
 
-    EntityNumPair finishNft(
+    EntityNumPair burnOrReturnNft(
             final boolean burn, final NftId rootKey, final UniqueTokenMapAdapter nfts) {
         final NftNumPair nextKey;
         if (burn) {

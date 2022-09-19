@@ -15,8 +15,9 @@
  */
 package com.hedera.services.stats;
 
-import static org.mockito.BDDMockito.mock;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
@@ -33,8 +34,6 @@ class MiscRunningAvgsTest {
     @Mock private Platform platform;
 
     @Mock private RunningAverageMetric gasPerSec;
-    @Mock private RunningAverageMetric waitMs;
-    @Mock private RunningAverageMetric retries;
     @Mock private RunningAverageMetric submitSizes;
     @Mock private RunningAverageMetric queueSize;
     @Mock private RunningAverageMetric hashS;
@@ -42,8 +41,6 @@ class MiscRunningAvgsTest {
 
     @BeforeEach
     void setup() {
-        platform = mock(Platform.class);
-
         subject = new MiscRunningAvgs(halfLife);
     }
 
@@ -53,31 +50,25 @@ class MiscRunningAvgsTest {
 
         subject.registerWith(platform);
 
-        verify(platform).addAppMetrics(gasPerSec, waitMs, retries, submitSizes, queueSize, hashS);
+        verify(platform, times(4)).getOrCreateMetric(any());
     }
 
     @Test
     void recordsToExpectedAvgs() {
         setMocks();
 
-        subject.recordAccountLookupRetries(1);
-        subject.recordAccountRetryWaitMs(2.0);
         subject.recordHandledSubmitMessageSize(3);
         subject.writeQueueSizeRecordStream(4);
         subject.hashQueueSizeRecordStream(5);
         subject.recordGasPerConsSec(6L);
 
-        verify(retries).recordValue(1.0);
-        verify(waitMs).recordValue(2.0);
-        verify(submitSizes).recordValue(3.0);
-        verify(queueSize).recordValue(4.0);
-        verify(hashS).recordValue(5);
-        verify(gasPerSec).recordValue(6L);
+        verify(submitSizes).update(3.0);
+        verify(queueSize).update(4.0);
+        verify(hashS).update(5);
+        verify(gasPerSec).update(6L);
     }
 
     private void setMocks() {
-        subject.setAccountLookupRetries(retries);
-        subject.setAccountRetryWaitMs(waitMs);
         subject.setHandledSubmitMessageSize(submitSizes);
         subject.setWriteQueueSizeRecordStream(queueSize);
         subject.setHashQueueSizeRecordStream(hashS);

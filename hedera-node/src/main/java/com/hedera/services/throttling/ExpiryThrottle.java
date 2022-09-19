@@ -47,34 +47,37 @@ public class ExpiryThrottle {
 
     private final HybridResouceLoader resourceLoader;
 
-    private DeterministicThrottle throttle;
-    private Map<MapAccessType, Integer> accessReqs;
+    private long minFreeReq;
+    private ThrottleConfig config;
 
     @Inject
     public ExpiryThrottle(final HybridResouceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
 
-    public boolean allow(final List<MapAccessType> accessTypes) {
-        return allow(accessTypes, null);
+    public boolean stillLacksMinFreeCapAfterLeakingUntil(final Instant now) {
+        if (config == null) {
+            return true;
+        }
+        config.throttle.leakUntil(now);
+        return config.throttle.capacityFree() < minFreeReq;
     }
 
-    public boolean allow(final List<MapAccessType> accessTypes, @Nullable final Instant now) {
-        if (throttle != null && accessReqs != null) {
-            final var effectiveNow = (now != null) ? now : throttle.lastDecisionTime();
-            throttle.resetLastAllowedUse();
-            return throttle.allow(requiredOps(accessTypes), effectiveNow);
+    public boolean allow(final List<MapAccessType> accessTypes) {
+        if (config != null) {
+            config.throttle.resetLastAllowedUse();
+            return config.throttle.allowInstantaneous(requiredOps(accessTypes));
         }
         return false;
     }
 
     public void reclaimLastAllowedUse() {
-        if (throttle != null) {
-            throttle.reclaimLastAllowedUse();
+        if (config != null) {
+            config.throttle.reclaimLastAllowedUse();
         }
     }
 
-    public void rebuildFromResource(final String resourceLoc) {
+    public void rebuildGiven(final String resourceLoc, final List<MapAccessType> minUnitOfWork) {
         try {
             resetInternalsFrom(resourceLoc);
         } catch (Exception userError) {
@@ -85,16 +88,20 @@ public class ExpiryThrottle {
                 log.error(
                         "Unable to load default expiry throttle, will reject all expiry work",
                         unrecoverable);
+                config = null;
             }
+        }
+        if (config != null) {
+            minFreeReq = config.throttle.clampedCapacityRequiredFor(requiredOps(minUnitOfWork));
         }
     }
 
     public void resetToSnapshot(final DeterministicThrottle.UsageSnapshot snapshot) {
-        if (throttle == null) {
+        if (config == null) {
             log.error("Attempt to reset expiry throttle to {} before initialization", snapshot);
         } else {
             safeResetThrottles(
-                    List.of(throttle),
+                    List.of(config.throttle),
                     new DeterministicThrottle.UsageSnapshot[] {snapshot},
                     "expiry");
         }
@@ -102,19 +109,22 @@ public class ExpiryThrottle {
 
     @Nullable
     public DeterministicThrottle getThrottle() {
-        return throttle;
+        return config.throttle;
     }
 
     @Nullable
     public DeterministicThrottle.UsageSnapshot getThrottleSnapshot() {
-        return (throttle == null) ? null : throttle.usageSnapshot();
+        return (config == null) ? null : config.throttle.usageSnapshot();
     }
+
+    private record ThrottleConfig(
+            DeterministicThrottle throttle, Map<MapAccessType, Integer> accessReqs) {}
 
     private void resetInternalsFrom(final String loc) throws JsonProcessingException {
         final var bucket = loadBucket(loc);
         final var mapping = bucket.asThrottleMapping(1);
-        throttle = mapping.getKey();
-        accessReqs =
+        final var throttle = mapping.getKey();
+        final var accessReqs =
                 mapping.getValue().stream()
                         .collect(
                                 toMap(
@@ -122,6 +132,7 @@ public class ExpiryThrottle {
                                         Pair::getValue,
                                         (a, b) -> a,
                                         () -> new EnumMap<>(MapAccessType.class)));
+        config = new ThrottleConfig(throttle, accessReqs);
     }
 
     private ThrottleBucket<MapAccessType> loadBucket(final String at)
@@ -136,7 +147,7 @@ public class ExpiryThrottle {
     private int requiredOps(final List<MapAccessType> accessTypes) {
         var ans = 0;
         for (final var accessType : accessTypes) {
-            ans += accessReqs.get(accessType);
+            ans += config.accessReqs.get(accessType);
         }
         return ans;
     }
@@ -146,5 +157,10 @@ public class ExpiryThrottle {
         final var om = new ObjectMapper();
         final var pojo = om.readValue(throttle, ExpiryThrottlePojo.class);
         return pojo.getBucket();
+    }
+
+    @VisibleForTesting
+    Map<MapAccessType, Integer> getAccessReqs() {
+        return config.accessReqs;
     }
 }

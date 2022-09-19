@@ -142,18 +142,16 @@ public class SyntheticTxnFactory {
         final var fungibleReturns = cryptoGcOutcome.fungibleTreasuryReturns();
         for (int i = 0, n = fungibleReturns.numReturns(); i < n; i++) {
             final var unitReturn = fungibleReturns.transfers().get(i);
-            opBuilder.addTokenTransfers(
+            final var listBuilder =
                     TokenTransferList.newBuilder()
-                            .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId())
-                            .addTransfers(
-                                    aaWith(
-                                            unitReturn.getAccountNums()[0],
-                                            unitReturn.getHbars()[0]))
-                            .addTransfers(
-                                    aaWith(
-                                            unitReturn.getAccountNums()[1],
-                                            unitReturn.getHbars()[1]))
-                            .build());
+                            .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId());
+            // This list can have just one entry if the token treasury was missing or deleted,
+            // in which case we just externalize the burning of the expired account's balance
+            for (int j = 0, m = unitReturn.getHbars().length; j < m; j++) {
+                listBuilder.addTransfers(
+                        aaWith(unitReturn.getAccountNums()[j], unitReturn.getHbars()[j]));
+            }
+            opBuilder.addTokenTransfers(listBuilder.build());
         }
 
         final var nonFungibleReturns = cryptoGcOutcome.nonFungibleTreasuryReturns();

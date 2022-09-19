@@ -35,6 +35,7 @@ import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.system.Platform;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.Test;
 
 class HapiOpCountersTest {
     private Platform platform;
+    private Counter counter;
     private MiscRunningAvgs runningAvgs;
     private TransactionContext txnCtx;
     private Function<HederaFunctionality, String> statNameFn;
@@ -58,11 +60,16 @@ class HapiOpCountersTest {
                         });
 
         txnCtx = mock(TransactionContext.class);
+        counter = mock(Counter.class);
         platform = mock(Platform.class);
         statNameFn = HederaFunctionality::toString;
         runningAvgs = mock(MiscRunningAvgs.class);
 
         subject = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
+
+        given(platform.getOrCreateMetric(any())).willReturn(counter);
+
+        subject.registerWith(platform);
     }
 
     @AfterEach
@@ -91,9 +98,7 @@ class HapiOpCountersTest {
 
     @Test
     void registersExpectedStatEntries() {
-        subject.registerWith(platform);
-
-        verify(platform, times(5)).addAppMetrics(any());
+        verify(platform, times(9)).getOrCreateMetric(any());
     }
 
     @Test
@@ -140,12 +145,7 @@ class HapiOpCountersTest {
         subject.countAnswered(TokenGetInfo);
         subject.countAnswered(TokenGetInfo);
 
-        assertEquals(3L, subject.receivedSoFar(CryptoTransfer));
-        assertEquals(2L, subject.submittedSoFar(CryptoTransfer));
-        assertEquals(1L, subject.handledSoFar(CryptoTransfer));
-        assertEquals(1L, subject.receivedDeprecatedTxnSoFar());
-        assertEquals(3L, subject.receivedSoFar(TokenGetInfo));
-        assertEquals(2L, subject.answeredSoFar(TokenGetInfo));
+        verify(counter, times(12)).increment();
     }
 
     @Test
@@ -164,6 +164,6 @@ class HapiOpCountersTest {
     @Test
     void deprecatedTxnsCountIncrementsByOne() {
         subject.countDeprecatedTxnReceived();
-        assertEquals(1L, subject.receivedDeprecatedTxnSoFar());
+        verify(counter).increment();
     }
 }

@@ -17,7 +17,9 @@ package com.hedera.services.sigs.utils;
 
 import com.hedera.services.context.NodeInfo;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.List;
 import java.util.function.Predicate;
 
 /** Contains static helpers used during precheck to validate signatures. */
@@ -36,9 +38,18 @@ public final class PrecheckUtils {
     public static Predicate<TransactionBody> queryPaymentTestFor(final NodeInfo nodeInfo) {
         return txn ->
                 txn.hasCryptoTransfer()
-                        && txn.getCryptoTransfer().getTransfers().getAccountAmountsList().stream()
-                                .filter(aa -> aa.getAmount() > 0)
-                                .map(AccountAmount::getAccountID)
-                                .anyMatch(nodeInfo.selfAccount()::equals);
+                        && includesCredit(
+                                txn.getCryptoTransfer().getTransfers().getAccountAmountsList(),
+                                nodeInfo.selfAccount());
+    }
+
+    private static boolean includesCredit(
+            final List<AccountAmount> adjusts, final AccountID beneficiary) {
+        for (final var adjust : adjusts) {
+            if (adjust.getAmount() > 0 && adjust.getAccountID().equals(beneficiary)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

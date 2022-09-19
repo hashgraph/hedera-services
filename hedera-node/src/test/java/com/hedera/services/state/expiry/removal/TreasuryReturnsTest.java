@@ -131,10 +131,42 @@ class TreasuryReturnsTest {
     }
 
     @Test
+    void recoversFromCorruptRelsLinks() {
+        givenCorruptUnitsSetup();
+        given(expiryThrottle.allow(any())).willReturn(true);
+        given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
+
+        final var expected = new FungibleTreasuryReturns(List.of(), List.of(), true);
+
+        final var actual = subject.returnFungibleUnitsFrom(accountWithRels);
+
+        assertEquals(expected, actual);
+        assertEquals(0, accountWithRels.getNumAssociations());
+        assertTrue(accountWithRels.isDeleted());
+    }
+
+    @Test
     void returnsAllNftsGivenCapacity() {
         givenStandardNftsSetup(true, true);
         given(expiryThrottle.allow(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
+
+        final var expected = NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
+
+        final var actual = subject.returnNftsFrom(accountWithNfts);
+
+        assertEquals(expected, actual);
+        assertEquals(0, accountWithNfts.getNftsOwned());
+        assertTrue(accountWithNfts.isDeleted());
+    }
+
+    @Test
+    void recoversFromBadFinish() {
+        givenCorruptNfsSetup();
+        given(expiryThrottle.allow(any())).willReturn(true);
+        given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
+        given(returnHelper.burnOrReturnNft(true, bNftKey.asNftNumPair().nftId(), nfts))
+                .willThrow(NullPointerException.class);
 
         final var expected = NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
 
@@ -304,6 +336,15 @@ class TreasuryReturnsTest {
         }
     }
 
+    private void givenCorruptUnitsSetup() {
+        subject.setRelRemovalFacilitation(relRemover);
+        given(tokens.get(aRelKey.getLowOrderAsNum())).willReturn(fungibleToken);
+        given(tokenRels.get(aRelKey)).willReturn(aRelStatus);
+
+        given(relRemover.removeNext(eq(aRelKey), eq(aRelKey), any(TokenRelsListMutation.class)))
+                .willThrow(NullPointerException.class);
+    }
+
     private void givenStandardNftsSetup(final boolean includeB, final boolean includeBRemoval) {
         given(tokens.get(aNftKey.getHiOrderAsNum())).willReturn(nfToken);
         if (includeB) {
@@ -319,7 +360,7 @@ class TreasuryReturnsTest {
                                 any(List.class),
                                 any(List.class)))
                 .willReturn(true);
-        given(returnHelper.finishNft(false, aNftKey.asNftNumPair().nftId(), nfts))
+        given(returnHelper.burnOrReturnNft(false, aNftKey.asNftNumPair().nftId(), nfts))
                 .willReturn(bNftKey);
         if (includeBRemoval) {
             given(
@@ -331,9 +372,24 @@ class TreasuryReturnsTest {
                                     any(List.class),
                                     any(List.class)))
                     .willReturn(false);
-            given(returnHelper.finishNft(true, bNftKey.asNftNumPair().nftId(), nfts))
+            given(returnHelper.burnOrReturnNft(true, bNftKey.asNftNumPair().nftId(), nfts))
                     .willReturn(null);
         }
+    }
+
+    private void givenCorruptNfsSetup() {
+        given(tokens.get(aNftKey.getHiOrderAsNum())).willReturn(nfToken);
+        given(tokens.get(bNftKey.getHiOrderAsNum())).willReturn(deletedNfToken);
+
+        given(
+                        returnHelper.updateNftReturns(
+                                eq(num),
+                                eq(aNftKey.getHiOrderAsNum()),
+                                eq(nfToken),
+                                eq(aNftKey.getLowOrderAsLong()),
+                                any(List.class),
+                                any(List.class)))
+                .willReturn(true);
     }
 
     private final long aSerialNo = 777L;

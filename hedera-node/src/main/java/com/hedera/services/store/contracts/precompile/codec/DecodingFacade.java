@@ -278,6 +278,13 @@ public class DecodingFacade {
                     + ","
                     + EXPIRY
                     + ")";
+    private static final String HEDERA_TOKEN_STRUCT_V2 =
+            "(string,string,address,string,bool,int64,bool,"
+                    + TOKEN_KEY
+                    + ARRAY_BRACKETS
+                    + ","
+                    + EXPIRY
+                    + ")";
     private static final String HEDERA_TOKEN_STRUCT_DECODER =
             "(string,string,bytes32,string,bool,int64,bool,"
                     + TOKEN_KEY_DECODER
@@ -290,6 +297,10 @@ public class DecodingFacade {
             new Function("createFungibleToken(" + HEDERA_TOKEN_STRUCT + ",uint256,uint256)");
     private static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR =
             Bytes.wrap(TOKEN_CREATE_FUNGIBLE_FUNCTION.selector());
+    private static final Function TOKEN_CREATE_FUNGIBLE_FUNCTION_V2 =
+            new Function("createFungibleToken(" + HEDERA_TOKEN_STRUCT_V2 + ",uint64,uint32)");
+    private static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR_V2 =
+            Bytes.wrap(TOKEN_CREATE_FUNGIBLE_FUNCTION_V2.selector());
     private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_DECODER =
             TypeFactory.create("(" + HEDERA_TOKEN_STRUCT_DECODER + ",uint256,uint256)");
 
@@ -297,9 +308,12 @@ public class DecodingFacade {
             new Function("createNonFungibleToken(" + HEDERA_TOKEN_STRUCT + ")");
     private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_SELECTOR =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_FUNCTION.selector());
+    private static final Function TOKEN_CREATE_NON_FUNGIBLE_FUNCTION_V2 =
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_STRUCT_V2 + ")");
+    private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_SELECTOR_V2 =
+            Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_FUNCTION_V2.selector());
     private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_DECODER =
             TypeFactory.create("(" + HEDERA_TOKEN_STRUCT_DECODER + ")");
-
     private static final Function TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION =
             new Function(
                     "createFungibleTokenWithCustomFees("
@@ -313,6 +327,19 @@ public class DecodingFacade {
                             + ")");
     private static final Bytes TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR =
             Bytes.wrap(TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION.selector());
+    private static final Function TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION_V2 =
+            new Function(
+                    "createFungibleTokenWithCustomFees("
+                            + HEDERA_TOKEN_STRUCT_V2
+                            + ",uint64,uint32,"
+                            + FIXED_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + FRACTIONAL_FEE
+                            + ARRAY_BRACKETS
+                            + ")");
+    private static final Bytes TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR_V2 =
+            Bytes.wrap(TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION_V2.selector());
     private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER =
             TypeFactory.create(
                     "("
@@ -338,6 +365,20 @@ public class DecodingFacade {
                             + ")");
     private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION.selector());
+
+    private static final Function TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION_V2 =
+            new Function(
+                    "createNonFungibleTokenWithCustomFees("
+                            + HEDERA_TOKEN_STRUCT_V2
+                            + ","
+                            + FIXED_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + ROYALTY_FEE
+                            + ARRAY_BRACKETS
+                            + ")");
+    private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2 =
+            Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION_V2.selector());
     private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER =
             TypeFactory.create(
                     "("
@@ -468,6 +509,10 @@ public class DecodingFacade {
             new Function("updateTokenInfo(address," + HEDERA_TOKEN_STRUCT + ")");
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR =
             Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION.selector());
+    private static final Function TOKEN_UPDATE_INFO_FUNCTION_V2 =
+            new Function("updateTokenInfo(address," + HEDERA_TOKEN_STRUCT_V2 + ")");
+    private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V2 =
+            Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V2.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_INFO_DECODER =
             TypeFactory.create(
                     "(" + removeBrackets(BYTES32) + "," + HEDERA_TOKEN_STRUCT_DECODER + ")");
@@ -969,6 +1014,18 @@ public class DecodingFacade {
         return Dissociation.multiDissociation(accountID, tokenIDs);
     }
 
+    /**
+     * Decodes the given bytes of the fungible token.
+     *
+     * <p><b>Important: </b>This is an old version of this method and is superseded by
+     * decodeFungibleCreateV2(). The selector for this function is derived from:
+     * createFungibleToken((string,string,address,string,bool,uint32,bool,(uint256,(bool,address,bytes,bytes,address))[],
+     * (uint32,address,uint32)),uint256,uint256)
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenCreateWrapper codec
+     */
     public TokenCreateWrapper decodeFungibleCreate(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
@@ -983,6 +1040,19 @@ public class DecodingFacade {
                 aliasResolver);
     }
 
+    /**
+     * Decodes the given bytes of the fungible token.
+     *
+     * <p><b>Important: </b>This is an old version of this method and is superseded by
+     * decodeFungibleCreateWithFeesV2(). The selector for this function is derived from:
+     * createFungibleTokenWithCustomFees((string,string,address,string,bool,uint32,bool,(uint256,(bool,address,bytes,
+     * bytes,address))[],(uint32,address,uint32)),uint256,uint256,(uint32,address,bool,bool,address)[],
+     * (uint32,uint32,uint32,uint32,bool,address)[])
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenCreateWrapper codec
+     */
     public TokenCreateWrapper decodeFungibleCreateWithFees(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
@@ -1006,6 +1076,18 @@ public class DecodingFacade {
         return tokenCreateWrapper;
     }
 
+    /**
+     * Decodes the given bytes of the non-fungible token.
+     *
+     * <p><b>Important: </b>This is an old version of this method and is superseded by
+     * decodeNonFungibleCreateV2(). The selector for this function is derived from:
+     * createNonFungibleToken((string,string,address,string,bool,uint32,bool,(uint256,(bool,address,bytes,bytes,address))[],
+     * (uint32,address,uint32)))
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenCreateWrapper codec
+     */
     public TokenCreateWrapper decodeNonFungibleCreate(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
@@ -1018,12 +1100,147 @@ public class DecodingFacade {
                 decodedArguments.get(0), false, BigInteger.ZERO, BigInteger.ZERO, aliasResolver);
     }
 
+    /**
+     * Decodes the given bytes of the non-fungible token.
+     *
+     * <p><b>Important: </b>This is an old version of this method and is superseded by
+     * decodeNonFungibleCreateV2(). The selector for this function is derived from:
+     * createNonFungibleTokenWithCustomFees((string,string,address,string,bool,uint32,bool,(uint256,(bool,address,
+     * bytes,bytes,address))[],(uint32,address,uint32)),(uint32,address,bool,bool,address)[],
+     * (uint32,uint32,uint32,address,bool,address)[])
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenCreateWrapper codec
+     */
     public TokenCreateWrapper decodeNonFungibleCreateWithFees(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,
                         TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR,
+                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
+
+        final var tokenCreateWrapper =
+                decodeTokenCreateWithoutFees(
+                        decodedArguments.get(0),
+                        false,
+                        BigInteger.ZERO,
+                        BigInteger.ZERO,
+                        aliasResolver);
+        final var fixedFees = decodeFixedFees(decodedArguments.get(1), aliasResolver);
+        final var royaltyFees = decodeRoyaltyFees(decodedArguments.get(2), aliasResolver);
+        tokenCreateWrapper.setFixedFees(fixedFees);
+        tokenCreateWrapper.setRoyaltyFees(royaltyFees);
+
+        return tokenCreateWrapper;
+    }
+
+    /**
+     * Decodes the given bytes of the fungible token.
+     *
+     * <p><b>Important: </b>This is the latest version and supersedes decodeFungibleCreate(). The
+     * selector for this function is derived from:
+     * createFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],
+     * (uint32,address,uint32)),uint64,uint32)
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenCreateWrapper codec
+     */
+    public TokenCreateWrapper decodeFungibleCreateV2(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, TOKEN_CREATE_FUNGIBLE_SELECTOR_V2, TOKEN_CREATE_FUNGIBLE_DECODER);
+
+        return decodeTokenCreateWithoutFees(
+                decodedArguments.get(0),
+                true,
+                decodedArguments.get(1),
+                decodedArguments.get(2),
+                aliasResolver);
+    }
+
+    /**
+     * Decodes the given bytes of the fungible token.
+     *
+     * <p><b>Important: </b>This is the latest version and supersedes
+     * decodeFungibleCreateWithFees(). The selector for this function is derived from:
+     * createFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,
+     * bytes,address))[],(uint32,address,uint32)),uint64,uint32,(uint32,address,bool,bool,address)[],
+     * (uint32,uint32,uint32,uint32,bool,address)[])
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenCreateWrapper codec
+     */
+    public TokenCreateWrapper decodeFungibleCreateWithFeesV2(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR_V2,
+                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER);
+
+        final var tokenCreateWrapper =
+                decodeTokenCreateWithoutFees(
+                        decodedArguments.get(0),
+                        true,
+                        decodedArguments.get(1),
+                        decodedArguments.get(2),
+                        aliasResolver);
+        final var fixedFees = decodeFixedFees(decodedArguments.get(3), aliasResolver);
+        final var fractionalFees = decodeFractionalFees(decodedArguments.get(4), aliasResolver);
+        tokenCreateWrapper.setFixedFees(fixedFees);
+        tokenCreateWrapper.setFractionalFees(fractionalFees);
+
+        return tokenCreateWrapper;
+    }
+
+    /**
+     * Decodes the given bytes of the non-fungible token.
+     *
+     * <p><b>Important: </b>This is the latest version and supersedes decodeNonFungibleCreateV2().
+     * The selector for this function is derived from:
+     * createNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],
+     * (uint32,address,uint32)))
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenCreateWrapper codec
+     */
+    public TokenCreateWrapper decodeNonFungibleCreateV2(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        TOKEN_CREATE_NON_FUNGIBLE_SELECTOR_V2,
+                        TOKEN_CREATE_NON_FUNGIBLE_DECODER);
+
+        return decodeTokenCreateWithoutFees(
+                decodedArguments.get(0), false, BigInteger.ZERO, BigInteger.ZERO, aliasResolver);
+    }
+
+    /**
+     * Decodes the given bytes of the non-fungible token.
+     *
+     * <p><b>Important: </b>This is the latest version and supersedes
+     * decodeNonFungibleCreateWithFees(). The selector for this function is derived from:
+     * createNonFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,
+     * bytes,address))[],(uint32,address,uint32)),(uint32,address,bool,bool,address)[],
+     * (uint32,uint32,uint32,address,bool,address)[])
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenCreateWrapper codec
+     */
+    public TokenCreateWrapper decodeNonFungibleCreateWithFeesV2(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2,
                         TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
 
         final var tokenCreateWrapper =
@@ -1425,10 +1642,50 @@ public class DecodingFacade {
         return accountIDs;
     }
 
+    /**
+     * Decodes the given bytes of the non-fungible token.
+     *
+     * <p><b>Important: </b>This is an old version of this method and is superseded by
+     * decodeUpdateTokenInfoV2(). The selector for this function is derived from:
+     * updateTokenInfo(address,(string,string,address,string,bool,uint32,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)))
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenUpdateWrapper codec
+     */
     public TokenUpdateWrapper decodeUpdateTokenInfo(
             Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR, TOKEN_UPDATE_INFO_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        final Tuple hederaTokenStruct = decodedArguments.get(1);
+        final var tokenName = (String) hederaTokenStruct.get(0);
+        final var tokenSymbol = (String) hederaTokenStruct.get(1);
+        final var tokenTreasury =
+                convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
+        final var tokenMemo = (String) hederaTokenStruct.get(3);
+        final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
+        final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
+        return new TokenUpdateWrapper(
+                tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
+    }
+
+    /**
+     * Decodes the given bytes of the updateTokenInfo function.
+     *
+     * <p><b>Important: </b>This is the latest version and supersedes
+     * decodeNonFungibleCreateWithFees(). The selector for this function is derived from:
+     * updateTokenInfo(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)))
+     *
+     * @param input encoded bytes containing selector and input parameters
+     * @param aliasResolver function used to resolve aliases
+     * @return TokenUpdateWrapper codec
+     */
+    public TokenUpdateWrapper decodeUpdateTokenInfoV2(
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR_V2, TOKEN_UPDATE_INFO_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final Tuple hederaTokenStruct = decodedArguments.get(1);

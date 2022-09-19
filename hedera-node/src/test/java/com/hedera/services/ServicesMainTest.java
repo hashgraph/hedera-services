@@ -32,7 +32,6 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.state.exports.AccountsExporter;
-import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
@@ -40,18 +39,18 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
-import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.merkle.map.MerkleMap;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Assertions;
@@ -62,8 +61,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ServicesMainTest {
-    private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
-    private final long round = 1_234_567L;
     private final long selfId = 123L;
     private final long unselfId = 666L;
     private final NodeId nodeId = new NodeId(false, selfId);
@@ -81,15 +78,14 @@ class ServicesMainTest {
     @Mock private NodeInfo nodeInfo;
     @Mock private ReconnectCompleteListener reconnectListener;
     @Mock private StateWriteToDiskCompleteListener stateToDiskListener;
-    @Mock private InvalidSignedStateListener issListener;
+    @Mock private IssListener issListener;
+    @Mock private NewSignedStateListener newSignedStateListener;
     @Mock private NotificationEngine notificationEngine;
     @Mock private ServicesStatsManager statsManager;
     @Mock private AccountsExporter accountsExporter;
     @Mock private GrpcStarter grpcStarter;
     @Mock private CurrentPlatformStatus currentPlatformStatus;
     @Mock private RecordStreamManager recordStreamManager;
-    @Mock private ServicesState signedState;
-    @Mock private BalancesExporter balancesExporter;
 
     private ServicesMain subject = new ServicesMain();
 
@@ -144,7 +140,8 @@ class ServicesMainTest {
         verify(nodeInfo).validateSelfAccountIfStaked();
         // and:
         verify(platform).setSleepAfterSync(0L);
-        verify(platform).addSignedStateListener(issListener);
+        verify(notificationEngine).register(IssListener.class, issListener);
+        verify(notificationEngine).register(NewSignedStateListener.class, newSignedStateListener);
         verify(statsManager).initializeFor(platform);
         verify(accountsExporter).toFile(accounts);
         verify(notificationEngine).register(ReconnectCompleteListener.class, reconnectListener);
@@ -216,42 +213,6 @@ class ServicesMainTest {
     }
 
     @Test
-    void justLogsIfFreezeCompleteAndNotTimeToExport() throws NoSuchAlgorithmException {
-        withRunnableApp();
-
-        given(app.platformStatus()).willReturn(currentPlatformStatus);
-        given(app.balancesExporter()).willReturn(balancesExporter);
-        given(currentPlatformStatus.get()).willReturn(FREEZE_COMPLETE);
-        // and:
-        subject.init(platform, nodeId);
-
-        // when:
-        subject.newSignedState(signedState, consensusNow, round);
-
-        // then:
-        verify(signedState).logSummary();
-    }
-
-    @Test
-    void exportsIfTime() throws NoSuchAlgorithmException {
-        withRunnableApp();
-
-        given(app.platformStatus()).willReturn(currentPlatformStatus);
-        given(app.balancesExporter()).willReturn(balancesExporter);
-        given(app.nodeId()).willReturn(nodeId);
-        given(balancesExporter.isTimeToExport(consensusNow)).willReturn(true);
-        given(currentPlatformStatus.get()).willReturn(ACTIVE);
-        // and:
-        subject.init(platform, nodeId);
-
-        // when:
-        subject.newSignedState(signedState, consensusNow, round);
-
-        // then:
-        verify(balancesExporter).exportBalancesFrom(signedState, consensusNow, nodeId);
-    }
-
-    @Test
     void failsHardIfCannotInit() throws NoSuchAlgorithmException {
         withFailingApp();
 
@@ -290,6 +251,7 @@ class ServicesMainTest {
         given(app.nodeInfo()).willReturn(nodeInfo);
         given(app.platform()).willReturn(platform);
         given(app.issListener()).willReturn(issListener);
+        given(app.newSignedStateListener()).willReturn(newSignedStateListener);
         given(app.notificationEngine()).willReturn(() -> notificationEngine);
         given(app.reconnectListener()).willReturn(reconnectListener);
         given(app.stateWriteToDiskListener()).willReturn(stateToDiskListener);
