@@ -322,6 +322,13 @@ public class MigrationRecordsManager {
 
                             final var bytecodeSidecar =
                                     generateMigrationBytecodeSidecarFor(contractId);
+                            if (bytecodeSidecar == null) {
+                                log.warn(
+                                        "Contract 0.0.{} has no bytecode in state - no migration"
+                                                + " sidecar records will be published.",
+                                        contractId.getContractNum());
+                                return;
+                            }
                             transactionContext.addSidecarRecord(bytecodeSidecar);
                             log.debug(
                                     "Published migration bytecode sidecar for contract 0.0.{}",
@@ -352,6 +359,9 @@ public class MigrationRecordsManager {
             final ContractID contractId) {
         final var runtimeCode =
                 entityAccess.fetchCodeIfPresent(EntityIdUtils.asAccount(contractId));
+        if (runtimeCode == null) {
+            return null;
+        }
         final var bytecodeSidecar =
                 SidecarUtils.createContractBytecodeSidecarFrom(
                         contractId, runtimeCode.toArrayUnsafe());

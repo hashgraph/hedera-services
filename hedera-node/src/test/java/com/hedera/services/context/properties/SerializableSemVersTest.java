@@ -47,6 +47,13 @@ class SerializableSemVersTest {
     }
 
     @Test
+    void ordersWithRespectToAlphaNumber() {
+        final var alpha1 = semVerWith(1, 9, 9, "alpha.1", null);
+        final var alpha0 = semVerWith(1, 9, 9, "alpha.0", null);
+        assertTrue(SEM_VER_COMPARATOR.compare(alpha0, alpha1) < 0);
+    }
+
+    @Test
     void comparatorPrioritizesOrderAsExpected() {
         assertTrue(
                 SEM_VER_COMPARATOR.compare(
@@ -65,7 +72,7 @@ class SerializableSemVersTest {
                         < 0);
         assertTrue(
                 SEM_VER_COMPARATOR.compare(
-                                semVerWith(1, 0, 1, "pre", null),
+                                semVerWith(1, 0, 1, "alpha.12345", null),
                                 semVerWith(1, 0, 1, null, "build"))
                         < 0);
         assertTrue(

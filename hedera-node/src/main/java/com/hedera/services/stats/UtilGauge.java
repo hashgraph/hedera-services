@@ -15,7 +15,11 @@
  */
 package com.hedera.services.stats;
 
+import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.metrics.DoubleGauge;
 import java.util.function.DoubleSupplier;
 
-public record UtilGauge(DoubleSupplier valueSource, DoubleGauge gauge) {}
+public record UtilGauge(
+        DoubleSupplier valueSource,
+        DoubleGauge.Config config,
+        NonAtomicReference<DoubleGauge> gauge) {}

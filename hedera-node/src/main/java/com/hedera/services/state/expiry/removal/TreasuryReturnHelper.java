@@ -71,7 +71,7 @@ public class TreasuryReturnHelper {
         }
     }
 
-    EntityNumPair finishNft(
+    EntityNumPair burnOrReturnNft(
             final boolean burn,
             final EntityNumPair rootKey,
             final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts) {

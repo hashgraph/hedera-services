@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.utils.EntityNum;
 
 /** Provides the logic needed for the account and contract expiry and removal cycle */
@@ -28,7 +28,7 @@ public interface RemovalWork {
      * @param account expired account
      * @return result for the successful removal
      */
-    EntityProcessResult tryToRemoveAccount(EntityNum account);
+    ExpiryProcessResult tryToRemoveAccount(EntityNum account);
     /**
      * Tries to remove an expired contract and returns {@code EntityProcessResult.DONE} if it is
      * successful. If the auto-removal of expiring contracts is not enabled, returns {@code
@@ -37,5 +37,5 @@ public interface RemovalWork {
      * @param contract expired contract
      * @return result for the successful removal
      */
-    EntityProcessResult tryToRemoveContract(EntityNum contract);
+    ExpiryProcessResult tryToRemoveContract(EntityNum contract);
 }

@@ -16,6 +16,8 @@
 package com.hedera.services.utils;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.services.throttling.MapAccessType.STORAGE_REMOVE;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
@@ -151,6 +153,7 @@ import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.stats.ServicesStatsConfig;
+import com.hedera.services.throttling.MapAccessType;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -261,6 +264,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
+    @Test
+    void canGetListOfAccessTypes() {
+        final var expected = List.of(ACCOUNTS_GET, ACCOUNTS_GET, ACCOUNTS_GET, STORAGE_REMOVE);
+        final var actual =
+                MiscUtils.csvList(
+                        "ACCOUNTS_GET,ACCOUNTS_GET,ACCOUNTS_GET,STORAGE_REMOVE",
+                        MapAccessType::valueOf);
+        assertEquals(expected, actual);
+    }
+
     @Test
     void canRunWithLoggedDuration() {
         final var mockLogger = mock(Logger.class);

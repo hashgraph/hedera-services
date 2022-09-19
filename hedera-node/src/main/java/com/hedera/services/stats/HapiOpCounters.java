@@ -34,7 +34,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Counter.Config;
 import com.swirlds.common.system.Platform;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -57,7 +57,17 @@ public class HapiOpCounters {
             new EnumMap<>(HederaFunctionality.class);
     private final EnumMap<HederaFunctionality, Counter> answeredQueries =
             new EnumMap<>(HederaFunctionality.class);
-    private final Counter deprecatedTxns;
+    private Counter deprecatedTxns;
+
+    private EnumMap<HederaFunctionality, Counter.Config> receivedOpsConfig =
+            new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, Counter.Config> handledTxnsConfig =
+            new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, Counter.Config> submittedTxnsConfig =
+            new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, Counter.Config> answeredQueriesConfig =
+            new EnumMap<>(HederaFunctionality.class);
+    private Counter.Config deprecatedTxnsConfig;
 
     public HapiOpCounters(
             final MiscRunningAvgs runningAvgs,
@@ -71,63 +81,66 @@ public class HapiOpCounters {
                 .filter(function -> !IGNORED_FUNCTIONS.contains(function))
                 .forEach(
                         function -> {
-                            receivedOps.put(
+                            receivedOpsConfig.put(
                                     function,
-                                    counterFor(
+                                    counterConfigFor(
                                             function,
                                             COUNTER_RECEIVED_NAME_TPL,
                                             COUNTER_RECEIVED_DESC_TPL));
                             if (QUERY_FUNCTIONS.contains(function)) {
-                                answeredQueries.put(
+                                answeredQueriesConfig.put(
                                         function,
-                                        counterFor(
+                                        counterConfigFor(
                                                 function,
                                                 COUNTER_ANSWERED_NAME_TPL,
                                                 COUNTER_ANSWERED_DESC_TPL));
                             } else {
-                                submittedTxns.put(
+                                submittedTxnsConfig.put(
                                         function,
-                                        counterFor(
+                                        counterConfigFor(
                                                 function,
                                                 COUNTER_SUBMITTED_NAME_TPL,
                                                 COUNTER_SUBMITTED_DESC_TPL));
-                                handledTxns.put(
+                                handledTxnsConfig.put(
                                         function,
-                                        counterFor(
+                                        counterConfigFor(
                                                 function,
                                                 COUNTER_HANDLED_NAME_TPL,
                                                 COUNTER_HANDLED_DESC_TPL));
                             }
                         });
-        deprecatedTxns =
-                new Counter(
-                        STAT_CATEGORY,
-                        COUNTER_DEPRECATED_TXNS_NAME,
-                        COUNTER_RECEIVED_DEPRECATED_DESC,
-                        Counter.Mode.INCREASE_ONLY);
+        deprecatedTxnsConfig =
+                new Config(STAT_CATEGORY, COUNTER_DEPRECATED_TXNS_NAME)
+                        .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC);
     }
 
-    private Counter counterFor(
+    private Counter.Config counterConfigFor(
             final HederaFunctionality function, final String nameTpl, final String descTpl) {
         final var baseName = statNameFn.apply(function);
-        return new Counter(
-                STAT_CATEGORY,
-                String.format(nameTpl, baseName),
-                String.format(descTpl, baseName),
-                Counter.Mode.INCREASE_ONLY);
+        return new Counter.Config(STAT_CATEGORY, String.format(nameTpl, baseName))
+                .withDescription(String.format(descTpl, baseName));
     }
 
     public void registerWith(final Platform platform) {
-        registerCounters(platform, receivedOps);
-        registerCounters(platform, submittedTxns);
-        registerCounters(platform, handledTxns);
-        registerCounters(platform, answeredQueries);
-        platform.addAppMetrics(deprecatedTxns);
+        registerCounters(platform, receivedOps, receivedOpsConfig);
+        registerCounters(platform, submittedTxns, submittedTxnsConfig);
+        registerCounters(platform, handledTxns, handledTxnsConfig);
+        registerCounters(platform, answeredQueries, answeredQueriesConfig);
+        deprecatedTxns = platform.getOrCreateMetric(deprecatedTxnsConfig);
+
+        receivedOpsConfig = null;
+        submittedTxnsConfig = null;
+        handledTxnsConfig = null;
+        answeredQueriesConfig = null;
+        deprecatedTxnsConfig = null;
     }
 
     private void registerCounters(
-            final Platform platform, final Map<HederaFunctionality, Counter> counters) {
-        platform.addAppMetrics(counters.values().toArray(Metric[]::new));
+            final Platform platform,
+            final Map<HederaFunctionality, Counter> counters,
+            final Map<HederaFunctionality, Counter.Config> configs) {
+        configs.forEach(
+                (function, config) -> counters.put(function, platform.getOrCreateMetric(config)));
     }
 
     public void countReceived(final HederaFunctionality op) {

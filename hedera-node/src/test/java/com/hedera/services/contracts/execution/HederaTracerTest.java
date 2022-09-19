@@ -290,13 +290,13 @@ class HederaTracerTest {
         final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
         assertArrayEquals(
-                codeTooLarge.get().getDescription().getBytes(StandardCharsets.UTF_8),
+                codeTooLarge.get().name().getBytes(StandardCharsets.UTF_8),
                 solidityAction.getError());
         assertNull(solidityAction.getInvalidSolidityAddress());
     }
 
     @Test
-    void finalizesExceptionallyHaltedFrameWithInvalidAddressAccountRecipientAsExpected() {
+    void finalizesExceptionallyHaltedFrameWithInvalidAddressRecipientAsExpected() {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getCode()).willReturn(Code.EMPTY);
@@ -315,38 +315,66 @@ class HederaTracerTest {
         given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
         final var invalidSolidityAddress = Optional.of(INVALID_SOLIDITY_ADDRESS);
         given(messageFrame.getExceptionalHaltReason()).willReturn(invalidSolidityAddress);
+        given(messageFrame.getStackItem(1)).willReturn(Bytes.of(contract.toArrayUnsafe()));
+        final Operation operation = mock(Operation.class);
+        given(messageFrame.getCurrentOperation()).willReturn(operation);
+        given(operation.getOpcode()).willReturn(0xF1);
         subject.traceExecution(messageFrame, eo);
         // then
-        final var solidityAction = subject.getActions().get(0);
-        assertEquals(initialGas, solidityAction.getGasUsed());
+        final var topLevelAction = subject.getActions().get(0);
+        assertEquals(initialGas, topLevelAction.getGasUsed());
         assertArrayEquals(
-                invalidSolidityAddress.get().getDescription().getBytes(StandardCharsets.UTF_8),
-                solidityAction.getError());
-        assertNull(solidityAction.getRecipientAccount());
-        assertNull(solidityAction.getRecipientContract());
+                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8),
+                topLevelAction.getError());
+        assertEquals(EntityId.fromAddress(accountReceiver), topLevelAction.getRecipientAccount());
+        assertNull(topLevelAction.getRecipientContract());
+        assertNull(topLevelAction.getInvalidSolidityAddress());
+        final var syntheticInvalidAddressAction = subject.getActions().get(1);
+        assertEquals(CALL, syntheticInvalidAddressAction.getCallType());
+        assertEquals(OP_CALL, syntheticInvalidAddressAction.getCallOperationType());
+        assertEquals(0, syntheticInvalidAddressAction.getValue());
+        assertArrayEquals(new byte[0], syntheticInvalidAddressAction.getInput());
+        assertEquals(
+                messageFrame.getMessageStackDepth() + 1,
+                syntheticInvalidAddressAction.getCallDepth());
+        assertEquals(
+                EntityId.fromAddress(accountReceiver),
+                syntheticInvalidAddressAction.getCallingContract());
         assertArrayEquals(
-                accountReceiver.toArrayUnsafe(), solidityAction.getInvalidSolidityAddress());
+                contract.toArrayUnsafe(),
+                syntheticInvalidAddressAction.getInvalidSolidityAddress());
+        assertArrayEquals(
+                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8),
+                topLevelAction.getError());
+        assertEquals(messageFrame.getRemainingGas(), syntheticInvalidAddressAction.getGas());
     }
 
     @Test
-    void finalizesExceptionallyHaltedFrameWithInvalidAddressContractRecipientAsExpected() {
+    void clearsRecipientOfExceptionallyHaltedCreateFrame() {
         // given
-        givenTracedExecutingFrame(Type.MESSAGE_CALL);
+        givenTracedExecutingFrame(Type.CONTRACT_CREATION);
         subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
-        final var invalidSolidityAddress = Optional.of(INVALID_SOLIDITY_ADDRESS);
-        given(messageFrame.getExceptionalHaltReason()).willReturn(invalidSolidityAddress);
         subject.traceExecution(messageFrame, eo);
         // then
         final var solidityAction = subject.getActions().get(0);
-        assertEquals(initialGas, solidityAction.getGasUsed());
-        assertArrayEquals(
-                invalidSolidityAddress.get().getDescription().getBytes(StandardCharsets.UTF_8),
-                solidityAction.getError());
         assertNull(solidityAction.getRecipientAccount());
         assertNull(solidityAction.getRecipientContract());
-        assertArrayEquals(contract.toArrayUnsafe(), solidityAction.getInvalidSolidityAddress());
+    }
+
+    @Test
+    void clearsRecipientOfRevertedCreateFrame() {
+        // given
+        givenTracedExecutingFrame(Type.CONTRACT_CREATION);
+        subject.init(messageFrame);
+        // when
+        given(messageFrame.getState()).willReturn(State.REVERT);
+        subject.traceExecution(messageFrame, eo);
+        // then
+        final var solidityAction = subject.getActions().get(0);
+        assertNull(solidityAction.getRecipientAccount());
+        assertNull(solidityAction.getRecipientContract());
     }
 
     @Test
