@@ -45,9 +45,12 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class TreasuryReturns {
+    private static final Logger log = LogManager.getLogger(TreasuryReturns.class);
     private static final MerkleToken STANDIN_DELETED_TOKEN = new MerkleToken();
 
     static {
@@ -56,9 +59,13 @@ public class TreasuryReturns {
 
     static final List<MapAccessType> TOKEN_DELETION_CHECK = List.of(TOKENS_GET);
     static final List<MapAccessType> ONLY_REL_REMOVAL_WORK =
-            List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_REMOVE);
+            List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_GET, TOKEN_ASSOCIATIONS_REMOVE);
     static final List<MapAccessType> NEXT_REL_REMOVAL_WORK =
-            List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_REMOVE, TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
+            List.of(
+                    TOKENS_GET,
+                    TOKEN_ASSOCIATIONS_GET,
+                    TOKEN_ASSOCIATIONS_REMOVE,
+                    TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
     static final List<MapAccessType> NFT_BURN_WORK = List.of(NFTS_GET, NFTS_REMOVE);
     static final List<MapAccessType> NFT_RETURN_WORK = List.of(NFTS_GET_FOR_MODIFY);
     static final List<MapAccessType> ROOT_META_UPDATE_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
@@ -157,16 +164,19 @@ public class TreasuryReturns {
             if (!hasCapacityForNftReturn(expectedBurn)) {
                 break;
             }
-            final var returned =
-                    returnHelper.updateNftReturns(
-                            expiredNum,
-                            tokenNum,
-                            token,
-                            nftKey.getLowOrderAsLong(),
-                            tokenTypes,
-                            returnExchanges);
-            nftKey = returnHelper.finishNft(!returned, nftKey, curNfts);
-            n++;
+            try {
+                final var returnedSerialNo = nftKey.getLowOrderAsLong();
+                nftKey = returnHelper.burnOrReturnNft(expectedBurn, nftKey, curNfts);
+                returnHelper.updateNftReturns(
+                        expiredNum, tokenNum, token, returnedSerialNo, tokenTypes, returnExchanges);
+                n++;
+            } catch (Exception unrecoverable) {
+                log.error(
+                        "Unable to return all NFTs from account 0.0.{}",
+                        expiredNum.longValue(),
+                        unrecoverable);
+                nftKey = null;
+            }
         }
 
         final var numLeft = (nftKey == null) ? 0 : (expectedNfts - n);
@@ -191,22 +201,34 @@ public class TreasuryReturns {
         while (relKey != null && hasCapacityForRelRemovalAt(i) && i-- > 0) {
             final var tokenNum = relKey.getLowOrderAsNum();
             final var token = tokens.get().get(tokenNum);
-            if (token != null && token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-                final var rel = curRels.get(relKey);
-                final var tokenBalance = rel.getBalance();
-                if (tokenBalance > 0) {
-                    if (!token.isDeleted() && !expiryThrottle.allow(TREASURY_BALANCE_INCREMENT)) {
-                        break;
+            try {
+                if (token != null && token.tokenType() == TokenType.FUNGIBLE_COMMON) {
+                    final var rel = curRels.get(relKey);
+                    final var tokenBalance = rel.getBalance();
+                    if (tokenBalance > 0) {
+                        if (!token.isDeleted()
+                                && !expiryThrottle.allow(TREASURY_BALANCE_INCREMENT)) {
+                            break;
+                        }
+                        tokenTypes.add(tokenNum.toEntityId());
+                        returnHelper.updateFungibleReturns(
+                                expiredNum,
+                                tokenNum,
+                                token,
+                                tokenBalance,
+                                returnTransfers,
+                                curRels);
                     }
-                    tokenTypes.add(tokenNum.toEntityId());
-                    returnHelper.updateFungibleReturns(
-                            expiredNum, tokenNum, token, tokenBalance, returnTransfers, curRels);
                 }
+                relKey = relRemover.removeNext(relKey, relKey, listRemoval);
+                n++;
+            } catch (Exception unrecoverable) {
+                log.error(
+                        "Unable to return all fungible units from account 0.0.{}",
+                        expiredNum.longValue(),
+                        unrecoverable);
+                relKey = null;
             }
-
-            // We are always removing the root, hence receiving the new root
-            relKey = relRemover.removeNext(relKey, relKey, listRemoval);
-            n++;
         }
         final var numLeft = (relKey == null) ? 0 : (expectedRels - n);
         return new FungibleReturnOutcome(

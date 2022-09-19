@@ -67,7 +67,6 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
@@ -75,6 +74,8 @@ import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.io.PrintStream;
@@ -177,7 +178,9 @@ public interface ServicesApp {
 
     StateWriteToDiskCompleteListener stateWriteToDiskListener();
 
-    InvalidSignedStateListener issListener();
+    IssListener issListener();
+
+    NewSignedStateListener newSignedStateListener();
 
     Supplier<NotificationEngine> notificationEngine();
 

@@ -32,9 +32,10 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
+import com.hedera.services.state.exports.ServicesSignedStateListener;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.exports.ToStringAccountsExporter;
-import com.hedera.services.state.forensics.IssListener;
+import com.hedera.services.state.forensics.ServicesIssListener;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
@@ -69,7 +70,7 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.SystemExits;
-import com.swirlds.common.InvalidSignedStateListener;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
@@ -77,6 +78,8 @@ import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListene
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
@@ -92,11 +95,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import javax.inject.Singleton;
 
 @Module(includes = HandleLogicModule.class)
 public interface StateModule {
+    @Binds
+    @Singleton
+    IssListener bindIssListener(ServicesIssListener servicesIssListener);
+
+    @Binds
+    @Singleton
+    NewSignedStateListener bindNewSignedStateListener(
+            ServicesSignedStateListener servicesSignedStateListener);
+
     @Binds
     @Singleton
     SystemExits bindSystemExits(JvmSystemExits systemExits);
@@ -146,10 +157,6 @@ public interface StateModule {
     @Singleton
     SystemAccountsCreator bindSystemAccountsCreator(BackedSystemAccountsCreator backedCreator);
 
-    @Binds
-    @Singleton
-    InvalidSignedStateListener bindIssListener(IssListener issListener);
-
     @Provides
     @Singleton
     static VirtualMapFactory provideVirtualMapFactory() {
@@ -195,7 +202,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static UnaryOperator<byte[]> provideSigner(Platform platform) {
+    static Function<byte[], Signature> provideSigner(Platform platform) {
         return platform::sign;
     }
 

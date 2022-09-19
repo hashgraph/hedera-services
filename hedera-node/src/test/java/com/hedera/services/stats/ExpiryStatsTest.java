@@ -16,12 +16,11 @@
 package com.hedera.services.stats;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,41 +29,46 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MiscSpeedometersTest {
+class ExpiryStatsTest {
     private static final double halfLife = 10.0;
 
     @Mock private Platform platform;
-    @Mock private SpeedometerMetric syncVerifies;
-    @Mock private SpeedometerMetric txnRejections;
+    @Mock private RunningAverageMetric idsScannedPerConsSec;
+    @Mock private Counter contractsRemoved;
+    @Mock private Counter contractsRenewed;
 
-    private MiscSpeedometers subject;
+    private ExpiryStats subject;
 
     @BeforeEach
     void setup() {
-        platform = mock(Platform.class);
-        given(platform.getOrCreateMetric(any())).willReturn(syncVerifies).willReturn(txnRejections);
-
-        subject = new MiscSpeedometers(halfLife);
+        subject = new ExpiryStats(halfLife);
     }
 
     @Test
     void registersExpectedStatEntries() {
-        subject.setSyncVerifications(syncVerifies);
-        subject.setPlatformTxnRejections(txnRejections);
+        setMocks();
 
         subject.registerWith(platform);
 
-        verify(platform, times(2)).getOrCreateMetric(any());
+        verify(platform, times(3)).getOrCreateMetric(any());
     }
 
     @Test
-    void cyclesExpectedSpeedometers() {
-        subject.registerWith(platform);
+    void recordsToExpectedMetrics() {
+        setMocks();
 
-        subject.cycleSyncVerifications();
-        subject.cyclePlatformTxnRejections();
+        subject.countRemovedContract();
+        subject.countRenewedContract();
+        subject.includeIdsScannedInLastConsSec(5L);
 
-        verify(syncVerifies).cycle();
-        verify(txnRejections).cycle();
+        verify(contractsRemoved).increment();
+        verify(contractsRenewed).increment();
+        verify(idsScannedPerConsSec).update(5.0);
+    }
+
+    private void setMocks() {
+        subject.setIdsScannedPerConsSec(idsScannedPerConsSec);
+        subject.setContractsRemoved(contractsRemoved);
+        subject.setContractsRenewed(contractsRenewed);
     }
 }

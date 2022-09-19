@@ -49,11 +49,6 @@ public class BytesElement implements FastCopyable, SerializableHashable {
     }
 
     @Override
-    public void release() {
-        /* No-op */
-    }
-
-    @Override
     public Hash getHash() {
         return hash;
     }

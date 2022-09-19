@@ -110,13 +110,12 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
         treasuryCloner.ensureTreasuryClonesExist();
 
-        var allIds = accounts.idSet();
-        var ledgerFloat =
-                allIds.stream().mapToLong(id -> accounts.getImmutableRef(id).getBalance()).sum();
-        var msg =
-                String.format(
-                        "Ledger float is %d tinyBars in %d accounts.", ledgerFloat, allIds.size());
-        log.info(msg);
+        var ledgerFloat = 0L;
+        final var allIds = accounts.idSet();
+        for (final var id : allIds) {
+            ledgerFloat += accounts.getImmutableRef(id).getBalance();
+        }
+        log.info("Ledger float is {} tinyBars in {} accounts.", ledgerFloat, allIds.size());
     }
 
     public static void customizeAsStakingFund(final MerkleAccount account) {

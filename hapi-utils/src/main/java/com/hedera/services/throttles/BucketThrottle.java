@@ -119,9 +119,16 @@ public class BucketThrottle {
     }
 
     boolean allow(int n, long elapsedNanos) {
+        leakFor(elapsedNanos);
+        return allowInstantaneous(n);
+    }
+
+    void leakFor(long elapsedNanos) {
         final var leakedUnits = effectiveLeak(elapsedNanos);
         bucket.leak(leakedUnits);
+    }
 
+    boolean allowInstantaneous(int n) {
         if (productWouldOverflow(n, CAPACITY_UNITS_PER_TXN)) {
             return false;
         }

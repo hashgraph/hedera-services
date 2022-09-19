@@ -5,9 +5,9 @@
 [![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](docs/gradle-quickstart.md)
 [![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
 
-# Hedera Services 
+# Hedera Services
 
-Implementation of the [services offered](https://github.com/hashgraph/hedera-protobufs) by 
+Implementation of the [services offered](https://github.com/hashgraph/hedera-protobufs) by
 nodes in the Hedera public network, which is built on the Platform.
 
 ## Overview of child modules
@@ -19,19 +19,19 @@ nodes in the Hedera public network, which is built on the Platform.
 ## JVM
 OpenJDK 17 is strongly recommended.
 
-## Solidity 
+## Solidity
 Hedera Contracts support `pragma solidity <=0.8.9`.
 
-## Docker Compose quickstart 
+## Docker Compose quickstart
 
-The [Docker quickstart](docs/docker-quickstart.md) covers how to 
+The [Docker quickstart](docs/docker-quickstart.md) covers how to
 start a local network of Hedera Services nodes using Docker Compose.
 
-## Developer IntelliJ quickstart 
+## Developer IntelliJ quickstart
 
-The [IntelliJ quickstart](docs/intellij-quickstart.md) covers how to 
-start a local network of Hedera Services nodes from IntelliJ for
-testing and development.
+The [IntelliJ quickstart](docs/intellij-quickstart.md) covers how to
+start a local network of Services nodes from IntelliJ for testing and
+development.
 
 ## Support
 
@@ -50,4 +50,3 @@ expected to uphold this code of conduct.
 ## License
 
 [Apache License 2.0](LICENSE)
-

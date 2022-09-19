@@ -34,6 +34,7 @@ class EntityUtilGaugesTest {
 
     @Mock private UsageLimits usageLimits;
     @Mock private Platform platform;
+    @Mock private DoubleGauge pretendGauge;
 
     private EntityUtilGauges subject;
 
@@ -44,6 +45,7 @@ class EntityUtilGaugesTest {
 
     @Test
     void registersAndUpdatesExpectedGauges() {
+        given(platform.getOrCreateMetric(any())).willReturn(pretendGauge);
         given(usageLimits.percentAccountsUsed()).willReturn(2.0);
         given(usageLimits.percentContractsUsed()).willReturn(3.0);
         given(usageLimits.percentFilesUsed()).willReturn(4.0);
@@ -57,6 +59,6 @@ class EntityUtilGaugesTest {
         subject.registerWith(platform);
         subject.updateAll();
 
-        verify(platform, times(9)).addAppMetrics(any(DoubleGauge.class));
+        verify(platform, times(9)).getOrCreateMetric(any(DoubleGauge.Config.class));
     }
 }

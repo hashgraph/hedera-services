@@ -60,6 +60,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
@@ -78,6 +80,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -129,7 +132,7 @@ class SignedStateBalancesExporterTest {
 
     private ServicesState state;
     private PropertySource properties;
-    private UnaryOperator<byte[]> signer;
+    private Function<byte[], Signature> signer;
     private SigFileWriter sigFileWriter;
     private FileHashReader hashReader;
     private DirectoryAssurance assurance;
@@ -219,7 +222,7 @@ class SignedStateBalancesExporterTest {
         given(state.addressBook()).willReturn(book);
 
         signer = mock(UnaryOperator.class);
-        given(signer.apply(fileHash)).willReturn(sig);
+        given(signer.apply(fileHash)).willReturn(new Signature(SignatureType.RSA, sig));
 
         systemExits = mock(SystemExits.class);
 
