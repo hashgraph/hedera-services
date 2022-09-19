@@ -32,6 +32,12 @@ public final class ValidationUtils {
         }
     }
 
+    public static void validateResourceLimit(final boolean flag, final ResponseCodeEnum code) {
+        if (!flag) {
+            throw new ResourceLimitException(code);
+        }
+    }
+
     public static void validateTrueOrRevert(final boolean flag, final ResponseCodeEnum code) {
         if (!flag) {
             throw new InvalidTransactionException(code, true);
@@ -55,6 +61,12 @@ public final class ValidationUtils {
             final boolean flag, final ResponseCodeEnum code, final String failureMsg) {
         if (flag) {
             throw new InvalidTransactionException(failureMsg, code);
+        }
+    }
+
+    public static void validateFalseOrRevert(final boolean flag, final ResponseCodeEnum code) {
+        if (flag) {
+            throw new InvalidTransactionException(code, true);
         }
     }
 }

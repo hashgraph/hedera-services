@@ -75,7 +75,7 @@ import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.HederaStore;
@@ -109,7 +109,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     private final OptionValidator validator;
     private final GlobalDynamicProperties properties;
     private final SideEffectsTracker sideEffectsTracker;
-    private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private final TransactionalLedger<
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
@@ -128,7 +128,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
             final TransactionalLedger<
                             Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
                     tokenRelsLedger,
-            final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+            final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
             final BackingStore<TokenID, MerkleToken> backingTokens) {
         super(ids);
         this.validator = validator;
@@ -365,7 +365,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         final var updatedToNumPositiveBalances =
                 toThisNftsOwned == 0 ? toNumPositiveBalances + 1 : toNumPositiveBalances;
 
-        // Note correctness here depends on rejecting self-transfers
+        // Note correctness here depends on rejecting self-exchanges
         accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - 1);
         accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
         accountsLedger.set(from, NUM_POSITIVE_BALANCES, updatedFromPositiveBalances);
@@ -585,6 +585,36 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
                     updateTokenNameIfAppropriate(token, changes);
                     updateTreasuryIfAppropriate(token, changes);
                     updateMemoIfAppropriate(token, changes);
+                    updateExpiryIfAppropriate(token, changes);
+                });
+        return appliedValidity.get();
+    }
+
+    public ResponseCodeEnum updateExpiryInfo(final TokenUpdateTransactionBody changes) {
+        final var tId = resolve(changes.getToken());
+        if (tId == MISSING_TOKEN) {
+            return INVALID_TOKEN_ID;
+        }
+        ResponseCodeEnum validity;
+
+        validity = checkAutoRenewAccount(changes);
+        if (validity != OK) {
+            return validity;
+        }
+
+        var appliedValidity = new AtomicReference<>(OK);
+        apply(
+                tId,
+                token -> {
+                    processExpiry(appliedValidity, changes, token);
+                    processAutoRenewAccount(appliedValidity, changes, token);
+
+                    if (OK != appliedValidity.get()) {
+                        return;
+                    }
+
+                    updateAutoRenewAccountIfAppropriate(token, changes);
+                    updateAutoRenewPeriodIfAppropriate(token, changes);
                     updateExpiryIfAppropriate(token, changes);
                 });
         return appliedValidity.get();

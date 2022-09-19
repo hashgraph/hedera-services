@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -78,7 +79,10 @@ class AbstractAnswerTest {
                         validityCheck) {
                     @Override
                     public Response responseGiven(
-                            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+                            Query query,
+                            @Nullable StateView view,
+                            ResponseCodeEnum validity,
+                            long cost) {
                         throw new UnsupportedOperationException();
                     }
                 };

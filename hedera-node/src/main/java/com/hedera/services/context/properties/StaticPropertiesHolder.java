@@ -26,15 +26,19 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 public class StaticPropertiesHolder {
+    private static final long DEFAULT_LAST_THROTTLE_EXEMPT = 100L;
+
     /* This will not be accessed concurrently, */
     public static final StaticPropertiesHolder STATIC_PROPERTIES = new StaticPropertiesHolder();
 
     private long shard = 0;
     private long realm = 0;
+    private long maxThrottleExemptNum = DEFAULT_LAST_THROTTLE_EXEMPT;
 
-    public void setNumbersFrom(final HederaNumbers hederaNum) {
+    public void configureNumbers(final HederaNumbers hederaNum, final long maxThrottleExemptNum) {
         shard = hederaNum.shard();
         realm = hederaNum.realm();
+        this.maxThrottleExemptNum = maxThrottleExemptNum;
     }
 
     public long getShard() {
@@ -43,6 +47,10 @@ public class StaticPropertiesHolder {
 
     public long getRealm() {
         return realm;
+    }
+
+    public boolean isThrottleExempt(final long num) {
+        return 1L <= num && num <= maxThrottleExemptNum;
     }
 
     public JContractIDKey scopedContractKeyWith(final long num) {

@@ -264,13 +264,17 @@ public class MerkleAccount extends PartialNaryMerkleInternal
         state().setHeadTokenId(headTokenId);
     }
 
-    public long getHeadNftId() {
+    public long getHeadNftTokenNum() {
         return state().getHeadNftId();
     }
 
     public void setHeadNftId(final long headNftId) {
         throwIfImmutable("Cannot change this account's headNftId if it's immutable");
         state().setHeadNftId(headNftId);
+    }
+
+    public EntityNumPair getHeadNftKey() {
+        return EntityNumPair.fromLongs(getHeadNftTokenNum(), getHeadNftSerialNum());
     }
 
     public long getHeadNftSerialNum() {

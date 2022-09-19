@@ -101,7 +101,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -181,7 +181,7 @@ class ERC721PrecompilesTest {
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
-    @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
@@ -949,9 +949,7 @@ class ERC721PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(
-                        syntheticTxnFactory.createApproveAllowanceForAllNFT(
-                                SET_APPROVAL_FOR_ALL_WRAPPER, token))
+        given(syntheticTxnFactory.createApproveAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -1021,9 +1019,7 @@ class ERC721PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(
-                        syntheticTxnFactory.createApproveAllowanceForAllNFT(
-                                SET_APPROVAL_FOR_ALL_WRAPPER, null))
+        given(syntheticTxnFactory.createApproveAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))

@@ -152,7 +152,6 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFO
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFOS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
-import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
@@ -164,6 +163,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -185,24 +185,23 @@ import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class MiscUtils {
     private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
+    private static final Logger log = LogManager.getLogger(MiscUtils.class);
 
     private MiscUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -398,7 +397,7 @@ public final class MiscUtils {
                 .entrySet()
                 .stream()
                 .filter(e -> e.getValue() != 0)
-                .sorted(comparing(Map.Entry::getKey, HederaLedger.ACCOUNT_ID_COMPARATOR))
+                .sorted(Map.Entry.comparingByKey(HederaLedger.ACCOUNT_ID_COMPARATOR))
                 .map(
                         e ->
                                 AccountAmount.newBuilder()
@@ -818,6 +817,8 @@ public final class MiscUtils {
             ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
         } else if (scheduledTxn.hasUtilPrng()) {
             ordinary.setUtilPrng(scheduledTxn.getUtilPrng());
+        } else if (scheduledTxn.hasCryptoApproveAllowance()) {
+            ordinary.setCryptoApproveAllowance(scheduledTxn.getCryptoApproveAllowance());
         }
         return ordinary.build();
     }
@@ -860,6 +861,14 @@ public final class MiscUtils {
         x ^= x >>> 24;
         x += x << 30;
         return x;
+    }
+
+    public static void withLoggedDuration(
+            final Runnable blockingTask, final Logger logger, final String desc) {
+        logger.info("Starting {}", desc);
+        final var watch = StopWatch.createStarted();
+        blockingTask.run();
+        logger.info("Done with {} in {}ms", desc, watch.getTime(TimeUnit.MILLISECONDS));
     }
 
     public static <K, V extends MerkleNode & Keyed<K>> void forEach(
@@ -927,5 +936,57 @@ public final class MiscUtils {
         final var signedTxn =
                 SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
         return Transaction.newBuilder().setSignedTransactionBytes(signedTxn.toByteString()).build();
+    }
+
+    public static void safeResetThrottles(
+            final List<DeterministicThrottle> throttles,
+            final DeterministicThrottle.UsageSnapshot[] snapshots,
+            final String source) {
+        var currUsageSnapshots =
+                throttles.stream().map(DeterministicThrottle::usageSnapshot).toList();
+        for (int i = 0, n = snapshots.length; i < n; i++) {
+            var savedUsageSnapshot = snapshots[i];
+            var throttle = throttles.get(i);
+            try {
+                throttle.resetUsageTo(savedUsageSnapshot);
+                log.info("Reset {} with saved usage snapshot", throttle);
+            } catch (Exception e) {
+                log.warn(
+                        "Saved {} usage snapshot #{} was not compatible with the corresponding"
+                                + " active throttle ({}) not performing a reset !",
+                        source,
+                        (i + 1),
+                        e.getMessage());
+                resetUnconditionally(throttles, currUsageSnapshots);
+                break;
+            }
+        }
+    }
+
+    public static <T extends Enum<T>> List<T> csvList(
+            final String propertyValue, final Function<String, T> parser) {
+        return csvStream(propertyValue, parser).toList();
+    }
+
+    public static <T extends Enum<T>> Set<T> csvSet(
+            final String propertyValue, final Function<String, T> parser, final Class<T> type) {
+        return csvStream(propertyValue, parser)
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
+    }
+
+    private static <T extends Enum<T>> Stream<T> csvStream(
+            final String propertyValue, final Function<String, T> parser) {
+        return Arrays.stream(propertyValue.split(","))
+                .map(String::strip)
+                .filter(desc -> desc.length() > 0)
+                .map(parser);
+    }
+
+    private static void resetUnconditionally(
+            List<DeterministicThrottle> throttles,
+            List<DeterministicThrottle.UsageSnapshot> knownCompatible) {
+        for (int i = 0, n = knownCompatible.size(); i < n; i++) {
+            throttles.get(i).resetUsageTo(knownCompatible.get(i));
+        }
     }
 }

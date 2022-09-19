@@ -27,6 +27,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private final CongestionMultipliers differentMultipliers =
             CongestionMultipliers.from("90,11x,95,26x,99,101x");
 
+    private int maxToTouch = 2;
     private int minCongestionPeriod = 2;
     private long gracePeriod = 604800;
     private boolean useAutoRenew = true;
@@ -190,6 +191,10 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
         useAutoRenew = true;
     }
 
+    public void enableContractAutoRenew() {
+        useContractAutoRenew = true;
+    }
+
     @Override
     public int autoRenewNumberOfEntitiesToScan() {
         return 100;
@@ -197,7 +202,11 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     @Override
     public int autoRenewMaxNumberOfEntitiesToRenewOrDelete() {
-        return 2;
+        return maxToTouch;
+    }
+
+    public void setMaxToTouch(int maxToTouch) {
+        this.maxToTouch = maxToTouch;
     }
 
     @Override

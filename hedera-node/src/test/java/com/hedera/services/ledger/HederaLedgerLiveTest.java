@@ -42,7 +42,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -82,7 +82,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
         nftsLedger =
                 new TransactionalLedger<>(
                         NftProperty.class,
-                        MerkleUniqueToken::new,
+                        UniqueTokenAdapter::newEmptyMerkleToken,
                         new HashMapBackingNfts(),
                         new ChangeSummaryManager<>(),
                         () -> workingView);

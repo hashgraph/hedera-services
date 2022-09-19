@@ -28,7 +28,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -39,18 +38,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -77,8 +73,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                 messageSubmissionMultiple(),
                 messageSubmissionOverSize(),
                 messageSubmissionCorrectlyUpdatesRunningHash(),
-                feeAsExpected(),
-                messageSubmissionSizeChange());
+                feeAsExpected());
     }
 
     private HapiApiSpec topicIdIsValidated() {
@@ -254,41 +249,6 @@ public class SubmitMessageSuite extends HapiApiSuite {
                                 .hasRetryPrecheckFrom(BUSY)
                                 .via("submitMessage3"),
                         getTxnRecord("submitMessage3").hasCorrectRunningHash(topic, message3));
-    }
-
-    private HapiApiSpec messageSubmissionSizeChange() {
-        final var defaultMaxBytesAllowed = 1024;
-        final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
-
-        return defaultHapiSpec("messageSubmissionSizeChange")
-                .given(
-                        newKeyNamed("submitKey"),
-                        createTopic("testTopic").submitKeyName("submitKey"))
-                .when(
-                        cryptoCreate("civilian"),
-                        submitMessageTo("testTopic")
-                                .message("testmessage")
-                                .payingWith("civilian")
-                                .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(SUCCESS),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(
-                                                "consensus.message.maxBytesAllowed",
-                                                String.valueOf(defaultMaxBytesAllowed - 1))))
-                .then(
-                        submitMessageTo("testTopic")
-                                .message(longMessage)
-                                .payingWith("civilian")
-                                .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(
-                                                "consensus.message.maxBytesAllowed",
-                                                String.valueOf(defaultMaxBytesAllowed))));
     }
 
     @Override

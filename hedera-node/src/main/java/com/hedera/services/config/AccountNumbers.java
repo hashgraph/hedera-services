@@ -16,6 +16,16 @@
 package com.hedera.services.config;
 
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_DELETE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_TREASURY;
 
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
@@ -44,70 +54,70 @@ public class AccountNumbers {
 
     public long treasury() {
         if (treasury == UNKNOWN_NUMBER) {
-            treasury = properties.getLongProperty("accounts.treasury");
+            treasury = properties.getLongProperty(ACCOUNTS_TREASURY);
         }
         return treasury;
     }
 
     public long freezeAdmin() {
         if (freezeAdmin == UNKNOWN_NUMBER) {
-            freezeAdmin = properties.getLongProperty("accounts.freezeAdmin");
+            freezeAdmin = properties.getLongProperty(ACCOUNTS_FREEZE_ADMIN);
         }
         return freezeAdmin;
     }
 
     public long systemAdmin() {
         if (systemAdmin == UNKNOWN_NUMBER) {
-            systemAdmin = properties.getLongProperty("accounts.systemAdmin");
+            systemAdmin = properties.getLongProperty(ACCOUNTS_SYSTEM_ADMIN);
         }
         return systemAdmin;
     }
 
     public long addressBookAdmin() {
         if (addressBookAdmin == UNKNOWN_NUMBER) {
-            addressBookAdmin = properties.getLongProperty("accounts.addressBookAdmin");
+            addressBookAdmin = properties.getLongProperty(ACCOUNTS_ADDRESS_BOOK_ADMIN);
         }
         return addressBookAdmin;
     }
 
     public long feeSchedulesAdmin() {
         if (feeSchedulesAdmin == UNKNOWN_NUMBER) {
-            feeSchedulesAdmin = properties.getLongProperty("accounts.feeSchedulesAdmin");
+            feeSchedulesAdmin = properties.getLongProperty(ACCOUNTS_FEE_SCHEDULE_ADMIN);
         }
         return feeSchedulesAdmin;
     }
 
     public long exchangeRatesAdmin() {
         if (exchangeRatesAdmin == UNKNOWN_NUMBER) {
-            exchangeRatesAdmin = properties.getLongProperty("accounts.exchangeRatesAdmin");
+            exchangeRatesAdmin = properties.getLongProperty(ACCOUNTS_EXCHANGE_RATES_ADMIN);
         }
         return exchangeRatesAdmin;
     }
 
     public long systemDeleteAdmin() {
         if (systemDeleteAdmin == UNKNOWN_NUMBER) {
-            systemDeleteAdmin = properties.getLongProperty("accounts.systemDeleteAdmin");
+            systemDeleteAdmin = properties.getLongProperty(ACCOUNTS_SYSTEM_DELETE_ADMIN);
         }
         return systemDeleteAdmin;
     }
 
     public long systemUndeleteAdmin() {
         if (systemUndeleteAdmin == UNKNOWN_NUMBER) {
-            systemUndeleteAdmin = properties.getLongProperty("accounts.systemUndeleteAdmin");
+            systemUndeleteAdmin = properties.getLongProperty(ACCOUNTS_SYSTEM_UNDELETE_ADMIN);
         }
         return systemUndeleteAdmin;
     }
 
     public long stakingRewardAccount() {
         if (stakingRewardAccount == UNKNOWN_NUMBER) {
-            stakingRewardAccount = properties.getLongProperty("accounts.stakingRewardAccount");
+            stakingRewardAccount = properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT);
         }
         return stakingRewardAccount;
     }
 
     public long nodeRewardAccount() {
         if (nodeRewardAccount == UNKNOWN_NUMBER) {
-            nodeRewardAccount = properties.getLongProperty("accounts.nodeRewardAccount");
+            nodeRewardAccount = properties.getLongProperty(ACCOUNTS_NODE_REWARD_ACCOUNT);
         }
         return nodeRewardAccount;
     }

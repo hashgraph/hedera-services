@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.exports;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
@@ -56,6 +57,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -70,6 +73,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -119,7 +123,7 @@ class SignedStateBalancesExporterTest {
 
     private ServicesState state;
     private PropertySource properties;
-    private UnaryOperator<byte[]> signer;
+    private Function<byte[], Signature> signer;
     private SigFileWriter sigFileWriter;
     private FileHashReader hashReader;
     private DirectoryAssurance assurance;
@@ -189,7 +193,7 @@ class SignedStateBalancesExporterTest {
         assurance = mock(DirectoryAssurance.class);
 
         properties = mock(PropertySource.class);
-        given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(ledgerFloat);
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(ledgerFloat);
 
         var firstNodeAddress = mock(Address.class);
         given(firstNodeAddress.getMemo()).willReturn("0.0.3");
@@ -209,7 +213,7 @@ class SignedStateBalancesExporterTest {
         given(state.addressBook()).willReturn(book);
 
         signer = mock(UnaryOperator.class);
-        given(signer.apply(fileHash)).willReturn(sig);
+        given(signer.apply(fileHash)).willReturn(new Signature(SignatureType.RSA, sig));
 
         systemExits = mock(SystemExits.class);
 

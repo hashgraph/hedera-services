@@ -119,6 +119,17 @@ class BucketThrottleTest {
     }
 
     @Test
+    void canAllowInstantaneously() {
+        int tps = 1_000;
+        long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN;
+
+        var subject = BucketThrottle.withTps(tps);
+
+        assertTrue(subject.allowInstantaneous(tps / 2));
+        assertEquals(internalCapacity / 2, subject.bucket().capacityFree());
+    }
+
+    @Test
     void withZeroElapsedNanosSimplyAdjustsCapacityFree() {
         // setup:
         int tps = 1_000;
@@ -169,6 +180,21 @@ class BucketThrottleTest {
         // then:
         assertTrue(shouldAllowWithJustEnoughCapacity);
         assertEquals(0, subject.bucket().capacityFree());
+    }
+
+    @Test
+    void canLeakDirectly() {
+        int tps = 1_000;
+        long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN;
+
+        var subject = BucketThrottle.withTps(tps);
+        subject.bucket().resetUsed(internalCapacity);
+
+        subject.leakFor(NTPS_PER_TPS / tps);
+
+        final var expectedNewUsed = internalCapacity - NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN;
+        final var actualNewUsed = subject.bucket().capacityUsed();
+        assertEquals(expectedNewUsed, actualNewUsed);
     }
 
     @Test
@@ -253,7 +279,6 @@ class BucketThrottleTest {
         // setup:
         int mtps = 500;
         int burstPeriod = 4;
-        long internalCapacity = mtps * NTPS_PER_MTPS * burstPeriod * CAPACITY_UNITS_PER_NANO_TXN;
 
         // given:
         var subject = BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);

@@ -16,6 +16,7 @@
 package com.hedera.services;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -39,10 +40,11 @@ import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
+import com.hedera.services.state.exports.ServicesSignedStateListener;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.exports.ToStringAccountsExporter;
 import com.hedera.services.state.forensics.HashLogger;
-import com.hedera.services.state.forensics.IssListener;
+import com.hedera.services.state.forensics.ServicesIssListener;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.TreasuryCloner;
@@ -82,7 +84,7 @@ class ServicesAppTest {
         // setup:
         final var bootstrapProps = new BootstrapProperties();
         final var props = new ChainedSources(overridingProps, bootstrapProps);
-        final var logDirKey = "hedera.recordStream.logDir";
+        final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
 
@@ -125,7 +127,8 @@ class ServicesAppTest {
         assertThat(subject.sysFilesManager(), instanceOf(HfsSystemFilesManager.class));
         assertThat(subject.backingAccounts(), instanceOf(BackingAccounts.class));
         assertThat(subject.statsManager(), instanceOf(ServicesStatsManager.class));
-        assertThat(subject.issListener(), instanceOf(IssListener.class));
+        assertThat(subject.issListener(), instanceOf(ServicesIssListener.class));
+        assertThat(subject.newSignedStateListener(), instanceOf(ServicesSignedStateListener.class));
         assertThat(subject.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
         assertThat(subject.systemExits(), instanceOf(JvmSystemExits.class));
         assertThat(subject.sysAccountsCreator(), instanceOf(BackedSystemAccountsCreator.class));

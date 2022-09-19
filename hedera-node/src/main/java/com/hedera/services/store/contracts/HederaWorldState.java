@@ -28,7 +28,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.ArrayList;
@@ -36,6 +35,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -170,16 +170,13 @@ public class HederaWorldState implements HederaMutableWorldState {
     }
 
     private boolean isGettable(final AccountID id) {
-        return entityAccess.isExtant(id)
-                && !entityAccess.isDeleted(id)
-                && !entityAccess.isDetached(id);
+        return entityAccess.isUsable(id);
     }
 
     public static class Updater extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>
             implements HederaWorldUpdater {
 
-        Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
-                new TreeMap<>(BytesComparator.INSTANCE);
+        Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();
         GlobalDynamicProperties dynamicProperties;
 
         private int numAllocatedIds = 0;
@@ -210,8 +207,7 @@ public class HederaWorldState implements HederaMutableWorldState {
                 final var storageUpdates = uta.getUpdatedStorage().entrySet();
                 if (!storageUpdates.isEmpty()) {
                     final Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
-                            stateChanges.computeIfAbsent(
-                                    uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
+                            stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>());
                     for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
                         UInt256 key = entry.getKey();
                         UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
@@ -289,17 +285,16 @@ public class HederaWorldState implements HederaMutableWorldState {
                     getDeletedAccountAddresses(),
                     updatedAccounts);
             if (!wrapped.provisionalContractCreations.isEmpty()) {
-                wrapped.usageLimits.assertCreatableContracts(
-                        wrapped.provisionalContractCreations.size());
+                Objects.requireNonNull(wrapped.usageLimits)
+                        .assertCreatableContracts(wrapped.provisionalContractCreations.size());
             }
+            // Throws an ITE if any storage limit is exceeded, or if storage fees cannot be paid
             commitSizeLimitedStorageTo(entityAccess, updatedAccounts);
             entityAccess.recordNewKvUsageTo(trackingAccounts());
 
             // Because we have tracked all account creations, deletions, and balance changes in the
-            // ledgers,
-            // this commit() persists all of that information without any additional use of the
-            // deletedAccounts
-            // or updatedAccounts collections.
+            // ledgers, this commit() persists all of that information without any additional use
+            // of the deletedAccounts or updatedAccounts collections
             trackingLedgers().commit(impactHistorian);
         }
 
@@ -338,19 +333,17 @@ public class HederaWorldState implements HederaMutableWorldState {
                 final EntityAccess entityAccess,
                 final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts) {
             for (final var updatedAccount : updatedAccounts) {
+                // We don't check updatedAccount.getStorageWasCleared(), because we only purge
+                // storage
+                // slots when a contract has expired and is being permanently removed from state
                 final var accountId = updatedAccount.getAccountId();
-                // Note that we don't have the equivalent of an account-scoped storage trie, so we
-                // can't
-                // do anything in particular when updated.getStorageWasCleared() is true. (We will
-                // address
-                // this in our global state expiration implementation.)
                 final var kvUpdates = updatedAccount.getUpdatedStorage();
                 if (!kvUpdates.isEmpty()) {
                     kvUpdates.forEach(
                             (key, value) -> entityAccess.putStorage(accountId, key, value));
                 }
             }
-            entityAccess.flushStorage();
+            entityAccess.flushStorage(trackingAccounts());
             for (final var updatedAccount : updatedAccounts) {
                 if (updatedAccount.codeWasUpdated()) {
                     entityAccess.storeCode(updatedAccount.getAccountId(), updatedAccount.getCode());

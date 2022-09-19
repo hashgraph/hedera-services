@@ -18,8 +18,8 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
-import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -44,6 +44,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -172,6 +173,14 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                             .decodeNonFungibleCreate(input, aliasResolver);
                     case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decoder
                             .decodeNonFungibleCreateWithFees(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2 -> decoder
+                            .decodeFungibleCreateV2(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2 -> decoder
+                            .decodeFungibleCreateWithFeesV2(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2 -> decoder
+                            .decodeNonFungibleCreateV2(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2 -> decoder
+                            .decodeNonFungibleCreateWithFeesV2(input, aliasResolver);
                     default -> null;
                 };
 
@@ -365,7 +374,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     private boolean validateAdminKey(
-            final MessageFrame frame, final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper) {
+            final MessageFrame frame, final TokenKeyWrapper tokenKeyWrapper) {
         final var key = tokenKeyWrapper.key();
         return switch (key.getKeyValueType()) {
             case INHERIT_ACCOUNT_KEY -> KeyActivationUtils.validateKey(

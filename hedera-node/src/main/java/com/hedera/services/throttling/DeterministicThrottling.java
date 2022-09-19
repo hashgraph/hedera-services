@@ -15,9 +15,9 @@
  */
 package com.hedera.services.throttling;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.grpc.marshalling.AliasResolver.usesAliases;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
-import static com.hedera.services.utils.accessors.SignedTxnAccessor.IS_THROTTLE_EXEMPT;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
@@ -80,7 +80,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
     private GasLimitDeterministicThrottle gasThrottle;
 
     // we reuse this instance as an optimization
-    private AccessorTransactionDetails accessorTransactionDetails =
+    private final AccessorTransactionDetails accessorTransactionDetails =
             new AccessorTransactionDetails();
 
     public DeterministicThrottling(
@@ -506,7 +506,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
         // get the throttle groups with the minimum tps value for each transaction type,
         // these are the effective max tps for each type of transaction
-        final EnumMap<HederaFunctionality, ThrottleGroup> minMtps =
+        final EnumMap<HederaFunctionality, ThrottleGroup<HederaFunctionality>> minMtps =
                 new EnumMap<>(HederaFunctionality.class);
 
         for (var bucket : defsCopy.getBuckets()) {
@@ -514,7 +514,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
                 for (var op : group.getOperations()) {
                     // remove functions that can't be scheduled
                     if (MiscUtils.isSchedulable(op)) {
-                        ThrottleGroup min = minMtps.get(op);
+                        final var min = minMtps.get(op);
                         if (min == null
                                 || min.impliedMilliOpsPerSec() > group.impliedMilliOpsPerSec()) {
                             minMtps.put(op, group);
@@ -525,7 +525,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
         }
 
         // dedup the min tps groups
-        final IdentityHashMap<ThrottleGroup, ThrottleBucket> groups = new IdentityHashMap<>();
+        final IdentityHashMap<
+                        ThrottleGroup<HederaFunctionality>, ThrottleBucket<HederaFunctionality>>
+                groups = new IdentityHashMap<>();
         for (var grp : minMtps.values()) {
             groups.put(grp, null);
         }
@@ -716,7 +718,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
         @Override
         public boolean throttleExempt() {
-            return IS_THROTTLE_EXEMPT.test(payer.getAccountNum());
+            return STATIC_PROPERTIES.isThrottleExempt(payer.getAccountNum());
         }
 
         @Override

@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -114,7 +115,7 @@ class TxnReceiptTest {
                         .setExchangeRate(new ExchangeRates().toGrpc())
                         .setTopicID(topicId)
                         .build();
-        final var cut = TxnReceipt.fromGrpc(receipt);
+        final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
 
         assertAll(
                 () -> assertEquals(EntityId.fromGrpcTopicId(topicId), cut.getTopicId()),
@@ -136,7 +137,7 @@ class TxnReceiptTest {
                         .setScheduleID(scheduleId)
                         .setScheduledTransactionID(scheduledTxnId)
                         .build();
-        final var cut = TxnReceipt.fromGrpc(receipt);
+        final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
         assertEquals(receipt, back);
@@ -154,7 +155,7 @@ class TxnReceiptTest {
                         .setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
                         .setTopicRunningHashVersion(2L)
                         .build();
-        final var cut = TxnReceipt.fromGrpc(receipt);
+        final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
         assertEquals(receipt, back);
@@ -169,7 +170,7 @@ class TxnReceiptTest {
                         .setExchangeRate(new ExchangeRates().toGrpc())
                         .setNewTotalSupply(totalSupply)
                         .build();
-        final var cut = TxnReceipt.fromGrpc(receipt);
+        final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
         assertEquals(receipt, back);
@@ -182,7 +183,7 @@ class TxnReceiptTest {
                         .setExchangeRate(new ExchangeRates().toGrpc())
                         .addAllSerialNumbers(List.of(1L, 2L, 3L, 4L, 5L))
                         .build();
-        final var cut = TxnReceipt.fromGrpc(receipt);
+        final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
         assertEquals(receipt, back);
@@ -198,7 +199,7 @@ class TxnReceiptTest {
                         .setExchangeRate(new ExchangeRates().toGrpc())
                         .setTokenID(tokenIdBuilder)
                         .build();
-        final var cut = TxnReceipt.fromGrpc(receipt);
+        final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
         assertEquals(receipt, back);
@@ -215,7 +216,7 @@ class TxnReceiptTest {
                         .setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
                         .setTopicRunningHashVersion(2L)
                         .build();
-        final var cut = TxnReceipt.fromGrpc(receipt);
+        final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
 
         assertAll(
                 () -> assertEquals(2L, cut.getRunningHashVersion()),

@@ -16,6 +16,9 @@
 package com.hedera.services.state.initialization;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -69,9 +72,9 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     @Override
     public void ensureSystemAccounts(
             final BackingStore<AccountID, MerkleAccount> accounts, final AddressBook addressBook) {
-        long systemAccounts = properties.getIntProperty("ledger.numSystemAccounts");
-        long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
-        long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
+        long systemAccounts = properties.getIntProperty(LEDGER_NUM_SYSTEM_ACCOUNTS);
+        long expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
+        long tinyBarFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
 
         for (long num = 1; num <= systemAccounts; num++) {
             var id = STATIC_PROPERTIES.scopedAccountWith(num);
@@ -107,13 +110,12 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
         treasuryCloner.ensureTreasuryClonesExist();
 
-        var allIds = accounts.idSet();
-        var ledgerFloat =
-                allIds.stream().mapToLong(id -> accounts.getImmutableRef(id).getBalance()).sum();
-        var msg =
-                String.format(
-                        "Ledger float is %d tinyBars in %d accounts.", ledgerFloat, allIds.size());
-        log.info(msg);
+        var ledgerFloat = 0L;
+        final var allIds = accounts.idSet();
+        for (final var id : allIds) {
+            ledgerFloat += accounts.getImmutableRef(id).getBalance();
+        }
+        log.info("Ledger float is {} tinyBars in {} accounts.", ledgerFloat, allIds.size());
     }
 
     public static void customizeAsStakingFund(final MerkleAccount account) {

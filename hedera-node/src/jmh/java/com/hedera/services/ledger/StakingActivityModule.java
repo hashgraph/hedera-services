@@ -15,6 +15,10 @@
  */
 package com.hedera.services.ledger;
 
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.services.mocks.MockDynamicProperties.mockPropertiesWith;
 
 import com.hedera.services.config.AccountNumbers;
@@ -118,10 +122,10 @@ public interface StakingActivityModule {
     @CompositeProps
     static PropertySource providePropertySource() {
         final Map<String, Supplier<Object>> source = new HashMap<>();
-        source.put("staking.periodMins", () -> 1440L);
-        source.put("staking.rewardHistory.numStoredPeriods", () -> 365);
-        source.put("staking.rewardRate", () -> 273972602739726L);
-        source.put("accounts.stakingRewardAccount", () -> 800L);
+        source.put(STAKING_PERIOD_MINS, () -> 1440L);
+        source.put(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, () -> 365);
+        source.put(STAKING_REWARD_RATE, () -> 273972602739726L);
+        source.put(ACCOUNTS_STAKING_REWARD_ACCOUNT, () -> 800L);
         return new SupplierMapPropertySource(source);
     }
 

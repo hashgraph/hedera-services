@@ -24,6 +24,7 @@ import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -49,6 +50,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
     static final int RELEASE_0160_VERSION = 3;
@@ -219,12 +221,12 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                 .add("symbol", symbol)
                 .add("name", name)
                 .add("memo", memo)
-                .add("treasury", treasury.toAbbrevString())
+                .add("treasury", readableEntityId(treasury))
                 .add("maxSupply", maxSupply)
                 .add("totalSupply", totalSupply)
                 .add("decimals", decimals)
                 .add("lastUsedSerialNumber", lastUsedSerialNumber)
-                .add("autoRenewAccount", readableAutoRenewAccount())
+                .add("autoRenewAccount", readableEntityId(autoRenewAccount))
                 .add("autoRenewPeriod", autoRenewPeriod)
                 .add("adminKey", describe(adminKey))
                 .add("kycKey", describe(kycKey))
@@ -240,8 +242,8 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                 .toString();
     }
 
-    private String readableAutoRenewAccount() {
-        return Optional.ofNullable(autoRenewAccount).map(EntityId::toAbbrevString).orElse("<N/A>");
+    private String readableEntityId(@Nullable final EntityId id) {
+        return Optional.ofNullable(id).map(EntityId::toAbbrevString).orElse("<N/A>");
     }
 
     /* --- MerkleLeaf --- */
@@ -705,6 +707,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return grpcList;
     }
 
+    @VisibleForTesting
     public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
         throwIfImmutable("Cannot change this token's fee schedule from grpc if it's immutable.");
         feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).toList();

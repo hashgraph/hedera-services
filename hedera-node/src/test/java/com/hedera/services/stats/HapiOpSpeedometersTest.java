@@ -73,6 +73,8 @@ class HapiOpSpeedometersTest {
 
     @Test
     void beginsRationally() {
+        subject.registerWith(platform);
+
         // expect:
         assertTrue(subject.getReceivedOps().containsKey(CryptoTransfer));
         assertTrue(subject.getSubmittedTxns().containsKey(CryptoTransfer));
@@ -91,7 +93,7 @@ class HapiOpSpeedometersTest {
         subject.registerWith(platform);
 
         // then:
-        verify(platform, times(5)).addAppMetrics(any());
+        verify(platform, times(6)).getOrCreateMetric(any());
     }
 
     @Test

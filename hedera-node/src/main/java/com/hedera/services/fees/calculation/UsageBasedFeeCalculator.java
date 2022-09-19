@@ -256,12 +256,10 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     }
 
     private QueryResourceUsageEstimator getQueryUsageEstimator(Query query) {
-        Optional<QueryResourceUsageEstimator> usageEstimator =
-                queryUsageEstimators.stream()
-                        .filter(estimator -> estimator.applicableTo(query))
-                        .findAny();
-        if (usageEstimator.isPresent()) {
-            return usageEstimator.get();
+        for (final QueryResourceUsageEstimator estimator : queryUsageEstimators) {
+            if (estimator.applicableTo(query)) {
+                return estimator;
+            }
         }
         throw new NoSuchElementException("No estimator exists for the given query");
     }

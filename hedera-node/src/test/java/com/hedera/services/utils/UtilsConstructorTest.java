@@ -50,18 +50,11 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.merkle.internals.ByteUtils;
-import com.hedera.services.state.migration.LegacyStateChildIndices;
-import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
-import com.hedera.services.state.migration.ReleaseTwentySixMigration;
-import com.hedera.services.state.migration.StateChildIndices;
-import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.migration.*;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.state.virtual.KeyPackingUtils;
-import com.hedera.services.stats.MiscRunningAvgs;
-import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.stats.ServicesStatsConfig;
-import com.hedera.services.stats.StatsModule;
+import com.hedera.services.stats.*;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
@@ -79,6 +72,7 @@ import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.txns.token.TokenLogicModule;
 import com.hedera.services.txns.token.TokenOpsValidator;
 import com.hedera.services.txns.token.process.NewRels;
+import com.hedera.services.txns.util.TokenUpdateValidator;
 import com.hedera.services.txns.util.UtilLogicModule;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TokenListChecks;
@@ -122,9 +116,12 @@ class UtilsConstructorTest {
                             MerkleAccount.ChildIndices.class,
                             BitPackUtils.class,
                             LegacyStateChildIndices.class,
+                            ReleaseThirtyMigration.class,
                             ReleaseTwentySixMigration.class,
                             StateChildIndices.class,
                             StateVersions.class,
+                            ExpiryStats.Names.class,
+                            ExpiryStats.Descriptions.class,
                             MiscRunningAvgs.Names.class,
                             MiscRunningAvgs.Descriptions.class,
                             MiscSpeedometers.Names.class,
@@ -173,7 +170,8 @@ class UtilsConstructorTest {
                             Units.class,
                             StakingUtils.class,
                             UtilLogicModule.class,
-                            PrecompileUtils.class));
+                            PrecompileUtils.class,
+                            TokenUpdateValidator.class));
 
     @Test
     void throwsInConstructor() {

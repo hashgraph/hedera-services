@@ -60,6 +60,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.MutableEntityAccess;
@@ -87,7 +88,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
-    private final BackingStore<NftId, MerkleUniqueToken> backingNfts = new HashMapBackingNfts();
+    private final BackingStore<NftId, UniqueTokenAdapter> backingNfts = new HashMapBackingNfts();
     private final BackingStore<AccountID, MerkleAccount> backingAccounts =
             new HashMapBackingAccounts();
     private final BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
@@ -98,7 +99,7 @@ class LedgerBalanceChangesTest {
     private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
-    private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private TransferLogic transferLogic;
 
     @Mock private EntityIdSource ids;
@@ -138,7 +139,7 @@ class LedgerBalanceChangesTest {
         nftsLedger =
                 new TransactionalLedger<>(
                         NftProperty.class,
-                        MerkleUniqueToken::new,
+                        UniqueTokenAdapter::newEmptyMerkleToken,
                         backingNfts,
                         new ChangeSummaryManager<>(),
                         () -> workingView);
@@ -524,16 +525,25 @@ class LedgerBalanceChangesTest {
 
         backingNfts.put(
                 aaNft,
-                new MerkleUniqueToken(
-                        EntityId.fromGrpcAccountId(aModel), "aa".getBytes(), MISSING_INSTANT));
+                UniqueTokenAdapter.wrap(
+                        new MerkleUniqueToken(
+                                EntityId.fromGrpcAccountId(aModel),
+                                "aa".getBytes(),
+                                MISSING_INSTANT)));
         backingNfts.put(
                 baNft,
-                new MerkleUniqueToken(
-                        EntityId.fromGrpcAccountId(bModel), "ba".getBytes(), MISSING_INSTANT));
+                UniqueTokenAdapter.wrap(
+                        new MerkleUniqueToken(
+                                EntityId.fromGrpcAccountId(bModel),
+                                "ba".getBytes(),
+                                MISSING_INSTANT)));
         backingNfts.put(
                 bbNft,
-                new MerkleUniqueToken(
-                        EntityId.fromGrpcAccountId(cModel), "bb".getBytes(), MISSING_INSTANT));
+                UniqueTokenAdapter.wrap(
+                        new MerkleUniqueToken(
+                                EntityId.fromGrpcAccountId(cModel),
+                                "bb".getBytes(),
+                                MISSING_INSTANT)));
 
         backingRels.rebuildFromSources();
     }

@@ -16,6 +16,7 @@
 package com.hedera.services.state.exports;
 
 import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
@@ -37,6 +38,7 @@ import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.merkle.map.MerkleMap;
 import java.io.File;
@@ -50,7 +52,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.time.StopWatch;
@@ -78,7 +80,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
     final long expectedFloat;
     private final SystemExits systemExits;
-    private final UnaryOperator<byte[]> signer;
+    private final Function<byte[], Signature> signer;
     private final GlobalDynamicProperties dynamicProperties;
 
     SigFileWriter sigFileWriter = new StandardSigFileWriter();
@@ -95,13 +97,13 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
     @Inject
     public SignedStateBalancesExporter(
-            SystemExits systemExits,
-            @CompositeProps PropertySource properties,
-            UnaryOperator<byte[]> signer,
-            GlobalDynamicProperties dynamicProperties) {
+            final SystemExits systemExits,
+            final @CompositeProps PropertySource properties,
+            final Function<byte[], Signature> signer,
+            final GlobalDynamicProperties dynamicProperties) {
         this.signer = signer;
         this.systemExits = systemExits;
-        this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
+        this.expectedFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
         this.dynamicProperties = dynamicProperties;
         exportPeriod = dynamicProperties.balancesExportPeriodSecs();
     }
@@ -183,7 +185,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         try {
             var hash = hashReader.readHash(fileLoc);
             var sig = signer.apply(hash);
-            var sigFileLoc = sigFileWriter.writeSigFile(fileLoc, sig, hash);
+            var sigFileLoc = sigFileWriter.writeSigFile(fileLoc, sig.getSignatureBytes(), hash);
             if (log.isDebugEnabled()) {
                 log.debug(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, sigFileLoc);
             }

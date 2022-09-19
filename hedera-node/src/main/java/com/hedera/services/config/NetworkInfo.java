@@ -15,6 +15,7 @@
  */
 package com.hedera.services.config;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_ID;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.protobuf.ByteString;
@@ -43,7 +44,7 @@ public class NetworkInfo {
              *   0x02 -> previewnet
              *   0x03 -> other dev or preprod networks
              */
-            ledgerId = rationalize(properties.getStringProperty("ledger.id"));
+            ledgerId = rationalize(properties.getStringProperty(LEDGER_ID));
         }
         return ledgerId;
     }

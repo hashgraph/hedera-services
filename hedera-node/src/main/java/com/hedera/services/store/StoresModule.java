@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store;
 
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -31,11 +33,7 @@ import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.BackingTokens;
-import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
-import com.hedera.services.ledger.interceptors.TokensCommitInterceptor;
-import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
+import com.hedera.services.ledger.interceptors.*;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -46,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
@@ -73,8 +72,8 @@ public interface StoresModule {
 
     @Binds
     @Singleton
-    BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(
-            TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger);
+    BackingStore<NftId, UniqueTokenAdapter> bindBackingNfts(
+            TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger);
 
     @Binds
     @Singleton
@@ -82,17 +81,22 @@ public interface StoresModule {
 
     @Provides
     @Singleton
-    static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
+    static TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> provideNftsLedger(
             final UsageLimits usageLimits,
             final UniqueTokensLinkManager uniqueTokensLinkManager,
             final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
             final Supplier<StateView> currentView) {
-        return new TransactionalLedger<>(
-                NftProperty.class,
-                MerkleUniqueToken::new,
-                new BackingNfts(uniqueTokens),
-                new ChangeSummaryManager<>(),
-                currentView);
+        final var uniqueTokensLedger =
+                new TransactionalLedger<>(
+                        NftProperty.class,
+                        UniqueTokenAdapter::newEmptyMerkleToken,
+                        new BackingNfts(uniqueTokens),
+                        new ChangeSummaryManager<>(),
+                        currentView);
+        final var uniqueTokensCommitInterceptor =
+                new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
+        uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
+        return uniqueTokensLedger;
     }
 
     @Provides
@@ -192,6 +196,6 @@ public interface StoresModule {
     @AreTreasuryWildcardsEnabled
     static boolean provideAreTreasuryWildcardsEnabled(
             final @CompositeProps PropertySource properties) {
-        return properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+        return properties.getBooleanProperty(TOKENS_NFTS_USE_TREASURY_WILD_CARDS);
     }
 }

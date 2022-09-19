@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 import com.hedera.services.bdd.junit.TestBase;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
@@ -63,10 +61,10 @@ import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
+import com.hedera.services.bdd.suites.contract.traceability.NewTraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
@@ -200,30 +198,13 @@ import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import com.hedera.services.bdd.suites.token.UniqueTokenManagementSpecs;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
 
 @SuppressWarnings({"java:S2699", "java:S3577"})
 class EndToEndPackageRunner extends TestBase {
-
-    @BeforeAll
-    static void beforeAll() {
-        final var portSystemProperty = System.getProperty("defaultPort");
-        final var defaultPort = portSystemProperty != null ? portSystemProperty : "50211";
-        final var defaultProperties = JutilPropertySource.getDefaultInstance();
-        HapiApiSpec.runInCiMode(
-                defaultPort + ":50212",
-                defaultProperties.get("default.payer"),
-                defaultProperties.get("default.node").split("\\.")[2],
-                defaultProperties.get("tls"),
-                defaultProperties.get("txn.proto.structure"),
-                defaultProperties.get("node.selector"),
-                Collections.emptyMap());
-    }
 
     @Tag("autorenew")
     @TestFactory
@@ -298,7 +279,6 @@ class EndToEndPackageRunner extends TestBase {
                     extractSpecsFromSuite(CryptoTransferHTSSuite::new),
                     extractSpecsFromSuite(DelegatePrecompileSuite::new),
                     extractSpecsFromSuite(DissociatePrecompileSuite::new),
-                    extractSpecsFromSuite(DynamicGasCostSuite::new),
                     extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
                 });
     }
@@ -434,7 +414,7 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> contractTraceability() {
         // FUTURE WORK - re-add traceability suites when updated for sidecar support
-        return List.of();
+        return List.of(extractSpecsFromSuite(NewTraceabilitySuite::new));
     }
 
     @Tag("contract")

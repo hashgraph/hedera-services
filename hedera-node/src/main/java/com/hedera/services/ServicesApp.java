@@ -39,9 +39,9 @@ import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.sigs.SigsModule;
-import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateModule;
+import com.hedera.services.state.expiry.ExpiryModule;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.HashLogger;
@@ -67,7 +67,6 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
@@ -75,6 +74,8 @@ import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.io.PrintStream;
@@ -103,7 +104,8 @@ import javax.inject.Singleton;
             PropertiesModule.class,
             ThrottlingModule.class,
             SubmissionModule.class,
-            TransactionsModule.class
+            TransactionsModule.class,
+            ExpiryModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */
@@ -118,8 +120,6 @@ public interface ServicesApp {
     DualStateAccessor dualStateAccessor();
 
     VirtualMapFactory virtualMapFactory();
-
-    SigReqsManager sigReqsManager();
 
     RecordStreamManager recordStreamManager();
 
@@ -178,7 +178,9 @@ public interface ServicesApp {
 
     StateWriteToDiskCompleteListener stateWriteToDiskListener();
 
-    InvalidSignedStateListener issListener();
+    IssListener issListener();
+
+    NewSignedStateListener newSignedStateListener();
 
     Supplier<NotificationEngine> notificationEngine();
 

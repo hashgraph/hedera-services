@@ -16,6 +16,8 @@
 package com.hedera.services.ledger.interceptors;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -129,6 +131,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(new EntityChangeSet<>());
 
         verifyNoInteractions(networkCtx);
+        verifyNoInteractions(rewardCalculator);
     }
 
     @Test
@@ -174,6 +177,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(NA, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -195,6 +199,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(counterpartyBalance, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -216,6 +221,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(counterpartyBalance, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -237,6 +243,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(counterpartyBalance / 5, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -254,6 +261,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -274,6 +282,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -294,6 +303,7 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+        verify(rewardCalculator).reset();
     }
 
     @Test
@@ -410,6 +420,7 @@ class StakingAccountsCommitInterceptorTest {
         assertEquals(0L, stakingInfo.get(node1Id).getRewardSumHistory()[0]);
         assertEquals(0L, stakingInfo.get(node0Id).getRewardSumHistory()[1]);
         assertEquals(0L, stakingInfo.get(node1Id).getRewardSumHistory()[1]);
+        verify(rewardCalculator, times(3)).reset();
     }
 
     @Test
@@ -893,9 +904,9 @@ class StakingAccountsCommitInterceptorTest {
     }
 
     public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
-        given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat"))
+        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
                 .willReturn(2_000_000_000L);
-        given(bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods"))
+        given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
         given(addressBook.getSize()).willReturn(2);
         given(addressBook.getAddress(0)).willReturn(address1);

@@ -59,6 +59,7 @@ class ServicesStatsManagerTest {
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
     @Mock private ThrottleGauges throttleGauges;
     @Mock private EntityUtilGauges entityUtilGauges;
+    @Mock private ExpiryStats expiryStats;
 
     ServicesStatsManager subject;
 
@@ -76,6 +77,7 @@ class ServicesStatsManagerTest {
 
         subject =
                 new ServicesStatsManager(
+                        expiryStats,
                         counters,
                         throttleGauges,
                         runningAvgs,
@@ -115,13 +117,13 @@ class ServicesStatsManagerTest {
         // then:
         verify(counters).registerWith(platform);
         verify(speedometers).registerWith(platform);
+        verify(expiryStats).registerWith(platform);
         verify(miscSpeedometers).registerWith(platform);
         verify(runningAvgs).registerWith(platform);
         verify(throttleGauges).registerWith(platform);
         verify(entityUtilGauges).registerWith(platform);
-        verify(storage).registerStatistics(any());
-        verify(bytecode).registerStatistics(any());
-        verify(platform).appStatInit();
+        verify(storage).registerMetrics(any());
+        verify(bytecode).registerMetrics(any());
         // and:
         verify(thread).start();
         verify(thread)

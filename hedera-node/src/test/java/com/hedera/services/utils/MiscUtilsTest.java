@@ -16,6 +16,8 @@
 package com.hedera.services.utils;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.services.throttling.MapAccessType.STORAGE_REMOVE;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
@@ -72,6 +74,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
@@ -131,8 +134,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
@@ -151,6 +153,7 @@ import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.stats.ServicesStatsConfig;
+import com.hedera.services.throttling.MapAccessType;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -169,6 +172,7 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -252,6 +256,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.commons.codec.DecoderException;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -259,6 +264,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
+    @Test
+    void canGetListOfAccessTypes() {
+        final var expected = List.of(ACCOUNTS_GET, ACCOUNTS_GET, ACCOUNTS_GET, STORAGE_REMOVE);
+        final var actual =
+                MiscUtils.csvList(
+                        "ACCOUNTS_GET,ACCOUNTS_GET,ACCOUNTS_GET,STORAGE_REMOVE",
+                        MapAccessType::valueOf);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void canRunWithLoggedDuration() {
+        final var mockLogger = mock(Logger.class);
+        final var desc = "nothing";
+        MiscUtils.withLoggedDuration(() -> {}, mockLogger, desc);
+        verify(mockLogger).info("Starting {}", desc);
+        verify(mockLogger).info("Done with {} in {}ms", desc, 0L);
+    }
 
     @Test
     void canUnpackTime() {
@@ -606,6 +629,10 @@ class MiscUtilsTest {
                                         "ScheduleDelete",
                                         new BodySetter<>(ScheduleDeleteTransactionBody.class));
                                 put("UtilPrng", new BodySetter<>(UtilPrngTransactionBody.class));
+                                put(
+                                        "CryptoApproveAllowance",
+                                        new BodySetter<>(
+                                                CryptoApproveAllowanceTransactionBody.class));
                             }
                         };
 
@@ -1023,6 +1050,10 @@ class MiscUtilsTest {
                                         new BodySetter<>(
                                                 TokenFeeScheduleUpdateTransactionBody.class));
                                 put(UtilPrng, new BodySetter<>(UtilPrngTransactionBody.class));
+                                put(
+                                        CryptoApproveAllowance,
+                                        new BodySetter<>(
+                                                CryptoApproveAllowanceTransactionBody.class));
                             }
                         };
 

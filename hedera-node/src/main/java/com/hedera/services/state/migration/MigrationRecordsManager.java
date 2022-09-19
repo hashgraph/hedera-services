@@ -322,6 +322,13 @@ public class MigrationRecordsManager {
 
                             final var bytecodeSidecar =
                                     generateMigrationBytecodeSidecarFor(contractId);
+                            if (bytecodeSidecar == null) {
+                                log.warn(
+                                        "Contract 0.0.{} has no bytecode in state - no migration"
+                                                + " sidecar records will be published.",
+                                        contractId.getContractNum());
+                                return;
+                            }
                             transactionContext.addSidecarRecord(bytecodeSidecar);
                             log.debug(
                                     "Published migration bytecode sidecar for contract 0.0.{}",
@@ -352,6 +359,9 @@ public class MigrationRecordsManager {
             final ContractID contractId) {
         final var runtimeCode =
                 entityAccess.fetchCodeIfPresent(EntityIdUtils.asAccount(contractId));
+        if (runtimeCode == null) {
+            return null;
+        }
         final var bytecodeSidecar =
                 SidecarUtils.createContractBytecodeSidecarFrom(
                         contractId, runtimeCode.toArrayUnsafe());
@@ -373,7 +383,12 @@ public class MigrationRecordsManager {
             contractStateChangeBuilder.addStorageChanges(
                     StorageChange.newBuilder()
                             .setSlot(ByteStringUtils.wrapUnsafely(slotAsBytes(contractStorageKey)))
-                            .setValueRead(ByteStringUtils.wrapUnsafely(iterableValue.getValue()))
+                            .setValueRead(
+                                    ByteStringUtils.wrapUnsafely(
+                                            iterableValue
+                                                    .asUInt256()
+                                                    .trimLeadingZeros()
+                                                    .toArrayUnsafe()))
                             .build());
             contractStorageKey =
                     iterableValue.getNextKeyScopedTo(contractStorageKey.getContractId());
@@ -398,10 +413,15 @@ public class MigrationRecordsManager {
     }
 
     private byte[] slotAsBytes(final ContractKey contractStorageKey) {
-        final var contractKeyBytes = new byte[32];
-        for (int i = contractStorageKey.getUint256KeyNonZeroBytes() - 1, j = 31 - i;
-                i >= 0;
-                i--, j++) {
+        final var numOfNonZeroBytes = contractStorageKey.getUint256KeyNonZeroBytes();
+        // getUint256KeyNonZeroBytes() returns 1 even if slot is 0, so
+        // check the least significant int in the int[] representation
+        // of the key to make sure we are in the edge case
+        if (numOfNonZeroBytes == 1 && contractStorageKey.getKey()[7] == 0) {
+            return new byte[0];
+        }
+        final var contractKeyBytes = new byte[numOfNonZeroBytes];
+        for (int i = numOfNonZeroBytes - 1, j = numOfNonZeroBytes - i - 1; i >= 0; i--, j++) {
             contractKeyBytes[j] = contractStorageKey.getUint256Byte(i);
         }
         return contractKeyBytes;

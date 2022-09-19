@@ -23,36 +23,38 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
 
 public class MiscSpeedometers {
+    private SpeedometerMetric.Config syncVerificationsConfig;
+    private SpeedometerMetric.Config platformTxnRejectionsConfig;
     private SpeedometerMetric syncVerifications;
     private SpeedometerMetric platformTxnRejections;
 
     public MiscSpeedometers(final double halfLife) {
-        syncVerifications =
-                new SpeedometerMetric(
-                        STAT_CATEGORY,
-                        Names.SYNC_VERIFICATIONS,
-                        Descriptions.SYNC_VERIFICATIONS,
-                        SPEEDOMETER_FORMAT,
-                        halfLife);
-        platformTxnRejections =
-                new SpeedometerMetric(
-                        STAT_CATEGORY,
-                        Names.PLATFORM_TXN_REJECTIONS,
-                        Descriptions.PLATFORM_TXN_REJECTIONS,
-                        SPEEDOMETER_FORMAT,
-                        halfLife);
+        syncVerificationsConfig =
+                new SpeedometerMetric.Config(STAT_CATEGORY, Names.SYNC_VERIFICATIONS)
+                        .withDescription(Descriptions.SYNC_VERIFICATIONS)
+                        .withFormat(SPEEDOMETER_FORMAT)
+                        .withHalfLife(halfLife);
+        platformTxnRejectionsConfig =
+                new SpeedometerMetric.Config(STAT_CATEGORY, Names.PLATFORM_TXN_REJECTIONS)
+                        .withDescription(Descriptions.PLATFORM_TXN_REJECTIONS)
+                        .withFormat(SPEEDOMETER_FORMAT)
+                        .withHalfLife(halfLife);
     }
 
     public void registerWith(final Platform platform) {
-        platform.addAppMetrics(syncVerifications, platformTxnRejections);
+        syncVerifications = platform.getOrCreateMetric(syncVerificationsConfig);
+        platformTxnRejections = platform.getOrCreateMetric(platformTxnRejectionsConfig);
+
+        syncVerificationsConfig = null;
+        platformTxnRejectionsConfig = null;
     }
 
     public void cycleSyncVerifications() {
-        syncVerifications.update(1);
+        syncVerifications.cycle();
     }
 
     public void cyclePlatformTxnRejections() {
-        platformTxnRejections.update(1);
+        platformTxnRejections.cycle();
     }
 
     public static final class Names {

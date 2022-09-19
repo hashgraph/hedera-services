@@ -34,7 +34,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingTokenRels;
@@ -49,7 +48,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
@@ -72,7 +71,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class BaseHederaLedgerTestHelper {
     protected OptionValidator validator = TEST_VALIDATOR;
-    protected MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 
     protected long GENESIS_BALANCE = 50_000_000_000L;
     protected long NEXT_ID = 1_000_000L;
@@ -87,7 +85,7 @@ public class BaseHederaLedgerTestHelper {
     protected ExpiringCreations creator;
     protected RecordsHistorian historian;
     protected TransferLogic transferLogic;
-    protected TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    protected TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>

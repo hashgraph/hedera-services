@@ -115,6 +115,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         if (!dynamicProperties.isStakingEnabled()) {
             super.preview(pendingChanges);
         } else {
+            rewardCalculator.reset();
+
             prepareAuxiliaryArraysFor(pendingChanges.size());
             // Once rewards are activated, they remain activated
             rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();

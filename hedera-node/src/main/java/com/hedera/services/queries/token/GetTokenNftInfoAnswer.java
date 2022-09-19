@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TokenGetNftInfoResponse;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -60,7 +61,7 @@ public class GetTokenNftInfoAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 

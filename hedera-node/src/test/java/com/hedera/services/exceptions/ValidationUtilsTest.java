@@ -16,11 +16,14 @@
 package com.hedera.services.exceptions;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalseOrRevert;
+import static com.hedera.services.exceptions.ValidationUtils.validateResourceLimit;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,6 +34,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
 class ValidationUtilsTest {
+
     @Test
     void factoriesWorkAsExpected() {
         final var falseExCapturedByCode =
@@ -49,6 +53,12 @@ class ValidationUtilsTest {
                 assertThrows(
                         InvalidTransactionException.class,
                         () -> validateFalse(true, TOKEN_HAS_NO_SUPPLY_KEY, "Should be false!"));
+        final var resourceLimitCapturedByCode =
+                assertThrows(
+                        ResourceLimitException.class,
+                        () ->
+                                validateResourceLimit(
+                                        false, MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
 
         assertEquals(MEMO_TOO_LONG, falseExCapturedByCode.getResponseCode());
         assertEquals(INVALID_TOKEN_BURN_AMOUNT, falseExCapturedByCodeAndMsg.getResponseCode());
@@ -56,6 +66,9 @@ class ValidationUtilsTest {
         assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, trueExCapturedByCode.getResponseCode());
         assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, trueExCapturedByCodeAndMsg.getResponseCode());
         assertEquals("Should be false!", trueExCapturedByCodeAndMsg.getMessage());
+        assertEquals(
+                MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED,
+                resourceLimitCapturedByCode.getResponseCode());
     }
 
     @Test
@@ -64,7 +77,12 @@ class ValidationUtilsTest {
                 assertThrows(
                         InvalidTransactionException.class,
                         () -> validateTrueOrRevert(false, INVALID_ALLOWANCE_OWNER_ID));
+        final var trueExCapturedByCode =
+                assertThrows(
+                        InvalidTransactionException.class,
+                        () -> validateFalseOrRevert(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
         assertTrue(capturedEx.isReverting());
+        assertTrue(trueExCapturedByCode.isReverting());
         final var reason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());
         assertEquals(reason, capturedEx.getRevertReason());
     }
