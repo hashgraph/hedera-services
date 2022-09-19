@@ -134,7 +134,7 @@ public interface StateModule {
     static BalancesExporter bindBalancesExporter(
             final SystemExits systemExits,
             final @CompositeProps PropertySource properties,
-            final UnaryOperator<byte[]> signer,
+            final Function<byte[], Signature> signer,
             final GlobalDynamicProperties dynamicProperties) {
         try {
             return new SignedStateBalancesExporter(
