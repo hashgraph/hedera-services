@@ -1,3 +1,3 @@
-module com.hedera.hashgraph.app.api {
-
+module com.hedera.services.api {
+    exports com.hedera.services.api;
 }
