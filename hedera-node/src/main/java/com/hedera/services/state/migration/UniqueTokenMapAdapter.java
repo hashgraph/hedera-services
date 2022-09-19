@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 
 /**
  * Adaptor for NFT store that allows dropping in a MerkleMap/VirtualMap instances in places where
- * the NFTs are read and written from their respectiev data store.
+ * the NFTs are read and written from their respective data store.
  */
 public class UniqueTokenMapAdapter {
 

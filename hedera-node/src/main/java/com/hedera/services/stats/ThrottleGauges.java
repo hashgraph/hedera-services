@@ -152,8 +152,11 @@ public class ThrottleGauges {
             final String status) {
         final var name = type.toLowerCase() + String.format(THROTTLE_NAME_TPL, throttleName);
         final var desc = String.format(THROTTLE_DESCRIPTION_TPL, type, throttleName);
-        final var gauge = new DoubleGauge(STAT_CATEGORY, name, desc, GAUGE_FORMAT);
-        platform.addAppMetrics(gauge);
+        final var config =
+                new DoubleGauge.Config(STAT_CATEGORY, name)
+                        .withDescription(desc)
+                        .withFormat(GAUGE_FORMAT);
+        final var gauge = platform.getOrCreateMetric(config);
         log.info("Registered {} gauge for '{}' under name '{}'", status, desc, name);
         return gauge;
     }

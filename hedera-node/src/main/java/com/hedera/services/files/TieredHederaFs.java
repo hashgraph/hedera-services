@@ -23,7 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Comparator.comparingInt;
-import static java.util.function.Predicate.not;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -35,7 +34,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -279,7 +277,12 @@ public final class TieredHederaFs implements HederaFs {
     }
 
     public static ResponseCodeEnum firstUnsuccessful(final ResponseCodeEnum... outcomes) {
-        return Arrays.stream(outcomes).filter(not(SUCCESS::equals)).findAny().orElse(SUCCESS);
+        for (final var outcome : outcomes) {
+            if (outcome != SUCCESS) {
+                return outcome;
+            }
+        }
+        return SUCCESS;
     }
 
     private void assertExtant(final FileID id) {

@@ -60,11 +60,6 @@ public class VirtualBlobValue implements VirtualValue {
     }
 
     @Override
-    public void release() {
-        /* No-op */
-    }
-
-    @Override
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         data = in.readByteArray(Integer.MAX_VALUE);
     }

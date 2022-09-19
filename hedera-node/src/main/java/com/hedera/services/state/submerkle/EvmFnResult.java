@@ -348,11 +348,14 @@ public class EvmFnResult implements SelfSerializable {
             grpc.setContractID(contractId.toGrpcContractId());
         }
         if (isNotEmpty(logs)) {
-            grpc.addAllLogInfo(logs.stream().map(EvmLog::toGrpc).toList());
+            for (final var evmLog : logs) {
+                grpc.addLogInfo(evmLog.toGrpc());
+            }
         }
         if (isNotEmpty(createdContractIds)) {
-            grpc.addAllCreatedContractIDs(
-                    createdContractIds.stream().map(EntityId::toGrpcContractId).toList());
+            for (final var createdId : createdContractIds) {
+                grpc.addCreatedContractIDs(createdId.toGrpcContractId());
+            }
         }
         if (evmAddress.length > 0) {
             grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));

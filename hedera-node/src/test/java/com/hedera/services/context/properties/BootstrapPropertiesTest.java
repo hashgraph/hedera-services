@@ -21,6 +21,7 @@ import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
+import static com.hedera.services.throttling.MapAccessType.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -120,6 +121,15 @@ class BootstrapPropertiesTest {
                     entry(ENTITIES_MAX_LIFETIME, 3153600000L),
                     entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
                     entry(EXPIRY_THROTTLE_RESOURCE, "expiry-throttle.json"),
+                    entry(
+                            EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
+                            List.of(
+                                    ACCOUNTS_GET,
+                                    ACCOUNTS_GET_FOR_MODIFY,
+                                    STORAGE_GET,
+                                    STORAGE_GET,
+                                    STORAGE_REMOVE,
+                                    STORAGE_PUT)),
                     entry(
                             FEES_PERCENT_CONGESTION_MULTIPLIERS,
                             CongestionMultipliers.from("90,10x,95,25x,99,100x")),

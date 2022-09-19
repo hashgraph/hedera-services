@@ -88,7 +88,7 @@ class TreasuryReturnHelperTest {
         given(nfts.get(aNftKey)).willReturn(someNft);
         someNft.setNext(bNftKey.asNftNumPair());
 
-        final var newRoot = subject.finishNft(true, aNftKey, nfts);
+        final var newRoot = subject.burnOrReturnNft(true, aNftKey, nfts);
 
         verify(nfts).remove(aNftKey);
         assertEquals(bNftKey, newRoot);
@@ -99,7 +99,7 @@ class TreasuryReturnHelperTest {
         given(nfts.getForModify(aNftKey)).willReturn(someNft);
         someNft.setNext(NftNumPair.MISSING_NFT_NUM_PAIR);
 
-        final var newRoot = subject.finishNft(false, aNftKey, nfts);
+        final var newRoot = subject.burnOrReturnNft(false, aNftKey, nfts);
 
         verify(nfts, never()).remove(aNftKey);
         assertEquals(EntityId.MISSING_ENTITY_ID, someNft.getOwner());
@@ -111,7 +111,7 @@ class TreasuryReturnHelperTest {
         given(nfts.getForModify(aNftKey)).willReturn(someNft);
         someNft.setNext(null);
 
-        final var newRoot = subject.finishNft(false, aNftKey, nfts);
+        final var newRoot = subject.burnOrReturnNft(false, aNftKey, nfts);
 
         verify(nfts, never()).remove(aNftKey);
         assertEquals(EntityId.MISSING_ENTITY_ID, someNft.getOwner());

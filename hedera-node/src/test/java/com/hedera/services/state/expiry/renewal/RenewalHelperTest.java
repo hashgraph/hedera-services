@@ -35,11 +35,12 @@ import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.fees.charging.NonHapiFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -59,6 +60,7 @@ class RenewalHelperTest {
     @Mock private FeeCalculator fees;
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryStats expiryStats;
     @Mock private FeeDistribution feeDistribution;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     @Mock private SideEffectsTracker sideEffectsTracker;
@@ -75,6 +77,7 @@ class RenewalHelperTest {
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         subject =
                 new RenewalHelper(
+                        expiryStats,
                         expiryThrottle,
                         classificationWork,
                         properties,
@@ -92,7 +95,6 @@ class RenewalHelperTest {
 
         givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
         givenPresent(98, fundingAccount);
-        given(expiryThrottle.allow(any(), any(Instant.class))).willReturn(true);
         given(expiryThrottle.allow(any())).willReturn(true);
         given(
                         accountsLedger.get(
@@ -118,6 +120,7 @@ class RenewalHelperTest {
         verify(accountsLedger, times(1)).get(key.toGrpcAccountId(), BALANCE);
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         verify(sideEffectsTracker).reset();
+        verify(expiryStats).countRenewedContract();
         final var expectedNewExpiry = now.getEpochSecond() + 3600L;
         verify(recordsHelper)
                 .streamCryptoRenewal(
@@ -128,14 +131,14 @@ class RenewalHelperTest {
     @Test
     void doesNotRenewIfNoSelfCapacityAvailable() {
         givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         given(expiryThrottle.allow(SELF_RENEWAL_WORK)).willReturn(false);
 
         classificationWork.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
         verifyNoInteractions(sideEffectsTracker);
     }
 
@@ -148,6 +151,7 @@ class RenewalHelperTest {
 
         subject =
                 new RenewalHelper(
+                        expiryStats,
                         expiryThrottle,
                         classificationWork,
                         properties,
@@ -159,25 +163,25 @@ class RenewalHelperTest {
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
     }
 
     @Test
     void doesNothingWhenDisabled() {
         properties.disableAutoRenew();
         var result = subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
 
         properties.disableContractAutoRenew();
         result = subject.tryToRenewContract(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
         verifyNoInteractions(sideEffectsTracker);
     }
 
     @Test
     void rejectsAsIseIfFeeIsUnaffordable() {
         givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
 
         // when:
         classificationWork.classify(EntityNum.fromLong(brokeExpiredNum), now);

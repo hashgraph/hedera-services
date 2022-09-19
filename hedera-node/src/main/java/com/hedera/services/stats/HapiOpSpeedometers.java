@@ -33,7 +33,6 @@ import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
 import java.util.Arrays;
@@ -70,6 +69,16 @@ public class HapiOpSpeedometers {
             new EnumMap<>(HederaFunctionality.class);
     private SpeedometerMetric receivedDeprecatedTxns;
 
+    private EnumMap<HederaFunctionality, SpeedometerMetric.Config> receivedOpsConfig =
+            new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, SpeedometerMetric.Config> handledTxnsConfig =
+            new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, SpeedometerMetric.Config> submittedTxnsConfig =
+            new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, SpeedometerMetric.Config> answeredQueriesConfig =
+            new EnumMap<>(HederaFunctionality.class);
+    private SpeedometerMetric.Config receivedDeprecatedTxnsConfig;
+
     public HapiOpSpeedometers(
             final HapiOpCounters counters,
             final NodeLocalProperties properties,
@@ -82,35 +91,35 @@ public class HapiOpSpeedometers {
                 .filter(function -> !IGNORED_FUNCTIONS.contains(function))
                 .forEach(
                         function -> {
-                            receivedOps.put(
+                            receivedOpsConfig.put(
                                     function,
-                                    speedometerFor(
+                                    speedometerConfigFor(
                                             function,
                                             SPEEDOMETER_RECEIVED_NAME_TPL,
                                             SPEEDOMETER_RECEIVED_DESC_TPL,
                                             halfLife));
                             lastReceivedOpsCount.put(function, 0L);
                             if (QUERY_FUNCTIONS.contains(function)) {
-                                answeredQueries.put(
+                                answeredQueriesConfig.put(
                                         function,
-                                        speedometerFor(
+                                        speedometerConfigFor(
                                                 function,
                                                 SPEEDOMETER_ANSWERED_NAME_TPL,
                                                 SPEEDOMETER_ANSWERED_DESC_TPL,
                                                 halfLife));
                                 lastAnsweredQueriesCount.put(function, 0L);
                             } else {
-                                submittedTxns.put(
+                                submittedTxnsConfig.put(
                                         function,
-                                        speedometerFor(
+                                        speedometerConfigFor(
                                                 function,
                                                 SPEEDOMETER_SUBMITTED_NAME_TPL,
                                                 SPEEDOMETER_SUBMITTED_DESC_TPL,
                                                 halfLife));
                                 lastSubmittedTxnsCount.put(function, 0L);
-                                handledTxns.put(
+                                handledTxnsConfig.put(
                                         function,
-                                        speedometerFor(
+                                        speedometerConfigFor(
                                                 function,
                                                 SPEEDOMETER_HANDLED_NAME_TPL,
                                                 SPEEDOMETER_HANDLED_DESC_TPL,
@@ -118,17 +127,15 @@ public class HapiOpSpeedometers {
                                 lastHandledTxnsCount.put(function, 0L);
                             }
                         });
-        receivedDeprecatedTxns =
-                new SpeedometerMetric(
-                        STAT_CATEGORY,
-                        SPEEDOMETER_DEPRECATED_TXNS_NAME,
-                        SPEEDOMETER_DEPRECATED_TXNS_DESC,
-                        SPEEDOMETER_FORMAT,
-                        halfLife);
+        receivedDeprecatedTxnsConfig =
+                new SpeedometerMetric.Config(STAT_CATEGORY, SPEEDOMETER_DEPRECATED_TXNS_NAME)
+                        .withDescription(SPEEDOMETER_DEPRECATED_TXNS_DESC)
+                        .withFormat(SPEEDOMETER_FORMAT)
+                        .withHalfLife(halfLife);
         lastReceivedDeprecatedTxnCount = 0L;
     }
 
-    public SpeedometerMetric speedometerFor(
+    public SpeedometerMetric.Config speedometerConfigFor(
             final HederaFunctionality function,
             final String nameTpl,
             final String descTpl,
@@ -136,22 +143,34 @@ public class HapiOpSpeedometers {
         final var baseName = statNameFn.apply(function);
         var fullName = String.format(nameTpl, baseName);
         var description = String.format(descTpl, baseName);
-        return new SpeedometerMetric(
-                STAT_CATEGORY, fullName, description, SPEEDOMETER_FORMAT, halfLife);
+        return new SpeedometerMetric.Config(STAT_CATEGORY, fullName)
+                .withDescription(description)
+                .withFormat(SPEEDOMETER_FORMAT)
+                .withHalfLife(halfLife);
     }
 
     public void registerWith(Platform platform) {
-        registerSpeedometers(platform, receivedOps);
-        registerSpeedometers(platform, submittedTxns);
-        registerSpeedometers(platform, handledTxns);
-        registerSpeedometers(platform, answeredQueries);
-        platform.addAppMetrics(receivedDeprecatedTxns);
+        registerSpeedometers(platform, receivedOps, receivedOpsConfig);
+        registerSpeedometers(platform, submittedTxns, submittedTxnsConfig);
+        registerSpeedometers(platform, handledTxns, handledTxnsConfig);
+        registerSpeedometers(platform, answeredQueries, answeredQueriesConfig);
+        receivedDeprecatedTxns = platform.getOrCreateMetric(receivedDeprecatedTxnsConfig);
+
+        receivedOpsConfig = null;
+        submittedTxnsConfig = null;
+        handledTxnsConfig = null;
+        answeredQueriesConfig = null;
+        receivedDeprecatedTxnsConfig = null;
     }
 
     private void registerSpeedometers(
             final Platform platform,
-            final Map<HederaFunctionality, SpeedometerMetric> speedometers) {
-        platform.addAppMetrics(speedometers.values().toArray(Metric[]::new));
+            final Map<HederaFunctionality, SpeedometerMetric> speedometers,
+            final Map<HederaFunctionality, SpeedometerMetric.Config> configs) {
+
+        configs.forEach(
+                (function, config) ->
+                        speedometers.put(function, platform.getOrCreateMetric(config)));
     }
 
     public void updateAll() {
@@ -221,11 +240,6 @@ public class HapiOpSpeedometers {
     @VisibleForTesting
     Long getLastReceivedDeprecatedTxnCount() {
         return lastReceivedDeprecatedTxnCount;
-    }
-
-    @VisibleForTesting
-    static void setAllFunctions(Supplier<HederaFunctionality[]> allFunctions) {
-        HapiOpSpeedometers.allFunctions = allFunctions;
     }
 
     @VisibleForTesting

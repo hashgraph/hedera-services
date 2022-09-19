@@ -15,6 +15,9 @@
  */
 package com.hedera.services.throttling;
 
+import com.hedera.services.utils.MiscUtils;
+import java.util.List;
+
 /**
  * Enumerates the type of {@link com.swirlds.merkle.map.MerkleMap} and {@link
  * com.swirlds.virtualmap.VirtualMap} operations needed to auto-renew or auto-remove expired
@@ -59,5 +62,9 @@ public enum MapAccessType {
     /** To remove a head token association. */
     TOKEN_ASSOCIATIONS_REMOVE,
     /** To update a token association {@code prev} after removing the preceding head association. */
-    TOKEN_ASSOCIATIONS_GET_FOR_MODIFY,
+    TOKEN_ASSOCIATIONS_GET_FOR_MODIFY;
+
+    public static List<MapAccessType> csvAccessList(final String propertyValue) {
+        return MiscUtils.csvList(propertyValue, MapAccessType::valueOf);
+    }
 }

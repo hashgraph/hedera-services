@@ -107,22 +107,26 @@ public class DeterministicThrottle {
         return nTransactions * BucketThrottle.capacityUnitsPerTxn();
     }
 
-    public boolean allow(final int n, final Instant now) {
-        long elapsedNanos = 0L;
-        if (lastDecisionTime != NEVER) {
-            elapsedNanos = Duration.between(lastDecisionTime, now).toNanos();
-            if (elapsedNanos < 0L) {
-                throw new IllegalArgumentException(
-                        "Throttle timeline must advance, but "
-                                + now
-                                + " is not after "
-                                + lastDecisionTime
-                                + "!");
-            }
-        }
+    public long clampedCapacityRequiredFor(final int nTransactions) {
+        final var nominal = capacityRequiredFor(nTransactions);
+        final var limit = delegate.bucket().totalCapacity();
+        return (nominal >= 0) ? Math.min(nominal, limit) : limit;
+    }
 
+    public boolean allowInstantaneous(final int n) {
+        return delegate.allowInstantaneous(n);
+    }
+
+    public boolean allow(final int n, final Instant now) {
+        final var elapsedNanos = elapsedNanosUntil(now);
         lastDecisionTime = now;
         return delegate.allow(n, elapsedNanos);
+    }
+
+    public void leakUntil(final Instant now) {
+        final var elapsedNanos = elapsedNanosUntil(now);
+        lastDecisionTime = now;
+        delegate.leakFor(elapsedNanos);
     }
 
     public void reclaimLastAllowedUse() {
@@ -147,6 +151,10 @@ public class DeterministicThrottle {
 
     public long capacity() {
         return delegate.bucket().totalCapacity();
+    }
+
+    public long capacityFree() {
+        return delegate.bucket().capacityFree();
     }
 
     public UsageSnapshot usageSnapshot() {
@@ -241,5 +249,21 @@ public class DeterministicThrottle {
 
     public Instant lastDecisionTime() {
         return lastDecisionTime;
+    }
+
+    private long elapsedNanosUntil(final Instant now) {
+        long elapsedNanos = 0L;
+        if (lastDecisionTime != NEVER) {
+            elapsedNanos = Duration.between(lastDecisionTime, now).toNanos();
+            if (elapsedNanos < 0L) {
+                throw new IllegalArgumentException(
+                        "Throttle timeline must advance, but "
+                                + now
+                                + " is not after "
+                                + lastDecisionTime
+                                + "!");
+            }
+        }
+        return elapsedNanos;
     }
 }

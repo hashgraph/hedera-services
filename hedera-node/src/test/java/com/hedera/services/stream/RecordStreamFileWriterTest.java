@@ -15,6 +15,7 @@
  */
 package com.hedera.services.stream;
 
+import static com.swirlds.common.crypto.SignatureType.RSA;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
@@ -61,6 +62,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
 import java.io.File;
@@ -138,10 +140,10 @@ class RecordStreamFileWriterTest {
         final var secondBlockMetadataSignature =
                 "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
-                .willReturn(firstBlockEntireFileSignature)
-                .willReturn(firstBlockMetadataSignature)
-                .willReturn(secondBlockEntireFileSignature)
-                .willReturn(secondBlockMetadataSignature);
+                .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+                .willReturn(new Signature(RSA, firstBlockMetadataSignature))
+                .willReturn(new Signature(RSA, secondBlockEntireFileSignature))
+                .willReturn(new Signature(RSA, secondBlockMetadataSignature));
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 5, 26, 11, 2, 55).toInstant(ZoneOffset.UTC);
         // set initial running hash
@@ -207,8 +209,8 @@ class RecordStreamFileWriterTest {
         final var secondBlockMetadataSignature =
                 "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
-                .willReturn(secondBlockEntireFileSignature)
-                .willReturn(secondBlockMetadataSignature);
+                .willReturn(new Signature(RSA, secondBlockEntireFileSignature))
+                .willReturn(new Signature(RSA, secondBlockMetadataSignature));
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
         // set initial running hash
@@ -267,8 +269,8 @@ class RecordStreamFileWriterTest {
         final var firstBlockMetadataSignature =
                 "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
-                .willReturn(firstBlockEntireFileSignature)
-                .willReturn(firstBlockMetadataSignature);
+                .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+                .willReturn(new Signature(RSA, firstBlockMetadataSignature));
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 9, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
         // set initial running hash
@@ -327,8 +329,8 @@ class RecordStreamFileWriterTest {
         final var firstBlockMetadataSignature =
                 "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
-                .willReturn(firstBlockEntireFileSignature)
-                .willReturn(firstBlockMetadataSignature);
+                .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+                .willReturn(new Signature(RSA, firstBlockMetadataSignature));
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 10, 24, 16, 2, 55).toInstant(ZoneOffset.UTC);
         // set initial running hash
@@ -388,8 +390,8 @@ class RecordStreamFileWriterTest {
         final var firstBlockMetadataSignature =
                 "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
-                .willReturn(firstBlockEntireFileSignature)
-                .willReturn(firstBlockMetadataSignature);
+                .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+                .willReturn(new Signature(RSA, firstBlockMetadataSignature));
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 7, 21, 15, 58, 55).toInstant(ZoneOffset.UTC);
         // set initial running hash
@@ -1039,10 +1041,10 @@ class RecordStreamFileWriterTest {
         final var secondBlockMetadataSignature =
                 "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
-                .willReturn(firstBlockEntireFileSignature)
-                .willReturn(firstBlockMetadataSignature)
-                .willReturn(secondBlockEntireFileSignature)
-                .willReturn(secondBlockMetadataSignature);
+                .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+                .willReturn(new Signature(RSA, firstBlockMetadataSignature))
+                .willReturn(new Signature(RSA, secondBlockEntireFileSignature))
+                .willReturn(new Signature(RSA, secondBlockMetadataSignature));
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 5, 11, 16, 2, 55).toInstant(ZoneOffset.UTC);
         // bear in mind that IOException can't really be thrown from this invocation,

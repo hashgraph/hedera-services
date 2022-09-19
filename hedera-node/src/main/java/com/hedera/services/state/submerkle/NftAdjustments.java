@@ -138,21 +138,18 @@ public class NftAdjustments implements SelfSerializable {
         }
     }
 
-    public static NftAdjustments fromGrpc(List<NftTransfer> grpc) {
-        var pojo = new NftAdjustments();
-
-        pojo.serialNums = grpc.stream().mapToLong(NftTransfer::getSerialNumber).toArray();
-        pojo.senderAccIds =
-                grpc.stream()
-                        .filter(nftTransfer -> nftTransfer.getSenderAccountID() != null)
-                        .map(NftTransfer::getSenderAccountID)
-                        .map(EntityId::fromGrpcAccountId)
-                        .toList();
-        pojo.receiverAccIds =
-                grpc.stream()
-                        .map(NftTransfer::getReceiverAccountID)
-                        .map(EntityId::fromGrpcAccountId)
-                        .toList();
+    public static NftAdjustments fromGrpc(final List<NftTransfer> grpc) {
+        final var pojo = new NftAdjustments();
+        final var n = grpc.size();
+        pojo.serialNums = new long[n];
+        pojo.senderAccIds = new ArrayList<>(n);
+        pojo.receiverAccIds = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            final var exchange = grpc.get(i);
+            pojo.serialNums[i] = exchange.getSerialNumber();
+            pojo.senderAccIds.add(EntityId.fromGrpcAccountId(exchange.getSenderAccountID()));
+            pojo.receiverAccIds.add(EntityId.fromGrpcAccountId(exchange.getReceiverAccountID()));
+        }
 
         return pojo;
     }

@@ -34,10 +34,7 @@ import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.BackingTokens;
-import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
-import com.hedera.services.ledger.interceptors.TokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.*;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -87,17 +84,23 @@ public interface StoresModule {
     @Singleton
     static TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> provideNftsLedger(
             final BootstrapProperties bootstrapProperties,
+            final UsageLimits usageLimits,
+            final UniqueTokensLinkManager uniqueTokensLinkManager,
             final Supplier<UniqueTokenMapAdapter> uniqueTokens) {
         final boolean isVirtual =
                 bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
-
-        return new TransactionalLedger<>(
-                NftProperty.class,
-                isVirtual
-                        ? UniqueTokenAdapter::newEmptyVirtualToken
-                        : UniqueTokenAdapter::newEmptyMerkleToken,
-                new BackingNfts(uniqueTokens),
-                new ChangeSummaryManager<>());
+        final var uniqueTokensLedger =
+                new TransactionalLedger<>(
+                        NftProperty.class,
+                        isVirtual
+                                ? UniqueTokenAdapter::newEmptyVirtualToken
+                                : UniqueTokenAdapter::newEmptyMerkleToken,
+                        new BackingNfts(uniqueTokens),
+                        new ChangeSummaryManager<>());
+        final var uniqueTokensCommitInterceptor =
+                new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
+        uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
+        return uniqueTokensLedger;
     }
 
     @Provides

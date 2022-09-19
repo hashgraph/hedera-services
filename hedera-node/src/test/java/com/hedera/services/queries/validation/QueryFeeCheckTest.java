@@ -115,7 +115,6 @@ class QueryFeeCheckTest {
 
     @Test
     void rejectsEmptyTransfers() {
-        assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.transfersPlausibility(null));
         assertEquals(
                 INVALID_ACCOUNT_AMOUNTS, subject.transfersPlausibility(Collections.emptyList()));
     }

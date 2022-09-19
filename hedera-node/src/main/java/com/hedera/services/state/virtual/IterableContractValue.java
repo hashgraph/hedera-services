@@ -276,11 +276,6 @@ public class IterableContractValue implements VirtualValue {
         return readOnlyThat;
     }
 
-    @Override
-    public void release() {
-        // nothing to do
-    }
-
     // =================================================================================================================
     // Iteration support methods
 
