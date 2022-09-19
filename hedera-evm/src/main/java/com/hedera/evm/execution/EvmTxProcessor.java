@@ -24,7 +24,6 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 import com.hedera.evm.exception.InvalidTransactionException;
 import com.hedera.evm.execution.traceability.HederaTracer;
 import com.hedera.evm.model.Account;
-import com.hedera.evm.model.Id;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
@@ -189,8 +188,7 @@ abstract class EvmTxProcessor {
                         relayer == null ? null : relayer.getId().asEvmAddress(),
                         updater);
 
-        final var coinbase =
-                Id.fromGrpcAccount(configurationProperties.fundingAccount()).asEvmAddress();
+        final var coinbase = configurationProperties.fundingAccount();
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var gasAvailable = gasLimit - intrinsicGas;
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();

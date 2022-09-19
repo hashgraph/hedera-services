@@ -16,13 +16,13 @@
 package com.hedera.evm.execution;
 
 import com.hedera.services.stream.proto.SidecarType;
-import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Address;
 
 public interface EvmProperties {
 
-    public AccountID fundingAccount();
+    public Address fundingAccount();
 
     public Set<SidecarType> enabledSidecars();
 
