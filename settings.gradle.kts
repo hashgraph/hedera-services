@@ -23,6 +23,8 @@ rootProject.name = "hedera-services"
 include(":hapi-utils")
 include(":hapi-fees")
 include(":hedera-node")
+include(":hedera-node:hedera-app")
+include(":hedera-node:hedera-app-api")
 include(":test-clients")
 
 // Enable Gradle Build Scan
