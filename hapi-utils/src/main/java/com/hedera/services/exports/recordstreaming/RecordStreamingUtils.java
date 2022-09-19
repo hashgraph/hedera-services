@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.recordstreaming;
+package com.hedera.services.exports.recordstreaming;
 
+import com.hedera.services.exports.FileCompressionUtils;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.SignatureFile;
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Optional;
-import java.util.zip.GZIPInputStream;
 import org.apache.commons.lang3.tuple.Pair;
 
 /** Minimal utility to read record stream files and their corresponding signature files. */
@@ -41,7 +40,7 @@ public class RecordStreamingUtils {
 
     public static Pair<Integer, Optional<RecordStreamFile>> readRecordStreamFile(
             final String fileLoc) throws IOException {
-        final var uncompressedFileContents = getUncompressedStreamFileBytes(fileLoc);
+        final var uncompressedFileContents = FileCompressionUtils.readUncompressedFileBytes(fileLoc);
         final var recordFileVersion = ByteBuffer.wrap(uncompressedFileContents, 0, 4).getInt();
         final var recordStreamFile =
                 RecordStreamFile.parseFrom(
@@ -66,19 +65,6 @@ public class RecordStreamingUtils {
     }
 
     public static SidecarFile readSidecarFile(final String fileLoc) throws IOException {
-        return SidecarFile.parseFrom(getUncompressedStreamFileBytes(fileLoc));
-    }
-
-    private static byte[] getUncompressedStreamFileBytes(final String fileLoc) throws IOException {
-        try (final var fin = new GZIPInputStream(new FileInputStream(fileLoc));
-                final var byteArrayOutputStream = new ByteArrayOutputStream()) {
-            final var buffer = new byte[1024];
-            int len;
-            while ((len = fin.read(buffer)) > 0) {
-                byteArrayOutputStream.write(buffer, 0, len);
-            }
-
-            return byteArrayOutputStream.toByteArray();
-        }
+        return SidecarFile.parseFrom(FileCompressionUtils.readUncompressedFileBytes(fileLoc));
     }
 }

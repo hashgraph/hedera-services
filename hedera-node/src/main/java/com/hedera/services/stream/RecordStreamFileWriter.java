@@ -15,6 +15,7 @@
  */
 package com.hedera.services.stream;
 
+import static com.hedera.services.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
@@ -41,6 +42,7 @@ import com.hedera.services.stream.proto.SignatureObject;
 import com.hedera.services.stream.proto.SignatureType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord.SidecarRecordsCase;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
@@ -66,8 +68,7 @@ import org.apache.logging.log4j.Logger;
 class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
 
-    private static final DigestType currentDigestType = DigestType.SHA_384;
-    private static final String COMPRESSION_EXTENSION = ".gz";
+    private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
 
     /** < * the current record stream type; used to obtain file extensions and versioning */
     private final RecordStreamType streamType;
@@ -267,7 +268,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             final var recordFile =
                     new File(
                             dynamicProperties.shouldCompressRecordFilesOnCreation()
-                                    ? uncompressedRecordFilePath + COMPRESSION_EXTENSION
+                                    ? uncompressedRecordFilePath + COMPRESSION_ALGORITHM_EXTENSION
                                     : uncompressedRecordFilePath);
             final var recordFileNameShort = recordFile.getName(); // for logging purposes
             if (recordFile.exists() && !recordFile.isDirectory()) {
@@ -527,7 +528,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                         + "."
                         + streamType.getSidecarExtension();
         if (dynamicProperties.shouldCompressRecordFilesOnCreation()) {
-            sidecarPath += COMPRESSION_EXTENSION;
+            sidecarPath += COMPRESSION_ALGORITHM_EXTENSION;
         }
         return sidecarPath;
     }

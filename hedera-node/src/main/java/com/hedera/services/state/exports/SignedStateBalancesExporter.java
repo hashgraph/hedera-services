@@ -17,6 +17,7 @@ package com.hedera.services.state.exports;
 
 import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
@@ -38,6 +39,8 @@ import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.merkle.map.MerkleMap;
 import java.io.File;
@@ -46,13 +49,15 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
-import javax.inject.Inject;
+import java.util.zip.GZIPOutputStream;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
@@ -90,21 +95,24 @@ public class SignedStateBalancesExporter implements BalancesExporter {
     private BalancesSummary summary;
 
     private final int exportPeriod;
+    private final MessageDigest accountBalanceDigest;
 
     static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
             Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
 
-    @Inject
     public SignedStateBalancesExporter(
             SystemExits systemExits,
             @CompositeProps PropertySource properties,
             UnaryOperator<byte[]> signer,
-            GlobalDynamicProperties dynamicProperties) {
+            GlobalDynamicProperties dynamicProperties)
+            throws NoSuchAlgorithmException {
         this.signer = signer;
         this.systemExits = systemExits;
         this.expectedFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
         this.dynamicProperties = dynamicProperties;
-        exportPeriod = dynamicProperties.balancesExportPeriodSecs();
+        this.exportPeriod = dynamicProperties.balancesExportPeriodSecs();
+        this.accountBalanceDigest =
+                MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
     }
 
     private Instant getFirstExportTime(Instant now, final int exportPeriodInSecs) {
@@ -168,7 +176,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
                 lastUsedExportDir
                         + exportTimeStamp.toString().replace(":", "_")
                         + "_Balances"
-                        + PROTO_FILE_EXTENSION;
+                        + (dynamicProperties.shouldCompressAccountBalanceFilesOnCreation()
+                                ? PROTO_FILE_EXTENSION + COMPRESSION_ALGORITHM_EXTENSION
+                                : PROTO_FILE_EXTENSION);
         boolean exportSucceeded = exportBalancesProtoFile(builder, protoLoc);
         if (exportSucceeded) {
             tryToSign(protoLoc);
@@ -182,7 +192,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
     private void tryToSign(String fileLoc) {
         try {
-            var hash = hashReader.readHash(fileLoc);
+            var hash = accountBalanceDigest.digest();
             var sig = signer.apply(hash);
             var sigFileLoc = sigFileWriter.writeSigFile(fileLoc, sig, hash);
             if (log.isDebugEnabled()) {
@@ -203,8 +213,14 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
     private boolean exportBalancesProtoFile(
             AllAccountBalances.Builder allAccountsBuilder, String protoLoc) {
-        try (FileOutputStream fout = new FileOutputStream(protoLoc)) {
-            allAccountsBuilder.build().writeTo(fout);
+        try (final var outputStream =
+                        dynamicProperties.shouldCompressAccountBalanceFilesOnCreation()
+                                ? new GZIPOutputStream(new FileOutputStream(protoLoc))
+                                : new FileOutputStream(protoLoc);
+                final var hashingOutputStream =
+                        new HashingOutputStream(accountBalanceDigest, outputStream)) {
+            allAccountsBuilder.build().writeTo(hashingOutputStream);
+            outputStream.flush();
         } catch (IOException e) {
             log.error(BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL, protoLoc, e);
             return false;

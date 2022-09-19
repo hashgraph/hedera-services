@@ -15,6 +15,7 @@
  */
 package com.hedera.services.stream;
 
+import static com.hedera.services.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
@@ -34,7 +35,7 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.recordstreaming.RecordStreamingUtils;
+import com.hedera.services.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.stream.proto.ContractAction;
@@ -508,7 +509,7 @@ class RecordStreamFileWriterTest {
         final var recordStreamFilePair =
                 isCompressed
                         ? RecordStreamingUtils.readRecordStreamFile(
-                                recordStreamFilePath + compressedExtension)
+                                recordStreamFilePath + COMPRESSION_ALGORITHM_EXTENSION)
                         : RecordStreamingUtils.readUncompressedRecordStreamFile(
                                 recordStreamFilePath);
 
@@ -524,7 +525,7 @@ class RecordStreamFileWriterTest {
                 recordStreamFile,
                 new File(
                         isCompressed
-                                ? recordStreamFilePath + compressedExtension
+                                ? recordStreamFilePath + COMPRESSION_ALGORITHM_EXTENSION
                                 : recordStreamFilePath),
                 sidecarIdToExpectedSidecarTypes,
                 sidecarIdToExpectedSidecars,
@@ -859,7 +860,7 @@ class RecordStreamFileWriterTest {
                 LocalDateTime.of(2022, 1, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
         final var expectedRecordFileName =
                 generateStreamFileNameFromInstant(firstTransactionInstant, streamType)
-                        + compressedExtension;
+                        + COMPRESSION_ALGORITHM_EXTENSION;
         final var recordFile =
                 new File(expectedExportDir() + File.separator + expectedRecordFileName)
                         .createNewFile();
@@ -1134,7 +1135,7 @@ class RecordStreamFileWriterTest {
                         + File.separator
                         + "2022-05-26T11_02_55.000000000Z_05."
                         + streamType.getSidecarExtension()
-                        + compressedExtension;
+                        + COMPRESSION_ALGORITHM_EXTENSION;
         assertEquals(expected, actualSidecarFileName);
     }
 
@@ -1155,7 +1156,7 @@ class RecordStreamFileWriterTest {
                         + File.separator
                         + "2022-05-26T11_02_55.000000000Z_10."
                         + streamType.getSidecarExtension()
-                        + compressedExtension;
+                        + COMPRESSION_ALGORITHM_EXTENSION;
         assertEquals(expected, actualSidecarFileName);
     }
 
@@ -1185,7 +1186,6 @@ class RecordStreamFileWriterTest {
                 .collect(Collectors.toList());
     }
 
-    private static final String compressedExtension = ".gz";
     private static final long logPeriodMs = 2000L;
     private static final int maxSidecarFileSize = MB_TO_BYTES;
     private static final int RECORD_STREAM_VERSION = 6;
