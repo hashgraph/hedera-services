@@ -18,33 +18,19 @@ package com.hedera.services.utils.accessors;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asAliasAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hedera.test.utils.IdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
-import com.google.protobuf.BoolValue;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.Int32Value;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.StringValue;
+import com.google.protobuf.*;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
@@ -58,46 +44,10 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -173,7 +123,7 @@ class SignedTxnAccessorTest {
 
     @Test
     void uncheckedPropagatesIaeOnNonsense() {
-        final var nonsenseTxn = buildTransactionFrom(ByteString.copyFromUtf8("NONSENSE"));
+        final var nonsenseTxn = TxnUtils.buildTransactionFrom(ByteString.copyFromUtf8("NONSENSE"));
 
         assertThrows(
                 IllegalArgumentException.class, () -> SignedTxnAccessor.uncheckedFrom(nonsenseTxn));
@@ -290,7 +240,9 @@ class SignedTxnAccessorTest {
     @Test
     void detectsCommonTokenBurnSubtypeFromGrpcSyntax() {
         final var op = TokenBurnTransactionBody.newBuilder().setAmount(1_234).build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenBurn(op).build());
+        final var txn =
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setTokenBurn(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -335,7 +287,9 @@ class SignedTxnAccessorTest {
                 TokenBurnTransactionBody.newBuilder()
                         .addAllSerialNumbers(List.of(1L, 2L, 3L))
                         .build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenBurn(op).build());
+        final var txn =
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setTokenBurn(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -345,7 +299,9 @@ class SignedTxnAccessorTest {
     @Test
     void detectsCommonTokenMintSubtypeFromGrpcSyntax() {
         final var op = TokenMintTransactionBody.newBuilder().setAmount(1_234).build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenMint(op).build());
+        final var txn =
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setTokenMint(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -358,7 +314,9 @@ class SignedTxnAccessorTest {
                 TokenMintTransactionBody.newBuilder()
                         .addAllMetadata(List.of(ByteString.copyFromUtf8("STANDARD")))
                         .build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenMint(op).build());
+        final var txn =
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setTokenMint(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -412,7 +370,7 @@ class SignedTxnAccessorTest {
 
     @Test
     void understandsFullXferUsageIncTokens() {
-        final var txn = buildTransactionFrom(tokenXfers());
+        final var txn = TxnUtils.buildTransactionFrom(tokenXfers());
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
         final var xferMeta = subject.availXferUsageMeta();
@@ -442,7 +400,7 @@ class SignedTxnAccessorTest {
                                 ConsensusSubmitMessageTransactionBody.newBuilder()
                                         .setMessage(ByteString.copyFromUtf8(message)))
                         .build();
-        final var txn = buildTransactionFrom(txnBody);
+        final var txn = TxnUtils.buildTransactionFrom(txnBody);
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
         final var submitMeta = subject.availSubmitUsageMeta();
@@ -470,8 +428,8 @@ class SignedTxnAccessorTest {
                         5679l,
                         70000l);
         final var body = CommonUtils.extractTransactionBody(transaction);
-        final var signedTransaction = signedTransactionFrom(body, expectedMap);
-        final var newTransaction = buildTransactionFrom(signedTransaction.toByteString());
+        final var signedTransaction = TxnUtils.signedTransactionFrom(body, expectedMap);
+        final var newTransaction = TxnUtils.buildTransactionFrom(signedTransaction.toByteString());
         final var accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
 
         assertEquals(newTransaction, accessor.getSignedTxnWrapper());
@@ -572,7 +530,7 @@ class SignedTxnAccessorTest {
                                                 Timestamp.newBuilder().setSeconds(now)))
                         .setTokenPause(op)
                         .build();
-        final var txn = buildTransactionFrom(txnBody);
+        final var txn = TxnUtils.buildTransactionFrom(txnBody);
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
         final var spanMapAccessor = accessor.getSpanMapAccessor();
 
@@ -594,7 +552,7 @@ class SignedTxnAccessorTest {
                                                 Timestamp.newBuilder().setSeconds(now)))
                         .setTokenUnpause(op)
                         .build();
-        final var txn = buildTransactionFrom(txnBody);
+        final var txn = TxnUtils.buildTransactionFrom(txnBody);
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
         final var spanMapAccessor = accessor.getSpanMapAccessor();
 
@@ -669,10 +627,19 @@ class SignedTxnAccessorTest {
     }
 
     @Test
+    void recreatesOpEthTxDataEveryRequest() {
+        final var accessor = SignedTxnAccessor.uncheckedFrom(signedEthereumTxn());
+
+        final var firstData = accessor.opEthTxData();
+        final var secondData = accessor.opEthTxData();
+        assertNotSame(firstData, secondData);
+    }
+
+    @Test
     void setPrngMetaWorks() {
         final var op = UtilPrngTransactionBody.newBuilder().setRange(10).build();
         final var txn =
-                buildTransactionFrom(
+                TxnUtils.buildTransactionFrom(
                         TransactionBody.newBuilder()
                                 .setTransactionID(
                                         TransactionID.newBuilder()
@@ -692,7 +659,7 @@ class SignedTxnAccessorTest {
     void getGasLimitWorksForCreate() {
         final var op = ContractCreateTransactionBody.newBuilder().setGas(123456789L).build();
         final var txn =
-                buildTransactionFrom(
+                TxnUtils.buildTransactionFrom(
                         TransactionBody.newBuilder().setContractCreateInstance(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
@@ -704,7 +671,8 @@ class SignedTxnAccessorTest {
     void getGasLimitWorksForCall() {
         final var op = ContractCallTransactionBody.newBuilder().setGas(123456789L).build();
         final var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setContractCall(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -715,7 +683,8 @@ class SignedTxnAccessorTest {
     void precheckSupportingFunctionsWork() throws InvalidProtocolBufferException {
         var falseOp = ContractCallTransactionBody.newBuilder().setGas(123456789L).build();
         var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(falseOp).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setContractCall(falseOp).build());
 
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -726,7 +695,9 @@ class SignedTxnAccessorTest {
                 TokenWipeAccountTransactionBody.newBuilder()
                         .setAccount(asAccount("0.0.1000"))
                         .build();
-        txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(trueOp).build());
+        txn =
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setTokenWipe(trueOp).build());
 
         final var dynamicProperties = mock(GlobalDynamicProperties.class);
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
@@ -765,7 +736,7 @@ class SignedTxnAccessorTest {
                         .setEthereumData(ByteString.copyFrom(ethTxData.encodeTx()))
                         .build();
         final var txn =
-                buildTransactionFrom(
+                TxnUtils.buildTransactionFrom(
                         TransactionBody.newBuilder().setEthereumTransaction(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
@@ -777,7 +748,8 @@ class SignedTxnAccessorTest {
     void getGasLimitReturnsZeroByDefault() {
         final var op = TokenCreateTransactionBody.getDefaultInstance();
         final var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setTokenCreation(op).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setTokenCreation(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -788,7 +760,8 @@ class SignedTxnAccessorTest {
     void markThrottleExemptWorks() {
         final var op = ContractCallTransactionBody.newBuilder().build();
         final var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setContractCall(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -803,7 +776,8 @@ class SignedTxnAccessorTest {
     void throttleExemptWorksWithExemptPayer() {
         final var op = ContractCallTransactionBody.newBuilder().build();
         final var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setContractCall(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -816,7 +790,8 @@ class SignedTxnAccessorTest {
     void throttleExemptWorksWithNonExemptPayer() {
         final var op = ContractCallTransactionBody.newBuilder().build();
         final var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setContractCall(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -829,7 +804,8 @@ class SignedTxnAccessorTest {
     void throttleExemptWorksWithNullPayer() {
         final var op = ContractCallTransactionBody.newBuilder().build();
         final var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setContractCall(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -842,7 +818,8 @@ class SignedTxnAccessorTest {
     void markCongestionExemptWorks() {
         final var op = ContractCallTransactionBody.newBuilder().build();
         final var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setContractCall(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
@@ -945,7 +922,8 @@ class SignedTxnAccessorTest {
     void setterAndGetterForStateViewWorks() {
         final var op = ContractCallTransactionBody.newBuilder().build();
         final var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setContractCall(op).build());
 
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
         final var stateView = mock(StateView.class);
@@ -965,7 +943,8 @@ class SignedTxnAccessorTest {
 
         final var op = ContractCallTransactionBody.newBuilder().build();
         final var txn =
-                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+                TxnUtils.buildTransactionFrom(
+                        TransactionBody.newBuilder().setContractCall(op).build());
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
         subject.setStateView(stateView);
 
@@ -974,23 +953,23 @@ class SignedTxnAccessorTest {
     }
 
     private Transaction signedCryptoCreateTxn() {
-        return buildTransactionFrom(cryptoCreateOp());
+        return TxnUtils.buildTransactionFrom(cryptoCreateOp());
     }
 
     private Transaction signedCryptoUpdateTxn() {
-        return buildTransactionFrom(cryptoUpdateOp());
+        return TxnUtils.buildTransactionFrom(cryptoUpdateOp());
     }
 
     private Transaction signedCryptoApproveTxn() {
-        return buildTransactionFrom(cryptoApproveOp());
+        return TxnUtils.buildTransactionFrom(cryptoApproveOp());
     }
 
     private Transaction signedCryptoDeleteAllowanceTxn() {
-        return buildTransactionFrom(cryptoDeleteAllowanceOp());
+        return TxnUtils.buildTransactionFrom(cryptoDeleteAllowanceOp());
     }
 
     private Transaction signedEthereumTxn() {
-        return buildTransactionFrom(ethereumTransactionOp());
+        return TxnUtils.buildTransactionFrom(TxnUtils.ethereumTransactionOp());
     }
 
     private TransactionBody cryptoCreateOp() {
@@ -1052,24 +1031,8 @@ class SignedTxnAccessorTest {
                 .build();
     }
 
-    private TransactionBody ethereumTransactionOp() {
-        final var op =
-                EthereumTransactionBody.newBuilder()
-                        .setEthereumData(
-                                ByteString.copyFrom(
-                                        com.swirlds.common.utility.CommonUtils.unhex(
-                                                "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792")))
-                        .build();
-        return TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
-                .setEthereumTransaction(op)
-                .build();
-    }
-
     private Transaction signedFeeScheduleUpdateTxn() {
-        return buildTransactionFrom(feeScheduleUpdateTxn());
+        return TxnUtils.buildTransactionFrom(feeScheduleUpdateTxn());
     }
 
     private TransactionBody feeScheduleUpdateTxn() {
@@ -1114,7 +1077,7 @@ class SignedTxnAccessorTest {
                         .setCryptoTransfer(op)
                         .build();
 
-        return buildTransactionFrom(txnBody);
+        return TxnUtils.buildTransactionFrom(txnBody);
     }
 
     private Transaction buildDefaultCryptoCreateTxn() {
@@ -1123,27 +1086,7 @@ class SignedTxnAccessorTest {
                         .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
                         .build();
 
-        return buildTransactionFrom(txnBody);
-    }
-
-    public static Transaction buildTransactionFrom(final TransactionBody transactionBody) {
-        return buildTransactionFrom(signedTransactionFrom(transactionBody).toByteString());
-    }
-
-    private static Transaction buildTransactionFrom(final ByteString signedTransactionBytes) {
-        return Transaction.newBuilder().setSignedTransactionBytes(signedTransactionBytes).build();
-    }
-
-    private static SignedTransaction signedTransactionFrom(final TransactionBody txnBody) {
-        return signedTransactionFrom(txnBody, SignatureMap.getDefaultInstance());
-    }
-
-    private static SignedTransaction signedTransactionFrom(
-            final TransactionBody txnBody, final SignatureMap sigMap) {
-        return SignedTransaction.newBuilder()
-                .setBodyBytes(txnBody.toByteString())
-                .setSigMap(sigMap)
-                .build();
+        return TxnUtils.buildTransactionFrom(txnBody);
     }
 
     private TransactionBody tokenXfers() {
@@ -1190,7 +1133,7 @@ class SignedTxnAccessorTest {
     }
 
     private Transaction signedTokenCreateTxn() {
-        return buildTransactionFrom(givenAutoRenewBasedOp());
+        return TxnUtils.buildTransactionFrom(givenAutoRenewBasedOp());
     }
 
     private TransactionBody givenAutoRenewBasedOp() {
