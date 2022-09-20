@@ -23,8 +23,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -56,7 +58,9 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,6 +88,7 @@ class TransferLogicTest {
     private final TokenID nonFungibleTokenID = TokenID.newBuilder().setTokenNum(1235L).build();
     private final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
+    private final Id funding = new Id(0, 0, 98);
     private TreeMap<EntityNum, Long> cryptoAllowances =
             new TreeMap<>() {
                 {
@@ -188,6 +193,69 @@ class TransferLogicTest {
 
         verify(autoCreationLogic).reclaimPendingAliases();
         assertTrue(accountsLedger.getCreatedKeys().isEmpty());
+    }
+
+    @Test
+    void autoCreatesWithNftTransferToAlias() {
+        final var mockCreation = IdUtils.asAccount("0.0.1234");
+        final var firstAlias = ByteString.copyFromUtf8("fake");
+        final var transfer =
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(payer)
+                        .setReceiverAccountID(AccountID.newBuilder().setAlias(firstAlias).build())
+                        .setSerialNumber(20L)
+                        .build();
+        final var nftTransfer =
+                BalanceChange.changingNftOwnership(
+                        Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, transfer, payer);
+
+        final var map = new HashMap<ByteString, HashSet<Id>>();
+        map.put(firstAlias, new HashSet<>(Arrays.asList(Id.fromGrpcToken(nonFungibleTokenID))));
+
+        given(autoCreationLogic.create(nftTransfer, accountsLedger, map))
+                .willReturn(Pair.of(OK, 100L));
+        accountsLedger.begin();
+        accountsLedger.create(mockCreation);
+        accountsLedger.create(funding.asGrpcAccount());
+        accountsLedger.create(payer);
+
+        given(tokenStore.tryTokenChange(any())).willReturn(OK);
+        given(txnCtx.activePayer()).willReturn(payer);
+
+        subject.doZeroSum(List.of(nftTransfer));
+
+        verify(autoCreationLogic).create(nftTransfer, accountsLedger, map);
+        assertFalse(accountsLedger.getCreatedKeys().isEmpty());
+    }
+
+    @Test
+    void autoCreatesWithFungibleTokenTransferToAlias() {
+        final var mockCreation = IdUtils.asAccount("0.0.1234");
+        final var firstAlias = ByteString.copyFromUtf8("fake");
+        final var fungibleTransfer =
+                BalanceChange.changingFtUnits(
+                        Id.fromGrpcToken(fungibleTokenID),
+                        fungibleTokenID,
+                        aliasedAa(firstAlias, 10L),
+                        payer);
+
+        final var map = new HashMap<ByteString, HashSet<Id>>();
+        map.put(firstAlias, new HashSet<>(Arrays.asList(Id.fromGrpcToken(fungibleTokenID))));
+
+        given(autoCreationLogic.create(fungibleTransfer, accountsLedger, map))
+                .willReturn(Pair.of(OK, 100L));
+        accountsLedger.begin();
+        accountsLedger.create(mockCreation);
+        accountsLedger.create(funding.asGrpcAccount());
+        accountsLedger.create(payer);
+
+        given(tokenStore.tryTokenChange(any())).willReturn(OK);
+        given(txnCtx.activePayer()).willReturn(payer);
+
+        subject.doZeroSum(List.of(fungibleTransfer));
+
+        verify(autoCreationLogic).create(fungibleTransfer, accountsLedger, map);
+        assertFalse(accountsLedger.getCreatedKeys().isEmpty());
     }
 
     @Test

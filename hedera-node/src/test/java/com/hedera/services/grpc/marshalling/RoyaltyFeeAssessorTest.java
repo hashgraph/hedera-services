@@ -35,7 +35,6 @@ import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import java.util.ArrayList;
 import java.util.List;
@@ -149,23 +148,13 @@ class RoyaltyFeeAssessorTest {
                         FcCustomFee.fixedFee(1, null, otherCollector),
                         FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
 
-        final var aliasTransferChanges = changesWithUnknownAlias();
-
-        given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(aliasTransferChanges);
-
         // when:
-        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+        final var result =
+                subject.assessAllRoyalties(
+                        triggerWithAliasTransfer, fees, changeManager, accumulator);
 
         // then:
-        assertEquals(OK, result);
-        // and:
-        verify(fixedFeeAssessor)
-                .assess(
-                        funding,
-                        MISSING_ID,
-                        FcCustomFee.fixedFee(33, denom, targetCollector),
-                        changeManager,
-                        accumulator);
+        assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
     }
 
     @Test
@@ -262,19 +251,14 @@ class RoyaltyFeeAssessorTest {
         return List.of(hbarPayerPlusChange, htsPayerPlusChange);
     }
 
-    private List<BalanceChange> changesWithUnknownAlias() {
-        triggerWithAliasTransfer.aggregateUnits(-originalUnits / 2);
-        triggerWithAliasTransfer.aggregateUnits(-originalUnits / 2);
-        return List.of(triggerWithAliasTransfer, triggerWithAliasTransfer);
-    }
-
     private final long originalUnits = 100;
     private final Id payer = new Id(0, 1, 2);
     private final EntityId otherCollector = new EntityId(10, 9, 8);
     private final EntityId targetCollector = new EntityId(9, 8, 7);
     private final Id funding = new Id(0, 0, 98);
     private final Id firstFungibleTokenId = new Id(1, 2, 3);
-    private final AccountID alias = asAliasAccount(ByteString.copyFromUtf8("01234567890123456789012345678901"));
+    private final AccountID alias =
+            asAliasAccount(ByteString.copyFromUtf8("01234567890123456789012345678901"));
     private final AccountAmount payerCredit =
             AccountAmount.newBuilder()
                     .setAccountID(payer.asGrpcAccount())

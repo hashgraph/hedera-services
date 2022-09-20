@@ -60,7 +60,6 @@ public class BalanceChange {
     private TokenID tokenId = null;
     private AccountID accountId;
     private AccountID counterPartyAccountId = null;
-
     private ByteString counterPartyAlias;
     private ResponseCodeEnum codeForInsufficientBalance;
     private ByteString alias;
@@ -369,6 +368,6 @@ public class BalanceChange {
         return isForNft()
                 && counterPartyAccountId != null
                 && counterPartyAccountId.getAccountNum() == 0
-                && !counterPartyAccountId.getAlias().isEmpty();
+                && !counterPartyAlias.isEmpty();
     }
 }

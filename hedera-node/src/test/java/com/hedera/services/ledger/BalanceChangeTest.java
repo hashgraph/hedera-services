@@ -18,6 +18,7 @@ package com.hedera.services.ledger;
 import static com.hedera.services.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -206,17 +207,20 @@ class BalanceChangeTest {
     void canReplaceCounterpartyAlias() {
         final var created = IdUtils.asAccount("0.0.1234");
         final var anAlias = ByteString.copyFromUtf8("abcdefg");
-        final var subject =
-                BalanceChange.changingHbar(
-                        AccountAmount.newBuilder()
-                                .setAmount(1234)
-                                .setAccountID(AccountID.newBuilder().setAlias(anAlias))
-                                .build(),
-                        payer);
+        final var xfer =
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
+                        .setReceiverAccountID(asAccountWithAlias(String.valueOf(anAlias)))
+                        .setSerialNumber(serialNo)
+                        .setIsApproval(true)
+                        .build();
+        final var subject = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
 
         subject.replaceCounterPartyAliasWith(created);
         assertFalse(subject.hasNonEmptyCounterPartyAlias());
         assertEquals(created, subject.counterPartyAccountId());
+        assertNotEquals(0, subject.counterPartyAccountId().getAccountNum());
+        assertTrue(subject.isForNft());
     }
 
     @Test

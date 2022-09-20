@@ -105,6 +105,10 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_CUSTOM_PAYER_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO;
@@ -1208,6 +1212,46 @@ class SigRequirementsTest {
 
         assertTrue(summary.hasErrorReport());
         assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
+    }
+
+    @Test
+    void rejectsNftTransferFromMissingSender() throws Throwable {
+        setupFor(CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO);
+
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        assertTrue(summary.getOrderedKeys().isEmpty());
+        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+    }
+
+    @Test
+    void allowsNftTransferToMissingReceiver() throws Throwable {
+        setupFor(CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_SCENARIO);
+
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        assertFalse(summary.getOrderedKeys().isEmpty());
+        assertFalse(summary.hasErrorReport());
+    }
+
+    @Test
+    void rejectsNftTransferFromImmutableSender() throws Throwable {
+        setupFor(CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO);
+
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        assertTrue(summary.getOrderedKeys().isEmpty());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
+    }
+
+    @Test
+    void allowsNftTransferToImmutableReceiver() throws Throwable {
+        setupFor(CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO);
+
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        assertFalse(summary.getOrderedKeys().isEmpty());
+        assertFalse(summary.hasErrorReport());
     }
 
     @Test
