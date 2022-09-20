@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
+import com.hedera.evm.EvmConfigurator;
 import com.hedera.evm.exception.InvalidTransactionException;
 import com.hedera.evm.execution.traceability.HederaTracer;
 import com.hedera.evm.model.Account;
@@ -32,7 +33,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -50,7 +50,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.ChainIdOperation;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
@@ -67,8 +66,8 @@ abstract class EvmTxProcessor {
 
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
-    private BlockMetaSource blockMetaSource;
-    private HederaMutableWorldState worldState;
+    private final BlockMetaSource blockMetaSource;
+    private final HederaMutableWorldState worldState;
 
     @Nullable private Bytes32 lastChainId;
     private final OperationRegistry operationRegistry;
@@ -79,46 +78,16 @@ abstract class EvmTxProcessor {
     protected final EvmProperties configurationProperties;
 
     protected EvmTxProcessor(
-            final LivePricesSource livePricesSource,
-            final EvmProperties configurationProperties,
-            final GasCalculator gasCalculator,
-            final Set<Operation> hederaOperations,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
-        this(
-                null,
-                livePricesSource,
-                configurationProperties,
-                gasCalculator,
-                hederaOperations,
-                precompiledContractMap,
-                null);
-    }
-
-    protected void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
-        this.blockMetaSource = blockMetaSource;
-    }
-
-    protected void setWorldState(final HederaMutableWorldState worldState) {
-        this.worldState = worldState;
-    }
-
-    protected EvmTxProcessor(
-            final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
-            final EvmProperties configurationProperties,
-            final GasCalculator gasCalculator,
-            final Set<Operation> hederaOperations,
-            final Map<String, PrecompiledContract> precompiledContractMap,
-            final BlockMetaSource blockMetaSource) {
-        this.worldState = worldState;
+            final LivePricesSource livePricesSource) {
+        this.worldState = EvmConfigurator.worldState;
         this.livePricesSource = livePricesSource;
-        this.configurationProperties = configurationProperties;
-        this.gasCalculator = gasCalculator;
+        this.configurationProperties = EvmConfigurator.evmProperties;
+        this.gasCalculator = EvmConfigurator.gasCalculator;
 
         operationRegistry = new OperationRegistry();
         // We always register the latest ChainIdOperation before any execute(), so use ZERO here
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
-        hederaOperations.forEach(operationRegistry::put);
+        EvmConfigurator.hederaOperations.forEach(operationRegistry::put);
 
         final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
         final var precompileContractRegistry = new PrecompileContractRegistry();
@@ -127,10 +96,10 @@ abstract class EvmTxProcessor {
 
         this.messageCallProcessor =
                 new HederaMessageCallProcessor(
-                        evm, precompileContractRegistry, precompiledContractMap);
+                        evm, precompileContractRegistry, EvmConfigurator.precompiledContractMap);
         this.contractCreationProcessor =
                 new ContractCreationProcessor(gasCalculator, evm, true, VALIDATION_RULES, 1);
-        this.blockMetaSource = blockMetaSource;
+        this.blockMetaSource = EvmConfigurator.blockMetaSource;
     }
 
     /**
