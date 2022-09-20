@@ -29,7 +29,6 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -51,14 +50,12 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
     protected final PrecompilePricingUtils pricingUtils;
     protected TransactionBody.Builder transactionBody;
     protected Dissociation dissociateOp;
-    protected final DecodingFacade decoder;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final Provider<FeeCalculator> feeCalculator;
     protected final StateView currentView;
 
     protected AbstractDissociatePrecompile(
             final WorldLedgers ledgers,
-            final DecodingFacade decoder,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
             final SideEffectsTracker sideEffects,
@@ -73,7 +70,6 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
         this.sideEffects = sideEffects;
         this.infrastructureFactory = infrastructureFactory;
         this.pricingUtils = pricingUtils;
-        this.decoder = decoder;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.feeCalculator = feeCalculator;
         this.currentView = currentView;

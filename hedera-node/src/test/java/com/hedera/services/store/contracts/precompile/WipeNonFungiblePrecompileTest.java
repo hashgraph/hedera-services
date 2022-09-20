@@ -28,10 +28,14 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFun
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile.decodeWipeNFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -65,8 +69,8 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.WipeLogic;
@@ -92,10 +96,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -110,7 +117,6 @@ class WipeNonFungiblePrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private WipeLogic wipeLogic;
     @Mock private SideEffectsTracker sideEffects;
@@ -147,8 +153,12 @@ class WipeNonFungiblePrecompileTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    private static final Bytes NON_FUNGIBLE_WIPE_INPUT =
+            Bytes.fromHexString(
+                    "0xf7f38e2600000000000000000000000000000000000000000000000000000000000006b000000000000000000000000000000000000000000000000000000000000006ae000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<WipeNonFungiblePrecompile> wipeNonFungiblePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -171,7 +181,6 @@ class WipeNonFungiblePrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -180,15 +189,22 @@ class WipeNonFungiblePrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        wipeNonFungiblePrecompile = Mockito.mockStatic(WipeNonFungiblePrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        wipeNonFungiblePrecompile.close();
     }
 
     @Test
     void nftWipeFailurePathWorks() {
         givenNonfungibleFrameContext();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
@@ -221,6 +237,9 @@ class WipeNonFungiblePrecompileTest {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveWipeKey(
@@ -264,6 +283,9 @@ class WipeNonFungiblePrecompileTest {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveWipeKey(
@@ -302,7 +324,12 @@ class WipeNonFungiblePrecompileTest {
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
-        given(decoder.decodeWipeNFT(eq(pretendArguments), any())).willReturn(nonFungibleWipe);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        wipeNonFungiblePrecompile
+                .when(() -> decodeWipeNFT(eq(pretendArguments), any()))
+                .thenReturn(nonFungibleWipe);
         given(syntheticTxnFactory.createWipe(nonFungibleWipe))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -322,9 +349,26 @@ class WipeNonFungiblePrecompileTest {
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
 
+    @Test
+    void decodeNonFungibleWipeInput() {
+        wipeNonFungiblePrecompile
+                .when(() -> decodeWipeNFT(NON_FUNGIBLE_WIPE_INPUT, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeWipeNFT(NON_FUNGIBLE_WIPE_INPUT, identity());
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+        assertTrue(decodedInput.account().getAccountNum() > 0);
+        assertEquals(-1, decodedInput.amount());
+        assertEquals(1, decodedInput.serialNumbers().size());
+        assertEquals(1, decodedInput.serialNumbers().get(0));
+        assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
     private void givenNonfungibleFrameContext() {
         givenFrameContext();
-        given(decoder.decodeWipeNFT(eq(pretendArguments), any())).willReturn(nonFungibleWipe);
+        wipeNonFungiblePrecompile
+                .when(() -> decodeWipeNFT(eq(pretendArguments), any()))
+                .thenReturn(nonFungibleWipe);
         given(syntheticTxnFactory.createWipe(nonFungibleWipe)).willReturn(mockSynthBodyBuilder);
     }
 

@@ -23,10 +23,14 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failRe
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.impl.TokenUpdateKeysPrecompile.decodeUpdateTokenKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -57,11 +61,11 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
+import com.hedera.services.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.store.models.NftId;
@@ -84,10 +88,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,7 +105,6 @@ class TokenUpdateKeysPrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private TokenUpdateLogic updateLogic;
     @Mock private SideEffectsTracker sideEffects;
@@ -128,8 +134,12 @@ class TokenUpdateKeysPrecompileTest {
     private final TokenUpdateKeysWrapper updateWrapper = getUpdateWrapper();
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
+    private static final Bytes UPDATE_FUNGIBLE_TOKEN_KEYS =
+            Bytes.fromHexString(
+                    "0x6fc3cbaf00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000034000000000000000000000000000000000000000000000000000000000000004600000000000000000000000000000000000000000000000000000000000000580000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000201aeca66efce3b1c581d865197a41880b6c05c3115cfeac97f2832c2198f49f570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000021031929ec5ff0aeef191aff1a4f0775470da849d92fc5eaed6e22b4c829ca5e99b400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000106400000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000106400000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000106400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<TokenUpdateKeysPrecompile> tokenUpdateKeysPrecompile;
 
     @BeforeEach
     void setUp() {
@@ -147,7 +157,6 @@ class TokenUpdateKeysPrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -156,6 +165,12 @@ class TokenUpdateKeysPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
+        tokenUpdateKeysPrecompile = Mockito.mockStatic(TokenUpdateKeysPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        tokenUpdateKeysPrecompile.close();
     }
 
     @Test
@@ -207,6 +222,16 @@ class TokenUpdateKeysPrecompileTest {
                 () -> PrecompileUtils.buildKeyValueWrapper(null));
     }
 
+    @Test
+    void decodeUpdateTokenKeysForFungible() {
+        tokenUpdateKeysPrecompile
+                .when(() -> decodeUpdateTokenKeys(UPDATE_FUNGIBLE_TOKEN_KEYS, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeUpdateTokenKeys(UPDATE_FUNGIBLE_TOKEN_KEYS, identity());
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertFalse(decodedInput.tokenKeys().isEmpty());
+    }
+
     private void givenFrameContext() {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -240,7 +265,9 @@ class TokenUpdateKeysPrecompileTest {
                         infrastructureFactory.newTokenUpdateLogic(
                                 hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
-        given(decoder.decodeUpdateTokenKeys(any(), any())).willReturn(updateWrapper);
+        tokenUpdateKeysPrecompile
+                .when(() -> decodeUpdateTokenKeys(any(), any()))
+                .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdateKeys(updateWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()

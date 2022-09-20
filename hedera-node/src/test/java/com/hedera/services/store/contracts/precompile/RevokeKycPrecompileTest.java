@@ -24,8 +24,11 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.grantRevokeKycWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile.decodeRevokeTokenKyc;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -55,8 +58,8 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.RevokeKycLogic;
@@ -81,10 +84,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -96,7 +102,6 @@ class RevokeKycPrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -124,6 +129,7 @@ class RevokeKycPrecompileTest {
     @Mock private AssetsLoader assetLoader;
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<RevokeKycPrecompile> revokeKycPrecompile;
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
@@ -131,6 +137,9 @@ class RevokeKycPrecompileTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    public static final Bytes REVOKE_TOKEN_KYC_INPUT =
+            Bytes.fromHexString(
+                    "0xaf99c63300000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
 
     @BeforeEach
     void setUp() throws IOException {
@@ -153,7 +162,6 @@ class RevokeKycPrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -162,6 +170,12 @@ class RevokeKycPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
+        revokeKycPrecompile = Mockito.mockStatic(RevokeKycPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        revokeKycPrecompile.close();
     }
 
     @Test
@@ -196,7 +210,9 @@ class RevokeKycPrecompileTest {
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
                 .willReturn(DEFAULT_GAS_PRICE);
-        given(decoder.decodeRevokeTokenKyc(any(), any())).willReturn(grantRevokeKycWrapper);
+        revokeKycPrecompile
+                .when(() -> decodeRevokeTokenKyc(any(), any()))
+                .thenReturn(grantRevokeKycWrapper);
         given(syntheticTxnFactory.createRevokeKyc(grantRevokeKycWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -207,6 +223,17 @@ class RevokeKycPrecompileTest {
         final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
+    }
+
+    @Test
+    void decodeRevokeTokenKycInput() {
+        revokeKycPrecompile
+                .when(() -> decodeRevokeTokenKyc(REVOKE_TOKEN_KYC_INPUT, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeRevokeTokenKyc(REVOKE_TOKEN_KYC_INPUT, identity());
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+        assertTrue(decodedInput.account().getAccountNum() > 0);
     }
 
     private void givenMinimalFrameContext() {
@@ -239,7 +266,9 @@ class RevokeKycPrecompileTest {
         given(infrastructureFactory.newRevokeKycLogic(accountStore, tokenStore))
                 .willReturn(revokeKycLogic);
         given(revokeKycLogic.validate(any())).willReturn(OK);
-        given(decoder.decodeRevokeTokenKyc(any(), any())).willReturn(grantRevokeKycWrapper);
+        revokeKycPrecompile
+                .when(() -> decodeRevokeTokenKyc(any(), any()))
+                .thenReturn(grantRevokeKycWrapper);
         given(syntheticTxnFactory.createRevokeKyc(grantRevokeKycWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()

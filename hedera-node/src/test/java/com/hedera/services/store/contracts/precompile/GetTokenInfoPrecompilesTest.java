@@ -41,6 +41,12 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenA
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddressConvertedToTokenId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
+import static com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo;
+import static com.hedera.services.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo;
+import static com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile.decodeGetTokenInfo;
+import static org.hyperledger.besu.datatypes.Address.BLS12_G1ADD;
+import static org.hyperledger.besu.datatypes.Address.BLS12_G1MUL;
+import static org.hyperledger.besu.datatypes.Address.BLS12_G1MULTIEXP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -64,8 +70,10 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -111,7 +119,6 @@ class GetTokenInfoPrecompilesTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
@@ -130,8 +137,21 @@ class GetTokenInfoPrecompilesTest {
     @Mock private FeeObject mockFeeObject;
     @Mock private AccessorFactory accessorFactory;
 
+    public static final Bytes GET_TOKEN_INFO_INPUT =
+            Bytes.fromHexString(
+                    "0x1f69565f000000000000000000000000000000000000000000000000000000000000000a");
+    public static final Bytes GET_FUNGIBLE_TOKEN_INFO_INPUT =
+            Bytes.fromHexString(
+                    "0x3f28a19b000000000000000000000000000000000000000000000000000000000000000b");
+
+    public static final Bytes GET_NON_FUNGIBLE_TOKEN_INFO_INPUT =
+            Bytes.fromHexString(
+                    "0x287e1da8000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000001");
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
+    private MockedStatic<TokenInfoPrecompile> tokenInfoPrecompile;
+    private MockedStatic<FungibleTokenInfoPrecompile> fungibleTokenInfoPrecompile;
+    private MockedStatic<NonFungibleTokenInfoPrecompile> nonFungibleTokenInfoPrecompile;
 
     // Common token properties
     private final String name = "Name";
@@ -229,7 +249,6 @@ class GetTokenInfoPrecompilesTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -238,26 +257,35 @@ class GetTokenInfoPrecompilesTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        tokenInfoPrecompile = Mockito.mockStatic(TokenInfoPrecompile.class);
+        fungibleTokenInfoPrecompile = Mockito.mockStatic(FungibleTokenInfoPrecompile.class);
+        nonFungibleTokenInfoPrecompile = Mockito.mockStatic(NonFungibleTokenInfoPrecompile.class);
     }
 
     @AfterEach
     void closeMocks() {
         entityIdUtils.close();
+        tokenInfoPrecompile.close();
+        fungibleTokenInfoPrecompile.close();
+        nonFungibleTokenInfoPrecompile.close();
     }
 
     @Test
     void getTokenInfoWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> decodeGetTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
         given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
@@ -281,13 +309,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getTokenInfoWorksWithDelegatableContractKey() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> decodeGetTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithSingleKey(0, false);
         final var supplyKey =
@@ -326,13 +359,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getTokenInfoWithAllKeyTypesWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> decodeGetTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithAllKeys();
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
@@ -358,13 +396,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getFungibleTokenInfoWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        fungibleTokenInfoPrecompile
+                .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
         given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build())).willReturn(successResult);
@@ -388,6 +431,9 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getNonFungibleTokenInfoWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
@@ -396,7 +442,9 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
-        given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        nonFungibleTokenInfoPrecompile
+                .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
         given(
@@ -428,13 +476,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getTokenInfoWithFixedFeeWithDenominationWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> decodeGetTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         final var fixedFee = getFixedFeeWithDenomination();
         tokenInfo.addAllCustomFees(List.of(fixedFee));
@@ -461,13 +514,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getTokenInfoWithFixedFeeWithoutDenominationWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> decodeGetTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         final var fixedFee = getFixedFeeWithoutDenomination();
         tokenInfo.addAllCustomFees(List.of(fixedFee));
@@ -494,13 +552,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getTokenInfoWithFractionalFeeWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> decodeGetTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         final var fractionalFee = getFractionalFee();
         tokenInfo.addAllCustomFees(List.of(fractionalFee));
@@ -527,6 +590,9 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getNonFungibleTokenInfoWithRoyaltyFeeWithFallbackFeeWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
@@ -535,7 +601,9 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
-        given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        nonFungibleTokenInfoPrecompile
+                .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         final var royaltyFee = getRoyaltyFee(true);
         tokenInfo.addAllCustomFees(List.of(royaltyFee));
@@ -570,6 +638,9 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getNonFungibleTokenInfoWithRoyaltyFeeWithoutFallbackFeeWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
@@ -578,7 +649,9 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
-        given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        nonFungibleTokenInfoPrecompile
+                .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         final var royaltyFee = getRoyaltyFee(false);
         tokenInfo.addAllCustomFees(List.of(royaltyFee));
@@ -613,13 +686,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getTokenInfoOfMissingTokenFails() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> decodeGetTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.empty());
@@ -641,13 +719,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getFungibleTokenInfoOfMissingTokenFails() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        fungibleTokenInfoPrecompile
+                .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.empty());
@@ -669,6 +752,9 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getNonFungibleTokenInfoOfMissingSerialNumberFails() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
@@ -677,7 +763,9 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
-        given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        nonFungibleTokenInfoPrecompile
+                .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
         given(stateView.infoForNft(nftID)).willReturn(Optional.empty());
@@ -701,13 +789,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getTokenInfoOfDeletedTokenWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        tokenInfoPrecompile
+                .when(() -> decodeGetTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
@@ -733,13 +826,18 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getFungibleTokenInfoOfDeletedTokenWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        fungibleTokenInfoPrecompile
+                .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
@@ -765,6 +863,9 @@ class GetTokenInfoPrecompilesTest {
     @Test
     void getNonFungibleTokenInfoOfDeletedTokenWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
@@ -773,7 +874,9 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
-        given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+        nonFungibleTokenInfoPrecompile
+                .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
+                .thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
@@ -796,6 +899,48 @@ class GetTokenInfoPrecompilesTest {
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void decodeGetTokenInfoAsExpected() {
+        tokenInfoPrecompile
+                .when(() -> decodeGetTokenInfo(GET_TOKEN_INFO_INPUT))
+                .thenCallRealMethod();
+        entityIdUtils
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(BLS12_G1ADD.toArray()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeGetTokenInfo(GET_TOKEN_INFO_INPUT);
+
+        assertEquals(TokenID.newBuilder().setTokenNum(10).build(), decodedInput.tokenID());
+        assertEquals(-1, decodedInput.serialNumber());
+    }
+
+    @Test
+    void decodeGetFungibleTokenInfoAsExpected() {
+        fungibleTokenInfoPrecompile
+                .when(() -> decodeGetFungibleTokenInfo(GET_FUNGIBLE_TOKEN_INFO_INPUT))
+                .thenCallRealMethod();
+        entityIdUtils
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(BLS12_G1MUL.toArray()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeGetFungibleTokenInfo(GET_FUNGIBLE_TOKEN_INFO_INPUT);
+
+        assertEquals(TokenID.newBuilder().setTokenNum(11).build(), decodedInput.tokenID());
+        assertEquals(-1, decodedInput.serialNumber());
+    }
+
+    @Test
+    void decodeGetNonFungibleTokenInfoAsExpected() {
+        nonFungibleTokenInfoPrecompile
+                .when(() -> decodeGetNonFungibleTokenInfo(GET_NON_FUNGIBLE_TOKEN_INFO_INPUT))
+                .thenCallRealMethod();
+        entityIdUtils
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(BLS12_G1MULTIEXP.toArray()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeGetNonFungibleTokenInfo(GET_NON_FUNGIBLE_TOKEN_INFO_INPUT);
+
+        assertEquals(TokenID.newBuilder().setTokenNum(12).build(), decodedInput.tokenID());
+        assertEquals(1, decodedInput.serialNumber());
     }
 
     private void givenReadOnlyFeeSchedule() {

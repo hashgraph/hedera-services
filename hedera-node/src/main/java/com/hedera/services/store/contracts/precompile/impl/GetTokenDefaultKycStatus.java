@@ -15,10 +15,18 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -28,21 +36,26 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile {
+    private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
+            new Function("getTokenDefaultKycStatus(address)", INT);
+    private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =
+            TypeFactory.create(BYTES32);
     private GetTokenDefaultKycStatusWrapper defaultKycStatusWrapper;
 
     public GetTokenDefaultKycStatus(
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-            final DecodingFacade decoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(null, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+        super(null, syntheticTxnFactory, ledgers, encoder, pricingUtils);
     }
 
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        defaultKycStatusWrapper = decoder.decodeTokenDefaultKycStatus(input);
+        defaultKycStatusWrapper = decodeTokenDefaultKycStatus(input);
         return super.body(input, aliasResolver);
     }
 
@@ -54,5 +67,17 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile {
 
         final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.tokenID());
         return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
+    }
+
+    public static GetTokenDefaultKycStatusWrapper decodeTokenDefaultKycStatus(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new GetTokenDefaultKycStatusWrapper(tokenID);
     }
 }

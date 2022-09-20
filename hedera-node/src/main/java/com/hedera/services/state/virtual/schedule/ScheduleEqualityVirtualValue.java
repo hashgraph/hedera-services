@@ -170,7 +170,7 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
 
         var cur = ids.get(hash);
 
-        if (cur != null && cur.longValue() != id) {
+        if (cur != null && cur != id) {
             throw new IllegalStateException(
                     "multiple ids with same hash during add! " + cur + " and " + id);
         }
@@ -183,7 +183,7 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
 
         var cur = ids.get(hash);
 
-        if (cur != null && cur.longValue() != id) {
+        if (cur != null && cur != id) {
             throw new IllegalStateException(
                     "multiple ids with same hash during remove! " + cur + " and " + id);
         }

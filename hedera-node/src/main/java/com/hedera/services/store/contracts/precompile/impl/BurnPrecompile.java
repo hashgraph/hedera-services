@@ -15,12 +15,19 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -29,7 +36,6 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -37,6 +43,7 @@ import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -47,6 +54,11 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class BurnPrecompile extends AbstractWritePrecompile {
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
     private static final String BURN = String.format(FAILURE_MESSAGE, "burn");
+    private static final Function BURN_TOKEN_FUNCTION =
+            new Function("burnToken(address,uint64,int64[])", INT);
+    private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> BURN_TOKEN_DECODER =
+            TypeFactory.create("(bytes32,int64,int64[])");
     private final EncodingFacade encoder;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
@@ -54,7 +66,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     public BurnPrecompile(
             final WorldLedgers ledgers,
-            final DecodingFacade decoder,
             final EncodingFacade encoder,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
@@ -62,13 +73,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils) {
-        super(
-                ledgers,
-                decoder,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.encoder = encoder;
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
@@ -77,7 +82,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        burnOp = decoder.decodeBurn(input);
+        burnOp = decodeBurn(input);
         transactionBody = syntheticTxnFactory.createBurn(burnOp);
         return transactionBody;
     }
@@ -137,5 +142,21 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
         return encoder.encodeBurnFailure(status);
+    }
+
+    public static BurnWrapper decodeBurn(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, BURN_TOKEN_SELECTOR, BURN_TOKEN_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var fungibleAmount = (long) decodedArguments.get(1);
+        final var serialNumbers = (long[]) decodedArguments.get(2);
+
+        if (fungibleAmount > 0) {
+            return BurnWrapper.forFungible(tokenID, fungibleAmount);
+        } else {
+            return BurnWrapper.forNonFungible(
+                    tokenID, Arrays.stream(serialNumbers).boxed().toList());
+        }
     }
 }
