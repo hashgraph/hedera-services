@@ -140,7 +140,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithFungibleTokenChangeWorks() {
         givenCollaborators();
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 10))
+        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
 
         final var input = wellKnownTokenChange();
@@ -170,7 +170,7 @@ class AutoCreationLogicTest {
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
         verify(accountsLedger).set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
         verify(accountsLedger)
-                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 16);
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
 
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
@@ -187,7 +187,10 @@ class AutoCreationLogicTest {
         final var input = wellKnownNftChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
 
-        final var result = subject.create(input, accountsLedger, new HashMap<>());
+        final var map = new HashMap<ByteString, HashSet<Id>>();
+        map.put(alias, new HashSet<>(Arrays.asList(Id.fromGrpcToken(token))));
+
+        final var result = subject.create(input, accountsLedger, map);
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(20L, input.getAggregatedUnits());
