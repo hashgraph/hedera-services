@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
@@ -545,7 +546,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             accountAmountsToValidate.forEach(
                     pair ->
                             validateAccountAmount(
-                                    asId(pair.getLeft(), spec), pair.getRight(), accountAmounts));
+                                    asIdForKeyLookUp(pair.getLeft(), spec),
+                                    pair.getRight(),
+                                    accountAmounts));
         }
         final var tokenTransferLists = actualRecord.getTokenTransferListsList();
         if (!tokenAmountsToValidate.isEmpty()) {
@@ -553,7 +556,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                     triple ->
                             validateTokenAmount(
                                     asTokenId(triple.getLeft(), spec),
-                                    asId(triple.getMiddle(), spec),
+                                    asIdForKeyLookUp(triple.getMiddle(), spec),
                                     triple.getRight(),
                                     tokenTransferLists));
         }
@@ -562,8 +565,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                     transfer ->
                             validateAssessedNftTransfer(
                                     asTokenId(transfer.getToken(), spec),
-                                    asId(transfer.getSender(), spec),
-                                    asId(transfer.getReceiver(), spec),
+                                    asIdForKeyLookUp(transfer.getSender(), spec),
+                                    asIdForKeyLookUp(transfer.getReceiver(), spec),
                                     transfer.getSerial(),
                                     tokenTransferLists));
         }
@@ -591,7 +594,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                     pair ->
                             validateNewTokenAssociations(
                                     asTokenId(pair.getLeft(), spec),
-                                    asId(pair.getRight(), spec),
+                                    asIdForKeyLookUp(pair.getRight(), spec),
                                     actualNewTokenAssociations));
         }
         if (!childExpectations.isEmpty()) {

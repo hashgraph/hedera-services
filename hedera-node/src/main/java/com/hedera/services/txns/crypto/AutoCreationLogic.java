@@ -42,6 +42,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,6 +55,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -168,12 +170,12 @@ public class AutoCreationLogic {
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change,
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-            final HashMap<ByteString, Integer> tokenAliasMap) {
+            final HashMap<ByteString, HashSet<Id>> tokenAliasMap) {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
         }
         final ByteString alias = getAlias(change);
-        final var maxAutoAssociations = change.isForHbar() ? 0 : tokenAliasMap.get(alias);
+        final var maxAutoAssociations = change.isForHbar() ? 0 : tokenAliasMap.get(alias).size();
 
         final var key = asPrimitiveKeyUnchecked(alias);
         final var syntheticCreation =
@@ -198,11 +200,12 @@ public class AutoCreationLogic {
         customizer.customize(newId, accountsLedger);
 
         final var sideEffects = new SideEffectsTracker();
-        trackChanges(newId, alias, change, sideEffects);
+        sideEffects.trackAutoCreation(newId, alias);
 
         final var childRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
         childRecord.setFee(fee);
+
         final var inProgress =
                 new InProgressChildRecord(
                         DEFAULT_SOURCE_ID, syntheticCreation, childRecord, Collections.emptyList());
@@ -219,11 +222,11 @@ public class AutoCreationLogic {
             final AccountID newId,
             final ByteString alias,
             final BalanceChange change,
-            final SideEffectsTracker sideEffects) {
+            final SideEffectsTracker sideEffects,
+            final int maxAutoAssociations) {
         sideEffects.trackAutoCreation(newId, alias);
         if (change.isForToken()) {
-            sideEffects.trackTokenUnitsChange(change.tokenId(), newId, change.getAggregatedUnits());
-            sideEffects.trackAutoAssociation(change.tokenId(), newId);
+            sideEffects.trackMaxAutoAssociations(maxAutoAssociations);
         }
     }
 

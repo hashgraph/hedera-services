@@ -17,8 +17,10 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -80,6 +82,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -128,26 +131,25 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 /* --- Hbar auto creates */
-                //                autoAccountCreationsHappyPath(),
-                //                autoAccountCreationBadAlias(),
-                //                autoAccountCreationUnsupportedAlias(),
-                //                transferToAccountAutoCreatedUsingAlias(),
-                //                transferToAccountAutoCreatedUsingAccount(),
-                //                transferFromAliasToAlias(),
-                //                transferFromAliasToAccount(),
-                //                multipleAutoAccountCreations(),
-                //                accountCreatedIfAliasUsedAsPubKey(),
-                //                aliasCanBeUsedOnManyAccountsNotAsAlias(),
-                //                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
-                //                canGetBalanceAndInfoViaAlias(),
-                //                noStakePeriodStartIfNotStakingToNode(),
-                //                /* -- HTS auto creates -- */
-                //                canAutoCreateWithFungibleTokenTransfersToAlias()
-                multipleTokenTransfersSucceed()
-                //                canAutoCreateWithNftTransfersToAlias(),
-                //                autoCreateWithNftFallBackFeeFails(),
-                //                                repeatedAliasInSameTransferListFails()
-                );
+                autoAccountCreationsHappyPath(),
+                autoAccountCreationBadAlias(),
+                autoAccountCreationUnsupportedAlias(),
+                transferToAccountAutoCreatedUsingAlias(),
+                transferToAccountAutoCreatedUsingAccount(),
+                transferFromAliasToAlias(),
+                transferFromAliasToAccount(),
+                multipleAutoAccountCreations(),
+                accountCreatedIfAliasUsedAsPubKey(),
+                aliasCanBeUsedOnManyAccountsNotAsAlias(),
+                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+                canGetBalanceAndInfoViaAlias(),
+                noStakePeriodStartIfNotStakingToNode(),
+                /* -- HTS auto creates -- */
+                canAutoCreateWithFungibleTokenTransfersToAlias(),
+                multipleTokenTransfersSucceed(),
+                nftTransfersToAlias(),
+                autoCreateWithNftFallBackFeeFails(),
+                repeatedAliasInSameTransferListFails());
     }
 
     private HapiApiSpec repeatedAliasInSameTransferListFails() {
@@ -219,8 +221,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then(
                         cryptoTransfer(
                                         (spec, b) ->
-                                                b.setTokenTransfers(
-                                                        0,
+                                                b.addTokenTransfers(
                                                         TokenTransferList.newBuilder()
                                                                 .addTransfers(
                                                                         aaWith(
@@ -228,14 +229,20 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                                 -1))
                                                                 .addTransfers(
                                                                         aaWith(
-                                                                                partyAlias.get(),
+                                                                                asAccount(
+                                                                                        "0.0."
+                                                                                                + partyAlias
+                                                                                                        .get()),
                                                                                 +1))
                                                                 .addTransfers(
                                                                         aaWith(TOKEN_TREASURY, -1))
                                                                 .addTransfers(
                                                                         aaWith(
-                                                                                partyAlias.get(),
-                                                                                +2))))
+                                                                                asAccount(
+                                                                                        "0.0."
+                                                                                                + partyAlias
+                                                                                                        .get()),
+                                                                                +1))))
                                 .signedBy(DEFAULT_PAYER, PARTY, autoCreateSponsor)
                                 .hasKnownStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
@@ -282,28 +289,28 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
                                 .maxAutomaticTokenAssociations(10))
                 .when(
-                        tokenAssociate(autoCreateSponsor, NFT_INFINITE_SUPPLY_TOKEN),
                         cryptoTransfer(
                                 movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L)
                                         .between(TOKEN_TREASURY, autoCreateSponsor)),
-                        getAccountInfo(autoCreateSponsor).logged(),
-                        getAccountInfo(TOKEN_TREASURY).logged(),
+                        getAccountInfo(autoCreateSponsor)
+                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
                         cryptoTransfer(
                                         movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
                                                 .between(autoCreateSponsor, VALID_ALIAS))
-                                .via("multiTransfer")
                                 .payingWith(civilian)
                                 .signedBy(civilian, autoCreateSponsor, VALID_ALIAS)
-                                .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
-                                .logged(),
-                        getAccountInfo(autoCreateSponsor).logged(),
+                                .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
+                        getAccountInfo(autoCreateSponsor).hasOwnedNfts(2),
+                        //                        getAliasedAccountInfo(VALID_ALIAS).logged(), //
+                        // will fail as the account is not created
                         getAccountInfo(TOKEN_TREASURY).logged())
                 .then();
     }
 
-    private HapiApiSpec canAutoCreateWithNftTransfersToAlias() {
+    private HapiApiSpec nftTransfersToAlias() {
         final var civilian = "somebody";
-        final var autoCreateSponsor = "autoCreateSponsor";
+        final var civilianBal = 10 * ONE_HBAR;
+        final var autoCreateBal = 0.42427268 * ONE_HBAR; // why is fee diff ?
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
                 .given(
@@ -345,47 +352,46 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                         ByteString.copyFromUtf8("c"),
                                         ByteString.copyFromUtf8("d"),
                                         ByteString.copyFromUtf8("e"))),
-                        cryptoCreate(civilian).balance(10 * ONE_HBAR),
-                        cryptoCreate(autoCreateSponsor)
-                                .balance(INITIAL_BALANCE * ONE_HBAR)
-                                .maxAutomaticTokenAssociations(10))
+                        cryptoCreate(civilian).balance(civilianBal))
                 .when(
                         tokenAssociate(
-                                autoCreateSponsor,
-                                NFT_FINITE_SUPPLY_TOKEN,
-                                NFT_INFINITE_SUPPLY_TOKEN),
+                                civilian, NFT_FINITE_SUPPLY_TOKEN, NFT_INFINITE_SUPPLY_TOKEN),
                         cryptoTransfer(
                                 movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3L, 4L)
-                                        .between(TOKEN_TREASURY, autoCreateSponsor),
+                                        .between(TOKEN_TREASURY, civilian),
                                 movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L)
-                                        .between(TOKEN_TREASURY, autoCreateSponsor)),
-                        getAccountInfo(autoCreateSponsor).logged(),
-                        getAccountInfo(TOKEN_TREASURY).logged(),
+                                        .between(TOKEN_TREASURY, civilian)),
+                        getAccountInfo(civilian)
+                                .hasToken(relationshipWith(NFT_FINITE_SUPPLY_TOKEN))
+                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
+                                .has(accountWith().balance(civilianBal)),
                         cryptoTransfer(
                                         movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3, 4)
-                                                .between(autoCreateSponsor, VALID_ALIAS),
+                                                .between(civilian, VALID_ALIAS),
                                         movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
-                                                .between(autoCreateSponsor, VALID_ALIAS))
-                                .via("multiTransfer")
+                                                .between(civilian, VALID_ALIAS))
+                                .via("multiNftTransfer")
                                 .payingWith(civilian)
-                                .signedBy(civilian, autoCreateSponsor, VALID_ALIAS)
+                                .signedBy(civilian, VALID_ALIAS),
+                        getTxnRecord("multiNftTransfer")
+                                .andAllChildRecords()
+                                .hasChildRecordCount(1)
                                 .logged(),
-                        getTxnRecord("multiTransfer").andAllChildRecords().logged(),
-                        getAliasedAccountInfo(VALID_ALIAS).logged(),
-                        getAccountInfo(autoCreateSponsor).logged(),
-                        getAccountInfo(TOKEN_TREASURY).logged())
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith().balance(0).maxAutoAssociations(2).ownedNfts(4))
+                                .logged(),
+                        getAccountInfo(civilian)
+                                .has(accountWith().balance((long) (civilianBal - autoCreateBal))))
                 .then();
     }
 
     private HapiApiSpec multipleTokenTransfersSucceed() {
         final var civilian = "somebody";
-        final String ANOTHER_ALIAS = "alias";
         final var initialTokenSupply = 1000;
 
         return defaultHapiSpec("multipleTokenTransfersSucceed")
                 .given(
                         newKeyNamed(VALID_ALIAS),
-                        newKeyNamed(ANOTHER_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -418,38 +424,45 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
                         /* --- transfer same token type to alias --- */
                         cryptoTransfer(
-                                        moving(10, A_TOKEN).between(civilian, ANOTHER_ALIAS),
-                                        moving(10, B_TOKEN).between(civilian, ANOTHER_ALIAS))
+                                        moving(10, A_TOKEN).between(civilian, VALID_ALIAS),
+                                        moving(10, B_TOKEN).between(civilian, VALID_ALIAS))
                                 .via("multiTokenXfer")
                                 .payingWith(civilian)
-                                .signedBy(civilian, ANOTHER_ALIAS)
+                                .signedBy(civilian, VALID_ALIAS)
                                 .logged(),
                         getTxnRecord("multiTokenXfer")
                                 .andAllChildRecords()
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(
+                                .hasPriority(
                                         recordWith()
-                                                .maxAutoAssociations(2)
                                                 .status(SUCCESS)
                                                 .tokenTransfers(
                                                         includingFungibleMovement(
                                                                 moving(10, A_TOKEN)
-                                                                        .to(ANOTHER_ALIAS)))
+                                                                        .to(VALID_ALIAS)))
                                                 .tokenTransfers(
                                                         includingFungibleMovement(
                                                                 moving(10, B_TOKEN)
-                                                                        .to(ANOTHER_ALIAS))))
+                                                                        .to(VALID_ALIAS)))
+                                                .autoAssociated(
+                                                        accountTokenPairsInAnyOrder(
+                                                                List.of(
+                                                                        Pair.of(
+                                                                                VALID_ALIAS,
+                                                                                B_TOKEN),
+                                                                        Pair.of(
+                                                                                VALID_ALIAS,
+                                                                                A_TOKEN)))))
                                 .logged(),
-                        getAliasedAccountInfo(ANOTHER_ALIAS)
+                        getAliasedAccountInfo(VALID_ALIAS)
                                 .hasToken(relationshipWith(A_TOKEN).balance(10))
                                 .hasToken(relationshipWith(B_TOKEN).balance(10))
-                                .logged(),
+                                .has(accountWith().balance(0L).maxAutoAssociations(2)),
                         getAccountInfo(civilian)
                                 .hasToken(relationshipWith(A_TOKEN).balance(90))
                                 .hasToken(relationshipWith(B_TOKEN).balance(90))
-                                .has(accountWith().balanceLessThan(10 * ONE_HBAR))
-                                .logged(),
-
+                                .has(accountWith().balanceLessThan(10 * ONE_HBAR)))
+                .then(
                         /* --- transfer token to created alias */
                         cryptoTransfer(moving(10, B_TOKEN).between(civilian, VALID_ALIAS))
                                 .via("newXfer")
@@ -458,8 +471,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getTxnRecord("newXfer")
                                 .andAllChildRecords()
                                 .hasChildRecordCount(0)
-                                .logged())
-                .then();
+                                .logged(),
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .hasToken(relationshipWith(A_TOKEN).balance(10))
+                                .hasToken(relationshipWith(B_TOKEN).balance(20)));
     }
 
     private HapiApiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
@@ -510,14 +525,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getTxnRecord("sameTokenXfer")
                                 .andAllChildRecords()
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(
-                                        recordWith()
-                                                .status(SUCCESS)
-                                                .maxAutoAssociations(1)
-                                                .tokenTransfers(
-                                                        includingFungibleMovement(
-                                                                moving(20, A_TOKEN)
-                                                                        .to(VALID_ALIAS))))
                                 .logged(),
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .hasToken(relationshipWith(A_TOKEN).balance(20)),
@@ -967,7 +974,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .when(
                         cryptoTransfer(
                                         tinyBarsFromToWithAlias(
-                                                autoCreateSponsor, VALID_ALIAS, ONE_HUNDRED_HBARS))
+                                                autoCreateSponsor, VALID_ALIAS, ONE_HUNDRED_HBARS),
+                                        tinyBarsFromToWithAlias(civilian, VALID_ALIAS, ONE_HBAR))
                                 .via(TRANSFER_TXN)
                                 .payingWith(civilian))
                 .then(

@@ -41,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -48,7 +49,9 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -166,14 +169,28 @@ public class TransferLogic {
         }
     }
 
-    private HashMap<ByteString, Integer> countTokenAutoCreations(
+    private HashMap<ByteString, HashSet<Id>> countTokenAutoCreations(
             final List<BalanceChange> changes) {
-        final var map = new HashMap<ByteString, Integer>();
+        final var map = new HashMap<ByteString, HashSet<Id>>();
         for (final var change : changes) {
             if ((change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
-                map.merge(change.counterPartyAccountId().getAlias(), 1, Integer::sum);
+                final var alias = change.counterPartyAlias();
+                if (map.containsKey(alias)) {
+                    map.get(alias).add(change.getToken());
+                } else {
+                    map.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
+                }
+                //                map.merge(change.counterPartyAccountId().getAlias(),
+                // change.tokenId(), (k, v) -> map.get(k).add(v));
             } else if (change.isForFungibleToken() && change.hasNonEmptyAlias()) {
-                map.merge(change.alias(), 1, Integer::sum);
+                final var alias = change.alias();
+                if (map.containsKey(alias)) {
+                    map.get(alias).add(change.getToken());
+                } else {
+                    map.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
+                }
+                //                map.merge(change.alias(), change.tokenId(), (a, b) -> map.put(a,
+                // b));
             }
         }
         return map;
