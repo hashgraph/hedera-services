@@ -117,10 +117,13 @@ public class TransferLogic {
     public void doZeroSum(final List<BalanceChange> changes) {
         var validity = OK;
         var autoCreationFee = 0L;
-        final var tokenAliasMap = countTokenAutoCreations(changes);
+
+        // count number of tokens that need to associated with an alias for creating
+        // `maxAutoAssociations` on
+        // auto-created account. This will also resolve any known aliases in the changes.
+        final var tokenAliasMap = countTokensForCreations(changes);
+
         for (var change : changes) {
-            // If the change consists of any known alias, replace the alias with the account number
-            checkIfExistingAlias(change);
             // create a new account for alias when the no account is already created using the alias
             if (change.hasNonEmptyAlias()
                     || (change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
@@ -169,28 +172,27 @@ public class TransferLogic {
         }
     }
 
-    private HashMap<ByteString, HashSet<Id>> countTokenAutoCreations(
+    private HashMap<ByteString, HashSet<Id>> countTokensForCreations(
             final List<BalanceChange> changes) {
         final var map = new HashMap<ByteString, HashSet<Id>>();
+
         for (final var change : changes) {
+            // If the change consists of any known alias, replace the alias with the account number
+            checkIfExistingAlias(change);
+
+            var alias = ByteString.EMPTY;
+
             if ((change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
-                final var alias = change.counterPartyAlias();
-                if (map.containsKey(alias)) {
-                    map.get(alias).add(change.getToken());
-                } else {
-                    map.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
-                }
-                //                map.merge(change.counterPartyAccountId().getAlias(),
-                // change.tokenId(), (k, v) -> map.get(k).add(v));
+                alias = change.counterPartyAlias();
             } else if (change.isForFungibleToken() && change.hasNonEmptyAlias()) {
-                final var alias = change.alias();
+                alias = change.alias();
+            }
+
+            if (alias != ByteString.EMPTY) {
                 if (map.containsKey(alias)) {
                     map.get(alias).add(change.getToken());
-                } else {
-                    map.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
                 }
-                //                map.merge(change.alias(), change.tokenId(), (a, b) -> map.put(a,
-                // b));
+                map.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
             }
         }
         return map;
@@ -279,7 +281,13 @@ public class TransferLogic {
         accountsLedger.set(ownerID, FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
     }
 
-    public void checkIfExistingAlias(final BalanceChange change) {
+    /**
+     * Checks if the alias is a known alias i.e, if the alias is already used in any cryptoTransfer
+     * transaction that has led to account creation
+     *
+     * @param change change that contains alias
+     */
+    private void checkIfExistingAlias(final BalanceChange change) {
         if (change.hasNonEmptyAlias() && isKnownAlias(change.accountId(), currentView)) {
             final var aliasNum =
                     currentView

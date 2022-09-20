@@ -77,6 +77,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -401,7 +402,7 @@ class LedgerBalanceChangesTest {
         backingAccounts.put(payer, payerAccount);
 
         given(txnCtx.activePayer()).willReturn(payer);
-        given(autoCreationLogic.create(any(), eq(accountsLedger), tokenAliasMap))
+        given(autoCreationLogic.create(any(), eq(accountsLedger), eq(new HashMap<>())))
                 .willAnswer(
                         invocationOnMock -> {
                             final var change = (BalanceChange) invocationOnMock.getArgument(0);

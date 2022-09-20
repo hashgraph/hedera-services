@@ -56,6 +56,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -176,7 +177,7 @@ class TransferLogicTest {
         final var failingTrigger =
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
 
-        given(autoCreationLogic.create(failingTrigger, accountsLedger, tokenAliasMap))
+        given(autoCreationLogic.create(failingTrigger, accountsLedger, new HashMap<>()))
                 .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
         accountsLedger.begin();
         accountsLedger.create(mockCreation);
@@ -203,7 +204,7 @@ class TransferLogicTest {
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         final var secondTrigger =
                 BalanceChange.changingHbar(aliasedAa(secondAlias, secondAmount), payer);
-        given(autoCreationLogic.create(firstTrigger, accountsLedger, tokenAliasMap))
+        given(autoCreationLogic.create(firstTrigger, accountsLedger, new HashMap<>()))
                 .willAnswer(
                         invocationOnMock -> {
                             accountsLedger.create(firstNewAccount);
@@ -212,7 +213,7 @@ class TransferLogicTest {
                             change.setNewBalance(change.getAggregatedUnits());
                             return Pair.of(OK, autoFee);
                         });
-        given(autoCreationLogic.create(secondTrigger, accountsLedger, tokenAliasMap))
+        given(autoCreationLogic.create(secondTrigger, accountsLedger, new HashMap<>()))
                 .willAnswer(
                         invocationOnMock -> {
                             accountsLedger.create(secondNewAccount);

@@ -20,6 +20,7 @@ import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.isSerializedProtoKey;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -42,6 +43,9 @@ public class AliasResolver {
     private int perceivedCreations = 0;
     private int perceivedInvalidCreations = 0;
     private Map<ByteString, EntityNum> resolutions = new HashMap<>();
+
+    /* ---- temporary token resolutions map is needed because a token can be repeated in multiple token transfer lists
+    and should not be repeated ina  single token transfer list ---- */
     private Map<ByteString, EntityNum> tokenResolutions = new HashMap<>();
 
     private enum Result {
@@ -67,10 +71,6 @@ public class AliasResolver {
 
     public Map<ByteString, EntityNum> resolutions() {
         return resolutions;
-    }
-
-    public Map<ByteString, EntityNum> tokenResolutions() {
-        return tokenResolutions;
     }
 
     public int perceivedMissingAliases() {
@@ -119,6 +119,9 @@ public class AliasResolver {
                 final var result =
                         resolveInternalFungible(
                                 aliasManager, adjust, resolvedTokenAdjust::addTransfers, true);
+
+                // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
+                // result
                 perceiveResult(result, adjust);
             }
 
@@ -139,6 +142,9 @@ public class AliasResolver {
                                 aliasManager,
                                 change.getReceiverAccountID(),
                                 resolvedChange::setReceiverAccountID);
+
+                // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
+                // result
                 perceiveNftReceiverResult(receiverResult, change);
 
                 resolvedTokenAdjust.addNftTransfers(resolvedChange.build());
@@ -147,6 +153,89 @@ public class AliasResolver {
             resolvedTokenAdjusts.add(resolvedTokenAdjust.build());
         }
         return resolvedTokenAdjusts;
+    }
+
+    private TransferList resolveHbarAdjusts(
+            final TransferList opAdjusts, final AliasManager aliasManager) {
+        final var resolvedAdjusts = TransferList.newBuilder();
+        for (var adjust : opAdjusts.getAccountAmountsList()) {
+            final var result =
+                    resolveInternalFungible(
+                            aliasManager, adjust, resolvedAdjusts::addAccountAmounts, false);
+            perceiveResult(result, adjust);
+        }
+        return resolvedAdjusts.build();
+    }
+
+    private Result resolveInternal(
+            final AliasManager aliasManager,
+            final AccountID idOrAlias,
+            final Consumer<AccountID> resolvingAction) {
+        AccountID resolvedId = idOrAlias;
+        var isEvmAddress = false;
+        var result = Result.KNOWN_ALIAS;
+        if (isAlias(idOrAlias)) {
+            final var alias = idOrAlias.getAlias();
+            if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
+                final var evmAddress = alias.toByteArray();
+                if (aliasManager.isMirror(evmAddress)) {
+                    offerMirrorId(evmAddress, resolvingAction);
+                    return Result.KNOWN_ALIAS;
+                } else {
+                    isEvmAddress = true;
+                }
+            }
+            final var resolution = aliasManager.lookupIdBy(alias);
+            if (resolution != MISSING_NUM) {
+                resolvedId = resolution.toGrpcAccountId();
+            } else {
+                result = netOf(isEvmAddress, alias, true);
+            }
+            resolutions.put(alias, resolution);
+        }
+        resolvingAction.accept(resolvedId);
+        return result;
+    }
+
+    private Result resolveInternalFungible(
+            final AliasManager aliasManager,
+            final AccountAmount adjust,
+            final Consumer<AccountAmount> resolvingAction,
+            final boolean isForToken) {
+        AccountAmount resolvedAdjust = adjust;
+        var isEvmAddress = false;
+        var result = Result.KNOWN_ALIAS;
+        if (isAlias(adjust.getAccountID())) {
+            final var alias = adjust.getAccountID().getAlias();
+            if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
+                final var evmAddress = alias.toByteArray();
+                if (aliasManager.isMirror(evmAddress)) {
+                    offerMirrorId(
+                            evmAddress,
+                            id ->
+                                    resolvingAction.accept(
+                                            adjust.toBuilder().setAccountID(id).build()));
+                    return Result.KNOWN_ALIAS;
+                } else {
+                    isEvmAddress = true;
+                }
+            }
+            final var resolution = aliasManager.lookupIdBy(alias);
+            if (resolution == MISSING_NUM) {
+                if (isForToken) {
+                    result = netOf(isEvmAddress, alias, false);
+                } else {
+                    result = netOf(isEvmAddress, alias, true);
+                }
+            } else {
+                resolvedAdjust =
+                        adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();
+            }
+            resolutions.put(alias, resolution);
+            tokenResolutions.put(alias, resolution);
+        }
+        resolvingAction.accept(resolvedAdjust);
+        return result;
     }
 
     private void perceiveNftReceiverResult(final Result receiverResult, final NftTransfer change) {
@@ -186,116 +275,20 @@ public class AliasResolver {
         }
     }
 
-    private TransferList resolveHbarAdjusts(
-            final TransferList opAdjusts, final AliasManager aliasManager) {
-        final var resolvedAdjusts = TransferList.newBuilder();
-        for (var adjust : opAdjusts.getAccountAmountsList()) {
-            final var result =
-                    resolveInternalFungible(
-                            aliasManager, adjust, resolvedAdjusts::addAccountAmounts, false);
-            perceiveResult(result, adjust);
-        }
-        return resolvedAdjusts.build();
-    }
-
-    private Result resolveInternal(
-            final AliasManager aliasManager,
-            final AccountID idOrAlias,
-            final Consumer<AccountID> resolvingAction) {
-        AccountID resolvedId = idOrAlias;
-        var isEvmAddress = false;
-        var result = Result.KNOWN_ALIAS;
-        if (isAlias(idOrAlias)) {
-            final var alias = idOrAlias.getAlias();
-            if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
-                final var evmAddress = alias.toByteArray();
-                if (aliasManager.isMirror(evmAddress)) {
-                    offerMirrorId(evmAddress, resolvingAction);
-                    return Result.KNOWN_ALIAS;
-                } else {
-                    isEvmAddress = true;
-                }
-            }
-            final var resolution = aliasManager.lookupIdBy(alias);
-            if (resolution != MISSING_NUM) {
-                resolvedId = resolution.toGrpcAccountId();
-            } else {
-                result = netOfNftAliases(isEvmAddress, alias);
-            }
-            resolutions.put(alias, resolution);
-        }
-        resolvingAction.accept(resolvedId);
-        return result;
-    }
-
-    private Result resolveInternalFungible(
-            final AliasManager aliasManager,
-            final AccountAmount adjust,
-            final Consumer<AccountAmount> resolvingAction,
-            final boolean isForToken) {
-        AccountAmount resolvedAdjust = adjust;
-        var isEvmAddress = false;
-        var result = Result.KNOWN_ALIAS;
-        if (isAlias(adjust.getAccountID())) {
-            final var alias = adjust.getAccountID().getAlias();
-            if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
-                final var evmAddress = alias.toByteArray();
-                if (aliasManager.isMirror(evmAddress)) {
-                    offerMirrorId(
-                            evmAddress,
-                            id ->
-                                    resolvingAction.accept(
-                                            adjust.toBuilder().setAccountID(id).build()));
-                    return Result.KNOWN_ALIAS;
-                } else {
-                    isEvmAddress = true;
-                }
-            }
-            final var resolution = aliasManager.lookupIdBy(alias);
-            if (resolution == MISSING_NUM) {
-                if (isForToken) {
-                    result = netOfFungibleTokenAliases(isEvmAddress, alias);
-                } else {
-                    result = netOf(isEvmAddress, alias);
-                }
-            } else {
-                resolvedAdjust =
-                        adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();
-            }
-            resolutions.put(alias, resolution);
-            tokenResolutions.put(alias, resolution);
-        }
-        resolvingAction.accept(resolvedAdjust);
-        return result;
-    }
-
-    private Result netOf(final boolean isEvmAddress, final ByteString alias) {
+    private Result netOf(
+            final boolean isEvmAddress, final ByteString alias, final boolean isForNftOrHbar) {
         if (isEvmAddress) {
             return Result.UNKNOWN_EVM_ADDRESS;
-        } else {
+        } else if (isForNftOrHbar) {
             return resolutions.containsKey(alias)
                     ? Result.REPEATED_UNKNOWN_ALIAS
                     : Result.UNKNOWN_ALIAS;
-        }
-    }
-
-    private Result netOfFungibleTokenAliases(final boolean isEvmAddress, final ByteString alias) {
-        if (isEvmAddress) {
-            return Result.UNKNOWN_EVM_ADDRESS;
         } else {
+            /* ---- checks if temporary resolutions map has the alias.
+            If it has the alias, the alias is repeated in a single token transfer list */
             return tokenResolutions.containsKey(alias)
                     ? Result.REPEATED_UNKNOWN_ALIAS
                     : resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
-        }
-    }
-
-    private Result netOfNftAliases(final boolean isEvmAddress, final ByteString alias) {
-        if (isEvmAddress) {
-            return Result.UNKNOWN_EVM_ADDRESS;
-        } else {
-            return resolutions.containsKey(alias)
-                    ? Result.REPEATED_UNKNOWN_ALIAS
-                    : Result.UNKNOWN_ALIAS;
         }
     }
 
@@ -311,5 +304,11 @@ public class AliasResolver {
                         evmAddress[18],
                         evmAddress[19]);
         resolvingAction.accept(STATIC_PROPERTIES.scopedAccountWith(contractNum));
+    }
+
+    /* ---- Only used for tests */
+    @VisibleForTesting
+    public Map<ByteString, EntityNum> tokenResolutions() {
+        return tokenResolutions;
     }
 }

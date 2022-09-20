@@ -57,8 +57,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -104,7 +106,7 @@ class AutoCreationLogicTest {
     void refusesToCreateBeyondMaxNumber() {
         final var input = wellKnownChange();
 
-        final var result = subject.create(input, accountsLedger, tokenAliasMap);
+        final var result = subject.create(input, accountsLedger, new HashMap<>());
         assertEquals(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, result.getLeft());
     }
 
@@ -117,7 +119,7 @@ class AutoCreationLogicTest {
         final var input = wellKnownChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
 
-        final var result = subject.create(input, accountsLedger, tokenAliasMap);
+        final var result = subject.create(input, accountsLedger, new HashMap<>());
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
@@ -143,8 +145,10 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownTokenChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+        final var map = new HashMap<ByteString, HashSet<Id>>();
+        map.put(alias, new HashSet<>(Arrays.asList(Id.fromGrpcToken(token))));
 
-        final var result = subject.create(input, accountsLedger, tokenAliasMap);
+        final var result = subject.create(input, accountsLedger, map);
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
@@ -183,7 +187,7 @@ class AutoCreationLogicTest {
         final var input = wellKnownNftChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
 
-        final var result = subject.create(input, accountsLedger, tokenAliasMap);
+        final var result = subject.create(input, accountsLedger, new HashMap<>());
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(20L, input.getAggregatedUnits());

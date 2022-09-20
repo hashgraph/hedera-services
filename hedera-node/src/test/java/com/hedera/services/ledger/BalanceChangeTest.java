@@ -57,7 +57,8 @@ class BalanceChangeTest {
         final var tokenRepr =
                 "BalanceChange{token=1.2.3, account=1.2.3, alias=, units=-1234,"
                         + " expectedDecimals=-1}";
-        final var nftRepr = "BalanceChange{nft=1.2.3, serialNo=1234, from=1.2.3, to=2.3.4}";
+        final var nftRepr =
+                "BalanceChange{nft=1.2.3, serialNo=1234, from=1.2.3, to=2.3.4, counterPartyAlias=}";
 
         // expect:
         assertFalse(nftChange.isApprovedAllowance());

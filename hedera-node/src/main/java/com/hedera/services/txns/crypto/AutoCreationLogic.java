@@ -164,18 +164,19 @@ public class AutoCreationLogic {
      *
      * @param change a triggering change with unique alias
      * @param accountsLedger the accounts ledger to use for the provisional creation
-     * @param tokenAliasMap
+     * @param aliasTokensMap
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change,
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-            final HashMap<ByteString, HashSet<Id>> tokenAliasMap) {
+            final HashMap<ByteString, HashSet<Id>> aliasTokensMap) {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
         }
+
         final ByteString alias = getAlias(change);
-        final var maxAutoAssociations = change.isForHbar() ? 0 : tokenAliasMap.get(alias).size();
+        final var maxAutoAssociations = change.isForHbar() ? 0 : aliasTokensMap.get(alias).size();
 
         final var key = asPrimitiveKeyUnchecked(alias);
         final var syntheticCreation =
@@ -184,7 +185,7 @@ public class AutoCreationLogic {
 
         final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
         accountsLedger.create(newId);
-        replaceAliasWithNewId(change, newId);
+        replaceAliasAndSetBalanceOnChange(change, newId);
 
         JKey jKey = asFcKeyUnchecked(key);
         final var customizer =
@@ -218,19 +219,8 @@ public class AutoCreationLogic {
         return Pair.of(OK, fee);
     }
 
-    private void trackChanges(
-            final AccountID newId,
-            final ByteString alias,
-            final BalanceChange change,
-            final SideEffectsTracker sideEffects,
-            final int maxAutoAssociations) {
-        sideEffects.trackAutoCreation(newId, alias);
-        if (change.isForToken()) {
-            sideEffects.trackMaxAutoAssociations(maxAutoAssociations);
-        }
-    }
-
-    private void replaceAliasWithNewId(final BalanceChange change, final AccountID newId) {
+    private void replaceAliasAndSetBalanceOnChange(
+            final BalanceChange change, final AccountID newId) {
         if (change.isForHbar()) {
             change.setNewBalance(change.getAggregatedUnits());
         }

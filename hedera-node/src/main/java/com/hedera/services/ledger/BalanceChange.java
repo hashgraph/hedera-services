@@ -344,7 +344,7 @@ public class BalanceChange {
                     .add("serialNo", aggregatedUnits)
                     .add("from", account)
                     .add("to", Id.fromGrpcAccount(counterPartyAccountId))
-                    .add("toAlias", counterPartyAlias.toStringUtf8())
+                    .add("counterPartyAlias", counterPartyAlias.toStringUtf8())
                     .toString();
         }
     }

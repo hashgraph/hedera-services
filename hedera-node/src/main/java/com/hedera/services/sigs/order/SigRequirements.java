@@ -1316,9 +1316,8 @@ public class SigRequirements {
             var result = sigMetaLookup.aliasableAccountSigningMetaFor(party, linkedRefs);
             if (!result.succeeded()) {
                 final var reason = result.failureIfAny();
-                if (reason == IMMUTABLE_ACCOUNT) {
-                    return NONE;
-                } else if (reason == MISSING_ACCOUNT && autoCreationAllowed && isAlias(party)) {
+                if (reason == IMMUTABLE_ACCOUNT
+                        || (reason == MISSING_ACCOUNT && autoCreationAllowed && isAlias(party))) {
                     return NONE;
                 } else {
                     return reason;

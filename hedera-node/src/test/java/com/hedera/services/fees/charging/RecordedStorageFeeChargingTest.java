@@ -33,6 +33,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -84,6 +85,7 @@ class RecordedStorageFeeChargingTest {
     @Mock private TransactionContext txnCtx;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private StateView view;
     private FeeDistribution feeDistribution;
     private NonHapiFeeCharging nonHapiFeeCharging;
 
@@ -325,7 +327,8 @@ class RecordedStorageFeeChargingTest {
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         // and:
         final var mockRecord = ExpirableTxnRecord.newBuilder();
         // and:
@@ -398,7 +401,8 @@ class RecordedStorageFeeChargingTest {
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         // and:
         final var mockRecord = ExpirableTxnRecord.newBuilder();
         // and:
@@ -478,7 +482,8 @@ class RecordedStorageFeeChargingTest {
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         // and:
         final var mockRecord = ExpirableTxnRecord.newBuilder();
         // and:
@@ -551,7 +556,8 @@ class RecordedStorageFeeChargingTest {
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         // and:
         final var mockRecord = ExpirableTxnRecord.newBuilder();
         // and:
@@ -611,7 +617,8 @@ class RecordedStorageFeeChargingTest {
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
 
         liveLedger.begin();

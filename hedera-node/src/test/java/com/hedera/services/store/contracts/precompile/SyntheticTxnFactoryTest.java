@@ -445,7 +445,7 @@ class SyntheticTxnFactoryTest {
     void fungibleTokenChangeAddsAutoAssociations() {
         final var balance = 10L;
         final var alias = KeyFactory.getDefaultInstance().newEd25519();
-        final var result = subject.createAccount(alias, balance, 10);
+        final var result = subject.createAccount(alias, balance, 1);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -454,7 +454,7 @@ class SyntheticTxnFactoryTest {
                 THREE_MONTHS_IN_SECONDS,
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
-        assertEquals(100L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+        assertEquals(1, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
         assertEquals(
                 alias.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
     }

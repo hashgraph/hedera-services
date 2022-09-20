@@ -83,8 +83,6 @@ public class SideEffectsTracker {
     private byte[] pseudorandomBytes = null;
     private int pseudorandomNumber = MISSING_NUMBER;
 
-    private int maxAutoAssociations = 0;
-
     @Inject
     public SideEffectsTracker() {
         /* For Dagger2 */
@@ -276,10 +274,6 @@ public class SideEffectsTracker {
         final var association =
                 new FcTokenAssociation(token.getTokenNum(), account.getAccountNum());
         autoAssociations.add(association);
-    }
-
-    public void trackMaxAutoAssociations(final int num) {
-        maxAutoAssociations = num;
     }
 
     /**
