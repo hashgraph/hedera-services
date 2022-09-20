@@ -190,10 +190,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 NFT_INFINITE_SUPPLY_TOKEN,
                                 List.of(
                                         ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c"),
-                                        ByteString.copyFromUtf8("d"),
-                                        ByteString.copyFromUtf8("e"))),
+                                        ByteString.copyFromUtf8("b"))),
                         cryptoCreate(civilian).balance(10 * ONE_HBAR),
                         cryptoCreate(autoCreateSponsor)
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
@@ -217,34 +214,37 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     counterAlias.set(
                                             ByteString.copyFrom(
                                                     asSolidityAddress(counterId.get())));
+
+                                    cryptoTransfer(
+                                                    (x, b) ->
+                                                            b.addTokenTransfers(
+                                                                    TokenTransferList.newBuilder()
+                                                                            .addTransfers(
+                                                                                    aaWith(
+                                                                                            autoCreateSponsor,
+                                                                                            -1))
+                                                                            .addTransfers(
+                                                                                    aaWith(
+                                                                                            asAccount(
+                                                                                                    "0.0."
+                                                                                                            + partyAlias
+                                                                                                                    .get()),
+                                                                                            +1))
+                                                                            .addTransfers(
+                                                                                    aaWith(
+                                                                                            TOKEN_TREASURY,
+                                                                                            -1))
+                                                                            .addTransfers(
+                                                                                    aaWith(
+                                                                                            asAccount(
+                                                                                                    "0.0."
+                                                                                                            + partyAlias
+                                                                                                                    .get()),
+                                                                                            +1))))
+                                            .signedBy(DEFAULT_PAYER, PARTY, autoCreateSponsor)
+                                            .hasKnownStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
                                 }))
-                .then(
-                        cryptoTransfer(
-                                        (spec, b) ->
-                                                b.addTokenTransfers(
-                                                        TokenTransferList.newBuilder()
-                                                                .addTransfers(
-                                                                        aaWith(
-                                                                                autoCreateSponsor,
-                                                                                -1))
-                                                                .addTransfers(
-                                                                        aaWith(
-                                                                                asAccount(
-                                                                                        "0.0."
-                                                                                                + partyAlias
-                                                                                                        .get()),
-                                                                                +1))
-                                                                .addTransfers(
-                                                                        aaWith(TOKEN_TREASURY, -1))
-                                                                .addTransfers(
-                                                                        aaWith(
-                                                                                asAccount(
-                                                                                        "0.0."
-                                                                                                + partyAlias
-                                                                                                        .get()),
-                                                                                +1))))
-                                .signedBy(DEFAULT_PAYER, PARTY, autoCreateSponsor)
-                                .hasKnownStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
+                .then();
     }
 
     private HapiApiSpec autoCreateWithNftFallBackFeeFails() {
@@ -310,7 +310,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private HapiApiSpec nftTransfersToAlias() {
         final var civilian = "somebody";
         final var civilianBal = 10 * ONE_HBAR;
-        final var autoCreateBal = 0.42427268 * ONE_HBAR; // why is fee diff ?
+        final var transferFee = 0.44012644 * ONE_HBAR;
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
                 .given(
@@ -381,7 +381,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .has(accountWith().balance(0).maxAutoAssociations(2).ownedNfts(4))
                                 .logged(),
                         getAccountInfo(civilian)
-                                .has(accountWith().balance((long) (civilianBal - autoCreateBal))))
+                                .has(accountWith().balance((long) (civilianBal - transferFee))))
                 .then();
     }
 
@@ -530,7 +530,23 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .hasToken(relationshipWith(A_TOKEN).balance(20)),
                         getAccountInfo(civilian)
                                 .hasToken(relationshipWith(A_TOKEN).balance(90))
-                                .has(accountWith().balanceLessThan(10 * ONE_HBAR)))
+                                .has(accountWith().balanceLessThan(10 * ONE_HBAR)),
+                        assertionsHold(
+                                (spec, opLog) -> {
+                                    final var lookup =
+                                            getTxnRecord("sameTokenXfer")
+                                                    .andAllChildRecords()
+                                                    .hasNonStakingChildRecordCount(1)
+                                                    .hasAliasInChildRecord(VALID_ALIAS, 0)
+                                                    .logged();
+                                    allRunFor(spec, lookup);
+                                    final var sponsor = spec.registry().getAccountID(DEFAULT_PAYER);
+                                    final var payer = spec.registry().getAccountID(civilian);
+                                    final var parent = lookup.getResponseRecord();
+                                    final var child = lookup.getChildRecord(0);
+                                    assertAliasBalanceAndFeeInChildRecord(
+                                            parent, child, sponsor, payer, 0L);
+                                }))
                 .then(
                         /* --- transfer another token to created alias */
                         cryptoTransfer(moving(10, B_TOKEN).between(civilian, VALID_ALIAS))
@@ -1005,12 +1021,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     final var parent = lookup.getResponseRecord();
                                     final var child = lookup.getChildRecord(0);
                                     assertAliasBalanceAndFeeInChildRecord(
-                                            parent,
-                                            child,
-                                            sponsor,
-                                            payer,
-                                            ONE_HUNDRED_HBARS,
-                                            10 * ONE_HBAR);
+                                            parent, child, sponsor, payer, ONE_HUNDRED_HBARS);
                                     creationTime.set(child.getConsensusTimestamp().getSeconds());
                                 }),
                         sourcing(
@@ -1038,8 +1049,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
             final TransactionRecord child,
             final AccountID sponsor,
             final AccountID defaultPayer,
-            final long newAccountFunding,
-            final long payerInitialBalance) {
+            final long newAccountFunding) {
         long receivedBalance = 0;
         long fundingAccountBalance = 0;
         long payerBalWithoutAutoCreationFee = 0;
