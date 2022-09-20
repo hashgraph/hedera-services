@@ -1312,21 +1312,23 @@ public class SigRequirements {
             final CryptoTransferTransactionBody op,
             final @Nullable LinkedRefs linkedRefs,
             final boolean autoCreationAllowed) {
+        final var isSender = counterparty == null;
         if (!payer.equals(party)) {
             var result = sigMetaLookup.aliasableAccountSigningMetaFor(party, linkedRefs);
             if (!result.succeeded()) {
                 final var reason = result.failureIfAny();
-                if (reason == MISSING_ACCOUNT
-                        && autoCreationAllowed
-                        && isAlias(
-                                party)) { // Should this not be an error if its IMMUTABLE_ACCOUNT ?
+                if ((reason == IMMUTABLE_ACCOUNT && !isSender)
+                        || (reason == MISSING_ACCOUNT
+                                && autoCreationAllowed
+                                && isAlias(party)
+                                && !isSender)) { // Should this not be an error if both sender and
+                    // receiver are IMMUTABLE_ACCOUNTs?
                     return NONE;
                 } else {
                     return reason;
                 }
             }
             final var meta = result.metadata();
-            final var isSender = counterparty == null;
             final var isUnapprovedTransfer = isSender && !isApproval;
             final var isGatedReceipt = !isSender && meta.receiverSigRequired();
 
