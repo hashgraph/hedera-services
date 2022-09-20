@@ -77,8 +77,7 @@ abstract class EvmTxProcessor {
     private final AbstractMessageProcessor contractCreationProcessor;
     protected final EvmProperties configurationProperties;
 
-    protected EvmTxProcessor(
-            final LivePricesSource livePricesSource) {
+    protected EvmTxProcessor(final LivePricesSource livePricesSource) {
         this.worldState = EvmConfigurator.worldState;
         this.livePricesSource = livePricesSource;
         this.configurationProperties = EvmConfigurator.evmProperties;
