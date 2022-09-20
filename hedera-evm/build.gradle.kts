@@ -28,6 +28,12 @@ dependencies {
     implementation(libs.javax.inject)
     implementation(libs.jackson)
     implementation(libs.jetbrains.annotation)
+    implementation("commons-codec:commons-codec:1.15")
+    implementation("org.bouncycastle:bcprov-jdk15on:1.70")
     testImplementation(testLibs.bundles.testing)
     implementation(libs.bundles.bouncycastle)
+}
+
+repositories {
+    mavenCentral()
 }

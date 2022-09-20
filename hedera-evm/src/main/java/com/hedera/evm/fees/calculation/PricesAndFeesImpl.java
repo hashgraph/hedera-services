@@ -1,4 +1,23 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.evm.fees.calculation;
+
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.evm.context.primitives.StateView;
 import com.hedera.evm.fees.FeeCalculator;
@@ -17,19 +36,14 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.fee.FeeObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
-
-import javax.inject.Provider;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-
-import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
-import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
+import javax.inject.Provider;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 public class PricesAndFeesImpl implements PricesAndFeesProvider {
     private static final Logger log = LogManager.getLogger(PricesAndFeesImpl.class);
@@ -67,7 +81,10 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
 
     private ExchangeRateSet grpcRates = null;
 
-    public PricesAndFeesImpl(AccessorFactory accessorFactory, Provider<FeeCalculator> feeCalculator, StateView currentView) {
+    public PricesAndFeesImpl(
+            AccessorFactory accessorFactory,
+            Provider<FeeCalculator> feeCalculator,
+            StateView currentView) {
         this.accessorFactory = accessorFactory;
         this.feeCalculator = feeCalculator;
         this.currentView = currentView;
@@ -97,20 +114,18 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
 
     @Override
     public long gasFeeInTinybars(Instant consensusTime, Precompile precompile) {
-            final var signedTxn =
-                    SignedTransaction.newBuilder()
-                            .setSigMap(SignatureMap.getDefaultInstance())
-                            .build();
-            final var txn =
-                    Transaction.newBuilder()
-                            .setSignedTransactionBytes(signedTxn.toByteString())
-                            .build();
+        final var signedTxn =
+                SignedTransaction.newBuilder().setSigMap(SignatureMap.getDefaultInstance()).build();
+        final var txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(signedTxn.toByteString())
+                        .build();
 
-            final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
-            precompile.addImplicitCostsIn(accessor);
-            final var fees =
-                    feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
-            return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+        final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
+        precompile.addImplicitCostsIn(accessor);
+        final var fees =
+                feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
+        return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
     public Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {

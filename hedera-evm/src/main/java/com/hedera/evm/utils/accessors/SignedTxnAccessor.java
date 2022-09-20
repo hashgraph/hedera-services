@@ -1,4 +1,26 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.evm.utils.accessors;
+
+import static com.hedera.evm.utils.MiscUtils.FUNCTION_EXTRACTOR;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.evm.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
@@ -16,23 +38,13 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
-import javax.annotation.Nullable;
-
-import static com.hedera.evm.utils.MiscUtils.FUNCTION_EXTRACTOR;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-
-//import org.bouncycastle.util.Arrays;
-//import org.apache.commons.codec.binary.StringUtils;
-
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
+import org.apache.commons.codec.binary.StringUtils;
+import org.bouncycastle.util.Arrays;
 
-public class SignedTxnAccessor implements TxnAccessor{
+public class SignedTxnAccessor implements TxnAccessor {
     private static final String ACCESSOR_LITERAL = " accessor";
     private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
     private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR =
@@ -88,8 +100,8 @@ public class SignedTxnAccessor implements TxnAccessor{
         txnId = txn.getTransactionID();
         sigMapSize = sigMap.getSerializedSize();
         numSigPairs = sigMap.getSigPairCount();
-//        utf8MemoBytes = StringUtils.getBytesUtf8(memo);
-//        memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
+        utf8MemoBytes = StringUtils.getBytesUtf8(memo);
+        memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
         payer = getTxnId().getAccountID();
 
         getFunction();
@@ -165,31 +177,31 @@ public class SignedTxnAccessor implements TxnAccessor{
         } else if (function == TokenFeeScheduleUpdate) {
             setFeeScheduleUpdateMeta();
         }
-//        } else if (function == TokenCreate) {
-//            setTokenCreateUsageMeta();
-//        } else if (function == TokenBurn) {
-//            setTokenBurnUsageMeta();
-//        } else if (function == TokenFreezeAccount) {
-//            setTokenFreezeUsageMeta();
-//        } else if (function == TokenUnfreezeAccount) {
-//            setTokenUnfreezeUsageMeta();
-//        } else if (function == TokenPause) {
-//            setTokenPauseUsageMeta();
-//        } else if (function == TokenUnpause) {
-//            setTokenUnpauseUsageMeta();
-//        } else if (function == CryptoCreate) {
-//            setCryptoCreateUsageMeta();
-//        } else if (function == CryptoUpdate) {
-//            setCryptoUpdateUsageMeta();
-//        } else if (function == CryptoApproveAllowance) {
-//            setCryptoApproveUsageMeta();
-//        } else if (function == CryptoDeleteAllowance) {
-//            setCryptoDeleteAllowanceUsageMeta();
-//        } else if (function == EthereumTransaction) {
-//            setEthTxDataMeta();
-//        } else if (function == UtilPrng) {
-//            setUtilPrngUsageMeta();
-//        }
+        //        } else if (function == TokenCreate) {
+        //            setTokenCreateUsageMeta();
+        //        } else if (function == TokenBurn) {
+        //            setTokenBurnUsageMeta();
+        //        } else if (function == TokenFreezeAccount) {
+        //            setTokenFreezeUsageMeta();
+        //        } else if (function == TokenUnfreezeAccount) {
+        //            setTokenUnfreezeUsageMeta();
+        //        } else if (function == TokenPause) {
+        //            setTokenPauseUsageMeta();
+        //        } else if (function == TokenUnpause) {
+        //            setTokenUnpauseUsageMeta();
+        //        } else if (function == CryptoCreate) {
+        //            setCryptoCreateUsageMeta();
+        //        } else if (function == CryptoUpdate) {
+        //            setCryptoUpdateUsageMeta();
+        //        } else if (function == CryptoApproveAllowance) {
+        //            setCryptoApproveUsageMeta();
+        //        } else if (function == CryptoDeleteAllowance) {
+        //            setCryptoDeleteAllowanceUsageMeta();
+        //        } else if (function == EthereumTransaction) {
+        //            setEthTxDataMeta();
+        //        } else if (function == UtilPrng) {
+        //            setUtilPrngUsageMeta();
+        //        }
     }
 
     private void setXferUsageMeta() {
