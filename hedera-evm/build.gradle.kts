@@ -29,4 +29,5 @@ dependencies {
     implementation(libs.jackson)
     implementation(libs.jetbrains.annotation)
     testImplementation(testLibs.bundles.testing)
+    implementation(libs.bundles.bouncycastle)
 }

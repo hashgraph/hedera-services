@@ -29,4 +29,8 @@ public interface EvmProperties {
     public Bytes32 chainIdBytes32();
 
     public int maxGasRefundPercentage();
+
+    boolean areNftsEnabled();
+
+    int maxBatchSizeWipe();
 }
