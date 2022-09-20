@@ -172,7 +172,7 @@ public class TransferLogic {
         }
     }
 
-    private HashMap<ByteString, HashSet<Id>> countTokensForCreations(
+    private Map<ByteString, HashSet<Id>> countTokensForCreations(
             final List<BalanceChange> changes) {
         final var map = new HashMap<ByteString, HashSet<Id>>();
 

@@ -310,8 +310,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
     }
 
     private K resolveIfAlias(final K id) {
-        if (id instanceof AccountID && isAlias((AccountID) id)) {
-            final var aliasNum = currentView.get().aliases().get(((AccountID) id).getAlias());
+        if (id instanceof AccountID accountId && isAlias(accountId)) {
+            final var aliasNum = currentView.get().aliases().get(accountId.getAlias());
             if (aliasNum != null) {
                 return (K) aliasNum.toGrpcAccountId();
             } else {

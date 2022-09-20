@@ -821,6 +821,10 @@ public class StateView {
         }
     }
 
+    public Map<ByteString, EntityNum> aliases() {
+        return stateChildren.aliases();
+    }
+
     @VisibleForTesting
     public MerkleNetworkContext networkCtx() {
         return stateChildren.networkCtx();
@@ -829,10 +833,5 @@ public class StateView {
     @VisibleForTesting
     public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
         return stateChildren.stakingInfo();
-    }
-
-    @VisibleForTesting
-    public Map<ByteString, EntityNum> aliases() {
-        return stateChildren.aliases();
     }
 }

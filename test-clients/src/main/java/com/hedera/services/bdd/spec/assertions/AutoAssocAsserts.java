@@ -87,8 +87,8 @@ public class AutoAssocAsserts {
                         assertEquals(expectedPairs, actualPairs, "Wrong auto-associations");
 
                         return Collections.emptyList();
-                    } catch (Throwable t) {
-                        return List.of(t);
+                    } catch (Exception ex) {
+                        return List.of(ex);
                     }
                 };
     }

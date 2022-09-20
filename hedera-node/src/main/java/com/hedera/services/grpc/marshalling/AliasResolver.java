@@ -286,9 +286,10 @@ public class AliasResolver {
         } else {
             /* ---- checks if temporary resolutions map has the alias.
             If it has the alias, the alias is repeated in a single token transfer list */
-            return tokenResolutions.containsKey(alias)
-                    ? Result.REPEATED_UNKNOWN_ALIAS
-                    : resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
+            if(tokenResolutions.containsKey(alias)){
+                return Result.REPEATED_UNKNOWN_ALIAS;
+            }
+            return resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
         }
     }
 

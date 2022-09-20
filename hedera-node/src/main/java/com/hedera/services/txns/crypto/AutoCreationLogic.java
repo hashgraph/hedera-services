@@ -57,6 +57,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -170,7 +171,7 @@ public class AutoCreationLogic {
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change,
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-            final HashMap<ByteString, HashSet<Id>> aliasTokensMap) {
+            final Map<ByteString, HashSet<Id>> aliasTokensMap) {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
         }
