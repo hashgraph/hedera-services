@@ -119,17 +119,16 @@ public class TransferLogic {
         var autoCreationFee = 0L;
 
         // count number of tokens that need to associated with an alias for creating
-        // `maxAutoAssociations` on
-        // auto-created account. This will also resolve any known aliases in the changes.
+        // maxAutoAssociations on auto-created account.
         final var tokenAliasMap = countTokensForCreations(changes);
 
         for (var change : changes) {
-            // If the change consists of any known alias, replace the alias with the account number
+            // If the change consists of any repeated aliases, replace the alias with the account
+            // number
             checkIfExistingAlias(change);
 
             // create a new account for alias when the no account is already created using the alias
-            if (change.hasNonEmptyAlias()
-                    || (change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
+            if (shouldAutoCreate(change)) {
                 if (autoCreationLogic == null) {
                     throw new IllegalStateException(
                             "Cannot auto-create account from "
@@ -173,6 +172,11 @@ public class TransferLogic {
             }
             throw new InvalidTransactionException(validity);
         }
+    }
+
+    private boolean shouldAutoCreate(final BalanceChange change) {
+        return change.hasNonEmptyAlias()
+                || (change.isForNft() && change.hasNonEmptyCounterPartyAlias());
     }
 
     private Map<ByteString, HashSet<Id>> countTokensForCreations(
