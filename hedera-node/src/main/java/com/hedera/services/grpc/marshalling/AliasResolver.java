@@ -45,8 +45,8 @@ public class AliasResolver {
     private Map<ByteString, EntityNum> resolutions = new HashMap<>();
 
     /* ---- temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
-     an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
-     token transfer list ---- */
+    an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
+    token transfer list ---- */
     private Map<ByteString, EntityNum> tokenTransferResolutions = new HashMap<>();
 
     private enum Result {
@@ -123,7 +123,7 @@ public class AliasResolver {
 
                 // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
                 // result
-                perceiveResult(result, adjust);
+                perceiveNonNftReceiverResult(result, adjust);
             }
 
             for (final var change : tokenAdjust.getNftTransfersList()) {
@@ -163,7 +163,7 @@ public class AliasResolver {
             final var result =
                     resolveInternalFungible(
                             aliasManager, adjust, resolvedAdjusts::addAccountAmounts, false);
-            perceiveResult(result, adjust);
+            perceiveNonNftReceiverResult(result, adjust);
         }
         return resolvedAdjusts.build();
     }
@@ -239,28 +239,22 @@ public class AliasResolver {
         return result;
     }
 
-    private void perceiveNftReceiverResult(final Result receiverResult, final NftTransfer change) {
-        if (receiverResult == Result.UNKNOWN_ALIAS) {
-            if (change.getSerialNumber() > 0) {
-                final var alias = change.getReceiverAccountID().getAlias();
-                if (isSerializedProtoKey(alias)) {
-                    perceivedCreations++;
-                } else {
-                    perceivedInvalidCreations++;
-                }
-            } else {
-                perceivedMissing++;
-            }
-        }
-        if (receiverResult == Result.UNKNOWN_EVM_ADDRESS) {
-            perceivedMissing++;
-        }
+    private void perceiveNftReceiverResult(final Result result, final NftTransfer change) {
+        perceiveReceiverResult(
+                result, change.getSerialNumber(), change.getReceiverAccountID().getAlias(), false);
     }
 
-    private void perceiveResult(final Result result, final AccountAmount adjust) {
+    private void perceiveNonNftReceiverResult(final Result result, final AccountAmount adjust) {
+        perceiveReceiverResult(result, adjust.getAmount(), adjust.getAccountID().getAlias(), true);
+    }
+
+    private void perceiveReceiverResult(
+            final Result result,
+            final long assetChange,
+            final ByteString alias,
+            final boolean repetitionsAreInvalid) {
         if (result == Result.UNKNOWN_ALIAS) {
-            if (adjust.getAmount() > 0) {
-                final var alias = adjust.getAccountID().getAlias();
+            if (assetChange > 0) {
                 if (isSerializedProtoKey(alias)) {
                     perceivedCreations++;
                 } else {
@@ -269,7 +263,7 @@ public class AliasResolver {
             } else {
                 perceivedMissing++;
             }
-        } else if (result == Result.REPEATED_UNKNOWN_ALIAS) {
+        } else if (repetitionsAreInvalid && result == Result.REPEATED_UNKNOWN_ALIAS) {
             perceivedInvalidCreations++;
         } else if (result == Result.UNKNOWN_EVM_ADDRESS) {
             perceivedMissing++;
@@ -281,12 +275,14 @@ public class AliasResolver {
         if (isEvmAddress) {
             return Result.UNKNOWN_EVM_ADDRESS;
         } else if (isForNftOrHbar) {
+            // Note a REPEATED_UNKNOWN_ALIAS is still valid for the NFT receiver case
             return resolutions.containsKey(alias)
                     ? Result.REPEATED_UNKNOWN_ALIAS
                     : Result.UNKNOWN_ALIAS;
         } else {
-            /* ---- checks if temporary resolutions map has the alias.
-            If it has the alias, the alias is repeated in a single token transfer list */
+            // If the token resolutions map already contains this unknown alias, we can assume
+            // it was successfully auto-created by a prior mention in this CryptoTransfer.
+            // (If it appeared in a sender location, this transfer will fail anyway.)
             if (tokenTransferResolutions.containsKey(alias)) {
                 return Result.REPEATED_UNKNOWN_ALIAS;
             }
