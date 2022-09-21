@@ -15,10 +15,8 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,6 +31,7 @@ import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,16 +44,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class EntityAutoExpiryTest {
     private final Instant instantNow = Instant.ofEpochSecond(1_234_567L);
     private final HederaNumbers mockHederaNums = new MockHederaNumbers();
-    private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
+    private final MockGlobalDynamicProps mockDynamicProps = new MockGlobalDynamicProps();
 
     private final long aNum = 1002L, bNum = 1003L, cNum = 1004L;
 
     @Mock private SequenceNumber seqNo;
-    @Mock private AutoExpiryCycle autoExpiryCycle;
+    @Mock private ExpiryProcess expiryProcess;
     @Mock private NetworkCtxManager networkCtxManager;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
     @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryStats expiryStats;
 
     private EntityAutoExpiry subject;
 
@@ -62,10 +62,11 @@ class EntityAutoExpiryTest {
     void setUp() {
         subject =
                 new EntityAutoExpiry(
+                        expiryStats,
                         mockHederaNums,
                         expiryThrottle,
-                        autoExpiryCycle,
-                        properties,
+                        expiryProcess,
+                        mockDynamicProps,
                         networkCtxManager,
                         () -> networkCtx,
                         consensusTimeTracker,
@@ -75,17 +76,27 @@ class EntityAutoExpiryTest {
     @Test
     void abortsIfNotAutoRenewing() {
         // setup:
-        properties.disableAutoRenew();
+        mockDynamicProps.disableAutoRenew();
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(autoExpiryCycle);
+        verifyNoInteractions(expiryProcess);
         verify(networkCtx).syncExpiryThrottle(expiryThrottle);
+    }
 
-        // cleanup:
-        properties.enableAutoRenew();
+    @Test
+    void abortsIfExpiryThrottleCannotSupportMinUnitOfWork() {
+        given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
+        given(expiryThrottle.stillLacksMinFreeCapAfterLeakingUntil(instantNow)).willReturn(true);
+
+        // when:
+        subject.execute(instantNow);
+
+        // then:
+        verifyNoInteractions(expiryProcess);
+        verify(networkCtx).syncExpiryThrottle(expiryThrottle);
     }
 
     @Test
@@ -97,7 +108,7 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(autoExpiryCycle);
+        verifyNoInteractions(expiryProcess);
     }
 
     @Test
@@ -109,7 +120,7 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(autoExpiryCycle);
+        verifyNoInteractions(expiryProcess);
     }
 
     @Test
@@ -118,11 +129,14 @@ class EntityAutoExpiryTest {
         given(networkCtxManager.currentTxnIsFirstInConsensusSecond()).willReturn(true);
         givenWrapNum(aNum + 123);
         givenLastScanned(aNum - 1);
+        given(expiryProcess.process(anyLong(), any())).willReturn(NOTHING_TO_DO);
+        given(networkCtx.idsScannedThisSecond()).willReturn(666L);
 
         // when:
         subject.execute(instantNow);
 
         // then:
+        verify(expiryStats).includeIdsScannedInLastConsSec(666L);
         verify(networkCtx).clearAutoRenewSummaryCounts();
     }
 
@@ -130,22 +144,20 @@ class EntityAutoExpiryTest {
     void scansToExpectedNumWithNothingToTouch() {
         // setup:
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
-        long numToScan = properties.autoRenewNumberOfEntitiesToScan();
+        long numToScan = mockDynamicProps.autoRenewNumberOfEntitiesToScan();
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(autoExpiryCycle.process(anyLong())).willReturn(NOTHING_TO_DO);
+        given(expiryProcess.process(anyLong(), eq(instantNow))).willReturn(NOTHING_TO_DO);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(autoExpiryCycle).beginCycle(instantNow);
         for (long i = aNum; i < aNum + numToScan; i++) {
-            verify(autoExpiryCycle).process(i);
+            verify(expiryProcess).process(i, instantNow);
         }
         // and:
-        verify(autoExpiryCycle).endCycle();
         verify(networkCtx).updateLastScannedEntity(aNum + numToScan - 1);
     }
 
@@ -156,16 +168,18 @@ class EntityAutoExpiryTest {
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
         givenWrapNum(aNum + numToScan + 1);
         givenLastScanned(aNum - 1);
-        given(autoExpiryCycle.process(aNum)).willReturn(STILL_MORE_TO_DO).willReturn(DONE);
+        given(expiryProcess.process(aNum, instantNow))
+                .willReturn(STILL_MORE_TO_DO)
+                .willReturn(DONE);
+        mockDynamicProps.setMaxToTouch(1);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(autoExpiryCycle).beginCycle(instantNow);
-        verify(autoExpiryCycle, times(2)).process(aNum);
-        verify(autoExpiryCycle).endCycle();
-        verifyNoMoreInteractions(autoExpiryCycle);
+        verify(expiryProcess, times(2)).process(aNum, instantNow);
+        verifyNoMoreInteractions(expiryProcess);
+        verify(networkCtx).updateAutoRenewSummaryCounts(1, 1);
         verify(networkCtx).updateLastScannedEntity(aNum);
     }
 
@@ -176,16 +190,18 @@ class EntityAutoExpiryTest {
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
         givenWrapNum(aNum + numToScan + 1);
         givenLastScanned(aNum - 1);
-        given(autoExpiryCycle.process(aNum)).willReturn(STILL_MORE_TO_DO);
+        given(expiryProcess.process(aNum, instantNow))
+                .willReturn(STILL_MORE_TO_DO)
+                .willReturn(STILL_MORE_TO_DO)
+                .willReturn(STILL_MORE_TO_DO)
+                .willReturn(NO_CAPACITY_LEFT);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(autoExpiryCycle).beginCycle(instantNow);
-        verify(autoExpiryCycle, times(2)).process(aNum);
-        verify(autoExpiryCycle).endCycle();
-        verifyNoMoreInteractions(autoExpiryCycle);
+        verify(expiryProcess, times(4)).process(aNum, instantNow);
+        verifyNoMoreInteractions(expiryProcess);
         verify(networkCtx).updateLastScannedEntity(aNum - 1);
     }
 
@@ -193,24 +209,22 @@ class EntityAutoExpiryTest {
     void stopsEarlyWhenLotsToTouch() {
         // setup:
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
-        long numToScan = properties.autoRenewNumberOfEntitiesToScan();
+        long numToScan = mockDynamicProps.autoRenewNumberOfEntitiesToScan();
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(autoExpiryCycle.process(aNum)).willReturn(DONE);
-        given(autoExpiryCycle.process(bNum)).willReturn(DONE);
+        given(expiryProcess.process(aNum, instantNow)).willReturn(DONE);
+        given(expiryProcess.process(bNum, instantNow)).willReturn(DONE);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(autoExpiryCycle).beginCycle(instantNow);
         for (long i = aNum; i < cNum; i++) {
-            verify(autoExpiryCycle).process(i);
+            verify(expiryProcess).process(i, instantNow);
         }
         // and:
-        verify(autoExpiryCycle, never()).process(cNum);
-        verify(autoExpiryCycle).endCycle();
+        verify(expiryProcess, never()).process(cNum, instantNow);
         verify(networkCtx).updateLastScannedEntity(bNum);
     }
 
@@ -218,11 +232,11 @@ class EntityAutoExpiryTest {
     void stopsEarlyWhenNoMoreStandaloneRecordTime() {
         // setup:
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
-        long numToScan = properties.autoRenewNumberOfEntitiesToScan();
+        long numToScan = mockDynamicProps.autoRenewNumberOfEntitiesToScan();
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(autoExpiryCycle.process(aNum))
+        given(expiryProcess.process(aNum, instantNow))
                 .willAnswer(
                         i -> {
                             given(consensusTimeTracker.hasMoreStandaloneRecordTime())
@@ -234,11 +248,9 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verify(autoExpiryCycle).beginCycle(instantNow);
-        verify(autoExpiryCycle).process(aNum);
+        verify(expiryProcess).process(aNum, instantNow);
         // and:
-        verify(autoExpiryCycle, never()).process(bNum);
-        verify(autoExpiryCycle).endCycle();
+        verify(expiryProcess, never()).process(bNum, instantNow);
         verify(networkCtx).updateLastScannedEntity(aNum);
     }
 
@@ -246,27 +258,25 @@ class EntityAutoExpiryTest {
     void understandsHowToWrap() {
         // setup:
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
-        long numToScan = properties.autoRenewNumberOfEntitiesToScan();
+        long numToScan = mockDynamicProps.autoRenewNumberOfEntitiesToScan();
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum + numToScan - 2);
-        given(autoExpiryCycle.process(aNum + numToScan - 1)).willReturn(NOTHING_TO_DO);
-        given(autoExpiryCycle.process(aNum - 1)).willReturn(NOTHING_TO_DO);
-        given(autoExpiryCycle.process(aNum)).willReturn(DONE);
-        given(autoExpiryCycle.process(bNum)).willReturn(DONE);
+        given(expiryProcess.process(aNum + numToScan - 1, instantNow)).willReturn(NOTHING_TO_DO);
+        given(expiryProcess.process(aNum - 1, instantNow)).willReturn(NOTHING_TO_DO);
+        given(expiryProcess.process(aNum, instantNow)).willReturn(DONE);
+        given(expiryProcess.process(bNum, instantNow)).willReturn(DONE);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(autoExpiryCycle).beginCycle(instantNow);
-        verify(autoExpiryCycle).process(aNum + numToScan - 1);
+        verify(expiryProcess).process(aNum + numToScan - 1, instantNow);
         for (long i = aNum; i < cNum; i++) {
-            verify(autoExpiryCycle).process(i);
+            verify(expiryProcess).process(i, instantNow);
         }
         // and:
-        verify(autoExpiryCycle, never()).process(cNum);
-        verify(autoExpiryCycle).endCycle();
+        verify(expiryProcess, never()).process(cNum, instantNow);
         verify(networkCtx).updateLastScannedEntity(bNum);
         // and:
         verify(networkCtx).updateAutoRenewSummaryCounts(4, 2);

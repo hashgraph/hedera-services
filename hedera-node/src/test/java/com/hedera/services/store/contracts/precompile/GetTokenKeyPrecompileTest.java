@@ -20,7 +20,9 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failRe
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.impl.GetTokenKeyPrecompile.decodeGetTokenKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -42,9 +44,9 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenKeyWrapper;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenKeyPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -61,10 +63,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,7 +79,6 @@ class GetTokenKeyPrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -93,7 +97,11 @@ class GetTokenKeyPrecompileTest {
     @Mock private JDelegatableContractIDKey jDelegatableContractIDKey;
     @Mock private AccessorFactory accessorFactory;
 
+    private static final Bytes GET_TOKEN_KEY_INPUT =
+            Bytes.fromHexString(
+                    "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
     private HTSPrecompiledContract subject;
+    private MockedStatic<GetTokenKeyPrecompile> getTokenKeyPrecompile;
     private GetTokenKeyWrapper wrapper = new GetTokenKeyWrapper(fungible, 1L);
     private final byte[] ed25519Key =
             new byte[] {
@@ -121,7 +129,6 @@ class GetTokenKeyPrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -130,6 +137,12 @@ class GetTokenKeyPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
+        getTokenKeyPrecompile = Mockito.mockStatic(GetTokenKeyPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        getTokenKeyPrecompile.close();
     }
 
     @Test
@@ -144,7 +157,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
@@ -169,7 +182,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
@@ -193,7 +206,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
@@ -217,7 +230,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
@@ -241,7 +254,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
@@ -265,7 +278,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
@@ -289,7 +302,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
@@ -310,7 +323,7 @@ class GetTokenKeyPrecompileTest {
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper(fungible, 200L);
         given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -330,13 +343,24 @@ class GetTokenKeyPrecompileTest {
         givenMinimalContextForCall();
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(tokens.exists(any())).willReturn(false);
-        given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(invalidTokenIdResult, result);
+    }
+
+    @Test
+    void decodeFungibleTokenGetKey() {
+        getTokenKeyPrecompile
+                .when(() -> decodeGetTokenKey(GET_TOKEN_KEY_INPUT))
+                .thenCallRealMethod();
+        final var decodedInput = decodeGetTokenKey(GET_TOKEN_KEY_INPUT);
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertEquals(1L, decodedInput.keyType());
+        assertEquals(TokenProperty.ADMIN_KEY, decodedInput.tokenKeyType());
     }
 
     private void givenMinimalFrameContext() {

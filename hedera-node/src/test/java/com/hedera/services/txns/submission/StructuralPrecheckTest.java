@@ -24,9 +24,13 @@ import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
@@ -50,6 +54,8 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.system.Platform;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -57,7 +63,11 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class StructuralPrecheckTest {
     private static final int pretendSizeLimit = 1_000;
     private static final int pretendMaxMessageDepth = 42;
@@ -69,6 +79,8 @@ class StructuralPrecheckTest {
 
     private HapiOpCounters counters = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
+    @Mock private Counter counter;
+    @Mock private Platform platform;
     private SignedStateViewFactory viewFactory = mock(SignedStateViewFactory.class);
     private AccessorFactory accessorFactory = mock(AccessorFactory.class);
 
@@ -95,11 +107,11 @@ class StructuralPrecheckTest {
         final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
-        assertEquals(0, counters.receivedDeprecatedTxnSoFar());
     }
 
     @Test
     void cantMixSignedBytesWithBodyBytes() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
         txn =
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
@@ -111,11 +123,12 @@ class StructuralPrecheckTest {
         final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION, assess);
-        assertEquals(1, counters.receivedDeprecatedTxnSoFar());
+        verify(counter).increment();
     }
 
     @Test
     void cantMixSignedBytesWithSigMap() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
         txn =
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
@@ -127,11 +140,12 @@ class StructuralPrecheckTest {
         final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION, assess);
-        assertEquals(1, counters.receivedDeprecatedTxnSoFar());
+        verify(counter).increment();
     }
 
     @Test
     void cantBeOversize() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
         txn =
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(
@@ -146,11 +160,12 @@ class StructuralPrecheckTest {
         final var assess = subject.assess(txn);
 
         assertExpectedFail(TRANSACTION_OVERSIZE, assess);
-        assertEquals(0, counters.receivedDeprecatedTxnSoFar());
+        verifyNoInteractions(counter);
     }
 
     @Test
     void mustParseViaAccessor() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
         txn =
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
@@ -161,11 +176,12 @@ class StructuralPrecheckTest {
         final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
-        assertEquals(0, counters.receivedDeprecatedTxnSoFar());
+        verifyNoInteractions(counter);
     }
 
     @Test
     void cantBeUndulyNested() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
         final var weirdlyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), pretendMaxMessageDepth);
         final var hostTxn =
                 TransactionBody.newBuilder()
@@ -178,11 +194,12 @@ class StructuralPrecheckTest {
         final var assess = subject.assess(signedTxn);
 
         assertExpectedFail(TRANSACTION_TOO_MANY_LAYERS, assess);
-        assertEquals(1, counters.receivedDeprecatedTxnSoFar());
+        verify(counter).increment();
     }
 
     @Test
     void cantOmitAFunction() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
         final var hostTxn =
                 TransactionBody.newBuilder()
                         .setTransactionID(
@@ -197,12 +214,12 @@ class StructuralPrecheckTest {
         final var assess = subject.assess(signedTxn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
-
-        assertEquals(1, counters.receivedDeprecatedTxnSoFar());
+        verify(counter).increment();
     }
 
     @Test
     void canBeOkAndSetsStateView() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
         final var hostTxn =
                 TransactionBody.newBuilder()
@@ -223,7 +240,7 @@ class StructuralPrecheckTest {
         assertNotNull(assess.getRight());
         assertEquals(view, assess.getRight().getStateView());
         assertEquals(HederaFunctionality.CryptoCreate, assess.getRight().getFunction());
-        assertEquals(1, counters.receivedDeprecatedTxnSoFar());
+        verify(counter).increment();
     }
 
     @Test
@@ -239,6 +256,7 @@ class StructuralPrecheckTest {
 
     @Test
     void validateCounterForDeprecatedTransactions() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
         final var hostTxn =
                 TransactionBody.newBuilder()
                         .setTransactionID(
@@ -250,23 +268,21 @@ class StructuralPrecheckTest {
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);
-        assertEquals(1, counters.receivedDeprecatedTxnSoFar());
 
         signedTxn = Transaction.newBuilder().setSigMap(SignatureMap.newBuilder().build()).build();
         subject.assess(signedTxn);
-        assertEquals(2, counters.receivedDeprecatedTxnSoFar());
 
         signedTxn = Transaction.newBuilder().setBody(TransactionBody.newBuilder().build()).build();
         subject.assess(signedTxn);
-        assertEquals(3, counters.receivedDeprecatedTxnSoFar());
 
         signedTxn = Transaction.newBuilder().setSigs(SignatureList.newBuilder().build()).build();
         subject.assess(signedTxn);
-        assertEquals(4, counters.receivedDeprecatedTxnSoFar());
+        verify(counter, times(4)).increment();
     }
 
     @Test
     void txnWithNoDeprecatedFieldsDoesntIncrement() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
         final var hostTxn =
                 TransactionBody.newBuilder()
                         .setTransactionID(
@@ -280,7 +296,7 @@ class StructuralPrecheckTest {
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);
-        assertEquals(0, counters.receivedDeprecatedTxnSoFar());
+        verifyNoInteractions(counter);
     }
 
     private int verboseCalc(final GeneratedMessageV3 msg) {
@@ -306,5 +322,10 @@ class StructuralPrecheckTest {
             final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> resp) {
         assertEquals(error, resp.getLeft().getValidity());
         assertNull(resp.getRight());
+    }
+
+    private void withVerifiableCounters() {
+        given(platform.getOrCreateMetric(any())).willReturn(counter);
+        counters.registerWith(platform);
     }
 }

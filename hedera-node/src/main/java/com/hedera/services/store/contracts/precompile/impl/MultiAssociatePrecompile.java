@@ -15,6 +15,15 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenIDsFromBytesArray;
+
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
@@ -23,7 +32,7 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
@@ -31,9 +40,15 @@ import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 
 public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
+    private static final Function ASSOCIATE_TOKENS_FUNCTION =
+            new Function("associateTokens(address,address[])", INT);
+    private static final Bytes ASSOCIATE_TOKENS_SELECTOR =
+            Bytes.wrap(ASSOCIATE_TOKENS_FUNCTION.selector());
+    private static final ABIType<Tuple> ASSOCIATE_TOKENS_DECODER =
+            TypeFactory.create("(bytes32,bytes32[])");
+
     public MultiAssociatePrecompile(
             final WorldLedgers ledgers,
-            final DecodingFacade decoder,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
             final SideEffectsTracker sideEffects,
@@ -44,7 +59,6 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
             final StateView currentView) {
         super(
                 ledgers,
-                decoder,
                 aliases,
                 sigsVerifier,
                 sideEffects,
@@ -58,7 +72,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        associateOp = decoder.decodeMultipleAssociations(input, aliasResolver);
+        associateOp = decodeMultipleAssociations(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createAssociate(associateOp);
         return transactionBody;
     }
@@ -66,5 +80,17 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
     @Override
     public long getGasRequirement(long blockTimestamp) {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
+    }
+
+    public static Association decodeMultipleAssociations(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
+
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
+
+        return Association.multiAssociation(accountID, tokenIDs);
     }
 }

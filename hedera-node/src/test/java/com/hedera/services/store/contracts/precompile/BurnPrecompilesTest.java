@@ -39,12 +39,16 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipi
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.impl.BurnPrecompile.decodeBurn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -81,8 +85,8 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.BurnLogic;
@@ -109,10 +113,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -127,7 +134,6 @@ class BurnPrecompilesTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private BurnLogic burnLogic;
     @Mock private SideEffectsTracker sideEffects;
@@ -164,8 +170,15 @@ class BurnPrecompilesTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    private static final Bytes FUNGIBLE_BURN_INPUT =
+            Bytes.fromHexString(
+                    "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes NON_FUNGIBLE_BURN_INPUT =
+            Bytes.fromHexString(
+                    "0xacb9cff9000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<BurnPrecompile> burnPrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -188,7 +201,6 @@ class BurnPrecompilesTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -197,15 +209,22 @@ class BurnPrecompilesTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        burnPrecompile = Mockito.mockStatic(BurnPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        burnPrecompile.close();
     }
 
     @Test
     void nftBurnFailurePathWorks() {
         givenNonfungibleFrameContext();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
@@ -241,6 +260,9 @@ class BurnPrecompilesTest {
     void nftBurnFailurePathWorksWithNullLedgers() {
         givenNonfungibleFrameContext();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, null))
                 .willThrow(new NullPointerException());
@@ -275,6 +297,9 @@ class BurnPrecompilesTest {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
@@ -321,6 +346,9 @@ class BurnPrecompilesTest {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
@@ -358,6 +386,9 @@ class BurnPrecompilesTest {
         givenFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
@@ -401,11 +432,16 @@ class BurnPrecompilesTest {
     @Test
     void fungibleBurnFailureAmountOversize() {
         // given:
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         doCallRealMethod().when(frame).setRevertReason(any());
-        given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurnAmountOversize);
+        burnPrecompile
+                .when(() -> decodeBurn(pretendArguments))
+                .thenReturn(fungibleBurnAmountOversize);
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
@@ -420,8 +456,11 @@ class BurnPrecompilesTest {
         givenFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurnMaxAmount);
+        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(fungibleBurnMaxAmount);
         given(syntheticTxnFactory.createBurn(fungibleBurnMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
         given(
@@ -470,7 +509,10 @@ class BurnPrecompilesTest {
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN));
-        given(decoder.decodeBurn(any())).willReturn(fungibleBurn);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(fungibleBurn);
         given(syntheticTxnFactory.createBurn(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -490,15 +532,39 @@ class BurnPrecompilesTest {
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
 
+    @Test
+    void decodeFungibleBurnInput() {
+        burnPrecompile.when(() -> decodeBurn(FUNGIBLE_BURN_INPUT)).thenCallRealMethod();
+        final var decodedInput = decodeBurn(FUNGIBLE_BURN_INPUT);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(33, decodedInput.amount());
+        assertEquals(0, decodedInput.serialNos().size());
+        assertEquals(FUNGIBLE_COMMON, decodedInput.type());
+    }
+
+    @Test
+    void decodeNonFungibleBurnInput() {
+        burnPrecompile.when(() -> decodeBurn(NON_FUNGIBLE_BURN_INPUT)).thenCallRealMethod();
+        final var decodedInput = decodeBurn(NON_FUNGIBLE_BURN_INPUT);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(-1, decodedInput.amount());
+        assertEquals(2, decodedInput.serialNos().size());
+        assertEquals(123, decodedInput.serialNos().get(0));
+        assertEquals(234, decodedInput.serialNos().get(1));
+        assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
     private void givenNonfungibleFrameContext() {
         givenFrameContext();
-        given(decoder.decodeBurn(pretendArguments)).willReturn(nonFungibleBurn);
+        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(nonFungibleBurn);
         given(syntheticTxnFactory.createBurn(nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
     }
 
     private void givenFungibleFrameContext() {
         givenFrameContext();
-        given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurn);
+        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(fungibleBurn);
         given(syntheticTxnFactory.createBurn(fungibleBurn)).willReturn(mockSynthBodyBuilder);
     }
 

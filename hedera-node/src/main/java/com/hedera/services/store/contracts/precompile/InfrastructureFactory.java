@@ -37,7 +37,6 @@ import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
@@ -77,7 +76,6 @@ public class InfrastructureFactory {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EncodingFacade encoder;
-    private final DecodingFacade decoder;
     private final OptionValidator validator;
     private final RecordsHistorian recordsHistorian;
     private final SigImpactHistorian sigImpactHistorian;
@@ -89,7 +87,6 @@ public class InfrastructureFactory {
             final UsageLimits usageLimits,
             final EntityIdSource ids,
             final EncodingFacade encoder,
-            final DecodingFacade decoder,
             final OptionValidator validator,
             final RecordsHistorian recordsHistorian,
             final SigImpactHistorian sigImpactHistorian,
@@ -97,7 +94,6 @@ public class InfrastructureFactory {
             final GlobalDynamicProperties dynamicProperties) {
         this.ids = ids;
         this.encoder = encoder;
-        this.decoder = decoder;
         this.validator = validator;
         this.usageLimits = usageLimits;
         this.recordsHistorian = recordsHistorian;
@@ -201,7 +197,7 @@ public class InfrastructureFactory {
 
     public RedirectViewExecutor newRedirectExecutor(
             final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-        return new RedirectViewExecutor(input, frame, encoder, decoder, gasCalculator);
+        return new RedirectViewExecutor(input, frame, encoder, gasCalculator);
     }
 
     public ViewExecutor newViewExecutor(
@@ -210,7 +206,7 @@ public class InfrastructureFactory {
             final ViewGasCalculator gasCalculator,
             final StateView stateView,
             final WorldLedgers ledgers) {
-        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView, ledgers);
+        return new ViewExecutor(input, frame, encoder, gasCalculator, stateView, ledgers);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(

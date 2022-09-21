@@ -30,7 +30,6 @@ import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.Association;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -52,14 +51,12 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
     protected final PrecompilePricingUtils pricingUtils;
     protected TransactionBody.Builder transactionBody;
     protected Association associateOp;
-    protected final DecodingFacade decoder;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final Provider<FeeCalculator> feeCalculator;
     protected final StateView currentView;
 
     protected AbstractAssociatePrecompile(
             final WorldLedgers ledgers,
-            final DecodingFacade decoder,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
             final SideEffectsTracker sideEffects,
@@ -68,7 +65,6 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
             final PrecompilePricingUtils pricingUtils,
             final Provider<FeeCalculator> feeCalculator,
             final StateView currentView) {
-        this.decoder = decoder;
         this.ledgers = ledgers;
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;

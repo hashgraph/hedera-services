@@ -15,8 +15,7 @@
  */
 package com.hedera.services.files.sysfiles;
 
-import static com.hedera.services.context.properties.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.context.properties.PropertyNames.*;
 
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
@@ -91,8 +90,9 @@ public class ConfigCallbacks {
             hapiThrottling.applyGasConfig();
             handleThrottling.applyGasConfig();
             scheduleThrottling.applyGasConfig();
-            expiryThrottle.rebuildFromResource(
-                    properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE));
+            expiryThrottle.rebuildGiven(
+                    properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE),
+                    properties.getAccessListProperty(EXPIRY_MIN_CYCLE_ENTRY_CAPACITY));
             networkCtx.get().renumberBlocksToMatch(dynamicProps.knownBlockValues());
             updateMinAndMaxStakesWith(
                     properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT),

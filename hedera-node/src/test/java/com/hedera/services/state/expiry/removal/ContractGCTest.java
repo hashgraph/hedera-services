@@ -102,6 +102,28 @@ class ContractGCTest {
     }
 
     @Test
+    void nullsOutRootKeyOnUnexpectedFailure() {
+        given(contracts.getForModify(contractNum)).willReturn(contractSomeKvPairs);
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(false);
+        given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(
+                        removalFacilitation.removeNext(
+                                eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
+                .willReturn(interKey);
+        given(
+                        removalFacilitation.removeNext(
+                                eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
+                .willThrow(NullPointerException.class);
+
+        final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
+
+        assertFalse(done);
+        assertTrue(contractSomeKvPairs.isDeleted());
+        assertEquals(0, contractSomeKvPairs.getNumContractKvPairs());
+    }
+
+    @Test
     void removesAllKvPairsAndBytecodeGivenCapacity() {
         given(contracts.getForModify(contractNum)).willReturn(contractSomeKvPairs);
         given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);

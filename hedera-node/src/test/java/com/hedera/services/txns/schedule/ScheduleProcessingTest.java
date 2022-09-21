@@ -291,7 +291,7 @@ class ScheduleProcessingTest {
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 
-        given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1, null);
+        given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1).willReturn(null);
 
         // when:
         var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);

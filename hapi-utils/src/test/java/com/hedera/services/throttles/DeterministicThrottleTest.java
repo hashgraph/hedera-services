@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 class DeterministicThrottleTest {
     @Test
+    @SuppressWarnings("java:S5961")
     void factoriesWork() {
         final int tps = 1_000;
         final long expectedCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN;
@@ -174,7 +175,25 @@ class DeterministicThrottleTest {
 
         final var current = now.minusNanos(1);
         assertThrows(IllegalArgumentException.class, () -> subject.allow(1, current));
+        assertThrows(IllegalArgumentException.class, () -> subject.leakUntil(current));
         assertDoesNotThrow(() -> subject.allow(1, now));
+    }
+
+    @Test
+    void computesClampedRequiredCapacity() {
+        final int tps = 10;
+        final int burstPeriod = 1;
+
+        final var subject = DeterministicThrottle.withTpsAndBurstPeriod(tps, burstPeriod);
+
+        final var requiredPartialCapacity = subject.clampedCapacityRequiredFor(5);
+        assertEquals(CAPACITY_UNITS_PER_TXN * 5, requiredPartialCapacity);
+
+        final var totalCapacity = subject.delegate().bucket().totalCapacity();
+        final var requiredClampedCapacity = subject.clampedCapacityRequiredFor(500);
+        final var requiredSillyCapacity = subject.clampedCapacityRequiredFor(Integer.MAX_VALUE);
+        assertEquals(totalCapacity, requiredClampedCapacity);
+        assertEquals(totalCapacity, requiredSillyCapacity);
     }
 
     @Test
@@ -204,12 +223,51 @@ class DeterministicThrottleTest {
         final int burstPeriod = 6;
         final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
         final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+        final var capacity = subject.capacity();
 
         subject.allow(1, originalDecision);
         final var state = subject.usageSnapshot();
 
         assertEquals(CAPACITY_UNITS_PER_TXN, state.used());
+        assertEquals(capacity - CAPACITY_UNITS_PER_TXN, subject.capacityFree());
         assertEquals(originalDecision, state.lastDecisionTime());
+    }
+
+    @Test
+    void returnsExpectedInstantaneousState() {
+        final int mtps = 333;
+        final int burstPeriod = 666;
+        final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
+
+        final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+        final var comparisonSubject =
+                DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+
+        subject.leakUntil(originalDecision);
+        assertTrue(subject.allowInstantaneous(1));
+        assertTrue(subject.allowInstantaneous(1));
+        assertTrue(comparisonSubject.allow(2, originalDecision));
+
+        final var state = subject.usageSnapshot();
+        final var comparisonState = comparisonSubject.usageSnapshot();
+        assertEquals(comparisonState, state);
+    }
+
+    @Test
+    void leaksAsExpected() {
+        final int mtps = 333;
+        final int burstPeriod = 6;
+        final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
+        final var nextDecision = originalDecision.plusNanos(1000);
+        final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+
+        subject.allow(1, originalDecision);
+        subject.leakUntil(nextDecision);
+
+        final var state = subject.usageSnapshot();
+
+        assertEquals(999999667000L, state.used());
+        assertEquals(nextDecision, state.lastDecisionTime());
     }
 
     @Test

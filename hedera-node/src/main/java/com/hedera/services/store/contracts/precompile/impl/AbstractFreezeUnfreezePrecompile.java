@@ -25,7 +25,6 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -46,7 +45,6 @@ public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrec
 
     protected AbstractFreezeUnfreezePrecompile(
             WorldLedgers ledgers,
-            DecodingFacade decoder,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
             SideEffectsTracker sideEffects,
@@ -54,13 +52,7 @@ public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrec
             InfrastructureFactory infrastructureFactory,
             PrecompilePricingUtils pricingUtils,
             boolean hasFreezeLogic) {
-        super(
-                ledgers,
-                decoder,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
         this.hasFreezeLogic = hasFreezeLogic;

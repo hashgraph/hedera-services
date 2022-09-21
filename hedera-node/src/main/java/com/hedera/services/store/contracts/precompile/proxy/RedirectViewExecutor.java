@@ -36,8 +36,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.AllowancePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.BalanceOfPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -51,7 +56,6 @@ public class RedirectViewExecutor {
     private final MessageFrame frame;
     private final WorldLedgers ledgers;
     private final EncodingFacade encoder;
-    private final DecodingFacade decoder;
     private final ViewGasCalculator gasCalculator;
     private final HederaStackedWorldStateUpdater updater;
 
@@ -59,12 +63,10 @@ public class RedirectViewExecutor {
             final Bytes input,
             final MessageFrame frame,
             final EncodingFacade encoder,
-            final DecodingFacade decoder,
             final ViewGasCalculator gasCalculator) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;
-        this.decoder = decoder;
         this.gasCalculator = gasCalculator;
 
         this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
@@ -101,19 +103,21 @@ public class RedirectViewExecutor {
             return encoder.encodeSymbol(symbol);
         } else if (selector == ABI_ID_ERC_ALLOWANCE) {
             final var wrapper =
-                    decoder.decodeTokenAllowance(input.slice(24), tokenId, updater::unaliased);
+                    AllowancePrecompile.decodeTokenAllowance(
+                            input.slice(24), tokenId, updater::unaliased);
             final var allowance =
                     ledgers.staticAllowanceOf(wrapper.owner(), wrapper.spender(), tokenId);
             return encoder.encodeAllowance(allowance);
         } else if (selector == ABI_ID_ERC_GET_APPROVED) {
-            final var wrapper = decoder.decodeGetApproved(input.slice(24), tokenId);
+            final var wrapper = GetApprovedPrecompile.decodeGetApproved(input.slice(24), tokenId);
             final var spender =
                     ledgers.staticApprovedSpenderOf(NftId.fromGrpc(tokenId, wrapper.serialNo()));
             final var priorityAddress = ledgers.canonicalAddress(spender);
             return encoder.encodeGetApproved(priorityAddress);
         } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
             final var wrapper =
-                    decoder.decodeIsApprovedForAll(input.slice(24), tokenId, updater::unaliased);
+                    IsApprovedForAllPrecompile.decodeIsApprovedForAll(
+                            input.slice(24), tokenId, updater::unaliased);
             final var isOperator =
                     ledgers.staticIsOperator(wrapper.owner(), wrapper.operator(), tokenId);
             return encoder.encodeIsApprovedForAll(isOperator);
@@ -125,19 +129,20 @@ public class RedirectViewExecutor {
             final var totalSupply = ledgers.totalSupplyOf(tokenId);
             return encoder.encodeTotalSupply(totalSupply);
         } else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN) {
-            final var wrapper = decoder.decodeBalanceOf(input.slice(24), updater::unaliased);
+            final var wrapper =
+                    BalanceOfPrecompile.decodeBalanceOf(input.slice(24), updater::unaliased);
             final var balance = ledgers.balanceOf(wrapper.accountId(), tokenId);
             return encoder.encodeBalance(balance);
         } else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
             validateFalse(isFungibleToken, INVALID_TOKEN_ID);
-            final var wrapper = decoder.decodeOwnerOf(input.slice(24));
+            final var wrapper = OwnerOfPrecompile.decodeOwnerOf(input.slice(24));
             final var nftId = NftId.fromGrpc(tokenId, wrapper.serialNo());
             final var owner = ledgers.ownerOf(nftId);
             final var priorityAddress = ledgers.canonicalAddress(owner);
             return encoder.encodeOwner(priorityAddress);
         } else if (selector == ABI_ID_ERC_TOKEN_URI_NFT) {
             validateFalse(isFungibleToken, INVALID_TOKEN_ID);
-            final var wrapper = decoder.decodeTokenUriNFT(input.slice(24));
+            final var wrapper = TokenURIPrecompile.decodeTokenUriNFT(input.slice(24));
             final var nftId = NftId.fromGrpc(tokenId, wrapper.serialNo());
             final var metadata = ledgers.metadataOf(nftId);
             return encoder.encodeTokenUri(metadata);

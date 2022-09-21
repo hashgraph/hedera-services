@@ -15,14 +15,13 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
+import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
+import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -34,14 +33,17 @@ public class RemovalHelper implements RemovalWork {
     private final ContractGC contractGC;
     private final AccountGC accountGC;
     private final ExpiryRecordsHelper recordsHelper;
+    private final ExpiryStats expiryStats;
 
     @Inject
     public RemovalHelper(
+            final ExpiryStats expiryStats,
             final ClassificationWork classifier,
             final GlobalDynamicProperties properties,
             final ContractGC contractGC,
             final AccountGC accountGC,
             final ExpiryRecordsHelper recordsHelper) {
+        this.expiryStats = expiryStats;
         this.classifier = classifier;
         this.properties = properties;
         this.contractGC = contractGC;
@@ -50,7 +52,7 @@ public class RemovalHelper implements RemovalWork {
     }
 
     @Override
-    public EntityProcessResult tryToRemoveAccount(final EntityNum account) {
+    public ExpiryProcessResult tryToRemoveAccount(final EntityNum account) {
         if (!properties.shouldAutoRenewAccounts()) {
             return NOTHING_TO_DO;
         }
@@ -58,23 +60,30 @@ public class RemovalHelper implements RemovalWork {
     }
 
     @Override
-    public EntityProcessResult tryToRemoveContract(final EntityNum contract) {
+    public ExpiryProcessResult tryToRemoveContract(final EntityNum contract) {
         if (!properties.shouldAutoRenewContracts()) {
             return NOTHING_TO_DO;
         }
         return remove(contract, true);
     }
 
-    private EntityProcessResult remove(final EntityNum num, final boolean isContract) {
+    private ExpiryProcessResult remove(final EntityNum num, final boolean isContract) {
         final var lastClassified = classifier.getLastClassified();
         if (isContract && !contractGC.expireBestEffort(num, lastClassified)) {
-            return STILL_MORE_TO_DO;
+            return NO_CAPACITY_LEFT;
         }
         final var gcOutcome = accountGC.expireBestEffort(num, lastClassified);
         if (gcOutcome.needsExternalizing()) {
             final var autoRenewId = isContract ? lastClassified.getAutoRenewAccount() : null;
             recordsHelper.streamCryptoRemovalStep(isContract, num, autoRenewId, gcOutcome);
         }
-        return gcOutcome.finished() ? DONE : STILL_MORE_TO_DO;
+        if (gcOutcome.finished()) {
+            if (isContract) {
+                expiryStats.countRemovedContract();
+            }
+            return DONE;
+        } else {
+            return NO_CAPACITY_LEFT;
+        }
     }
 }

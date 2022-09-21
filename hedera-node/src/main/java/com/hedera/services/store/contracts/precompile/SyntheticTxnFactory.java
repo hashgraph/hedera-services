@@ -142,18 +142,16 @@ public class SyntheticTxnFactory {
         final var fungibleReturns = cryptoGcOutcome.fungibleTreasuryReturns();
         for (int i = 0, n = fungibleReturns.numReturns(); i < n; i++) {
             final var unitReturn = fungibleReturns.transfers().get(i);
-            opBuilder.addTokenTransfers(
+            final var listBuilder =
                     TokenTransferList.newBuilder()
-                            .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId())
-                            .addTransfers(
-                                    aaWith(
-                                            unitReturn.getAccountNums()[0],
-                                            unitReturn.getHbars()[0]))
-                            .addTransfers(
-                                    aaWith(
-                                            unitReturn.getAccountNums()[1],
-                                            unitReturn.getHbars()[1]))
-                            .build());
+                            .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId());
+            // This list can have just one entry if the token treasury was missing or deleted,
+            // in which case we just externalize the burning of the expired account's balance
+            for (int j = 0, m = unitReturn.getHbars().length; j < m; j++) {
+                listBuilder.addTransfers(
+                        aaWith(unitReturn.getAccountNums()[j], unitReturn.getHbars()[j]));
+            }
+            opBuilder.addTokenTransfers(listBuilder.build());
         }
 
         final var nonFungibleReturns = cryptoGcOutcome.nonFungibleTreasuryReturns();
@@ -314,14 +312,14 @@ public class SyntheticTxnFactory {
                     TokenAllowance.newBuilder()
                             .setTokenId(approveWrapper.tokenId())
                             .setSpender(approveWrapper.spender())
-                            .setAmount(approveWrapper.amount().longValue())
+                            .setAmount(approveWrapper.amount().longValueExact())
                             .build());
         } else {
             final var op =
                     NftAllowance.newBuilder()
                             .setTokenId(approveWrapper.tokenId())
                             .setSpender(approveWrapper.spender())
-                            .addSerialNumbers(approveWrapper.serialNumber().longValue());
+                            .addSerialNumbers(approveWrapper.serialNumber().longValueExact());
             if (ownerId != null) {
                 op.setOwner(ownerId.toGrpcAccountId());
                 if (!ownerId.equals(operatorId)) {
@@ -342,7 +340,10 @@ public class SyntheticTxnFactory {
                                         .setOwner(owner.toGrpcAccountId())
                                         .setTokenId(approveWrapper.tokenId())
                                         .addAllSerialNumbers(
-                                                List.of(approveWrapper.serialNumber().longValue()))
+                                                List.of(
+                                                        approveWrapper
+                                                                .serialNumber()
+                                                                .longValueExact()))
                                         .build()))
                 .build();
         return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
@@ -429,7 +430,7 @@ public class SyntheticTxnFactory {
                         ? TokenSupplyType.FINITE
                         : TokenSupplyType.INFINITE);
         txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
-        txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValue());
+        txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValueExact());
         if (tokenCreateWrapper.getTreasury() != null)
             txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
         txnBodyBuilder.setFreezeDefault(tokenCreateWrapper.isFreezeDefault());

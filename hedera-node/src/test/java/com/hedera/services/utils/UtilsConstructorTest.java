@@ -54,10 +54,7 @@ import com.hedera.services.state.migration.*;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.state.virtual.KeyPackingUtils;
-import com.hedera.services.stats.MiscRunningAvgs;
-import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.stats.ServicesStatsConfig;
-import com.hedera.services.stats.StatsModule;
+import com.hedera.services.stats.*;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
@@ -123,6 +120,8 @@ class UtilsConstructorTest {
                             ReleaseTwentySixMigration.class,
                             StateChildIndices.class,
                             StateVersions.class,
+                            ExpiryStats.Names.class,
+                            ExpiryStats.Descriptions.class,
                             MiscRunningAvgs.Names.class,
                             MiscRunningAvgs.Descriptions.class,
                             MiscSpeedometers.Names.class,

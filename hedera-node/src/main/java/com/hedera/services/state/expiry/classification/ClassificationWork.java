@@ -57,7 +57,7 @@ public class ClassificationWork {
     }
 
     public ClassificationResult classify(final EntityNum candidateNum, final Instant now) {
-        if (!expiryThrottle.allow(CLASSIFICATION_WORK, now)) {
+        if (!expiryThrottle.allow(CLASSIFICATION_WORK)) {
             return COME_BACK_LATER;
         }
 

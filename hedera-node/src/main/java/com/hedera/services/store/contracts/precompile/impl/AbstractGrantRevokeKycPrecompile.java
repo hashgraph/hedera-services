@@ -26,7 +26,6 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -45,20 +44,13 @@ public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrec
 
     protected AbstractGrantRevokeKycPrecompile(
             WorldLedgers ledgers,
-            DecodingFacade decoder,
             ContractAliases aliases,
             EvmSigsVerifier sigsVerifier,
             SideEffectsTracker sideEffects,
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
             PrecompilePricingUtils pricingUtils) {
-        super(
-                ledgers,
-                decoder,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry;
+package com.hedera.services.api.implementation;
 
-public enum EntityProcessResult {
-    NOTHING_TO_DO,
-    STILL_MORE_TO_DO,
-    DONE
-}
+import com.hedera.services.api.PlaceholderApi;
+
+/**
+ * Placeholder <b>implementation</b> for to-be-determined public APIs. We'll remove this class when
+ * we remove the {@link PlaceholderApi} interface.
+ */
+@SuppressWarnings("unused")
+public class PlaceholderImplementation implements PlaceholderApi {}

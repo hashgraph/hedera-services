@@ -40,7 +40,6 @@ package com.hedera.services.contracts.operation;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.utils.BytesComparator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -185,8 +184,7 @@ public final class HederaOperationUtil {
             final var addressSlots =
                     ((HederaWorldState.Updater) updater)
                             .getStateChanges()
-                            .computeIfAbsent(
-                                    address, addr -> new TreeMap<>(BytesComparator.INSTANCE));
+                            .computeIfAbsent(address, addr -> new TreeMap<>());
             addressSlots.computeIfAbsent(key, slot -> new MutablePair<>(storageValue, null));
         }
     }
