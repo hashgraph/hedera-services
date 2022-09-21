@@ -121,7 +121,8 @@ public class ServicesState extends PartialNaryMerkleInternal
         bootstrapProperties = null;
     }
 
-    public ServicesState(final BootstrapProperties bootstrapProperties) {
+    @VisibleForTesting
+    ServicesState(final BootstrapProperties bootstrapProperties) {
         this.bootstrapProperties = bootstrapProperties;
     }
 
