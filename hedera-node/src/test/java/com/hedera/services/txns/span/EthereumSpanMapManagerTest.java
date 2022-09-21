@@ -17,17 +17,8 @@ package com.hedera.services.txns.span;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -53,14 +44,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.HashMap;
@@ -178,6 +162,20 @@ class EthereumSpanMapManagerTest {
         expansion = spanMapAccessor.getEthTxExpansion(accessor);
 
         assertExpansionHasExpectedLinkRefsAnd(CONTRACT_FILE_EMPTY);
+    }
+
+    @Test
+    void expansionIsFailureIfCallDataIsSetAndFileIsNotDecodable() {
+        givenExpandableAccessor(bodyWithCallData);
+        given(blobs.get(metadataKey)).willReturn(asBlob(undeletedMeta));
+        given(blobs.get(dataKey))
+                .willReturn(
+                        new VirtualBlobValue(new byte[] {(byte) 0xff, (byte) 0xff, (byte) 0xff}));
+
+        subject.expandEthereumSpan(accessor);
+        expansion = spanMapAccessor.getEthTxExpansion(accessor);
+
+        assertExpansionHasExpectedLinkRefsAnd(INVALID_FILE_ID);
     }
 
     @Test
@@ -342,6 +340,7 @@ class EthereumSpanMapManagerTest {
     }
 
     private void givenRationalizableAccessor(final EthereumTransactionBody body) {
+        given(accessor.opEthTxData()).willReturn(ethTxData);
         givenUsableAccessor(body);
         given(workingState.storage()).willReturn(blobs);
     }

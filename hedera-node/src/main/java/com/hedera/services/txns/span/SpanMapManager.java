@@ -18,11 +18,7 @@ package com.hedera.services.txns.span;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
@@ -46,16 +42,13 @@ import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.virtualmap.VirtualMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
+import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
@@ -182,7 +175,7 @@ public class SpanMapManager {
         final var expansion = spanMapAccessor.getEthTxExpansion(accessor);
         if (expansion == null || areChanged(Objects.requireNonNull(expansion.linkedRefs()))) {
             final Map<String, Object> spanMap = new HashMap<>();
-            spanMapAccessor.setEthTxDataMeta(spanMap, spanMapAccessor.getEthTxDataMeta(accessor));
+            spanMapAccessor.setEthTxDataMeta(spanMap, accessor.opEthTxData());
             expandEthContext(accessor, workingState, spanMap, null);
             accessor.setRationalizedSpanMap(spanMap);
         }
@@ -296,7 +289,12 @@ public class SpanMapManager {
             } else {
                 final var hexedCallData =
                         Objects.requireNonNull(curBlobs.get(dataKeyFor(callDataId))).getData();
-                final var callData = Hex.decode(hexedCallData);
+                final byte[] callData;
+                try {
+                    callData = Hex.decode(hexedCallData);
+                } catch (final DecoderException ignore) {
+                    return Pair.of(INVALID_FILE_ID, ethTxData);
+                }
                 if (callData.length == 0) {
                     return Pair.of(CONTRACT_FILE_EMPTY, ethTxData);
                 } else {

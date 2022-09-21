@@ -24,12 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
@@ -42,17 +37,8 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.util.HashMap;
 import java.util.List;
@@ -76,6 +62,14 @@ class PlatformTxnAccessorTest {
         final var newMap = Map.of("1", new Object());
         subject.setRationalizedSpanMap(newMap);
         verify(delegate).setRationalizedSpanMap(newMap);
+    }
+
+    @Test
+    void delegatesGettingEthTxData() {
+        final var txn = TxnUtils.buildTransactionFrom(TxnUtils.ethereumTransactionOp());
+        final var delegate = SignedTxnAccessor.uncheckedFrom(txn);
+        final var subject = new PlatformTxnAccessor(delegate, new SwirldTransaction());
+        assertEquals(delegate.opEthTxData(), subject.opEthTxData());
     }
 
     @Test
@@ -301,6 +295,7 @@ class PlatformTxnAccessorTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void delegatesToSignedTxnAccessor() throws InvalidProtocolBufferException {
         AccountID payer = asAccount("0.0.2");
         TransactionBody someTxn =
