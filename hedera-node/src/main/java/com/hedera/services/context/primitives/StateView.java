@@ -338,7 +338,8 @@ public class StateView {
     public Optional<TokenNftInfo> infoForNft(final NftID target) {
         final var currentNfts = uniqueTokens();
         final var tokenId = EntityNum.fromTokenId(target.getTokenID());
-        final var targetKey = NftId.fromGrpc(target);
+        final var targetKey =
+                NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
         if (!currentNfts.containsKey(targetKey)) {
             return Optional.empty();
         }
