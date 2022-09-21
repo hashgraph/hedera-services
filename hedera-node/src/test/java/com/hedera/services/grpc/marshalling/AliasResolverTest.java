@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -46,12 +47,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AliasResolverTest {
     @Mock private AliasManager aliasManager;
+    @Mock private GlobalDynamicProperties properties;
 
     private AliasResolver subject;
 
     @BeforeEach
     void setUp() {
-        subject = new AliasResolver();
+        subject = new AliasResolver(properties);
     }
 
     @Test
@@ -110,6 +112,7 @@ class AliasResolverTest {
         given(aliasManager.lookupIdBy(someAlias)).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(otherAlias)).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(anotherValidAlias)).willReturn(MISSING_NUM);
+        given(properties.areHTSAutoCreationsEnabled()).willReturn(true);
 
         final var resolvedOp = subject.resolve(op, aliasManager);
 

@@ -27,6 +27,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -55,12 +56,18 @@ class FeeAssessorTest {
     @Mock private RoyaltyFeeAssessor royaltyFeeAssessor;
     @Mock private CustomSchedulesManager customSchedulesManager;
     @Mock private BalanceChangeManager balanceChangeManager;
+    @Mock private GlobalDynamicProperties globalDynamicProperties;
 
     private FeeAssessor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FeeAssessor(fixedFeeAssessor, royaltyFeeAssessor, fractionalFeeAssessor);
+        subject =
+                new FeeAssessor(
+                        fixedFeeAssessor,
+                        royaltyFeeAssessor,
+                        fractionalFeeAssessor,
+                        globalDynamicProperties);
     }
 
     @Test
@@ -238,7 +245,11 @@ class FeeAssessorTest {
         givenFees(uniqueTokenId.asEntityId(), fees);
         given(
                         royaltyFeeAssessor.assessAllRoyalties(
-                                royaltyTrigger, fees, balanceChangeManager, accumulator))
+                                royaltyTrigger,
+                                fees,
+                                balanceChangeManager,
+                                accumulator,
+                                globalDynamicProperties))
                 .willReturn(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
@@ -252,7 +263,12 @@ class FeeAssessorTest {
 
         // then:
         verify(royaltyFeeAssessor)
-                .assessAllRoyalties(royaltyTrigger, fees, balanceChangeManager, accumulator);
+                .assessAllRoyalties(
+                        royaltyTrigger,
+                        fees,
+                        balanceChangeManager,
+                        accumulator,
+                        globalDynamicProperties);
         assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
     }
 
@@ -263,7 +279,11 @@ class FeeAssessorTest {
         givenFees(uniqueTokenId.asEntityId(), fees);
         given(
                         royaltyFeeAssessor.assessAllRoyalties(
-                                royaltyTrigger, fees, balanceChangeManager, accumulator))
+                                royaltyTrigger,
+                                fees,
+                                balanceChangeManager,
+                                accumulator,
+                                globalDynamicProperties))
                 .willReturn(OK);
 
         // when:
@@ -277,7 +297,12 @@ class FeeAssessorTest {
 
         // then:
         verify(royaltyFeeAssessor)
-                .assessAllRoyalties(royaltyTrigger, fees, balanceChangeManager, accumulator);
+                .assessAllRoyalties(
+                        royaltyTrigger,
+                        fees,
+                        balanceChangeManager,
+                        accumulator,
+                        globalDynamicProperties);
         assertEquals(OK, result);
     }
 

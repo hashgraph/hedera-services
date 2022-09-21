@@ -146,6 +146,8 @@ public class GlobalDynamicProperties {
     private ContractStoragePriceTiers storagePriceTiers;
     private boolean compressRecordFilesOnCreation;
 
+    private boolean enableHTSAutoCreations;
+
     @Inject
     public GlobalDynamicProperties(
             HederaNumbers hederaNums, @CompositeProps PropertySource properties) {
@@ -295,6 +297,7 @@ public class GlobalDynamicProperties {
         itemizeStorageFees = properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES);
         compressRecordFilesOnCreation =
                 properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
+        enableHTSAutoCreations = properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED);
     }
 
     public int maxTokensPerAccount() {
@@ -707,5 +710,9 @@ public class GlobalDynamicProperties {
 
     public boolean shouldCompressRecordFilesOnCreation() {
         return compressRecordFilesOnCreation;
+    }
+
+    public boolean areHTSAutoCreationsEnabled() {
+        return enableHTSAutoCreations;
     }
 }

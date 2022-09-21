@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -44,7 +45,8 @@ public class RoyaltyFeeAssessor {
             final BalanceChange change,
             final List<FcCustomFee> feesWithRoyalties,
             final BalanceChangeManager changeManager,
-            final List<FcAssessedCustomFee> accumulator) {
+            final List<FcAssessedCustomFee> accumulator,
+            final GlobalDynamicProperties dynamicProperties) {
         if (!change.isForNft()) {
             /* This change was denominated in a non-fungible token type---but appeared
              * in the fungible transfer list. Fail now with the appropriate status. */
@@ -74,7 +76,8 @@ public class RoyaltyFeeAssessor {
                     // A NFT transfer with royalty fees to an unknown alias is not possible, since
                     // the auto-created
                     // account will not have any hbar to pay the fallback fee
-                    if (change.hasNonEmptyCounterPartyAlias()) {
+                    if (dynamicProperties.areHTSAutoCreationsEnabled()
+                            && change.hasNonEmptyCounterPartyAlias()) {
                         return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
                     }
                     final var receiver = Id.fromGrpcAccount(change.counterPartyAccountId());

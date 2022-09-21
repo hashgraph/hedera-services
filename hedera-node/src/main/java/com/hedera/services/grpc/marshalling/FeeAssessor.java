@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -39,15 +40,18 @@ public class FeeAssessor {
     private final FixedFeeAssessor fixedFeeAssessor;
     private final RoyaltyFeeAssessor royaltyFeeAssessor;
     private final FractionalFeeAssessor fractionalFeeAssessor;
+    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public FeeAssessor(
             FixedFeeAssessor fixedFeeAssessor,
             RoyaltyFeeAssessor royaltyFeeAssessor,
-            FractionalFeeAssessor fractionalFeeAssessor) {
+            FractionalFeeAssessor fractionalFeeAssessor,
+            GlobalDynamicProperties dynamicProperties) {
         this.fixedFeeAssessor = fixedFeeAssessor;
         this.royaltyFeeAssessor = royaltyFeeAssessor;
         this.fractionalFeeAssessor = fractionalFeeAssessor;
+        this.dynamicProperties = dynamicProperties;
     }
 
     public ResponseCodeEnum assess(
@@ -89,7 +93,8 @@ public class FeeAssessor {
             }
         } else if (fixedFeeResult == ROYALTY_FEE_ASSESSMENT_PENDING) {
             final var royaltyValidity =
-                    royaltyFeeAssessor.assessAllRoyalties(change, fees, changeManager, accumulator);
+                    royaltyFeeAssessor.assessAllRoyalties(
+                            change, fees, changeManager, accumulator, dynamicProperties);
             if (royaltyValidity != OK) {
                 return royaltyValidity;
             }

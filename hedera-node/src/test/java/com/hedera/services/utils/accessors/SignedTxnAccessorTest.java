@@ -31,7 +31,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
-import com.google.protobuf.*;
+import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.StringValue;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
@@ -104,6 +109,8 @@ class SignedTxnAccessorTest {
                                     .setPubKeyPrefix(ByteString.copyFromUtf8("s"))
                                     .setEd25519(ByteString.copyFromUtf8("econd")))
                     .build();
+
+    private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
 
     @Test
     @SuppressWarnings("uncheckeed")
@@ -200,7 +207,7 @@ class SignedTxnAccessorTest {
         final var body = CommonUtils.extractTransactionBody(xferNoAliases);
 
         var accessor = SignedTxnAccessor.uncheckedFrom(xferNoAliases);
-        accessor.countAutoCreationsWith(aliasManager);
+        accessor.countAutoCreationsWith(aliasManager, properties);
         final var txnUsageMeta = accessor.baseUsageMeta();
 
         assertEquals(xferNoAliases, accessor.getSignedTxnWrapper());
@@ -230,11 +237,11 @@ class SignedTxnAccessorTest {
         assertEquals(memoUtf8Bytes.length, txnUsageMeta.memoUtf8Bytes());
 
         accessor = SignedTxnAccessor.uncheckedFrom(xferWithAutoCreation);
-        accessor.countAutoCreationsWith(aliasManager);
+        accessor.countAutoCreationsWith(aliasManager, properties);
         assertEquals(1, accessor.getNumAutoCreations());
 
         accessor = SignedTxnAccessor.uncheckedFrom(xferWithAliasesNoAutoCreation);
-        accessor.countAutoCreationsWith(aliasManager);
+        accessor.countAutoCreationsWith(aliasManager, properties);
         assertEquals(0, accessor.getNumAutoCreations());
     }
 

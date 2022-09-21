@@ -29,6 +29,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -161,8 +162,9 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     @Override
-    public void countAutoCreationsWith(final AliasManager aliasManager) {
-        final var resolver = new AliasResolver();
+    public void countAutoCreationsWith(
+            final AliasManager aliasManager, final GlobalDynamicProperties properties) {
+        final var resolver = new AliasResolver(properties);
         resolver.resolve(txn.getCryptoTransfer(), aliasManager);
         numAutoCreations = resolver.perceivedAutoCreations();
     }

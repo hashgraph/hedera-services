@@ -23,6 +23,7 @@ import static com.hedera.services.utils.MiscUtils.isSerializedProtoKey;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import javax.inject.Inject;
 
 public class AliasResolver {
     private int perceivedMissing = 0;
@@ -49,11 +51,18 @@ public class AliasResolver {
     list ---- */
     private Map<ByteString, EntityNum> tokenTransferResolutions = new HashMap<>();
 
+    private final GlobalDynamicProperties properties;
+
     private enum Result {
         KNOWN_ALIAS,
         UNKNOWN_ALIAS,
         REPEATED_UNKNOWN_ALIAS,
         UNKNOWN_EVM_ADDRESS
+    }
+
+    @Inject
+    public AliasResolver(final GlobalDynamicProperties properties) {
+        this.properties = properties;
     }
 
     public CryptoTransferTransactionBody resolve(
@@ -121,9 +130,13 @@ public class AliasResolver {
                         resolveInternalFungible(
                                 aliasManager, adjust, resolvedTokenAdjust::addTransfers, true);
 
-                // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
-                // result
-                perceiveResult(result, adjust);
+                if (properties.areHTSAutoCreationsEnabled()) {
+                    // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
+                    // result
+                    perceiveResult(result, adjust);
+                } else if (result != Result.KNOWN_ALIAS) {
+                    perceivedMissing++;
+                }
             }
 
             for (final var change : tokenAdjust.getNftTransfersList()) {
@@ -144,9 +157,13 @@ public class AliasResolver {
                                 change.getReceiverAccountID(),
                                 resolvedChange::setReceiverAccountID);
 
-                // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
-                // result
-                perceiveNftReceiverResult(receiverResult, change);
+                if (properties.areHTSAutoCreationsEnabled()) {
+                    // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
+                    // result
+                    perceiveNftReceiverResult(receiverResult, change);
+                } else if (receiverResult != Result.KNOWN_ALIAS) {
+                    perceivedMissing++;
+                }
 
                 resolvedTokenAdjust.addNftTransfers(resolvedChange.build());
             }

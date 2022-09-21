@@ -99,7 +99,7 @@ public interface GrpcModule {
                 feeAssessor,
                 aliasManager,
                 customFeeSchedules,
-                AliasResolver::new,
+                () -> new AliasResolver(dynamicProperties),
                 dynamicProperties,
                 transferSemanticChecks,
                 AliasResolver::usesAliases,
