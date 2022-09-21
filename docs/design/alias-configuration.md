@@ -44,7 +44,6 @@ This document explains how additional Crypto transaction flows may be used to cr
 ### Crypto Create Transaction Alias Logic
 
 - Extract alias from CryptoCreateTransactionBody and validate it in validate() method, checking if the alias matches the key or can be derived from the key (for EVM address alias)
-- For the ED25519 key case when creating the account we should set its alias to the value of the key
 - For the ECDSA key case when creating the account we should set its alias to the value of the key as well. We should also add entries to the alias->accountId map for the ECDSA key and the EVM address derived from it
 - For the ETH address case we can't set the key for the account (as it will be missing), that would be done as the final part of the lazy account create
 
@@ -81,7 +80,6 @@ In this flow
   - If the recovered address match with the address stored in the alias we have to update the key property of the account and store it in the ledger
   - With the above step the process of lazy creation will be finished
 - Crypto Transfer Transaction to ECDSA key alias should create an account with its alias field set to the ECDSA key, populate the alias map with the EVM address calculated based on the ECDSA key, and the key field set with the value of the ECDSA key (currently implemented) and another Crypto Transfer Transaction to the EVM address corresponding to the ECDSA key should transfer to the account created in the previous transaction
-- Crypto Create Transaction with ED25519 key alias should create an account with its alias and key fields set to the ED25519 key. Attempting another Crypto Create Transaction with the same ED25519 key alias should fail
 - Crypto Create Transaction with ECDSA key alias:
     
 **Always validate the 0.0.ECDSA alias format is missing from the alias map as well as the calculated evm_address alias format**
