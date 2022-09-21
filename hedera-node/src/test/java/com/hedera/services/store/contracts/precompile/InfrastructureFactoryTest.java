@@ -40,7 +40,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
@@ -83,7 +82,6 @@ class InfrastructureFactoryTest {
     @Mock private UsageLimits usageLimits;
     @Mock private EntityIdSource ids;
     @Mock private EncodingFacade encoder;
-    @Mock private DecodingFacade decoder;
     @Mock private OptionValidator validator;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private SigImpactHistorian sigImpactHistorian;
@@ -115,7 +113,6 @@ class InfrastructureFactoryTest {
                         usageLimits,
                         ids,
                         encoder,
-                        decoder,
                         validator,
                         recordsHistorian,
                         sigImpactHistorian,

@@ -18,7 +18,6 @@ package com.hedera.services.store.contracts.precompile.impl;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -33,7 +32,6 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final WorldLedgers ledgers;
     protected final EncodingFacade encoder;
-    protected final DecodingFacade decoder;
     protected final PrecompilePricingUtils pricingUtils;
 
     protected AbstractReadOnlyPrecompile(
@@ -41,13 +39,11 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-            final DecodingFacade decoder,
             final PrecompilePricingUtils pricingUtils) {
         this.tokenId = tokenId;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.ledgers = ledgers;
         this.encoder = encoder;
-        this.decoder = decoder;
         this.pricingUtils = pricingUtils;
     }
 

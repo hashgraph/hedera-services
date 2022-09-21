@@ -312,14 +312,14 @@ public class SyntheticTxnFactory {
                     TokenAllowance.newBuilder()
                             .setTokenId(approveWrapper.tokenId())
                             .setSpender(approveWrapper.spender())
-                            .setAmount(approveWrapper.amount().longValue())
+                            .setAmount(approveWrapper.amount().longValueExact())
                             .build());
         } else {
             final var op =
                     NftAllowance.newBuilder()
                             .setTokenId(approveWrapper.tokenId())
                             .setSpender(approveWrapper.spender())
-                            .addSerialNumbers(approveWrapper.serialNumber().longValue());
+                            .addSerialNumbers(approveWrapper.serialNumber().longValueExact());
             if (ownerId != null) {
                 op.setOwner(ownerId.toGrpcAccountId());
                 if (!ownerId.equals(operatorId)) {
@@ -340,7 +340,10 @@ public class SyntheticTxnFactory {
                                         .setOwner(owner.toGrpcAccountId())
                                         .setTokenId(approveWrapper.tokenId())
                                         .addAllSerialNumbers(
-                                                List.of(approveWrapper.serialNumber().longValue()))
+                                                List.of(
+                                                        approveWrapper
+                                                                .serialNumber()
+                                                                .longValueExact()))
                                         .build()))
                 .build();
         return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
@@ -427,7 +430,7 @@ public class SyntheticTxnFactory {
                         ? TokenSupplyType.FINITE
                         : TokenSupplyType.INFINITE);
         txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
-        txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValue());
+        txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValueExact());
         if (tokenCreateWrapper.getTreasury() != null)
             txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
         txnBodyBuilder.setFreezeDefault(tokenCreateWrapper.isFreezeDefault());

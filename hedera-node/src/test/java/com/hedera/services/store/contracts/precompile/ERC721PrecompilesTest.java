@@ -111,12 +111,19 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.services.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.BalanceOfPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
@@ -173,7 +180,6 @@ class ERC721PrecompilesTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
@@ -220,6 +226,14 @@ class ERC721PrecompilesTest {
 
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
+    private MockedStatic<IsApprovedForAllPrecompile> isApprovedForAllPrecompile;
+    private MockedStatic<ApprovePrecompile> approvePrecompile;
+    private MockedStatic<SetApprovalForAllPrecompile> setApprovalForAllPrecompile;
+    private MockedStatic<GetApprovedPrecompile> getApprovedPrecompile;
+    private MockedStatic<BalanceOfPrecompile> balanceOfPrecompile;
+    private MockedStatic<OwnerOfPrecompile> ownerOfPrecompile;
+    private MockedStatic<ERCTransferPrecompile> ercTransferPrecompile;
+    private MockedStatic<TokenURIPrecompile> tokenURIPrecompile;
 
     @BeforeEach
     void setUp() {
@@ -237,7 +251,6 @@ class ERC721PrecompilesTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -274,11 +287,27 @@ class ERC721PrecompilesTest {
                 .thenReturn(RIPEMD160.toArray());
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        isApprovedForAllPrecompile = Mockito.mockStatic(IsApprovedForAllPrecompile.class);
+        approvePrecompile = Mockito.mockStatic(ApprovePrecompile.class);
+        setApprovalForAllPrecompile = Mockito.mockStatic(SetApprovalForAllPrecompile.class);
+        getApprovedPrecompile = Mockito.mockStatic(GetApprovedPrecompile.class);
+        balanceOfPrecompile = Mockito.mockStatic(BalanceOfPrecompile.class);
+        ownerOfPrecompile = Mockito.mockStatic(OwnerOfPrecompile.class);
+        ercTransferPrecompile = Mockito.mockStatic(ERCTransferPrecompile.class);
+        tokenURIPrecompile = Mockito.mockStatic(TokenURIPrecompile.class);
     }
 
     @AfterEach
     void closeMocks() {
         entityIdUtils.close();
+        isApprovedForAllPrecompile.close();
+        approvePrecompile.close();
+        setApprovalForAllPrecompile.close();
+        getApprovedPrecompile.close();
+        balanceOfPrecompile.close();
+        ownerOfPrecompile.close();
+        ercTransferPrecompile.close();
+        tokenURIPrecompile.close();
     }
 
     @Test
@@ -381,8 +410,12 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         given(encoder.encodeIsApprovedForAll(true)).willReturn(successResult);
-        given(decoder.decodeIsApprovedForAll(eq(nestedPretendArguments), eq(token), any()))
-                .willReturn(IS_APPROVE_FOR_ALL_WRAPPER);
+        isApprovedForAllPrecompile
+                .when(
+                        () ->
+                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
+                                        eq(nestedPretendArguments), eq(token), any()))
+                .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(accounts.get(any(), any())).willReturn(allowances);
 
@@ -431,8 +464,12 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         given(encoder.encodeIsApprovedForAll(SUCCESS.getNumber(), true)).willReturn(successResult);
-        given(decoder.decodeIsApprovedForAll(eq(pretendArguments), eq(null), any()))
-                .willReturn(IS_APPROVE_FOR_ALL_WRAPPER);
+        isApprovedForAllPrecompile
+                .when(
+                        () ->
+                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
+                                        eq(pretendArguments), eq(null), any()))
+                .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(accounts.get(any(), any())).willReturn(allowances);
 
@@ -473,8 +510,12 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         given(encoder.encodeIsApprovedForAll(false)).willReturn(successResult);
-        given(decoder.decodeIsApprovedForAll(eq(nestedPretendArguments), eq(token), any()))
-                .willReturn(IS_APPROVE_FOR_ALL_WRAPPER);
+        isApprovedForAllPrecompile
+                .when(
+                        () ->
+                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
+                                        eq(nestedPretendArguments), eq(token), any()))
+                .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
         // when:
@@ -546,10 +587,16 @@ class ERC721PrecompilesTest {
                                 stateView))
                 .willReturn(OK);
 
-        given(
-                        decoder.decodeTokenApprove(
-                                eq(nestedPretendArguments), eq(token), eq(false), any(), any()))
-                .willReturn(APPROVE_WRAPPER);
+        approvePrecompile
+                .when(
+                        () ->
+                                ApprovePrecompile.decodeTokenApprove(
+                                        eq(nestedPretendArguments),
+                                        eq(token),
+                                        eq(false),
+                                        any(),
+                                        any()))
+                .thenReturn(APPROVE_WRAPPER);
         given(encoder.encodeApprove(true)).willReturn(successResult);
 
         // when:
@@ -608,10 +655,16 @@ class ERC721PrecompilesTest {
         given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
         given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
 
-        given(
-                        decoder.decodeTokenApprove(
-                                eq(nestedPretendArguments), eq(token), eq(false), any(), any()))
-                .willReturn(APPROVE_WRAPPER);
+        approvePrecompile
+                .when(
+                        () ->
+                                ApprovePrecompile.decodeTokenApprove(
+                                        eq(nestedPretendArguments),
+                                        eq(token),
+                                        eq(false),
+                                        any(),
+                                        any()))
+                .thenReturn(APPROVE_WRAPPER);
         given(infrastructureFactory.newApproveAllowanceLogic(any(), any()))
                 .willReturn(approveAllowanceLogic);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
@@ -672,10 +725,16 @@ class ERC721PrecompilesTest {
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any())).willReturn(OK);
 
-        given(
-                        decoder.decodeTokenApprove(
-                                eq(nestedPretendArguments), eq(token), eq(false), any(), any()))
-                .willReturn(APPROVE_WRAPPER_0);
+        approvePrecompile
+                .when(
+                        () ->
+                                ApprovePrecompile.decodeTokenApprove(
+                                        eq(nestedPretendArguments),
+                                        eq(token),
+                                        eq(false),
+                                        any(),
+                                        any()))
+                .thenReturn(APPROVE_WRAPPER_0);
         given(encoder.encodeApprove(true)).willReturn(successResult);
         given(infrastructureFactory.newDeleteAllowanceLogic(any(), any()))
                 .willReturn(deleteAllowanceLogic);
@@ -739,10 +798,16 @@ class ERC721PrecompilesTest {
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any())).willReturn(OK);
 
-        given(
-                        decoder.decodeTokenApprove(
-                                eq(nestedPretendArguments), eq(token), eq(false), any(), any()))
-                .willReturn(APPROVE_WRAPPER_0);
+        approvePrecompile
+                .when(
+                        () ->
+                                ApprovePrecompile.decodeTokenApprove(
+                                        eq(nestedPretendArguments),
+                                        eq(token),
+                                        eq(false),
+                                        any(),
+                                        any()))
+                .thenReturn(APPROVE_WRAPPER_0);
         given(encoder.encodeApprove(true)).willReturn(successResult);
         given(infrastructureFactory.newDeleteAllowanceLogic(any(), any()))
                 .willReturn(deleteAllowanceLogic);
@@ -787,10 +852,16 @@ class ERC721PrecompilesTest {
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
-        given(
-                        decoder.decodeTokenApprove(
-                                eq(nestedPretendArguments), eq(token), eq(false), any(), any()))
-                .willReturn(APPROVE_WRAPPER_0);
+        approvePrecompile
+                .when(
+                        () ->
+                                ApprovePrecompile.decodeTokenApprove(
+                                        eq(nestedPretendArguments),
+                                        eq(token),
+                                        eq(false),
+                                        any(),
+                                        any()))
+                .thenReturn(APPROVE_WRAPPER_0);
 
         // when:
         subject.prepareFields(frame);
@@ -845,10 +916,16 @@ class ERC721PrecompilesTest {
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
         given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
-        given(
-                        decoder.decodeTokenApprove(
-                                eq(nestedPretendArguments), eq(token), eq(false), any(), any()))
-                .willReturn(APPROVE_WRAPPER_0);
+        approvePrecompile
+                .when(
+                        () ->
+                                ApprovePrecompile.decodeTokenApprove(
+                                        eq(nestedPretendArguments),
+                                        eq(token),
+                                        eq(false),
+                                        any(),
+                                        any()))
+                .thenReturn(APPROVE_WRAPPER_0);
         given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any()))
                 .willReturn(INVALID_ALLOWANCE_OWNER_ID);
 
@@ -909,10 +986,16 @@ class ERC721PrecompilesTest {
                                 stateView))
                 .willReturn(FAIL_INVALID);
 
-        given(
-                        decoder.decodeTokenApprove(
-                                eq(nestedPretendArguments), eq(token), eq(false), any(), any()))
-                .willReturn(APPROVE_WRAPPER);
+        approvePrecompile
+                .when(
+                        () ->
+                                ApprovePrecompile.decodeTokenApprove(
+                                        eq(nestedPretendArguments),
+                                        eq(token),
+                                        eq(false),
+                                        any(),
+                                        any()))
+                .thenReturn(APPROVE_WRAPPER);
 
         // when:
         subject.prepareFields(frame);
@@ -978,8 +1061,12 @@ class ERC721PrecompilesTest {
                                 stateView))
                 .willReturn(OK);
 
-        given(decoder.decodeSetApprovalForAll(eq(nestedPretendArguments), any(), any()))
-                .willReturn(SET_APPROVAL_FOR_ALL_WRAPPER);
+        setApprovalForAllPrecompile
+                .when(
+                        () ->
+                                SetApprovalForAllPrecompile.decodeSetApprovalForAll(
+                                        eq(nestedPretendArguments), any(), any()))
+                .thenReturn(SET_APPROVAL_FOR_ALL_WRAPPER);
 
         // when:
         subject.prepareFields(frame);
@@ -1048,8 +1135,12 @@ class ERC721PrecompilesTest {
                                 stateView))
                 .willReturn(OK);
 
-        given(decoder.decodeSetApprovalForAll(eq(pretendArguments), any(), any()))
-                .willReturn(SET_APPROVAL_FOR_ALL_WRAPPER);
+        setApprovalForAllPrecompile
+                .when(
+                        () ->
+                                SetApprovalForAllPrecompile.decodeSetApprovalForAll(
+                                        eq(pretendArguments), any(), any()))
+                .thenReturn(SET_APPROVAL_FOR_ALL_WRAPPER);
 
         // when:
         subject.prepareFields(frame);
@@ -1099,8 +1190,9 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         given(encoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
-        given(decoder.decodeGetApproved(nestedPretendArguments, token))
-                .willReturn(GET_APPROVED_WRAPPER);
+        getApprovedPrecompile
+                .when(() -> GetApprovedPrecompile.decodeGetApproved(nestedPretendArguments, token))
+                .thenReturn(GET_APPROVED_WRAPPER);
         given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
 
         // when:
@@ -1151,7 +1243,9 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         given(encoder.encodeGetApproved(SUCCESS.getNumber(), RIPEMD160)).willReturn(successResult);
-        given(decoder.decodeGetApproved(pretendArguments, null)).willReturn(GET_APPROVED_WRAPPER);
+        getApprovedPrecompile
+                .when(() -> GetApprovedPrecompile.decodeGetApproved(pretendArguments, null))
+                .thenReturn(GET_APPROVED_WRAPPER);
         given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
 
         // when:
@@ -1220,8 +1314,9 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(decoder.decodeBalanceOf(eq(nestedPretendArguments), any()))
-                .willReturn(BALANCE_OF_WRAPPER);
+        balanceOfPrecompile
+                .when(() -> BalanceOfPrecompile.decodeBalanceOf(eq(nestedPretendArguments), any()))
+                .thenReturn(BALANCE_OF_WRAPPER);
         given(wrappedLedgers.balanceOf(any(), any())).willReturn(10L);
         given(encoder.encodeBalance(10L)).willReturn(successResult);
 
@@ -1257,7 +1352,9 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+        ownerOfPrecompile
+                .when(() -> OwnerOfPrecompile.decodeOwnerOf(nestedPretendArguments))
+                .thenReturn(ownerOfAndTokenUriWrapper);
         given(wrappedLedgers.nfts()).willReturn(nfts);
         given(nfts.contains(NftId.fromGrpc(token, ownerOfAndTokenUriWrapper.serialNo())))
                 .willReturn(true);
@@ -1295,7 +1392,9 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+        ownerOfPrecompile
+                .when(() -> OwnerOfPrecompile.decodeOwnerOf(nestedPretendArguments))
+                .thenReturn(ownerOfAndTokenUriWrapper);
         given(wrappedLedgers.nfts()).willReturn(nfts);
 
         // when:
@@ -1357,10 +1456,17 @@ class ERC721PrecompilesTest {
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
-        given(
-                        decoder.decodeERCTransferFrom(
-                                eq(nestedPretendArguments), any(), eq(false), any(), any(), any()))
-                .willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        eq(nestedPretendArguments),
+                                        any(),
+                                        eq(false),
+                                        any(),
+                                        any(),
+                                        any()))
+                .thenReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
         final var nftId = NftId.fromGrpc(token, serialNumber);
         given(wrappedLedgers.nfts()).willReturn(nfts);
         given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
@@ -1444,10 +1550,17 @@ class ERC721PrecompilesTest {
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
-        given(
-                        decoder.decodeERCTransferFrom(
-                                eq(nestedPretendArguments), any(), eq(false), any(), any(), any()))
-                .willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        eq(nestedPretendArguments),
+                                        any(),
+                                        eq(false),
+                                        any(),
+                                        any(),
+                                        any()))
+                .thenReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
         final var nftId = NftId.fromGrpc(token, serialNumber);
         given(wrappedLedgers.nfts()).willReturn(nfts);
         given(nfts.contains(nftId)).willReturn(true);
@@ -1487,7 +1600,9 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+        ownerOfPrecompile
+                .when(() -> OwnerOfPrecompile.decodeOwnerOf(nestedPretendArguments))
+                .thenReturn(ownerOfAndTokenUriWrapper);
 
         // when:
         subject.prepareFields(frame);
@@ -1518,8 +1633,9 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(decoder.decodeTokenUriNFT(nestedPretendArguments))
-                .willReturn(ownerOfAndTokenUriWrapper);
+        tokenURIPrecompile
+                .when(() -> TokenURIPrecompile.decodeTokenUriNFT(nestedPretendArguments))
+                .thenReturn(ownerOfAndTokenUriWrapper);
         given(wrappedLedgers.metadataOf(any())).willReturn("Metadata");
         given(encoder.encodeTokenUri("Metadata")).willReturn(successResult);
 
