@@ -190,9 +190,12 @@ public class TransferLogic {
 
             if (alias != ByteString.EMPTY) {
                 if (map.containsKey(alias)) {
-                    map.get(alias).add(change.getToken());
+                    final var oldSet = map.get(alias);
+                    oldSet.add(change.getToken());
+                    map.put(alias, oldSet);
+                } else {
+                    map.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
                 }
-                map.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
             }
         }
         return map;
