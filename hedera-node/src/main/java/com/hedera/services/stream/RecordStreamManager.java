@@ -41,7 +41,6 @@ import org.apache.logging.log4j.Logger;
  * calculating runningHash for {@link RecordStreamObject}s
  */
 public class RecordStreamManager {
-
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger log = LogManager.getLogger(RecordStreamManager.class);
 

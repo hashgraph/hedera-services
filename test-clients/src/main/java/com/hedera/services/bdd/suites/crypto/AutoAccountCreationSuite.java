@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -120,6 +121,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final String TOKEN_B_CREATE = "tokenBCreateTxn";
     private static final String NFT_CREATE = "nftCreateTxn";
     private static final String SPONSOR = "autoCreateSponsor";
+
+    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
+    private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
+    private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 40927290L;
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
@@ -334,6 +339,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private HapiApiSpec nftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
         final var transferFee = 0.44012644 * ONE_HBAR;
+        final var multiNftTransfer = "multiNftTransfer";
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
                 .given(
@@ -393,13 +399,19 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                 .between(CIVILIAN, VALID_ALIAS),
                                         movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
                                                 .between(CIVILIAN, VALID_ALIAS))
-                                .via("multiNftTransfer")
+                                .via(multiNftTransfer)
                                 .payingWith(CIVILIAN)
                                 .signedBy(CIVILIAN, VALID_ALIAS),
-                        getTxnRecord("multiNftTransfer")
+                        getTxnRecord(multiNftTransfer)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
                                 .logged(),
+                        childRecordsCheck(
+                                multiNftTransfer,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .fee(EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE)),
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .has(accountWith().balance(0).maxAutoAssociations(2).ownedNfts(4))
                                 .logged(),
@@ -410,6 +422,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
     private HapiApiSpec multipleTokenTransfersSucceed() {
         final var initialTokenSupply = 1000;
+        final var multiTokenXfer = "multiTokenXfer";
 
         return defaultHapiSpec("multipleTokenTransfersSucceed")
                 .given(
@@ -448,11 +461,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         cryptoTransfer(
                                         moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
                                         moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
-                                .via("multiTokenXfer")
+                                .via(multiTokenXfer)
                                 .payingWith(CIVILIAN)
                                 .signedBy(CIVILIAN, VALID_ALIAS)
                                 .logged(),
-                        getTxnRecord("multiTokenXfer")
+                        getTxnRecord(multiTokenXfer)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
                                 .hasPriority(
@@ -476,6 +489,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                                 VALID_ALIAS,
                                                                                 A_TOKEN)))))
                                 .logged(),
+                        childRecordsCheck(
+                                multiTokenXfer,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .fee(EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE)),
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .hasToken(relationshipWith(A_TOKEN).balance(10))
                                 .hasToken(relationshipWith(B_TOKEN).balance(10))
@@ -548,6 +567,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
                                 .logged(),
+                        childRecordsCheck(
+                                sameTokenXfer,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .fee(EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE)),
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .hasToken(relationshipWith(A_TOKEN).balance(20)),
                         getAccountInfo(CIVILIAN)
@@ -1006,6 +1031,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
+                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(
@@ -1013,7 +1039,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                 SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
                                         tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
                                 .via(TRANSFER_TXN)
-                                .payingWith(CIVILIAN))
+                                .payingWith(PAYER))
                 .then(
                         getReceipt(TRANSFER_TXN)
                                 .andAnyChildReceipts()
@@ -1026,6 +1052,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                         (INITIAL_BALANCE * ONE_HBAR)
                                                                 - ONE_HUNDRED_HBARS)
                                                 .noAlias()),
+                        childRecordsCheck(
+                                TRANSFER_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE)),
                         assertionsHold(
                                 (spec, opLog) -> {
                                     final var lookup =
@@ -1036,11 +1068,15 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .logged();
                                     allRunFor(spec, lookup);
                                     final var sponsor = spec.registry().getAccountID(SPONSOR);
-                                    final var payer = spec.registry().getAccountID(CIVILIAN);
+                                    final var payer = spec.registry().getAccountID(PAYER);
                                     final var parent = lookup.getResponseRecord();
                                     final var child = lookup.getChildRecord(0);
                                     assertAliasBalanceAndFeeInChildRecord(
-                                            parent, child, sponsor, payer, ONE_HUNDRED_HBARS);
+                                            parent,
+                                            child,
+                                            sponsor,
+                                            payer,
+                                            ONE_HUNDRED_HBARS + ONE_HBAR);
                                     creationTime.set(child.getConsensusTimestamp().getSeconds());
                                 }),
                         sourcing(
@@ -1050,7 +1086,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                         accountWith()
                                                                 .key(VALID_ALIAS)
                                                                 .expectedBalanceWithChargedUsd(
-                                                                        ONE_HUNDRED_HBARS, 0, 0)
+                                                                        ONE_HUNDRED_HBARS
+                                                                                + ONE_HBAR,
+                                                                        0,
+                                                                        0)
                                                                 .alias(VALID_ALIAS)
                                                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                                                 .receiverSigReq(false)
@@ -1071,7 +1110,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
             final long newAccountFunding) {
         long receivedBalance = 0;
         long fundingAccountBalance = 0;
-        long payerBalWithoutAutoCreationFee = 0;
+        long payerBalWithAutoCreationFee = 0;
         for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
             final var id = adjust.getAccountID();
             if (!(id.getAccountNum() < 100
@@ -1086,12 +1125,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
             if (id.getAccountNum() == 98) {
                 fundingAccountBalance = adjust.getAmount();
             }
-            // sum of all deductions from the payer without auto creation fee
-            if ((id.getAccountNum() < 98
+            // sum of all deductions from the payer along with auto creation fee
+            if ((id.getAccountNum() <= 98
                     || id.equals(defaultPayer)
                     || id.getAccountNum() == 800
                     || id.getAccountNum() == 801)) {
-                payerBalWithoutAutoCreationFee += adjust.getAmount();
+                payerBalWithAutoCreationFee += adjust.getAmount();
             }
         }
         assertEquals(newAccountFunding, receivedBalance, "Transferred incorrect amount to alias");
@@ -1099,10 +1138,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 fundingAccountBalance,
                 child.getTransactionFee(),
                 "Child record did not specify deducted fee");
+        assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
         assertEquals(
-                -child.getTransactionFee(),
-                payerBalWithoutAutoCreationFee,
-                "Auto creation fee is not deducted from payer");
+                child.getTransactionFee(),
+                fundingAccountBalance,
+                "Auto creation fee transferred to funding account");
     }
 
     private HapiApiSpec multipleAutoAccountCreations() {

@@ -124,6 +124,9 @@ public class TransferLogic {
         final var tokenAliasMap = countTokensForCreations(changes);
 
         for (var change : changes) {
+            // If the change consists of any known alias, replace the alias with the account number
+            checkIfExistingAlias(change);
+
             // create a new account for alias when the no account is already created using the alias
             if (change.hasNonEmptyAlias()
                     || (change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
@@ -177,9 +180,6 @@ public class TransferLogic {
         final var map = new HashMap<ByteString, HashSet<Id>>();
 
         for (final var change : changes) {
-            // If the change consists of any known alias, replace the alias with the account number
-            checkIfExistingAlias(change);
-
             var alias = ByteString.EMPTY;
 
             if ((change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {

@@ -259,7 +259,7 @@ public class AutoCreationLogic {
     }
 
     private ByteString getAlias(final BalanceChange change) {
-        if (change.isForNft() && change.hasNonEmptyCounterPartyAlias()) {
+        if (change.hasNonEmptyCounterPartyAlias()) {
             return change.counterPartyAccountId().getAlias();
         } else {
             return change.alias();

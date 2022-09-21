@@ -44,9 +44,10 @@ public class AliasResolver {
     private int perceivedInvalidCreations = 0;
     private Map<ByteString, EntityNum> resolutions = new HashMap<>();
 
-    /* ---- temporary token resolutions map is needed because a token can be repeated in multiple token transfer lists
-    and should not be repeated ina  single token transfer list ---- */
-    private Map<ByteString, EntityNum> tokenResolutions = new HashMap<>();
+    /* ---- temporary token transfer resolutions map containing the token transfers to alias, is needed because a
+    token is allowed to be repeated in multiple token transfer lists, but not be repeated in a single token transfer
+    list ---- */
+    private Map<ByteString, EntityNum> tokenTransferResolutions = new HashMap<>();
 
     private enum Result {
         KNOWN_ALIAS,
@@ -112,7 +113,7 @@ public class AliasResolver {
         final List<TokenTransferList> resolvedTokenAdjusts = new ArrayList<>();
         for (var tokenAdjust : opTokenAdjusts) {
             final var resolvedTokenAdjust = TokenTransferList.newBuilder();
-            tokenResolutions.clear();
+            tokenTransferResolutions.clear();
 
             resolvedTokenAdjust.setToken(tokenAdjust.getToken());
             for (final var adjust : tokenAdjust.getTransfersList()) {
@@ -232,7 +233,7 @@ public class AliasResolver {
                         adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();
             }
             resolutions.put(alias, resolution);
-            tokenResolutions.put(alias, resolution);
+            tokenTransferResolutions.put(alias, resolution);
         }
         resolvingAction.accept(resolvedAdjust);
         return result;
@@ -286,7 +287,7 @@ public class AliasResolver {
         } else {
             /* ---- checks if temporary resolutions map has the alias.
             If it has the alias, the alias is repeated in a single token transfer list */
-            if (tokenResolutions.containsKey(alias)) {
+            if (tokenTransferResolutions.containsKey(alias)) {
                 return Result.REPEATED_UNKNOWN_ALIAS;
             }
             return resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
@@ -310,6 +311,6 @@ public class AliasResolver {
     /* ---- Only used for tests */
     @VisibleForTesting
     public Map<ByteString, EntityNum> tokenResolutions() {
-        return tokenResolutions;
+        return tokenTransferResolutions;
     }
 }

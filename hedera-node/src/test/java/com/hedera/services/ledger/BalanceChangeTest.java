@@ -201,6 +201,7 @@ class BalanceChangeTest {
         subject.replaceAliasWith(created);
         assertFalse(subject.hasNonEmptyAlias());
         assertEquals(created, subject.accountId());
+        assertFalse(subject.hasNonEmptyCounterPartyAlias());
     }
 
     @Test
@@ -215,6 +216,8 @@ class BalanceChangeTest {
                         .setIsApproval(true)
                         .build();
         final var subject = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
+        assertTrue(subject.hasNonEmptyCounterPartyAlias());
+        assertFalse(subject.counterPartyAlias().isEmpty());
 
         subject.replaceCounterPartyAliasWith(created);
         assertFalse(subject.hasNonEmptyCounterPartyAlias());

@@ -67,116 +67,121 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec modifySigRequiredAfterAutoAccountCreation() {
+        final var briefAutoRenew = 3L;
+        final var payer = "payer";
+        final var alias = "testAlias";
+        final var transferTxn = "transferTxn";
+        final var transferTxn2 = "transferTxn2";
+        final var transferTxn3 = "transferTxn3";
+
         return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
-                .given(
-                        newKeyNamed("testAlias"),
-                        cryptoCreate("payer").balance(initialBalance * ONE_HBAR))
+                .given(newKeyNamed(alias), cryptoCreate(payer).balance(initialBalance * ONE_HBAR))
                 .when(
-                        cryptoTransfer(
-                                        tinyBarsFromToWithAlias(
-                                                "payer", "testAlias", ONE_HUNDRED_HBARS))
-                                .via("transferTxn"),
+                        cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, ONE_HUNDRED_HBARS))
+                                .via(transferTxn),
                         /* validate child record has alias set and has fields as expected */
-                        getTxnRecord("transferTxn")
+                        getTxnRecord(transferTxn)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
-                                .hasAliasInChildRecord("testAlias", 0)
+                                .hasAliasInChildRecord(alias, 0)
                                 .logged(),
-                        getAliasedAccountInfo("testAlias")
+                        getAliasedAccountInfo(alias)
                                 .has(
                                         accountWith()
                                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                                 .receiverSigReq(false)
                                                 .expectedBalanceWithChargedUsd(
-                                                        (ONE_HUNDRED_HBARS), 0.05, 10)))
+                                                        (ONE_HUNDRED_HBARS), 0, 0)))
                 .then(
                         /* change receiverSigRequired to false and validate */
-                        cryptoUpdateAliased("testAlias")
+                        cryptoUpdateAliased(alias)
                                 .receiverSigRequired(true)
-                                .signedBy("testAlias", "payer", DEFAULT_PAYER),
-                        getAliasedAccountInfo("testAlias")
+                                .signedBy(alias, payer, DEFAULT_PAYER),
+                        getAliasedAccountInfo(alias)
                                 .has(
                                         accountWith()
                                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                                 .receiverSigReq(true)
                                                 .expectedBalanceWithChargedUsd(
-                                                        (ONE_HUNDRED_HBARS), 0.05, 10)),
+                                                        (ONE_HUNDRED_HBARS), 0, 0)),
 
                         /* transfer without receiver sig fails */
-                        cryptoTransfer(
-                                        tinyBarsFromToWithAlias(
-                                                "payer", "testAlias", ONE_HUNDRED_HBARS))
-                                .via("transferTxn2")
-                                .signedBy("payer", DEFAULT_PAYER)
+                        cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, ONE_HUNDRED_HBARS))
+                                .via(transferTxn2)
+                                .signedBy(payer, DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_SIGNATURE),
 
                         /* transfer with receiver sig passes */
-                        cryptoTransfer(
-                                        tinyBarsFromToWithAlias(
-                                                "payer", "testAlias", ONE_HUNDRED_HBARS))
-                                .via("transferTxn3")
-                                .signedBy("testAlias", "payer", DEFAULT_PAYER),
-                        getTxnRecord("transferTxn3")
+                        cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, ONE_HUNDRED_HBARS))
+                                .via(transferTxn3)
+                                .signedBy(alias, payer, DEFAULT_PAYER),
+                        getTxnRecord(transferTxn3)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(0),
-                        getAliasedAccountInfo("testAlias")
+                        getAliasedAccountInfo(alias)
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        (2 * ONE_HUNDRED_HBARS), 0.05, 10)));
+                                                        (2 * ONE_HUNDRED_HBARS), 0, 0)));
     }
 
     private HapiApiSpec accountCreatedAfterAliasAccountExpires() {
         final var briefAutoRenew = 3L;
+        final var payer = "payer";
+        final var alias = "alias";
+        final var transferTxn = "transferTxn";
+        final var transferTxn2 = "transferTxn2";
+
         return defaultHapiSpec("AccountCreatedAfterAliasAccountExpires")
                 .given(
-                        newKeyNamed("alias"),
+                        newKeyNamed(alias),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
                                 .overridingProps(
                                         propsForAccountAutoRenewOnWith(
                                                 briefAutoRenew, 20 * briefAutoRenew)),
-                        cryptoCreate("randomPayer").balance(initialBalance * ONE_HBAR))
+                        cryptoCreate(payer).balance(initialBalance * ONE_HBAR))
                 .when(
                         /* auto account is created */
-                        cryptoTransfer(
-                                        tinyBarsFromToWithAlias(
-                                                "randomPayer", "alias", ONE_HUNDRED_HBARS))
-                                .via("transferTxn"),
-                        getTxnRecord("transferTxn").andAllChildRecords().logged(),
-                        getAliasedAccountInfo("alias")
+                        cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, ONE_HUNDRED_HBARS))
+                                .via(transferTxn),
+                        getTxnRecord(transferTxn).andAllChildRecords().logged(),
+                        getAliasedAccountInfo(alias)
                                 .has(
                                         accountWith()
                                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                                 .expectedBalanceWithChargedUsd(
-                                                        (ONE_HUNDRED_HBARS), 0.05, 10)))
+                                                        (ONE_HUNDRED_HBARS), 0, 0)))
                 .then(
                         /* update auto renew period */
-                        cryptoUpdateAliased("alias")
+                        cryptoUpdateAliased(alias)
                                 .autoRenewPeriod(briefAutoRenew)
-                                .signedBy("alias", "randomPayer", DEFAULT_PAYER),
+                                .signedBy(alias, payer, DEFAULT_PAYER),
                         sleepFor(2 * briefAutoRenew * 1_000L + 500L),
-                        getAutoCreatedAccountBalance("alias"),
+                        getAutoCreatedAccountBalance(alias),
 
                         /* account is expired but not deleted and validate the transfer succeeds*/
-                        cryptoTransfer(
-                                        tinyBarsFromToWithAlias(
-                                                "randomPayer", "alias", ONE_HUNDRED_HBARS))
-                                .via("transferTxn2"),
-                        getTxnRecord("transferTxn2")
+                        cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, ONE_HUNDRED_HBARS))
+                                .via(transferTxn2),
+                        getTxnRecord(transferTxn2)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(0),
-                        getAliasedAccountInfo("alias")
+                        getAliasedAccountInfo(alias)
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        (2 * ONE_HUNDRED_HBARS), 0.05, 10)),
+                                                        (2 * ONE_HUNDRED_HBARS), 0, 0)),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
                                 .overridingProps(disablingAutoRenewWithDefaults()));
     }
 
     private HapiApiSpec updateKeyOnAutoCreatedAccount() {
+        final var payer = "payer";
+        final var alias = "alias";
+        final var transferTxn = "transferTxn";
+        final var complexKey = "complexKey";
+
         SigControl ENOUGH_UNIQUE_SIGS =
                 KeyShape.threshSigs(
                         2,
@@ -185,32 +190,33 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 
         return defaultHapiSpec("updateKeyOnAutoCreatedAccount")
                 .given(
-                        newKeyNamed("alias"),
-                        newKeyNamed("complexKey").shape(ENOUGH_UNIQUE_SIGS),
-                        cryptoCreate("payer").balance(initialBalance * ONE_HBAR))
+                        newKeyNamed(alias),
+                        newKeyNamed(complexKey).shape(ENOUGH_UNIQUE_SIGS),
+                        cryptoCreate(payer).balance(initialBalance * ONE_HBAR))
                 .when(
                         /* auto account is created */
-                        cryptoTransfer(tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS))
-                                .via("transferTxn"),
-                        getTxnRecord("transferTxn").andAllChildRecords().logged(),
-                        getAliasedAccountInfo("alias")
+                        cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, ONE_HUNDRED_HBARS))
+                                .payingWith(payer)
+                                .via(transferTxn),
+                        getTxnRecord(transferTxn).andAllChildRecords().logged(),
+                        getAliasedAccountInfo(alias)
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.05, 10)
-                                                .alias("alias")))
+                                                        ONE_HUNDRED_HBARS, 0, 0)
+                                                .alias(alias)))
                 .then(
                         /* validate the key on account can be updated to complex key, and has no relation to alias*/
-                        cryptoUpdateAliased("alias")
-                                .key("complexKey")
-                                .payingWith("payer")
-                                .signedBy("alias", "complexKey", "payer", DEFAULT_PAYER),
-                        getAliasedAccountInfo("alias")
+                        cryptoUpdateAliased(alias)
+                                .key(complexKey)
+                                .payingWith(payer)
+                                .signedBy(alias, complexKey, payer, DEFAULT_PAYER),
+                        getAliasedAccountInfo(alias)
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        (ONE_HUNDRED_HBARS), 0.05, 10)
-                                                .key("complexKey")));
+                                                        (ONE_HUNDRED_HBARS), 0, 0)
+                                                .key(complexKey)));
     }
 
     // Can't be done without property change, since auto-renew period can't be reduced from 3 months

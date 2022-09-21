@@ -270,17 +270,6 @@ public class TokenMovement {
                     isAllowance);
         }
 
-        public TokenMovement betweenWithAlias(String sender, String receiver) {
-            return new TokenMovement(
-                    token,
-                    Optional.of(sender),
-                    amount,
-                    serialNums,
-                    Optional.of(receiver),
-                    Optional.empty(),
-                    isAllowance);
-        }
-
         public TokenMovement betweenWithDecimals(String sender, String receiver) {
             return new TokenMovement(
                     token,
