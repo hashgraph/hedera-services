@@ -44,9 +44,9 @@ public class AliasResolver {
     private int perceivedInvalidCreations = 0;
     private Map<ByteString, EntityNum> resolutions = new HashMap<>();
 
-    /* ---- temporary token transfer resolutions map containing the token transfers to alias, is needed because a
-    token is allowed to be repeated in multiple token transfer lists, but not be repeated in a single token transfer
-    list ---- */
+    /* ---- temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
+     an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
+     token transfer list ---- */
     private Map<ByteString, EntityNum> tokenTransferResolutions = new HashMap<>();
 
     private enum Result {
