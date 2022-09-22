@@ -51,7 +51,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -100,8 +99,6 @@ class TransactionalLedgerTest {
     @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
     @Mock private PropertyChangeObserver<Long, TestAccountProperty> propertyChangeObserver;
     @Mock private CommitInterceptor<Long, TestAccount, TestAccountProperty> testInterceptor;
-    @Mock private StateView workingView;
-
     private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> testLedger;
     private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -828,8 +825,7 @@ class TransactionalLedgerTest {
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>(),
-                        () -> workingView);
+                        new ChangeSummaryManager<>());
     }
 
     private void setupInterceptedAccountsLedger() {
@@ -845,8 +841,7 @@ class TransactionalLedgerTest {
                         TestAccountProperty.class,
                         TestAccount::new,
                         backingTestAccounts,
-                        changeManager,
-                        () -> workingView);
+                        changeManager);
     }
 
     private void setupInterceptedTestLedger() {
@@ -855,8 +850,7 @@ class TransactionalLedgerTest {
                         TestAccountProperty.class,
                         TestAccount::new,
                         backingTestAccounts,
-                        changeManager,
-                        () -> workingView);
+                        changeManager);
         testLedger.setCommitInterceptor(testInterceptor);
     }
 

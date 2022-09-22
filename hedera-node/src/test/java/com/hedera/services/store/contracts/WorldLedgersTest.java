@@ -45,7 +45,6 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -130,7 +129,6 @@ class WorldLedgersTest {
     @Mock private ContractAliases aliases;
     @Mock private StaticEntityAccess staticEntityAccess;
     @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private StateView view;
 
     private WorldLedgers subject;
 
@@ -379,29 +377,25 @@ class WorldLedgersTest {
                         TokenRelProperty.class,
                         MerkleTokenRelStatus::new,
                         new HashMapBackingTokenRels(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final var liveAccounts =
                 new TransactionalLedger<>(
                         AccountProperty.class,
                         MerkleAccount::new,
                         new HashMapBackingAccounts(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final var liveNfts =
                 new TransactionalLedger<>(
                         NftProperty.class,
                         UniqueTokenAdapter::newEmptyMerkleToken,
                         new HashMapBackingNfts(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final var liveTokens =
                 new TransactionalLedger<>(
                         TokenProperty.class,
                         MerkleToken::new,
                         new HashMapBackingTokens(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
         final var liveAliases = new AliasManager(() -> aliases);
 
@@ -451,29 +445,25 @@ class WorldLedgersTest {
                         TokenRelProperty.class,
                         MerkleTokenRelStatus::new,
                         new HashMapBackingTokenRels(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final var liveAccounts =
                 new TransactionalLedger<>(
                         AccountProperty.class,
                         MerkleAccount::new,
                         new HashMapBackingAccounts(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final var liveNfts =
                 new TransactionalLedger<>(
                         NftProperty.class,
                         UniqueTokenAdapter::newEmptyMerkleToken,
                         new HashMapBackingNfts(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final var liveTokens =
                 new TransactionalLedger<>(
                         TokenProperty.class,
                         MerkleToken::new,
                         new HashMapBackingTokens(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
         final var liveAliases = new AliasManager(() -> aliases);
 

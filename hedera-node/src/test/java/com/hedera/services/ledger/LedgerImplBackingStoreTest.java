@@ -30,7 +30,6 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapTestAccounts;
@@ -53,20 +52,17 @@ class LedgerImplBackingStoreTest {
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> firstOrder;
 
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
-    private StateView workingView;
 
     @BeforeEach
     void setUp() {
         backingTestAccounts = new HashMapTestAccounts();
-        workingView = mock(StateView.class);
 
         firstOrder =
                 new TransactionalLedger<>(
                         TestAccountProperty.class,
                         TestAccount::new,
                         backingTestAccounts,
-                        new ChangeSummaryManager<>(),
-                        () -> workingView);
+                        new ChangeSummaryManager<>());
     }
 
     @Test
@@ -318,8 +314,7 @@ class LedgerImplBackingStoreTest {
                         TestAccountProperty.class,
                         TestAccount::new,
                         ledger,
-                        new ChangeSummaryManager<>(),
-                        () -> workingView);
+                        new ChangeSummaryManager<>());
     }
 
     private void givenMockSubject() {

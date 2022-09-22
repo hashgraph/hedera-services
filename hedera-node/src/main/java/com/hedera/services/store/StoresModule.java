@@ -21,7 +21,6 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -84,15 +83,13 @@ public interface StoresModule {
     static TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> provideNftsLedger(
             final UsageLimits usageLimits,
             final UniqueTokensLinkManager uniqueTokensLinkManager,
-            final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
-            final Supplier<StateView> currentView) {
+            final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens) {
         final var uniqueTokensLedger =
                 new TransactionalLedger<>(
                         NftProperty.class,
                         UniqueTokenAdapter::newEmptyMerkleToken,
                         new BackingNfts(uniqueTokens),
-                        new ChangeSummaryManager<>(),
-                        currentView);
+                        new ChangeSummaryManager<>());
         final var uniqueTokensCommitInterceptor =
                 new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
         uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
@@ -103,16 +100,14 @@ public interface StoresModule {
     @Singleton
     static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
             final UsageLimits usageLimits,
-            final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-            final Supplier<StateView> currentView) {
+            final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens) {
         final var interceptor = new TokensCommitInterceptor(usageLimits);
         final var tokensLedger =
                 new TransactionalLedger<>(
                         TokenProperty.class,
                         MerkleToken::new,
                         new BackingTokens(tokens),
-                        new ChangeSummaryManager<>(),
-                        currentView);
+                        new ChangeSummaryManager<>());
         tokensLedger.setCommitInterceptor(interceptor);
         return tokensLedger;
     }
@@ -137,15 +132,13 @@ public interface StoresModule {
                     final SideEffectsTracker sideEffectsTracker,
                     final TokenRelsLinkManager relsLinkManager,
                     final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>>
-                            tokenAssociations,
-                    final Supplier<StateView> currentView) {
+                            tokenAssociations) {
         final var tokenRelsLedger =
                 new TransactionalLedger<>(
                         TokenRelProperty.class,
                         MerkleTokenRelStatus::new,
                         new BackingTokenRels(tokenAssociations),
-                        new ChangeSummaryManager<>(),
-                        currentView);
+                        new ChangeSummaryManager<>());
         tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
         final var interceptor =
                 new LinkAwareTokenRelsCommitInterceptor(
@@ -167,15 +160,13 @@ public interface StoresModule {
             final StakeInfoManager stakeInfoManager,
             final AccountNumbers accountNumbers,
             final TransactionContext txnCtx,
-            final UsageLimits usageLimits,
-            final Supplier<StateView> currentView) {
+            final UsageLimits usageLimits) {
         final var accountsLedger =
                 new TransactionalLedger<>(
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>(),
-                        currentView);
+                        new ChangeSummaryManager<>());
         final var accountsCommitInterceptor =
                 new StakingAccountsCommitInterceptor(
                         sideEffectsTracker,

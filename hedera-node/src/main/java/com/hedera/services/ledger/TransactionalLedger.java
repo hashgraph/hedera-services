@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
@@ -82,21 +81,18 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
     private EntityChangeSet<K, A, P> pendingChanges = null;
     private CommitInterceptor<K, A, P> commitInterceptor = null;
     private PropertyChangeObserver<K, P> propertyChangeObserver = null;
-    private final Supplier<StateView> currentView;
 
     public TransactionalLedger(
             final Class<P> propertyType,
             final Supplier<A> newEntity,
             final BackingStore<K, A> entities,
-            final ChangeSummaryManager<A, P> changeManager,
-            final Supplier<StateView> currentView) {
+            final ChangeSummaryManager<A, P> changeManager) {
         this.entities = entities;
         this.allProps = propertyType.getEnumConstants();
         this.newEntity = newEntity;
         this.propertyType = propertyType;
         this.changeManager = changeManager;
         this.changeFactory = ignore -> new EnumMap<>(propertyType);
-        this.currentView = currentView;
 
         if (entities instanceof TransactionalLedger) {
             this.entitiesLedger = (TransactionalLedger<K, P, A>) entities;
@@ -126,8 +122,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
                         sourceLedger.getPropertyType(),
                         sourceLedger.getNewEntity(),
                         sourceLedger,
-                        sourceLedger.getChangeManager(),
-                        sourceLedger.getCurrentView());
+                        sourceLedger.getChangeManager());
         wrapper.begin();
         return wrapper;
     }
@@ -442,10 +437,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
     ChangeSummaryManager<A, P> getChangeManager() {
         return changeManager;
-    }
-
-    Supplier<StateView> getCurrentView() {
-        return currentView;
     }
 
     Supplier<A> getNewEntity() {
