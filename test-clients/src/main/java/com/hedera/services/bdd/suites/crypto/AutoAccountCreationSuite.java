@@ -124,6 +124,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final String NFT_CREATE = "nftCreateTxn";
     private static final String SPONSOR = "autoCreateSponsor";
 
+    private static final String FEATURE_FLAG = "tokens.autoCreations.isEnabled";
+
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
     private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
     private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 40927290L;
@@ -175,7 +177,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("tokenTransfersFailWhenFeatureFlagDisabled")
                 .given(
-                        overriding("tokens.autoCreations.isEnabled", "false"),
+                        overriding(FEATURE_FLAG, "false"),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
@@ -233,7 +235,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getTxnRecord(TRANSFER_TXN)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1))
-                .then(overriding("tokens.autoCreations.isEnabled", "true"));
+                .then(overriding(FEATURE_FLAG, "true"));
     }
 
     private HapiApiSpec repeatedAliasInSameTransferListFails() {
@@ -414,7 +416,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
                 .given(
-                        overriding("tokens.autoCreations.isEnabled", "true"),
+                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),

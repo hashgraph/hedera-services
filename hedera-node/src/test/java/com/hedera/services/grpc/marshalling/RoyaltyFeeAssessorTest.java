@@ -176,6 +176,30 @@ class RoyaltyFeeAssessorTest {
     }
 
     @Test
+    void doesntFailHereIfFallbackNftTransferredToUnknownAliasIfFeatureDisabled() {
+        // setup:
+        final var denom = new EntityId(1, 2, 3);
+        final var fallback = new FixedFeeSpec(33, denom);
+        final List<FcCustomFee> fees =
+                List.of(
+                        FcCustomFee.fixedFee(1, null, otherCollector),
+                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+        given(globalDynamicProperties.areTokenAutoCreationsEnabled()).willReturn(false);
+
+        // when:
+        final var result =
+                subject.assessAllRoyalties(
+                        triggerWithAliasTransfer,
+                        fees,
+                        changeManager,
+                        accumulator,
+                        globalDynamicProperties);
+
+        // then:
+        assertEquals(OK, result);
+    }
+
+    @Test
     void skipsIfRoyaltyAlreadyPaid() {
         // setup:
         final List<FcCustomFee> fees =
