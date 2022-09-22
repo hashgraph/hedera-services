@@ -59,6 +59,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -81,7 +82,7 @@ public class AutoCreationLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
-    private Map<ByteString, HashSet<Id>> tokenAliasMap;
+    private Map<ByteString, Set<Id>> tokenAliasMap;
     private FeeCalculator feeCalculator;
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
@@ -181,9 +182,8 @@ public class AutoCreationLogic {
 
         if (shouldConstructTokenAliasMap(change)) {
             // constructs tokenAliasMap lazily if the change consists of any token transfer to
-            // unknown alias
-            // This map is used to count number of maxAutoAssociations needed on auto created
-            // account
+            // unknown alias. This map is used to count number of maxAutoAssociations needed on
+            // auto created account
             analyzeTokenTransferCreations(changes);
         }
 
@@ -240,12 +240,12 @@ public class AutoCreationLogic {
         }
     }
 
-    public Map<ByteString, HashSet<Id>> getTokenAliasMap() {
+    public Map<ByteString, Set<Id>> getTokenAliasMap() {
         return tokenAliasMap;
     }
 
     private boolean shouldConstructTokenAliasMap(final BalanceChange change) {
-        return (tokenAliasMap == null || tokenAliasMap.isEmpty()) && change.isForToken();
+        return change.isForToken() && (tokenAliasMap == null || tokenAliasMap.isEmpty());
     }
 
     private void replaceAliasAndSetBalanceOnChange(
