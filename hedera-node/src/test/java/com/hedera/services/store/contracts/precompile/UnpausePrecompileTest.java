@@ -27,8 +27,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleUnpause;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile.decodeUnpause;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -58,8 +60,8 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.UnpauseLogic;
@@ -85,10 +87,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -101,7 +106,6 @@ class UnpausePrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private UnpauseLogic unpauseLogic;
     @Mock private SideEffectsTracker sideEffects;
@@ -137,8 +141,16 @@ class UnpausePrecompileTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    private static final Bytes FUNGIBLE_UNPAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000441");
+
+    private static final Bytes NON_FUNGIBLE_UNPAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000449");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<UnpausePrecompile> unpausePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -160,7 +172,6 @@ class UnpausePrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -169,13 +180,20 @@ class UnpausePrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        unpausePrecompile = Mockito.mockStatic(UnpausePrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        unpausePrecompile.close();
     }
 
     @Test
     void unpauseHappyPathWorks() {
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -218,10 +236,13 @@ class UnpausePrecompileTest {
     @Test
     void gasRequirementReturnsCorrectValueForUnpauseFungibleToken() {
         // given
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
-        given(decoder.decodeUnpause(pretendArguments)).willReturn(fungibleUnpause);
+        unpausePrecompile.when(() -> decodeUnpause(pretendArguments)).thenReturn(fungibleUnpause);
         given(syntheticTxnFactory.createUnpause(fungibleUnpause))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -241,9 +262,27 @@ class UnpausePrecompileTest {
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
 
+    @Test
+    void decodeFungibleUnpauseInput() {
+        unpausePrecompile.when(() -> decodeUnpause(FUNGIBLE_UNPAUSE_INPUT)).thenCallRealMethod();
+        final var decodedInput = decodeUnpause(FUNGIBLE_UNPAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeNonFungibleUnpauseInput() {
+        unpausePrecompile
+                .when(() -> decodeUnpause(NON_FUNGIBLE_UNPAUSE_INPUT))
+                .thenCallRealMethod();
+        final var decodedInput = decodeUnpause(NON_FUNGIBLE_UNPAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
     private void givenFungibleFrameContext() {
         givenFrameContext();
-        given(decoder.decodeUnpause(pretendArguments)).willReturn(fungibleUnpause);
+        unpausePrecompile.when(() -> decodeUnpause(pretendArguments)).thenReturn(fungibleUnpause);
         given(syntheticTxnFactory.createUnpause(fungibleUnpause)).willReturn(mockSynthBodyBuilder);
     }
 

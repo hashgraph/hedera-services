@@ -27,7 +27,6 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -44,7 +43,6 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
     protected AbstractTokenUpdatePrecompile(
             WorldLedgers ledgers,
             ContractAliases aliases,
-            DecodingFacade decoder,
             EvmSigsVerifier sigsVerifier,
             SideEffectsTracker sideEffectsTracker,
             SyntheticTxnFactory syntheticTxnFactory,
@@ -52,7 +50,6 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
             PrecompilePricingUtils pricingUtils) {
         super(
                 ledgers,
-                decoder,
                 sideEffectsTracker,
                 syntheticTxnFactory,
                 infrastructureFactory,

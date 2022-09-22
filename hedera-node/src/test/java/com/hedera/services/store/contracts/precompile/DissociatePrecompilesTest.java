@@ -31,10 +31,15 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parent
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile.decodeDissociate;
+import static com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile.decodeMultipleDissociations;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -69,8 +74,9 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.DissociateLogic;
@@ -92,16 +98,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -118,7 +127,6 @@ class DissociatePrecompilesTest {
     @Mock private Iterator<MessageFrame> dequeIterator;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private DissociateLogic dissociateLogic;
     @Mock private SideEffectsTracker sideEffects;
@@ -155,8 +163,17 @@ class DissociatePrecompilesTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    private static final Bytes DISSOCIATE_INPUT =
+            Bytes.fromHexString(
+                    "0x099794e8000000000000000000000000000000000000000000000000000000000000048e000000000000000000000000000000000000000000000000000000000000048c");
+    private static final Bytes MULTIPLE_DISSOCIATE_INPUT =
+            Bytes.fromHexString(
+                    "0x78b6391800000000000000000000000000000000000000000000000000000000000004940000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004920000000000000000000000000000000000000000000000000000000000000492");
+    private static final Bytes INVALID_INPUT = Bytes.fromHexString("0x00000000");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<DissociatePrecompile> dissociatePrecompile;
+    private MockedStatic<MultiDissociatePrecompile> multiDissociatePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -179,7 +196,6 @@ class DissociatePrecompilesTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -188,9 +204,15 @@ class DissociatePrecompilesTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        dissociatePrecompile = Mockito.mockStatic(DissociatePrecompile.class);
+        multiDissociatePrecompile = Mockito.mockStatic(MultiDissociatePrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        dissociatePrecompile.close();
+        multiDissociatePrecompile.close();
     }
 
     @Test
@@ -198,12 +220,17 @@ class DissociatePrecompilesTest {
         givenFrameContext();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
                 .willReturn(mockRecordBuilder);
-        given(decoder.decodeDissociate(eq(pretendArguments), any())).willReturn(dissociateToken);
+        dissociatePrecompile
+                .when(() -> decodeDissociate(eq(pretendArguments), any()))
+                .thenReturn(dissociateToken);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
                                 HederaFunctionality.ContractCall, timestamp))
@@ -235,6 +262,9 @@ class DissociatePrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
                 .willReturn(true);
@@ -254,7 +284,9 @@ class DissociatePrecompilesTest {
                 .willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(decoder.decodeDissociate(eq(pretendArguments), any())).willReturn(dissociateToken);
+        dissociatePrecompile
+                .when(() -> decodeDissociate(eq(pretendArguments), any()))
+                .thenReturn(dissociateToken);
         given(syntheticTxnFactory.createDissociate(dissociateToken))
                 .willReturn(mockSynthBodyBuilder);
         given(dissociateLogic.validateSyntax(any())).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
@@ -277,9 +309,13 @@ class DissociatePrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKENS);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(decoder.decodeMultipleDissociations(eq(pretendArguments), any()))
-                .willReturn(multiDissociateOp);
+        multiDissociatePrecompile
+                .when(() -> decodeMultipleDissociations(eq(pretendArguments), any()))
+                .thenReturn(multiDissociateOp);
         given(syntheticTxnFactory.createDissociate(multiDissociateOp))
                 .willReturn(mockSynthBodyBuilder);
         given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
@@ -326,7 +362,13 @@ class DissociatePrecompilesTest {
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKENS));
-        given(decoder.decodeMultipleDissociations(any(), any())).willReturn(multiDissociateOp);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        multiDissociatePrecompile
+                .when(() -> decodeMultipleDissociations(any(), any()))
+                .thenReturn(multiDissociateOp);
         final var builder = TokenDissociateTransactionBody.newBuilder();
         builder.setAccount(multiDissociateOp.accountId());
         builder.addAllTokens(multiDissociateOp.tokenIds());
@@ -353,7 +395,10 @@ class DissociatePrecompilesTest {
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKEN));
-        given(decoder.decodeDissociate(any(), any())).willReturn(dissociateToken);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        dissociatePrecompile.when(() -> decodeDissociate(any(), any())).thenReturn(dissociateToken);
         given(syntheticTxnFactory.createDissociate(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -373,6 +418,41 @@ class DissociatePrecompilesTest {
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
         Mockito.verifyNoMoreInteractions(syntheticTxnFactory);
+    }
+
+    @Test
+    void decodeDissociateToken() {
+        dissociatePrecompile
+                .when(() -> decodeDissociate(DISSOCIATE_INPUT, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeDissociate(DISSOCIATE_INPUT, identity());
+
+        assertTrue(decodedInput.accountId().getAccountNum() > 0);
+        assertTrue(decodedInput.tokenIds().get(0).getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeMultipleDissociateToken() {
+        multiDissociatePrecompile
+                .when(() -> decodeMultipleDissociations(MULTIPLE_DISSOCIATE_INPUT, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeMultipleDissociations(MULTIPLE_DISSOCIATE_INPUT, identity());
+
+        assertTrue(decodedInput.accountId().getAccountNum() > 0);
+        assertEquals(2, decodedInput.tokenIds().size());
+        assertTrue(decodedInput.tokenIds().get(0).getTokenNum() > 0);
+        assertTrue(decodedInput.tokenIds().get(1).getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeMultipleDissociateTokenInvalidInput() {
+        UnaryOperator<byte[]> identity = identity();
+        multiDissociatePrecompile
+                .when(() -> decodeMultipleDissociations(INVALID_INPUT, identity))
+                .thenCallRealMethod();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> decodeMultipleDissociations(INVALID_INPUT, identity));
     }
 
     private void givenFrameContext() {

@@ -18,6 +18,7 @@ package com.hedera.services.store.models;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Comparator;
@@ -49,6 +50,10 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
 
     public EntityNumPair asEntityNumPair() {
         return EntityNumPair.fromLongs(num, serialNo);
+    }
+
+    public NftNumPair asNftNumPair() {
+        return NftNumPair.fromLongs(num, serialNo);
     }
 
     @Override

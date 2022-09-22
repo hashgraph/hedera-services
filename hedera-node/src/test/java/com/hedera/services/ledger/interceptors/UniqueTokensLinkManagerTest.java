@@ -268,9 +268,9 @@ class UniqueTokensLinkManagerTest {
     final NftId nftKey1 = NftId.withDefaultShardRealm(tokenNum, serialNum1);
     final NftId nftKey2 = NftId.withDefaultShardRealm(tokenNum, serialNum2);
     final NftId nftKey3 = NftId.withDefaultShardRealm(tokenNum, serialNum3);
-    final NftNumPair nftNumPair1 = nftKey1.asEntityNumPair().asNftNumPair();
-    final NftNumPair nftNumPair2 = nftKey2.asEntityNumPair().asNftNumPair();
-    final NftNumPair nftNumPair3 = nftKey3.asEntityNumPair().asNftNumPair();
+    final NftNumPair nftNumPair1 = nftKey1.asNftNumPair();
+    final NftNumPair nftNumPair2 = nftKey2.asNftNumPair();
+    final NftNumPair nftNumPair3 = nftKey3.asNftNumPair();
     private final MerkleAccount oldOwnerAccount = new MerkleAccount();
     private final MerkleAccount newOwnerAccount = new MerkleAccount();
     private final MerkleToken nftToken = new MerkleToken();

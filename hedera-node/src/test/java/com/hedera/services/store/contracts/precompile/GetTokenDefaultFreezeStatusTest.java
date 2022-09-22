@@ -19,7 +19,9 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.defaultFreezeStatusWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -37,8 +39,8 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -49,10 +51,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,7 +67,6 @@ class GetTokenDefaultFreezeStatusTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -79,8 +83,12 @@ class GetTokenDefaultFreezeStatusTest {
     @Mock private AccessorFactory accessorFactory;
 
     @Mock private AssetsLoader assetLoader;
+    public static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT =
+            Bytes.fromHexString(
+                    "0xa7daa18d00000000000000000000000000000000000000000000000000000000000003ff");
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<GetTokenDefaultFreezeStatus> getTokenDefaultFreezeStatus;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -98,7 +106,6 @@ class GetTokenDefaultFreezeStatusTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -107,6 +114,12 @@ class GetTokenDefaultFreezeStatusTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
+        getTokenDefaultFreezeStatus = Mockito.mockStatic(GetTokenDefaultFreezeStatus.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        getTokenDefaultFreezeStatus.close();
     }
 
     @Test
@@ -127,7 +140,9 @@ class GetTokenDefaultFreezeStatusTest {
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
-        given(decoder.decodeTokenDefaultFreezeStatus(any())).willReturn(defaultFreezeStatusWrapper);
+        getTokenDefaultFreezeStatus
+                .when(() -> decodeTokenDefaultFreezeStatus(any()))
+                .thenReturn(defaultFreezeStatusWrapper);
         given(encoder.encodeGetTokenDefaultFreezeStatus(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(wrappedLedgers.defaultFreezeStatus((any()))).willReturn(Boolean.TRUE);
@@ -142,6 +157,17 @@ class GetTokenDefaultFreezeStatusTest {
 
         // then
         assertEquals(successOutput, result);
+    }
+
+    @Test
+    void decodeGetTokenDefaultFreezeStatusInput() {
+        getTokenDefaultFreezeStatus
+                .when(() -> decodeTokenDefaultFreezeStatus(GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT))
+                .thenCallRealMethod();
+        final var decodedInput =
+                decodeTokenDefaultFreezeStatus(GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
     }
 
     private void givenMinimalContextForSuccessfulCall() {

@@ -41,12 +41,17 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.services.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenAllowanceWrapper;
+import com.hedera.services.store.contracts.precompile.impl.AllowancePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.BalanceOfPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
@@ -58,16 +63,19 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RedirectViewExecutorTest {
     @Mock private MessageFrame frame;
     @Mock private EncodingFacade encodingFacade;
-    @Mock private DecodingFacade decodingFacade;
     @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
     @Mock private WorldLedgers worldLedgers;
@@ -92,6 +100,32 @@ class RedirectViewExecutorTest {
     private static final Bytes answer = Bytes.of(1);
 
     RedirectViewExecutor subject;
+    private MockedStatic<AllowancePrecompile> allowancePrecompile;
+    private MockedStatic<GetApprovedPrecompile> getApprovedPrecompile;
+    private MockedStatic<IsApprovedForAllPrecompile> isApprovedForAllPrecompile;
+    private MockedStatic<BalanceOfPrecompile> balanceOfPrecompile;
+    private MockedStatic<OwnerOfPrecompile> ownerOfPrecompile;
+    private MockedStatic<TokenURIPrecompile> tokenURIPrecompile;
+
+    @BeforeEach
+    void setUp() {
+        allowancePrecompile = Mockito.mockStatic(AllowancePrecompile.class);
+        getApprovedPrecompile = Mockito.mockStatic(GetApprovedPrecompile.class);
+        isApprovedForAllPrecompile = Mockito.mockStatic(IsApprovedForAllPrecompile.class);
+        balanceOfPrecompile = Mockito.mockStatic(BalanceOfPrecompile.class);
+        ownerOfPrecompile = Mockito.mockStatic(OwnerOfPrecompile.class);
+        tokenURIPrecompile = Mockito.mockStatic(TokenURIPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        allowancePrecompile.close();
+        getApprovedPrecompile.close();
+        isApprovedForAllPrecompile.close();
+        balanceOfPrecompile.close();
+        ownerOfPrecompile.close();
+        tokenURIPrecompile.close();
+    }
 
     @Test
     void computeCostedNAME() {
@@ -122,8 +156,12 @@ class RedirectViewExecutorTest {
         final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
         final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
-        given(decodingFacade.decodeTokenAllowance(eq(nestedInput), eq(fungible), any()))
-                .willReturn(allowanceWrapper);
+        allowancePrecompile
+                .when(
+                        () ->
+                                AllowancePrecompile.decodeTokenAllowance(
+                                        eq(nestedInput), eq(fungible), any()))
+                .thenReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible)).willReturn(123L);
         given(encodingFacade.encodeAllowance(123L)).willReturn(answer);
 
@@ -135,8 +173,9 @@ class RedirectViewExecutorTest {
         final var nestedInput = prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
 
         final var getApprovedWrapper = new GetApprovedWrapper(nonfungibletoken, 123L);
-        given(decodingFacade.decodeGetApproved(nestedInput, nonfungibletoken))
-                .willReturn(getApprovedWrapper);
+        getApprovedPrecompile
+                .when(() -> GetApprovedPrecompile.decodeGetApproved(nestedInput, nonfungibletoken))
+                .thenReturn(getApprovedWrapper);
         given(worldLedgers.staticApprovedSpenderOf(NftId.fromGrpc(nonfungibletoken, 123L)))
                 .willReturn(Address.ALTBN128_ADD);
         given(worldLedgers.canonicalAddress(Address.ALTBN128_ADD)).willReturn(Address.ALTBN128_ADD);
@@ -151,8 +190,12 @@ class RedirectViewExecutorTest {
                 prerequisites(ABI_ID_ERC_IS_APPROVED_FOR_ALL, nonfungibleTokenAddress);
 
         final var isApproveForAll = new IsApproveForAllWrapper(nonfungibletoken, account, spender);
-        given(decodingFacade.decodeIsApprovedForAll(eq(nestedInput), eq(nonfungibletoken), any()))
-                .willReturn(isApproveForAll);
+        isApprovedForAllPrecompile
+                .when(
+                        () ->
+                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
+                                        eq(nestedInput), eq(nonfungibletoken), any()))
+                .thenReturn(isApproveForAll);
         given(worldLedgers.staticIsOperator(account, spender, nonfungibletoken)).willReturn(true);
         given(encodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
 
@@ -164,8 +207,12 @@ class RedirectViewExecutorTest {
         final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
         final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
-        given(decodingFacade.decodeTokenAllowance(eq(nestedInput), eq(fungible), any()))
-                .willReturn(allowanceWrapper);
+        allowancePrecompile
+                .when(
+                        () ->
+                                AllowancePrecompile.decodeTokenAllowance(
+                                        eq(nestedInput), eq(fungible), any()))
+                .thenReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible))
                 .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
 
@@ -204,7 +251,9 @@ class RedirectViewExecutorTest {
 
         final var result = 1L;
 
-        given(decodingFacade.decodeBalanceOf(eq(nestedInput), any())).willReturn(balanceOfWrapper);
+        balanceOfPrecompile
+                .when(() -> BalanceOfPrecompile.decodeBalanceOf(eq(nestedInput), any()))
+                .thenReturn(balanceOfWrapper);
         given(balanceOfWrapper.accountId()).willReturn(account);
         given(worldLedgers.balanceOf(account, fungible)).willReturn(result);
         given(encodingFacade.encodeBalance(result)).willReturn(answer);
@@ -219,7 +268,9 @@ class RedirectViewExecutorTest {
         final var result = Address.fromHexString("0x000000000000013");
         final var serialNum = 1L;
 
-        given(decodingFacade.decodeOwnerOf(nestedInput)).willReturn(ownerOfAndTokenURIWrapper);
+        ownerOfPrecompile
+                .when(() -> OwnerOfPrecompile.decodeOwnerOf(nestedInput))
+                .thenReturn(ownerOfAndTokenURIWrapper);
         given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
         given(worldLedgers.ownerOf(nonfungible)).willReturn(result);
         given(worldLedgers.canonicalAddress(result)).willReturn(result);
@@ -235,7 +286,9 @@ class RedirectViewExecutorTest {
         final var result = "some metadata";
         final var serialNum = 1L;
 
-        given(decodingFacade.decodeTokenUriNFT(nestedInput)).willReturn(ownerOfAndTokenURIWrapper);
+        tokenURIPrecompile
+                .when(() -> TokenURIPrecompile.decodeTokenUriNFT(nestedInput))
+                .thenReturn(ownerOfAndTokenURIWrapper);
         given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
         given(worldLedgers.metadataOf(nonfungible)).willReturn(result);
         given(encodingFacade.encodeTokenUri(result)).willReturn(answer);
@@ -263,9 +316,7 @@ class RedirectViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
         given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
-        this.subject =
-                new RedirectViewExecutor(
-                        input, frame, encodingFacade, decodingFacade, viewGasCalculator);
+        this.subject = new RedirectViewExecutor(input, frame, encodingFacade, viewGasCalculator);
         return nestedInput;
     }
 }

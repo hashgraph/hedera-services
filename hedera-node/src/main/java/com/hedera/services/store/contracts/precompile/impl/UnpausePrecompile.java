@@ -15,18 +15,25 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UNPAUSE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -39,33 +46,31 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class UnpausePrecompile extends AbstractWritePrecompile {
+    private static final Function UNPAUSE_TOKEN_FUNCTION =
+            new Function("unpauseToken(address)", INT);
+    private static final Bytes UNPAUSE_TOKEN_SELECTOR =
+            Bytes.wrap(UNPAUSE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER = TypeFactory.create(BYTES32);
     private UnpauseWrapper unpauseOp;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
 
     public UnpausePrecompile(
             WorldLedgers ledgers,
-            DecodingFacade decoder,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
             SideEffectsTracker sideEffects,
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
             PrecompilePricingUtils pricingUtils) {
-        super(
-                ledgers,
-                decoder,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
     }
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        unpauseOp = decoder.decodeUnpause(input);
+        unpauseOp = decodeUnpause(input);
         transactionBody = syntheticTxnFactory.createUnpause(unpauseOp);
         return transactionBody;
     }
@@ -107,5 +112,14 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
 
         /* --- Execute the transaction and capture its results --- */
         unpauseLogic.unpause(tokenId);
+    }
+
+    public static UnpauseWrapper decodeUnpause(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, UNPAUSE_TOKEN_SELECTOR, UNPAUSE_TOKEN_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new UnpauseWrapper(tokenID);
     }
 }
