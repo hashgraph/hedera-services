@@ -59,9 +59,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -182,15 +180,15 @@ class TransferLogicTest {
         final var firstAlias = ByteString.copyFromUtf8("fake");
         final var failingTrigger =
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
+        final var changes = List.of(failingTrigger);
 
-        given(autoCreationLogic.create(failingTrigger, accountsLedger, new HashMap<>()))
+        given(autoCreationLogic.create(failingTrigger, accountsLedger, changes))
                 .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
         accountsLedger.begin();
         accountsLedger.create(mockCreation);
         given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
 
-        assertFailsWith(
-                () -> subject.doZeroSum(List.of(failingTrigger)), INSUFFICIENT_ACCOUNT_BALANCE);
+        assertFailsWith(() -> subject.doZeroSum(changes), INSUFFICIENT_ACCOUNT_BALANCE);
 
         verify(autoCreationLogic).reclaimPendingAliases();
         assertTrue(accountsLedger.getCreatedKeys().isEmpty());
@@ -209,11 +207,9 @@ class TransferLogicTest {
         final var nftTransfer =
                 BalanceChange.changingNftOwnership(
                         Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, transfer, payer);
+        final var changes = List.of(nftTransfer);
 
-        final var map = new HashMap<ByteString, HashSet<Id>>();
-        map.put(firstAlias, new HashSet<>(Arrays.asList(Id.fromGrpcToken(nonFungibleTokenID))));
-
-        given(autoCreationLogic.create(nftTransfer, accountsLedger, map))
+        given(autoCreationLogic.create(nftTransfer, accountsLedger, changes))
                 .willReturn(Pair.of(OK, 100L));
         accountsLedger.begin();
         accountsLedger.create(mockCreation);
@@ -223,9 +219,9 @@ class TransferLogicTest {
         given(tokenStore.tryTokenChange(any())).willReturn(OK);
         given(txnCtx.activePayer()).willReturn(payer);
 
-        subject.doZeroSum(List.of(nftTransfer));
+        subject.doZeroSum(changes);
 
-        verify(autoCreationLogic).create(nftTransfer, accountsLedger, map);
+        verify(autoCreationLogic).create(nftTransfer, accountsLedger, changes);
         assertFalse(accountsLedger.getCreatedKeys().isEmpty());
     }
 
@@ -246,17 +242,11 @@ class TransferLogicTest {
                         aliasedAa(firstAlias, 10L),
                         payer);
 
-        final var map = new HashMap<ByteString, HashSet<Id>>();
-        map.put(
-                firstAlias,
-                new HashSet<>(
-                        Arrays.asList(
-                                Id.fromGrpcToken(fungibleTokenID),
-                                Id.fromGrpcToken(anotherFungibleTokenID))));
+        final var changes = List.of(fungibleTransfer, anotherFungibleTransfer);
 
-        given(autoCreationLogic.create(fungibleTransfer, accountsLedger, map))
+        given(autoCreationLogic.create(fungibleTransfer, accountsLedger, changes))
                 .willReturn(Pair.of(OK, 100L));
-        given(autoCreationLogic.create(anotherFungibleTransfer, accountsLedger, map))
+        given(autoCreationLogic.create(anotherFungibleTransfer, accountsLedger, changes))
                 .willReturn(Pair.of(OK, 100L));
         accountsLedger.begin();
         accountsLedger.create(mockCreation);
@@ -266,10 +256,10 @@ class TransferLogicTest {
         given(tokenStore.tryTokenChange(any())).willReturn(OK);
         given(txnCtx.activePayer()).willReturn(payer);
 
-        subject.doZeroSum(List.of(fungibleTransfer, anotherFungibleTransfer));
+        subject.doZeroSum(changes);
 
-        verify(autoCreationLogic).create(fungibleTransfer, accountsLedger, map);
-        verify(autoCreationLogic).create(anotherFungibleTransfer, accountsLedger, map);
+        verify(autoCreationLogic).create(fungibleTransfer, accountsLedger, changes);
+        verify(autoCreationLogic).create(anotherFungibleTransfer, accountsLedger, changes);
         assertFalse(accountsLedger.getCreatedKeys().isEmpty());
     }
 
@@ -292,6 +282,7 @@ class TransferLogicTest {
         final var nftTransfer =
                 BalanceChange.changingNftOwnership(
                         Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, transfer, payer);
+        final var changes = List.of(fungibleTransfer, nftTransfer);
 
         Map<ByteString, EntityNum> immutableMap = Map.of(firstAlias, payerNum);
         given(workingView.aliases()).willReturn(new HashMap<>(immutableMap));
@@ -302,12 +293,10 @@ class TransferLogicTest {
         accountsLedger.create(payer);
 
         given(tokenStore.tryTokenChange(any())).willReturn(OK);
+        subject.doZeroSum(changes);
 
-        subject.doZeroSum(List.of(fungibleTransfer, nftTransfer));
-
-        verify(autoCreationLogic, never())
-                .create(fungibleTransfer, accountsLedger, new HashMap<>());
-        verify(autoCreationLogic, never()).create(nftTransfer, accountsLedger, new HashMap<>());
+        verify(autoCreationLogic, never()).create(fungibleTransfer, accountsLedger, changes);
+        verify(autoCreationLogic, never()).create(nftTransfer, accountsLedger, changes);
         assertFalse(accountsLedger.getCreatedKeys().isEmpty());
     }
 
@@ -325,7 +314,9 @@ class TransferLogicTest {
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         final var secondTrigger =
                 BalanceChange.changingHbar(aliasedAa(secondAlias, secondAmount), payer);
-        given(autoCreationLogic.create(firstTrigger, accountsLedger, new HashMap<>()))
+        final var changes = List.of(firstTrigger, secondTrigger);
+
+        given(autoCreationLogic.create(firstTrigger, accountsLedger, changes))
                 .willAnswer(
                         invocationOnMock -> {
                             accountsLedger.create(firstNewAccount);
@@ -334,7 +325,7 @@ class TransferLogicTest {
                             change.setNewBalance(change.getAggregatedUnits());
                             return Pair.of(OK, autoFee);
                         });
-        given(autoCreationLogic.create(secondTrigger, accountsLedger, new HashMap<>()))
+        given(autoCreationLogic.create(secondTrigger, accountsLedger, changes))
                 .willAnswer(
                         invocationOnMock -> {
                             accountsLedger.create(secondNewAccount);
@@ -343,7 +334,6 @@ class TransferLogicTest {
                             change.setNewBalance(change.getAggregatedUnits());
                             return Pair.of(OK, autoFee);
                         });
-        final var changes = List.of(firstTrigger, secondTrigger);
 
         final var funding = IdUtils.asAccount("0.0.98");
         accountsLedger.begin();

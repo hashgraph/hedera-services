@@ -27,7 +27,6 @@ import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
@@ -41,7 +40,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -49,9 +47,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -118,10 +113,6 @@ public class TransferLogic {
         var validity = OK;
         var autoCreationFee = 0L;
 
-        // count number of tokens that need to associated with an alias for creating
-        // maxAutoAssociations on auto-created account.
-        final var tokenAliasMap = countTokensForCreations(changes);
-
         for (var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
@@ -135,7 +126,7 @@ public class TransferLogic {
                                     + change
                                     + " with null autoCreationLogic");
                 }
-                final var result = autoCreationLogic.create(change, accountsLedger, tokenAliasMap);
+                final var result = autoCreationLogic.create(change, accountsLedger, changes);
                 validity = result.getKey();
                 autoCreationFee += result.getValue();
                 if (validity == OK && (change.isForToken())) {
@@ -159,6 +150,9 @@ public class TransferLogic {
             }
         }
 
+        // clears all temporary token aliases analyzed from the changes.
+        autoCreationLogic.clearTokenAliasMap();
+
         if (validity == OK) {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
@@ -177,32 +171,6 @@ public class TransferLogic {
     private boolean shouldAutoCreate(final BalanceChange change) {
         return change.hasNonEmptyAlias()
                 || (change.isForNft() && change.hasNonEmptyCounterPartyAlias());
-    }
-
-    private Map<ByteString, HashSet<Id>> countTokensForCreations(
-            final List<BalanceChange> changes) {
-        final var map = new HashMap<ByteString, HashSet<Id>>();
-
-        for (final var change : changes) {
-            var alias = ByteString.EMPTY;
-
-            if ((change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
-                alias = change.counterPartyAlias();
-            } else if (change.isForFungibleToken() && change.hasNonEmptyAlias()) {
-                alias = change.alias();
-            }
-
-            if (alias != ByteString.EMPTY) {
-                if (map.containsKey(alias)) {
-                    final var oldSet = map.get(alias);
-                    oldSet.add(change.getToken());
-                    map.put(alias, oldSet);
-                } else {
-                    map.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
-                }
-            }
-        }
-        return map;
     }
 
     private void payAutoCreationFee(final long autoCreationFee) {
