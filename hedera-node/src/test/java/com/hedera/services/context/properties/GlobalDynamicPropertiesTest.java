@@ -97,7 +97,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.requireMinStakeToReward());
         assertTrue(subject.isTraceabilityMigrationEnabled());
         assertFalse(subject.shouldCompressRecordFilesOnCreation());
-        assertTrue(subject.areHTSAutoCreationsEnabled());
+        assertTrue(subject.areTokenAutoCreationsEnabled());
     }
 
     @Test
@@ -246,7 +246,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isTraceabilityMigrationEnabled());
         assertTrue(subject.shouldItemizeStorageFees());
         assertTrue(subject.shouldCompressRecordFilesOnCreation());
-        assertFalse(subject.areHTSAutoCreationsEnabled());
+        assertFalse(subject.areTokenAutoCreationsEnabled());
     }
 
     @Test

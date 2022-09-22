@@ -76,7 +76,7 @@ public class RoyaltyFeeAssessor {
                     // A NFT transfer with royalty fees to an unknown alias is not possible, since
                     // the auto-created
                     // account will not have any hbar to pay the fallback fee
-                    if (dynamicProperties.areHTSAutoCreationsEnabled()
+                    if (dynamicProperties.areTokenAutoCreationsEnabled()
                             && change.hasNonEmptyCounterPartyAlias()) {
                         return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
                     }

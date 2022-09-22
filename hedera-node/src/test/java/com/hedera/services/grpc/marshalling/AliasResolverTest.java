@@ -112,7 +112,7 @@ class AliasResolverTest {
         given(aliasManager.lookupIdBy(someAlias)).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(otherAlias)).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(anotherValidAlias)).willReturn(MISSING_NUM);
-        given(properties.areHTSAutoCreationsEnabled()).willReturn(true);
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
 
         final var resolvedOp = subject.resolve(op, aliasManager);
 

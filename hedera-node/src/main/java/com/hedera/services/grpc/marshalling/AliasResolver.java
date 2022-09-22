@@ -130,7 +130,7 @@ public class AliasResolver {
                         resolveInternalFungible(
                                 aliasManager, adjust, resolvedTokenAdjust::addTransfers, true);
 
-                if (properties.areHTSAutoCreationsEnabled()) {
+                if (properties.areTokenAutoCreationsEnabled()) {
                     // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
                     // result
                     perceiveNonNftResult(result, adjust);
@@ -157,7 +157,7 @@ public class AliasResolver {
                                 change.getReceiverAccountID(),
                                 resolvedChange::setReceiverAccountID);
 
-                if (properties.areHTSAutoCreationsEnabled()) {
+                if (properties.areTokenAutoCreationsEnabled()) {
                     // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
                     // result
                     perceiveNftReceiverResult(receiverResult, change);
