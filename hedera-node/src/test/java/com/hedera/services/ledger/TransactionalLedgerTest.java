@@ -21,7 +21,6 @@ import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.HBAR_ALLOWANCES;
 import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
@@ -61,7 +60,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
@@ -472,25 +470,6 @@ class TransactionalLedgerTest {
     }
 
     @Test
-    void checksIfAliasExists() {
-        setupInterceptedAccountsLedger();
-        final var alias = ByteString.copyFromUtf8("test");
-        final var nonExistingAlias = ByteString.copyFromUtf8("dummy");
-        final var aliasedId = AccountID.newBuilder().setAlias(alias).build();
-        given(workingView.aliases()).willReturn(Map.of(alias, EntityNum.fromLong(1L)));
-
-        accountsLedger.begin();
-        accountsLedger.create(asAccount(EntityNum.fromLong(1L).toEntityId()));
-
-        boolean has1 = accountsLedger.exists(aliasedId);
-        boolean has2 =
-                accountsLedger.exists(AccountID.newBuilder().setAlias(nonExistingAlias).build());
-
-        assertTrue(has1);
-        assertFalse(has2);
-    }
-
-    @Test
     void delegatesDestroyToRemove() {
         setupTestLedger();
 
@@ -833,9 +812,8 @@ class TransactionalLedgerTest {
 
         when(backingAccounts.contains(rand)).thenReturn(true);
         when(backingAccounts.getImmutableRef(rand)).thenReturn(randMerkleAccount);
-        when(backingAccounts.contains(EntityNum.fromLong(8L).toGrpcAccountId())).thenReturn(true);
-        given(workingView.aliases())
-                .willReturn(Map.of(aliasAccountId.getAlias(), EntityNum.fromLong(8L)));
+        when(backingAccounts.contains(aliasAccountId)).thenReturn(true);
+        when(backingAccounts.getImmutableRef(aliasAccountId)).thenReturn(aliasMerkleAccount);
 
         accountsLedger.begin();
         accountsLedger.set(rand, AccountProperty.BALANCE, 4L);
