@@ -25,10 +25,13 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
@@ -45,7 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TreasuryReturnHelperTest {
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+    @Mock private UniqueTokenMapAdapter nfts;
 
     private final List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
     private final List<EntityId> tokenTypes = new ArrayList<>();
@@ -299,11 +302,14 @@ class TreasuryReturnHelperTest {
         nonFungibleToken.setTreasury(treasuryNum.toEntityId());
     }
 
-    private final EntityNumPair aNftKey =
-            EntityNumPair.fromLongs(nonFungibleTokenNum.longValue(), 666L);
+    private final NftId aNftKey =
+            NftId.withDefaultShardRealm(nonFungibleTokenNum.longValue(), 666L);
     private final EntityNumPair bNftKey =
             EntityNumPair.fromLongs(deletedTokenNum.longValue(), 777L);
-    private final MerkleUniqueToken someNft =
-            new MerkleUniqueToken(
-                    expiredAccountNum.toEntityId(), "A".getBytes(), RichInstant.MISSING_INSTANT);
+    private final UniqueTokenAdapter someNft =
+            UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(
+                            expiredAccountNum.toEntityId(),
+                            "A".getBytes(),
+                            RichInstant.MISSING_INSTANT));
 }

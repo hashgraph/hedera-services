@@ -25,7 +25,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -33,6 +33,7 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -51,7 +52,8 @@ public class ImmutableStateChildren implements StateChildren {
     private final WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private final WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
     private final WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
-    private final WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+    // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
+    private final NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
     private final WeakReference<MerkleScheduledTransactions> schedules;
     private final WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
     private final WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
@@ -64,7 +66,7 @@ public class ImmutableStateChildren implements StateChildren {
     private final WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
     private final Instant signedAt;
 
-    public ImmutableStateChildren(ServicesState state) {
+    public ImmutableStateChildren(final ServicesState state) {
         this.signedAt = state.getTimeOfLastHandledTxn();
 
         accounts = new WeakReference<>(state.accounts());
@@ -77,7 +79,7 @@ public class ImmutableStateChildren implements StateChildren {
         networkCtx = new WeakReference<>(state.networkCtx());
         addressBook = new WeakReference<>(state.addressBook());
         specialFiles = new WeakReference<>(state.specialFiles());
-        uniqueTokens = new WeakReference<>(state.uniqueTokens());
+        uniqueTokens = new NonAtomicReference<>(state.uniqueTokens());
         runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
         aliases = new WeakReference<>(state.aliases());
         stakingInfo = new WeakReference<>(state.stakingInfo());
@@ -139,7 +141,7 @@ public class ImmutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
+    public UniqueTokenMapAdapter uniqueTokens() {
         return Objects.requireNonNull(uniqueTokens.get());
     }
 

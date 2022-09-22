@@ -17,7 +17,10 @@ package com.hedera.services.state.migration;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.utils.NftNumPair;
+import com.swirlds.common.FastCopyable;
 import javax.annotation.Nullable;
 
 /**
@@ -27,7 +30,7 @@ import javax.annotation.Nullable;
  * {@link UniqueTokenValue}. It serves to adapt the selected underlying representation to where it
  * is used.
  */
-public class UniqueTokenAdapter {
+public class UniqueTokenAdapter implements FastCopyable {
 
     private final UniqueTokenValue uniqueTokenValue;
     private final MerkleUniqueToken merkleUniqueToken;
@@ -92,11 +95,19 @@ public class UniqueTokenAdapter {
         return isVirtual ? uniqueTokenValue.getSpender() : merkleUniqueToken.getSpender();
     }
 
+    @Override
+    public UniqueTokenAdapter copy() {
+        return isVirtual
+                ? UniqueTokenAdapter.wrap(uniqueTokenValue.copy())
+                : UniqueTokenAdapter.wrap(merkleUniqueToken.copy());
+    }
+
     /**
      * Convenience function for accessing underlying immutability state.
      *
      * @return whether the underlying instance is immutable.
      */
+    @Override
     public boolean isImmutable() {
         return isVirtual ? uniqueTokenValue.isImmutable() : merkleUniqueToken.isImmutable();
     }
@@ -174,6 +185,30 @@ public class UniqueTokenAdapter {
         }
     }
 
+    public void setPrev(NftNumPair prev) {
+        if (isVirtual) {
+            uniqueTokenValue.setPrev(prev);
+        } else {
+            merkleUniqueToken.setPrev(prev);
+        }
+    }
+
+    public void setNext(NftNumPair next) {
+        if (isVirtual) {
+            uniqueTokenValue.setNext(next);
+        } else {
+            merkleUniqueToken.setNext(next);
+        }
+    }
+
+    public NftNumPair getPrev() {
+        return isVirtual ? uniqueTokenValue.getPrev() : merkleUniqueToken.getPrev();
+    }
+
+    public NftNumPair getNext() {
+        return isVirtual ? uniqueTokenValue.getNext() : merkleUniqueToken.getNext();
+    }
+
     @Override
     public boolean equals(final Object other) {
         if (other == null || other.getClass() != UniqueTokenAdapter.class) {
@@ -190,5 +225,9 @@ public class UniqueTokenAdapter {
     @Override
     public int hashCode() {
         return isVirtual ? uniqueTokenValue.hashCode() : merkleUniqueToken.hashCode();
+    }
+
+    public RichInstant getCreationTime() {
+        return isVirtual ? uniqueTokenValue.getCreationTime() : merkleUniqueToken.getCreationTime();
     }
 }

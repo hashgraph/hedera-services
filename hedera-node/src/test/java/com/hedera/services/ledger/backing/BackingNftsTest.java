@@ -25,12 +25,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +46,6 @@ class BackingNftsTest {
     private final NftId cNftId = new NftId(0, 0, 5, 6);
     private final EntityNumPair aKey = EntityNumPair.fromLongs(3, 4);
     private final EntityNumPair bKey = EntityNumPair.fromLongs(4, 5);
-    private final EntityNumPair cKey = EntityNumPair.fromLongs(5, 6);
     private final UniqueTokenAdapter aValue =
             UniqueTokenAdapter.wrap(
                     new MerkleUniqueToken(
@@ -69,17 +70,25 @@ class BackingNftsTest {
         delegate.put(aKey, theToken);
         delegate.put(bKey, notTheToken);
 
-        subject = new BackingNfts(() -> delegate);
+        subject = new BackingNfts(() -> UniqueTokenMapAdapter.wrap(delegate));
     }
 
     @Test
     void doSupportGettingIdSet() {
         // when:
-        subject = new BackingNfts(() -> delegate);
+        subject = new BackingNfts(() -> UniqueTokenMapAdapter.wrap(delegate));
 
         // expect:
         assertNotNull(subject.idSet());
         assertEquals(2, subject.size());
+    }
+
+    @Test
+    void virtualMapDoesNotSupportIdSet() {
+        subject = new BackingNfts(() -> UniqueTokenMapAdapter.wrap(new VirtualMap<>()));
+
+        // expect:
+        assertThrows(UnsupportedOperationException.class, subject::idSet);
     }
 
     @Test
