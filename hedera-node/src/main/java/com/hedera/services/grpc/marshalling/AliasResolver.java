@@ -133,7 +133,7 @@ public class AliasResolver {
                 if (properties.areHTSAutoCreationsEnabled()) {
                     // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
                     // result
-                    perceiveNonNftReceiverResult(result, adjust);
+                    perceiveNonNftResult(result, adjust);
                 } else if (result != Result.KNOWN_ALIAS) {
                     perceivedMissing++;
                 }
@@ -180,7 +180,7 @@ public class AliasResolver {
             final var result =
                     resolveInternalFungible(
                             aliasManager, adjust, resolvedAdjusts::addAccountAmounts, false);
-            perceiveNonNftReceiverResult(result, adjust);
+            perceiveNonNftResult(result, adjust);
         }
         return resolvedAdjusts.build();
     }
@@ -257,15 +257,15 @@ public class AliasResolver {
     }
 
     private void perceiveNftReceiverResult(final Result result, final NftTransfer change) {
-        perceiveReceiverResult(
+        perceiveResult(
                 result, change.getSerialNumber(), change.getReceiverAccountID().getAlias(), false);
     }
 
-    private void perceiveNonNftReceiverResult(final Result result, final AccountAmount adjust) {
-        perceiveReceiverResult(result, adjust.getAmount(), adjust.getAccountID().getAlias(), true);
+    private void perceiveNonNftResult(final Result result, final AccountAmount adjust) {
+        perceiveResult(result, adjust.getAmount(), adjust.getAccountID().getAlias(), true);
     }
 
-    private void perceiveReceiverResult(
+    private void perceiveResult(
             final Result result,
             final long assetChange,
             final ByteString alias,

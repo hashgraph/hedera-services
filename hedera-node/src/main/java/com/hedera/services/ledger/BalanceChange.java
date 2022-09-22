@@ -15,6 +15,7 @@
  */
 package com.hedera.services.ledger;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -28,6 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -333,7 +335,7 @@ public class BalanceChange {
             return MoreObjects.toStringHelper(BalanceChange.class)
                     .add("token", token == null ? "ℏ" : token)
                     .add("account", account)
-                    .add("alias", alias.toStringUtf8())
+                    .add("alias", CommonUtils.hex(alias.toByteArray()))
                     .add("units", aggregatedUnits)
                     .add("expectedDecimals", expectedDecimals)
                     .toString();
@@ -343,7 +345,7 @@ public class BalanceChange {
                     .add("serialNo", aggregatedUnits)
                     .add("from", account)
                     .add("to", Id.fromGrpcAccount(counterPartyAccountId))
-                    .add("counterPartyAlias", counterPartyAlias.toStringUtf8())
+                    .add("counterPartyAlias", CommonUtils.hex(counterPartyAlias.toByteArray()))
                     .toString();
         }
     }
@@ -361,13 +363,10 @@ public class BalanceChange {
     }
 
     public boolean hasNonEmptyAlias() {
-        return accountId.getAccountNum() == 0 && !alias.isEmpty();
+        return isAlias(accountId);
     }
 
     public boolean hasNonEmptyCounterPartyAlias() {
-        return isForNft()
-                && counterPartyAccountId != null
-                && counterPartyAccountId.getAccountNum() == 0
-                && !counterPartyAlias.isEmpty();
+        return isForNft() && counterPartyAccountId != null && isAlias(counterPartyAccountId);
     }
 }

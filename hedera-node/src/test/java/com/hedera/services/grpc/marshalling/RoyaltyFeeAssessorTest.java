@@ -160,6 +160,7 @@ class RoyaltyFeeAssessorTest {
                 List.of(
                         FcCustomFee.fixedFee(1, null, otherCollector),
                         FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+        given(globalDynamicProperties.areHTSAutoCreationsEnabled()).willReturn(true);
 
         // when:
         final var result =

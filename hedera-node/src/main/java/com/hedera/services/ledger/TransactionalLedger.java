@@ -15,7 +15,6 @@
  */
 package com.hedera.services.ledger;
 
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -27,7 +26,6 @@ import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -302,23 +300,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
     /** {@inheritDoc} */
     @Override
     public boolean exists(final K id) {
-        final var unaliasedId = resolveIfAlias(id);
-        if (unaliasedId == null) {
-            return false;
-        }
-        return existsOrIsPendingCreation(unaliasedId) && !isZombie(unaliasedId);
-    }
-
-    private K resolveIfAlias(final K id) {
-        if (id instanceof AccountID accountId && isAlias(accountId)) {
-            final var aliasNum = currentView.get().aliases().get(accountId.getAlias());
-            if (aliasNum != null) {
-                return (K) aliasNum.toGrpcAccountId();
-            } else {
-                return null;
-            }
-        }
-        return id;
+        return existsOrIsPendingCreation(id) && !isZombie(id);
     }
 
     /** {@inheritDoc} */
