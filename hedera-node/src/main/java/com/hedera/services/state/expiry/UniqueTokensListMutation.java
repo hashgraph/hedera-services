@@ -65,12 +65,12 @@ public class UniqueTokensListMutation implements MapValueListMutation<NftId, Uni
 
     @Override
     public void updatePrev(final UniqueTokenAdapter node, final NftId prev) {
-        node.setPrev(prev.asEntityNumPair().asNftNumPair());
+        node.setPrev(prev.asNftNumPair());
     }
 
     @Override
     public void updateNext(final UniqueTokenAdapter node, final NftId next) {
-        node.setNext(next.asEntityNumPair().asNftNumPair());
+        node.setNext(next.asNftNumPair());
     }
 
     @Nullable
