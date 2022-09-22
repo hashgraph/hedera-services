@@ -28,6 +28,7 @@ import com.hedera.services.contracts.operation.HederaCreate2Operation;
 import com.hedera.services.contracts.operation.HederaCreateOperation;
 import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
 import com.hedera.services.contracts.operation.HederaLogOperation;
+import com.hedera.services.contracts.operation.HederaPrngSeedOperator;
 import com.hedera.services.contracts.operation.HederaSLoadOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
@@ -190,4 +191,10 @@ public interface ContractsV_0_31Operations {
     @IntoSet
     @V_0_31
     Operation bindHederaSLoadOperation(HederaSLoadOperation sLoadOperation);
+
+    @Binds
+    @Singleton
+    @IntoSet
+    @V_0_31
+    Operation bindHederaPrngSeedOperation(HederaPrngSeedOperator prngSeedOperator);
 }
