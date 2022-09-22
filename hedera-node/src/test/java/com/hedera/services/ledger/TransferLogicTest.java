@@ -134,8 +134,7 @@ class TransferLogicTest {
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>(),
-                        () -> workingView);
+                        new ChangeSummaryManager<>());
         subject =
                 new TransferLogic(
                         accountsLedger,

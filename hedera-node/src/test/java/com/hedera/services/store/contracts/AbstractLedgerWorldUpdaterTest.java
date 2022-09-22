@@ -42,7 +42,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -117,7 +116,6 @@ class AbstractLedgerWorldUpdaterTest {
     @Mock private EntityAccess entityAccess;
     @Mock private StaticEntityAccess staticEntityAccess;
     @Mock private WorldLedgers mockLedgers;
-    @Mock private StateView view;
 
     private WorldLedgers ledgers;
     private MockLedgerWorldUpdater subject;
@@ -566,29 +564,25 @@ class AbstractLedgerWorldUpdaterTest {
                         TokenRelProperty.class,
                         MerkleTokenRelStatus::new,
                         new HashMapBackingTokenRels(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final var accountsLedger =
                 new TransactionalLedger<>(
                         AccountProperty.class,
                         MerkleAccount::new,
                         new HashMapBackingAccounts(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final var tokensLedger =
                 new TransactionalLedger<>(
                         TokenProperty.class,
                         MerkleToken::new,
                         new HashMapBackingTokens(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
         final var nftsLedger =
                 new TransactionalLedger<>(
                         NftProperty.class,
                         UniqueTokenAdapter::newEmptyMerkleToken,
                         new HashMapBackingNfts(),
-                        new ChangeSummaryManager<>(),
-                        () -> view);
+                        new ChangeSummaryManager<>());
 
         tokenRelsLedger.begin();
         accountsLedger.begin();
