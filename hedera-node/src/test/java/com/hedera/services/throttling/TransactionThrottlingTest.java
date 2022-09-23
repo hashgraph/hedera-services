@@ -34,7 +34,7 @@ class TransactionThrottlingTest {
     TransactionThrottling subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         functionalThrottling = mock(FunctionalityThrottling.class);
 
         subject = new TransactionThrottling(functionalThrottling);

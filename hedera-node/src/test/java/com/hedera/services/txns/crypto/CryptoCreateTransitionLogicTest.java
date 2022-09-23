@@ -116,7 +116,7 @@ class CryptoCreateTransitionLogicTest {
     private UsageLimits usageLimits;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         txnCtx = mock(TransactionContext.class);
         usageLimits = mock(UsageLimits.class);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
