@@ -246,15 +246,15 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                     decodeFunctionCall(
                             input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
             token = impliedTokenId;
-        } else if (isFungible) {
-            decodedArguments =
-                    decodeFunctionCall(
-                            input, HAPI_TRANSFER_FROM_SELECTOR, HAPI_TRANSFER_FROM_DECODER);
-            token = convertAddressBytesToTokenID(decodedArguments.get(0));
         } else {
             decodedArguments =
-                    decodeFunctionCall(
-                            input, HAPI_TRANSFER_FROM_NFT_SELECTOR, HAPI_TRANSFER_FROM_DECODER);
+                    isFungible
+                            ? decodeFunctionCall(
+                                    input, HAPI_TRANSFER_FROM_SELECTOR, HAPI_TRANSFER_FROM_DECODER)
+                            : decodeFunctionCall(
+                                    input,
+                                    HAPI_TRANSFER_FROM_NFT_SELECTOR,
+                                    HAPI_TRANSFER_FROM_DECODER);
             token = convertAddressBytesToTokenID(decodedArguments.get(0));
         }
 
