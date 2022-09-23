@@ -150,19 +150,18 @@ public class TransferLogic {
             }
         }
 
-        // clears all temporary token aliases analyzed from the changes.
-        autoCreationLogic.clearTokenAliasMap();
-
         if (validity == OK) {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
                 payAutoCreationFee(autoCreationFee);
                 autoCreationLogic.submitRecordsTo(recordsHistorian);
+                autoCreationLogic.clearTokenAliasMap();
             }
         } else {
             dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
             if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
                 accountsLedger.undoCreations();
+                autoCreationLogic.clearTokenAliasMap();
             }
             throw new InvalidTransactionException(validity);
         }
