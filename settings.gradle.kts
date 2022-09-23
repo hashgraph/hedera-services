@@ -133,7 +133,6 @@ dependencyResolutionManagement {
             library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap").versionRef("swirlds-version")
             library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
             library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
-
         }
 
         // The libs of this catalog can be used for test or build uses.

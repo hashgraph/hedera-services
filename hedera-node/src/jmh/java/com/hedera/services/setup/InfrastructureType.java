@@ -15,8 +15,6 @@
  */
 package com.hedera.services.setup;
 
-import static com.hedera.services.setup.InfrastructureManager.CRYPTO;
-
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -32,8 +30,6 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.crypto.MerkleCryptography;
-import com.swirlds.common.merkle.crypto.internal.MerkleCryptoEngine;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
