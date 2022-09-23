@@ -740,6 +740,38 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils);
+                    case AbiConstants.ABI_ID_TRANSFER_FROM -> checkFeatureFlag(
+                            dynamicProperties.areAllowancesEnabled(),
+                            () ->
+                                    new ERCTransferPrecompile(
+                                            senderAddress,
+                                            true,
+                                            ledgers,
+                                            encoder,
+                                            updater,
+                                            sigsVerifier,
+                                            sideEffectsTracker,
+                                            syntheticTxnFactory,
+                                            infrastructureFactory,
+                                            precompilePricingUtils,
+                                            functionId,
+                                            impliedTransfersMarshal));
+                    case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
+                            dynamicProperties.areAllowancesEnabled(),
+                            () ->
+                                    new ERCTransferPrecompile(
+                                            senderAddress,
+                                            false,
+                                            ledgers,
+                                            encoder,
+                                            updater,
+                                            sigsVerifier,
+                                            sideEffectsTracker,
+                                            syntheticTxnFactory,
+                                            infrastructureFactory,
+                                            precompilePricingUtils,
+                                            functionId,
+                                            impliedTransfersMarshal));
                     default -> null;
                 };
         if (precompile != null) {

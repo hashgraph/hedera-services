@@ -23,6 +23,7 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.addApprovedAdjustment;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.addSignedAdjustment;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
@@ -74,6 +75,17 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER =
             TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
+    private static final Function HAPI_TRANSFER_FROM_FUNCTION =
+            new Function("transferFrom(address,address,address,uint256)");
+    private static final Bytes HAPI_TRANSFER_FROM_SELECTOR =
+            Bytes.wrap(HAPI_TRANSFER_FROM_FUNCTION.selector());
+    private static final Function HAPI_TRANSFER_FROM_NFT_FUNCTION =
+            new Function("transferNFTFrom(address,address,address,uint256)");
+    private static final Bytes HAPI_TRANSFER_FROM_NFT_SELECTOR =
+            Bytes.wrap(HAPI_TRANSFER_FROM_NFT_FUNCTION.selector());
+    private static final ABIType<Tuple> HAPI_TRANSFER_FROM_DECODER =
+            TypeFactory.create("(bytes32,bytes32,bytes32,uint256)");
+
     private final TokenID tokenID;
     private final AccountID callerAccountID;
     private final boolean isFungible;
@@ -110,17 +122,48 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         this.encoder = encoder;
     }
 
+    public ERCTransferPrecompile(
+            final Address callerAccount,
+            final boolean isFungible,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final HederaStackedWorldStateUpdater updater,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final int functionId,
+            final ImpliedTransfersMarshal impliedTransfersMarshal) {
+        this(
+                null,
+                callerAccount,
+                isFungible,
+                ledgers,
+                encoder,
+                updater,
+                sigsVerifier,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils,
+                functionId,
+                impliedTransfersMarshal);
+    }
+
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         initializeHederaTokenStore();
 
-        final var nestedInput = input.slice(24);
+        final var nestedInput = tokenID == null ? input : input.slice(24);
         transferOp =
                 switch (nestedInput.getInt(0)) {
                     case AbiConstants.ABI_ID_ERC_TRANSFER -> decodeERCTransfer(
                             nestedInput, tokenID, callerAccountID, aliasResolver);
-                    case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
+                    case AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
+                            AbiConstants.ABI_ID_TRANSFER_FROM,
+                            AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
                         final var operatorId = EntityId.fromGrpcAccountId(callerAccountID);
                         yield decodeERCTransferFrom(
                                 nestedInput,
@@ -154,9 +197,15 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         }
 
         if (isFungible) {
-            frame.addLog(getLogForFungibleTransfer(asTypedEvmAddress(tokenID)));
+            frame.addLog(
+                    getLogForFungibleTransfer(
+                            asTypedEvmAddress(
+                                    tokenID != null ? tokenID : extractTokenIdFromSyntheticOp())));
         } else {
-            frame.addLog(getLogForNftExchange(asTypedEvmAddress(tokenID)));
+            frame.addLog(
+                    getLogForNftExchange(
+                            asTypedEvmAddress(
+                                    tokenID != null ? tokenID : extractTokenIdFromSyntheticOp())));
         }
     }
 
@@ -182,22 +231,43 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
     public static List<TokenTransferWrapper> decodeERCTransferFrom(
             final Bytes input,
-            final TokenID token,
+            final TokenID impliedTokenId,
             final boolean isFungible,
             final UnaryOperator<byte[]> aliasResolver,
             final WorldLedgers ledgers,
             final EntityId operatorId) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
+
+        final var offset = impliedTokenId == null ? 1 : 0;
+        final Tuple decodedArguments;
+        final TokenID token;
+
+        if (offset == 0) {
+            decodedArguments =
+                    decodeFunctionCall(
+                            input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
+            token = impliedTokenId;
+        } else if (isFungible) {
+            decodedArguments =
+                    decodeFunctionCall(
+                            input, HAPI_TRANSFER_FROM_SELECTOR, HAPI_TRANSFER_FROM_DECODER);
+            token = convertAddressBytesToTokenID(decodedArguments.get(0));
+        } else {
+            decodedArguments =
+                    decodeFunctionCall(
+                            input, HAPI_TRANSFER_FROM_NFT_SELECTOR, HAPI_TRANSFER_FROM_DECODER);
+            token = convertAddressBytesToTokenID(decodedArguments.get(0));
+        }
 
         final var from =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
-        final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+        final var to =
+                convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(offset + 1), aliasResolver);
 
         if (isFungible) {
             final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers =
                     new ArrayList<>();
-            final var amount = (BigInteger) decodedArguments.get(2);
+            final var amount = (BigInteger) decodedArguments.get(offset + 2);
 
             addSignedAdjustment(fungibleTransfers, token, to, amount.longValueExact());
 
@@ -211,7 +281,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                     new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
         } else {
             final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
-            final var serialNo = ((BigInteger) decodedArguments.get(2)).longValueExact();
+            final var serialNo = ((BigInteger) decodedArguments.get(offset + 2)).longValueExact();
             final var ownerId = ledgers.ownerIfPresent(NftId.fromGrpc(token, serialNo));
 
             if (operatorId.equals(ownerId)) {
@@ -276,10 +346,18 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        if (isFungible) {
-            return encoder.encodeEcFungibleTransfer(true);
+        if (tokenID != null) {
+            return isFungible ? encoder.encodeEcFungibleTransfer(true) : Bytes.EMPTY;
         } else {
-            return Bytes.EMPTY;
+            return super.getSuccessResultFor(childRecord);
+        }
+    }
+
+    private TokenID extractTokenIdFromSyntheticOp() {
+        if (isFungible) {
+            return transferOp.get(0).fungibleTransfers().get(0).getDenomination();
+        } else {
+            return transferOp.get(0).nftExchanges().get(0).getTokenType();
         }
     }
 }

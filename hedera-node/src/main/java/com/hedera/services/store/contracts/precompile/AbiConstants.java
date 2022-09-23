@@ -66,6 +66,10 @@ public final class AbiConstants {
     public static final int ABI_ID_GET_APPROVED = 0x098f2366;
     // isApprovedForAll(address token, address owner, address operator)
     public static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xf49f40db;
+    // transferFrom(address,address,address,uint256)
+    public static final int ABI_ID_TRANSFER_FROM = 0x15dacbea;
+    // transferNFTFrom(address,address,address,uint256)
+    public static final int ABI_ID_TRANSFER_FROM_NFT = 0x7d05dfd8;
 
     // **** HIP-218 + HIP-376 function selectors and event signatures ****
     // redirectForToken(address token, bytes memory data)
