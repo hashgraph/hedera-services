@@ -37,6 +37,8 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_PAUSE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_FROM;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_FROM_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
@@ -74,6 +76,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -108,6 +111,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
@@ -139,6 +143,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -198,6 +203,7 @@ class HTSPrecompiledContractTest {
     private MockedStatic<TokenGetCustomFeesPrecompile> tokenGetCustomFeesPrecompile;
     private MockedStatic<GetTokenExpiryInfoPrecompile> getTokenExpiryInfoPrecompile;
     private MockedStatic<UpdateTokenExpiryInfoPrecompile> updateTokenExpiryInfoPrecompile;
+    private MockedStatic<ERCTransferPrecompile> ercTransferPrecompile;
     @Mock private AssetsLoader assetLoader;
 
     private static final long viewTimestamp = 10L;
@@ -264,6 +270,7 @@ class HTSPrecompiledContractTest {
         tokenGetCustomFeesPrecompile = Mockito.mockStatic(TokenGetCustomFeesPrecompile.class);
         getTokenExpiryInfoPrecompile = Mockito.mockStatic(GetTokenExpiryInfoPrecompile.class);
         updateTokenExpiryInfoPrecompile = Mockito.mockStatic(UpdateTokenExpiryInfoPrecompile.class);
+        ercTransferPrecompile = Mockito.mockStatic(ERCTransferPrecompile.class);
     }
 
     @AfterEach
@@ -282,6 +289,7 @@ class HTSPrecompiledContractTest {
         tokenGetCustomFeesPrecompile.close();
         getTokenExpiryInfoPrecompile.close();
         updateTokenExpiryInfoPrecompile.close();
+        ercTransferPrecompile.close();
     }
 
     private ByteString fromString(final String value) {
@@ -920,6 +928,98 @@ class HTSPrecompiledContractTest {
 
         // then
         assertTrue(subject.getPrecompile() instanceof UnpausePrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForHapiTransferFromForFungibleToken() {
+        // given
+        givenFrameContext();
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        any(), any(), anyBoolean(), any(), any(), any()))
+                .thenReturn(List.of(ERC20PrecompilesTest.TOKEN_TRANSFER_FROM_WRAPPER));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof ERCTransferPrecompile);
+    }
+
+    @Test
+    void computeThrowsWhenTryingToCallFungibleHapiTransferFromWhenNotEnabled() {
+        // given
+        givenFrameContext();
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        any(), any(), anyBoolean(), any(), any(), any()))
+                .thenReturn(List.of(ERC20PrecompilesTest.TOKEN_TRANSFER_FROM_WRAPPER));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+
+        // then
+        assertThrows(
+                InvalidTransactionException.class, () -> subject.prepareComputation(input, a -> a));
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForHapiTransferFromForNFTToken() {
+        // given
+        givenFrameContext();
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        any(), any(), anyBoolean(), any(), any(), any()))
+                .thenReturn(List.of(ERC20PrecompilesTest.TOKEN_TRANSFER_FROM_NFT_WRAPPER));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof ERCTransferPrecompile);
+    }
+
+    @Test
+    void computeThrowsWhenTryingToCallHapiTransferFromNFTWhenNotEnabled() {
+        // given
+        givenFrameContext();
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        any(), any(), anyBoolean(), any(), any(), any()))
+                .thenReturn(List.of(ERC20PrecompilesTest.TOKEN_TRANSFER_FROM_NFT_WRAPPER));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+
+        // then
+        assertThrows(
+                InvalidTransactionException.class, () -> subject.prepareComputation(input, a -> a));
     }
 
     @Test
