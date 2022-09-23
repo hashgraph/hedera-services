@@ -14,7 +14,7 @@ contract HtsTransferFrom is HederaTokenService {
     }
 
     function htsTransferFromNFT(address token, address from, address to, uint256 serialNumber) public {
-        (int statusCode) = HederaTokenService.transferNFTFrom(token, from, to, serialNumber);
+        (int statusCode) = HederaTokenService.transferFromNFT(token, from, to, serialNumber);
         if (statusCode != HederaResponseCodes.SUCCESS) {
             revert ("Transfer from failed!");
         }

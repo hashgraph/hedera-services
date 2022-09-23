@@ -80,7 +80,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
     private static final Bytes HAPI_TRANSFER_FROM_SELECTOR =
             Bytes.wrap(HAPI_TRANSFER_FROM_FUNCTION.selector());
     private static final Function HAPI_TRANSFER_FROM_NFT_FUNCTION =
-            new Function("transferNFTFrom(address,address,address,uint256)");
+            new Function("transferFromNFT(address,address,address,uint256)");
     private static final Bytes HAPI_TRANSFER_FROM_NFT_SELECTOR =
             Bytes.wrap(HAPI_TRANSFER_FROM_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_TRANSFER_FROM_DECODER =
