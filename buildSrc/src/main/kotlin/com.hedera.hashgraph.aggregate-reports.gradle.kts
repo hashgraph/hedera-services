@@ -1,4 +1,3 @@
-import gradle.kotlin.dsl.accessors._b11489466969253728c59e08de1742ea.gitData
 import net.swiftzer.semver.SemVer
 import java.io.BufferedOutputStream
 

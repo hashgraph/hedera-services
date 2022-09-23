@@ -133,6 +133,7 @@ dependencyResolutionManagement {
             library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap").versionRef("swirlds-version")
             library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
             library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
+
         }
 
         // The libs of this catalog can be used for test or build uses.
@@ -149,6 +150,7 @@ dependencyResolutionManagement {
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")
             version("truth-java8-extension-version", "1.1.3")
+            version("classgraph-version", "4.8.65")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
@@ -171,6 +173,7 @@ dependencyResolutionManagement {
             library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")
             library("testcontainers-junit", "org.testcontainers", "junit-jupiter").versionRef("testcontainers-version")
             library("truth-java8-extension", "com.google.truth.extensions", "truth-java8-extension").versionRef("truth-java8-extension-version")
+            library("classgraph", "io.github.classgraph", "classgraph").versionRef("classgraph-version")
         }
     }
 }

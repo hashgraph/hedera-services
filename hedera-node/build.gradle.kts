@@ -45,6 +45,9 @@ dependencies {
     implementation(libs.eclipse.collections)
 
     testImplementation(testLibs.bundles.testing)
+    testImplementation(testLibs.classgraph)
+
+    jmhImplementation(libs.swirlds.common)
 
     runtimeOnly(libs.bundles.netty)
 }
