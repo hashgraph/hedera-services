@@ -188,8 +188,8 @@ public class RecordStreamManager {
 
         log.info(
                 "Finish initializing RecordStreamManager with: enableRecordStreaming: {},"
-                        + " recordStreamDir: {}, sidecarRecordStreamDir: {}, recordsLogPeriod: {} secs,"
-                        + " recordStreamQueueCapacity: {}, initialHash: {}",
+                    + " recordStreamDir: {}, sidecarRecordStreamDir: {}, recordsLogPeriod: {} secs,"
+                    + " recordStreamQueueCapacity: {}, initialHash: {}",
                 nodeLocalProperties::isRecordStreamEnabled,
                 () -> nodeScopedRecordLogDir,
                 () -> nodeScopedSidecarDir,
