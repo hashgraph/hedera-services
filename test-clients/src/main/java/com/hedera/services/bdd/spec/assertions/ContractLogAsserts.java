@@ -95,6 +95,17 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
         return this;
     }
 
+    public ContractLogAsserts booleanValue(boolean expected) {
+        registerProvider(
+                (spec, o) -> {
+                    byte[] data = dataFrom(o);
+                    boolean actual = data[data.length - 1] != 0;
+                    Assertions.assertEquals(
+                            expected, actual, "Bad boolean value in log data: " + actual);
+                });
+        return this;
+    }
+
     public ContractLogAsserts noTopics() {
         registerProvider(
                 (spec, o) -> {
