@@ -1088,6 +1088,15 @@ class ERC20PrecompilesTest {
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(frame)
+                .addLog(
+                        EncodingFacade.LogBuilder.logBuilder()
+                                .forLogger(tokenAddress)
+                                .forEventSignature(AbiConstants.APPROVAL_EVENT)
+                                .forIndexedArgument(senderAddress)
+                                .forIndexedArgument(recipientAddress)
+                                .forDataItem(APPROVE_WRAPPER.amount())
+                                .build());
     }
 
     @Test
@@ -1174,7 +1183,7 @@ class ERC20PrecompilesTest {
                                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                                 .forIndexedArgument(senderAddress)
                                 .forIndexedArgument(recipientAddress)
-                                .forDataItem(APPROVE_WRAPPER.amount())
+                                .forIndexedArgument(APPROVE_NFT_WRAPPER.serialNumber())
                                 .build());
     }
 
@@ -1352,15 +1361,6 @@ class ERC20PrecompilesTest {
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-        verify(frame)
-                .addLog(
-                        EncodingFacade.LogBuilder.logBuilder()
-                                .forLogger(tokenAddress)
-                                .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                                .forIndexedArgument(senderAddress)
-                                .forIndexedArgument(recipientAddress)
-                                .forIndexedArgument(APPROVE_WRAPPER.serialNumber())
-                                .build());
     }
 
     @Test
