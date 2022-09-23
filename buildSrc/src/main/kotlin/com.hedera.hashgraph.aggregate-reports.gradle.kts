@@ -1,3 +1,5 @@
+import gradle.kotlin.dsl.accessors._b11489466969253728c59e08de1742ea.gitData
+import net.swiftzer.semver.SemVer
 import java.io.BufferedOutputStream
 
 /*
@@ -19,6 +21,7 @@ import java.io.BufferedOutputStream
 plugins {
     `java-platform`
     id("org.sonarqube")
+    id("lazy.zoo.gradle.git-data-plugin")
 }
 
 //  Configure the Sonarqube extension for SonarCloud reporting. These properties should not be changed so no need to
@@ -62,3 +65,46 @@ tasks.create("githubVersionSummary") {
     }
 }
 
+tasks.create("showVersion") {
+    doLast {
+        println(project.version)
+    }
+}
+
+tasks.create("versionAsPrefixedCommit") {
+    doLast {
+        gitData.lastCommitHash?.let {
+            val prefix = findProperty("commitPrefix")?.toString() ?: "adhoc"
+            val newPrerel = prefix + ".x" + it.take(8)
+            val currVer = SemVer.parse(rootProject.version.toString())
+            try {
+                val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
+                Utils.updateVersion(rootProject, newVer)
+            } catch (e: java.lang.IllegalArgumentException) {
+                throw IllegalArgumentException(String.format("%s: %s", e.message, newPrerel), e)
+            }
+        }
+    }
+}
+
+tasks.create("versionAsSnapshot") {
+    doLast {
+        val currVer = SemVer.parse(rootProject.version.toString())
+        val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
+
+        Utils.updateVersion(rootProject, newVer)
+    }
+}
+
+tasks.create("versionAsSpecified") {
+    doLast {
+        val verStr = findProperty("newVersion")?.toString()
+
+        if (verStr == null) {
+            throw IllegalArgumentException("No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task.")
+        }
+
+        val newVer = SemVer.parse(verStr)
+        Utils.updateVersion(rootProject, newVer)
+    }
+}
