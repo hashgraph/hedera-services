@@ -47,8 +47,10 @@ dependencyResolutionManagement {
             version("besu-native-version", "0.5.0")
             version("bouncycastle-version", "1.70")
             version("caffeine-version", "3.0.6")
+            version("eclipse-collections-version", "10.4.0")
             version("commons-codec-version", "1.15")
             version("commons-io-version", "2.11.0")
+            version("commons-collections4-version", "4.4")
             version("commons-lang3-version", "3.12.0")
             version("dagger-version", "2.42")
             version("eddsa-version", "0.3.0")
@@ -65,6 +67,7 @@ dependencyResolutionManagement {
             version("protobuf-java-version", "3.19.4")
             version("swirlds-version", "0.31.0-alpha.0")
             version("tuweni-version", "2.2.0")
+            version("jna-version", "5.12.1")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
@@ -99,6 +102,8 @@ dependencyResolutionManagement {
             library("bouncycastle-bcprov-jdk15on", "org.bouncycastle", "bcprov-jdk15on").versionRef("bouncycastle-version")
             library("bouncycastle-bcpkix-jdk15on", "org.bouncycastle", "bcpkix-jdk15on").versionRef("bouncycastle-version")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine-version")
+            library("eclipse-collections", "org.eclipse.collections", "eclipse-collections").versionRef("eclipse-collections-version")
+            library("commons-collections4", "org.apache.commons", "commons-collections4").versionRef("commons-collections4-version")
             library("commons-codec", "commons-codec", "commons-codec").versionRef("commons-codec-version")
             library("commons-io", "commons-io", "commons-io").versionRef("commons-io-version")
             library("commons-lang3", "org.apache.commons", "commons-lang3").versionRef("commons-lang3-version")
@@ -127,6 +132,7 @@ dependencyResolutionManagement {
             library("swirlds-jasperdb", "com.swirlds", "swirlds-jasperdb").versionRef("swirlds-version")
             library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap").versionRef("swirlds-version")
             library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
+            library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
         }
 
         // The libs of this catalog can be used for test or build uses.

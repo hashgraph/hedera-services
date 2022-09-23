@@ -46,7 +46,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.stream.LinkedObjectStream;
+import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.logging.LogMarker;

@@ -39,6 +39,10 @@ dependencies {
             classifier("linux-x86_64")
         }
     )
+    implementation(libs.commons.codec)
+    implementation(libs.commons.io)
+    implementation(libs.commons.collections4)
+    implementation(libs.eclipse.collections)
 
     testImplementation(testLibs.bundles.testing)
 
