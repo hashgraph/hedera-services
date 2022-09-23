@@ -26,6 +26,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asSolidityAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
@@ -67,6 +69,7 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.math.BigInteger;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,6 +97,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     private static final String SET_ZERO_SLOT = "setSlot0";
     private static final String SET_FIRST_SLOT = "setSlot1";
     private static final String SET_SECOND_SLOT = "setSlot2";
+    private static final String SIDECARS_PROP = "contracts.sidecars";
+    private static final String COMPRESSION_PROP = "hedera.recordStream.compressFilesOnCreation";
 
     public static void main(String... args) {
         new NewTraceabilitySuite().runSuiteSync();
@@ -117,14 +122,29 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                             "Watch service couldn't be"
                                                                     + " initialized."))));
         }
-        return List.of(
-                traceabilityE2EScenario1(),
-                traceabilityE2EScenario17(),
-                traceabilityE2EScenario18(),
-                traceabilityE2EScenario21(),
-                vanillaBytecodeSidecar(),
-                vanillaBytecodeSidecar2(),
-                assertSidecars());
+        return Stream.concat(
+                        Stream.of(setNeededProps()),
+                        Stream.of(
+                                traceabilityE2EScenario1(),
+                                traceabilityE2EScenario17(),
+                                traceabilityE2EScenario18(),
+                                traceabilityE2EScenario21(),
+                                vanillaBytecodeSidecar(),
+                                vanillaBytecodeSidecar2(),
+                                assertSidecars()))
+                .toList();
+    }
+
+    HapiApiSpec setNeededProps() {
+        return defaultHapiSpec("SetChainId")
+                .given()
+                .when()
+                .then(
+                        overridingTwo(
+                                SIDECARS_PROP,
+                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE",
+                                COMPRESSION_PROP,
+                                "true"));
     }
 
     private HapiApiSpec traceabilityE2EScenario1() {
@@ -993,7 +1013,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("assertSidecars")
                 .given(
                         // send a dummy transaction to trigger externalization of last sidecars
-                        cryptoCreate("externalizeFinalSidecars").delayBy(2000))
+                        cryptoCreate("externalizeFinalSidecars").delayBy(2000),
+                        resetToDefault(COMPRESSION_PROP, SIDECARS_PROP))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
