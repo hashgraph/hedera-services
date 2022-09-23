@@ -94,7 +94,7 @@ class TopicCreateTransitionLogicTest {
     private TopicCreateTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         accounts.clear();
         topics.clear();
 

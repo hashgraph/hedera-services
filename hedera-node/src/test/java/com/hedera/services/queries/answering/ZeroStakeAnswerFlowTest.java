@@ -53,7 +53,7 @@ class ZeroStakeAnswerFlowTest {
     private ZeroStakeAnswerFlow subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new ZeroStakeAnswerFlow(queryHeaderValidity, () -> view, throttles);
     }
 

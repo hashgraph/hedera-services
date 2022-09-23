@@ -85,7 +85,7 @@ class SignedStateViewFactoryTest {
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         factory = new SignedStateViewFactory(platform, scheduleStore, networkInfo);
     }
 

@@ -67,7 +67,7 @@ class GetFileContentsAnswerTest {
     GetFileContentsAnswer subject;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    void setup() throws Throwable {
         info =
                 FileGetInfoResponse.FileInfo.newBuilder()
                         .setDeleted(false)

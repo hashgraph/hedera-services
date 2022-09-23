@@ -71,7 +71,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
     CryptoApproveAllowanceTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject =
                 new CryptoApproveAllowanceTransitionLogic(
                         txnCtx, accountStore, allowanceChecks, approveAllowanceLogic, view);
