@@ -59,17 +59,36 @@ public class SidecarWatcher {
                         final var newFilePath = file.getPath();
                         if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
                             log.info("New sidecar file: {}", newFilePath);
-                            final SidecarFile sidecarFile;
-                            try {
-                                sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
-                            } catch (IOException e) {
-                                log.fatal(
-                                        "An error occurred trying to parse sidecar file {} - {}",
-                                        newFilePath,
-                                        e);
-                                throw new IllegalStateException();
+                            var retryCount = 0;
+                            while (retryCount++ < 4) {
+                                try {
+                                    final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
+                                    onNewSidecarFile(sidecarFile);
+                                } catch (IOException e) {
+                                    // given that there is a slight chance we poll the
+                                    // file system at the exact time the file is being created,
+                                    // *but not yet finished*, we wait a little and try reading
+                                    // the file again, waiting a maximum of 1s for the file to be finished
+                                    log.warn(
+                                            "Attempt #{} - an error occurred trying to parse"
+                                                    + " sidecar file {} - {}.",
+                                            retryCount,
+                                            newFilePath,
+                                            e);
+                                    if (retryCount < 4) {
+                                        try {
+                                            Thread.sleep(POLLING_INTERVAL_MS);
+                                        } catch (InterruptedException ignored) {
+                                        }
+                                    } else {
+                                        log.fatal(
+                                                "Could not read sidecar file {} - {}, exiting now.",
+                                                newFilePath,
+                                                e);
+                                        throw new IllegalStateException();
+                                    }
+                                }
                             }
-                            onNewSidecarFile(sidecarFile);
                         }
                     }
 
