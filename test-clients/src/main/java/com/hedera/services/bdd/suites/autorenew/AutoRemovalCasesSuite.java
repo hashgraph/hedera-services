@@ -25,25 +25,20 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
-import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,11 +55,10 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                    displacesTokenUnitsAsExpected(),
-                    //                    immediatelyRemovesDeletedAccountOnExpiry(),
-                    //                    ignoresExpiredDeletedContracts(),
-                    //                    autoRemovalCasesSuiteCleanup(),
-                    checksIfTokenExists()
+                    displacesTokenUnitsAsExpected(),
+                    immediatelyRemovesDeletedAccountOnExpiry(),
+                    ignoresExpiredDeletedContracts(),
+                    autoRemovalCasesSuiteCleanup(),
                 });
     }
 
@@ -100,56 +94,6 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
                 .then(
                         getAccountInfo(onlyDetached),
                         getAccountInfo(tbd).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
-    }
-
-    private HapiApiSpec checksIfTokenExists() {
-        final long startSupply = 0;
-        final long displacedSupply = 1;
-        final var adminKey = "tak";
-        final var civilian = "misc";
-        final var removedAccount = "gone";
-        final var deletedToken = "unreturnable";
-        final var liveToken = "returnable";
-        final var anotherLiveToken = "alsoReturnable";
-
-        return defaultHapiSpec("checksIfTokenExists")
-                .given(
-                        overriding("tokens.nfts.useVirtualMerkle", "true"),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(propsForAccountAutoRenewOnWith(1, 0L)),
-                        newKeyNamed(adminKey),
-                        cryptoCreate(civilian).balance(0L),
-                        tokenCreate(deletedToken)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(startSupply)
-                                .adminKey(adminKey)
-                                .supplyKey(adminKey)
-                                .treasury(civilian),
-                        tokenCreate(liveToken)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(startSupply)
-                                .supplyKey(adminKey)
-                                .treasury(civilian),
-                        mintToken(
-                                deletedToken,
-                                List.of(metadata("firstMemo"), metadata("secondMemo"))),
-                        mintToken(
-                                liveToken,
-                                List.of(metadata("firstMemo1"), metadata("secondMemo1"))),
-                        cryptoCreate(removedAccount)
-                                .maxAutomaticTokenAssociations(2)
-                                .balance(0L)
-                                .autoRenewSecs(5),
-                        tokenAssociate(removedAccount, List.of(deletedToken, liveToken)),
-                        cryptoTransfer(
-                                movingUnique(deletedToken, 1).between(civilian, removedAccount),
-                                movingUnique(liveToken, 1).between(civilian, removedAccount)),
-                        tokenDelete(deletedToken))
-                .when(sleepFor(5_500L), cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
-                .then(
-                        getAccountInfo(removedAccount).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                        getAccountBalance(civilian).logged());
     }
 
     private HapiApiSpec displacesTokenUnitsAsExpected() {

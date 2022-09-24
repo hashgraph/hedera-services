@@ -377,39 +377,6 @@ class TreasuryReturnsTest {
         }
     }
 
-    private void givenNftsSetupWithBothRemoval(
-            final boolean includeB, final boolean includeBRemoval) {
-        given(tokens.get(aNftKey.getHiOrderAsNum())).willReturn(nfToken);
-        if (includeB) {
-            given(tokens.get(bNftKey.getHiOrderAsNum())).willReturn(deletedNfToken);
-        }
-
-        given(
-                        returnHelper.updateNftReturns(
-                                eq(num),
-                                eq(aNftKey.getHiOrderAsNum()),
-                                eq(nfToken),
-                                eq(aNftKey.getLowOrderAsLong()),
-                                any(List.class),
-                                any(List.class)))
-                .willReturn(true);
-        given(returnHelper.burnOrReturnNft(false, aNftKey.asNftNumPair().nftId(), nfts))
-                .willReturn(null);
-        if (includeBRemoval) {
-            given(
-                            returnHelper.updateNftReturns(
-                                    eq(num),
-                                    eq(bNftKey.getHiOrderAsNum()),
-                                    any(),
-                                    eq(bNftKey.getLowOrderAsLong()),
-                                    any(List.class),
-                                    any(List.class)))
-                    .willReturn(false);
-            given(returnHelper.burnOrReturnNft(true, bNftKey.asNftNumPair().nftId(), nfts))
-                    .willReturn(null);
-        }
-    }
-
     private void givenCorruptNfsSetup() {
         given(tokens.get(aNftKey.getHiOrderAsNum())).willReturn(nfToken);
         given(tokens.get(bNftKey.getHiOrderAsNum())).willReturn(deletedNfToken);
