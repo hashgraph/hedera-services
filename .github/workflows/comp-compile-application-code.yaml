@@ -249,18 +249,3 @@ jobs:
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: sonarqube --info --scan
-
-      - name: FOSSA Scan
-        uses: fossas/fossa-action@v1.3.1
-        if: ${{ inputs.enable-fossa-scan && !cancelled() }}
-        continue-on-error: true
-        with:
-          api-key: ${{ secrets.fossa-api-token }}
-
-      - name: FOSSA Test
-        uses: fossas/fossa-action@v1.3.1
-        if: ${{ inputs.enable-fossa-test && !cancelled() }}
-        continue-on-error: true
-        with:
-          api-key: ${{ secrets.fossa-api-token }}
-          run-tests: true
