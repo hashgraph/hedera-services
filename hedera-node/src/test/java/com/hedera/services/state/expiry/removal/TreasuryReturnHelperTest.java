@@ -119,6 +119,24 @@ class TreasuryReturnHelperTest {
     }
 
     @Test
+    void worksAroundNullBurnedNft() {
+        given(nfts.get(aNftKey)).willReturn(null);
+
+        final var newRoot = subject.burnOrReturnNft(true, aNftKey, nfts);
+
+        verify(nfts, never()).remove(aNftKey);
+        assertNull(newRoot);
+    }
+
+    @Test
+    void worksAroundNullNonBurnedNft() {
+        given(nfts.getForModify(aNftKey)).willReturn(null);
+
+        final var newRoot = subject.burnOrReturnNft(false, aNftKey, nfts);
+        assertNull(newRoot);
+    }
+
+    @Test
     void justAppendsBurnIfTokenIsDeleted() {
         final List<EntityId> tokenTypes = new ArrayList<>();
         tokenTypes.add(deletedTokenNum.toEntityId());

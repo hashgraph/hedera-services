@@ -77,10 +77,16 @@ public class TreasuryReturnHelper {
         final NftNumPair nextKey;
         if (burn) {
             final var burnedNft = nfts.get(rootKey);
+            if (burnedNft == null) {
+                return null;
+            }
             nextKey = burnedNft.getNext();
             nfts.remove(rootKey);
         } else {
             final var returnedNft = nfts.getForModify(rootKey);
+            if (returnedNft == null) {
+                return null;
+            }
             nextKey = returnedNft.getNext();
             returnedNft.setOwner(MISSING_ENTITY_ID);
         }

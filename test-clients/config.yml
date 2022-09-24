@@ -1,0 +1,19 @@
+defaultNetwork: localhost
+networks:
+  localhost:
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: host.docker.internal }
+  previewnet:
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 35.231.208.148 }
+      - { id: 1, account: 4, ipv4Addr: 35.199.15.177 }
+  stabletestnet:
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 34.94.106.61 }
+  mainnet:
+    defaultPayer: 950
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 35.237.200.180 }
+  perfnet:
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 146.148.65.62 }
