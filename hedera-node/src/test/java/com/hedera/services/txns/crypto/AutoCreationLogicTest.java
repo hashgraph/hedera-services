@@ -21,6 +21,7 @@ import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -216,6 +217,10 @@ class AutoCreationLogicTest {
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(1, subject.getPendingCreations().size());
+
+        /* ---- clear pending creations */
+        assertTrue(subject.reclaimPendingAliases());
     }
 
     @Test
@@ -248,6 +253,10 @@ class AutoCreationLogicTest {
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
+
+        /* ---- clear tokenAliasMap */
+        subject.clearTokenAliasMap();
+        assertEquals(0, subject.getTokenAliasMap().size());
     }
 
     private void givenCollaborators() {

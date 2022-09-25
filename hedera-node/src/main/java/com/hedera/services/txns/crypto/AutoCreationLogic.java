@@ -21,6 +21,7 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
@@ -317,5 +318,10 @@ public class AutoCreationLogic {
                 }
             }
         }
+    }
+
+    @VisibleForTesting
+    public List<InProgressChildRecord> getPendingCreations() {
+        return pendingCreations;
     }
 }
