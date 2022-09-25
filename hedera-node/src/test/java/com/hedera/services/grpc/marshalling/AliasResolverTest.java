@@ -16,6 +16,7 @@
 package com.hedera.services.grpc.marshalling;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -253,6 +254,35 @@ class AliasResolverTest {
     @Test
     void noAliasesCanBeReturned() {
         assertFalse(AliasResolver.usesAliases(CryptoTransferTransactionBody.getDefaultInstance()));
+    }
+
+    @Test
+    void allowsAliasesInTokens() {
+        var op =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(someToken)
+                                        .addNftTransfers(
+                                                NftTransfer.newBuilder()
+                                                        .setSenderAccountID(
+                                                                asAliasAccount(someAlias))
+                                                        .setReceiverAccountID(
+                                                                asAliasAccount(create2Alias))
+                                                        .setSerialNumber(1L)))
+                        .build();
+        assertTrue(AliasResolver.usesAliases(op));
+
+        op =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(someToken)
+                                        .addTransfers(aaAlias(someAlias, 10L))
+                                        .addTransfers(aaAlias(anotherValidAlias, -10L))
+                                        .build())
+                        .build();
+        assertTrue(AliasResolver.usesAliases(op));
     }
 
     private CryptoTransferTransactionBody setUpTokenTransferOp() {

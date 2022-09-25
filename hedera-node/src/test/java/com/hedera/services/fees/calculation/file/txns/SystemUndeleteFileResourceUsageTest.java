@@ -36,7 +36,7 @@ class SystemUndeleteFileResourceUsageTest {
     private TransactionBody systemUndeleteFileTxn;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    void setup() throws Throwable {
         systemUndeleteFileTxn = mock(TransactionBody.class);
         given(systemUndeleteFileTxn.hasSystemUndelete()).willReturn(true);
 

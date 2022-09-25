@@ -53,7 +53,7 @@ class GetVersionInfoAnswerTest {
     private GetVersionInfoAnswer subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         view = mock(StateView.class);
         semanticVersions = mock(SemanticVersions.class);
         given(semanticVersions.getDeployed())

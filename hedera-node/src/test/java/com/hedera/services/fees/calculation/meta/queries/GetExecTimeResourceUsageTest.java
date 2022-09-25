@@ -49,7 +49,7 @@ class GetExecTimeResourceUsageTest {
     private GetExecTimeResourceUsage subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new GetExecTimeResourceUsage();
     }
 

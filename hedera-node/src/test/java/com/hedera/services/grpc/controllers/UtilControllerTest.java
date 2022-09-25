@@ -34,7 +34,7 @@ class UtilControllerTest {
     UtilController subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         txnResponseHelper = mock(TxnResponseHelper.class);
 
         subject = new UtilController(txnResponseHelper);

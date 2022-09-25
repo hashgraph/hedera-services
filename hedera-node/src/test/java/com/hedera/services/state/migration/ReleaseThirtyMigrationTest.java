@@ -82,7 +82,7 @@ class ReleaseThirtyMigrationTest {
     @Test
     void migratesToIterableOwnedNftsAsExpected() {
         final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-        final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens = new MerkleMap<>();
+        final UniqueTokenMapAdapter uniqueTokens = UniqueTokenMapAdapter.wrap(new MerkleMap<>());
 
         final EntityNum accountNum1 = EntityNum.fromLong(1234L);
         final EntityNum accountNum2 = EntityNum.fromLong(1235L);
@@ -118,12 +118,12 @@ class ReleaseThirtyMigrationTest {
 
         accounts.put(accountNum1, account1);
         accounts.put(accountNum2, account2);
-        uniqueTokens.put(nftId1, nft1);
-        uniqueTokens.put(nftId2, nft2);
-        uniqueTokens.put(nftId3, nft3);
-        uniqueTokens.put(nftId4, nft4);
-        uniqueTokens.put(nftId5, nft5);
-        uniqueTokens.put(nftId6, nft6);
+        uniqueTokens.merkleMap().put(nftId1, nft1);
+        uniqueTokens.merkleMap().put(nftId2, nft2);
+        uniqueTokens.merkleMap().put(nftId3, nft3);
+        uniqueTokens.merkleMap().put(nftId4, nft4);
+        uniqueTokens.merkleMap().put(nftId5, nft5);
+        uniqueTokens.merkleMap().put(nftId6, nft6);
 
         rebuildNftOwners(accounts, uniqueTokens);
         // keySet() returns values in the order 2,5,4,1,3
@@ -131,16 +131,16 @@ class ReleaseThirtyMigrationTest {
         assertEquals(nftId3.getLowOrderAsLong(), accounts.get(accountNum1).getHeadNftSerialNum());
         assertEquals(nftId4.getHiOrderAsLong(), accounts.get(accountNum2).getHeadNftTokenNum());
         assertEquals(nftId4.getLowOrderAsLong(), accounts.get(accountNum2).getHeadNftSerialNum());
-        assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftId5).getNext());
-        assertEquals(nftId1.asNftNumPair(), uniqueTokens.get(nftId5).getPrev());
-        assertEquals(nftId5.asNftNumPair(), uniqueTokens.get(nftId1).getNext());
-        assertEquals(nftId3.asNftNumPair(), uniqueTokens.get(nftId1).getPrev());
-        assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftId3).getPrev());
-        assertEquals(nftId1.asNftNumPair(), uniqueTokens.get(nftId3).getNext());
-        assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftId2).getNext());
-        assertEquals(nftId4.asNftNumPair(), uniqueTokens.get(nftId2).getPrev());
-        assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftId4).getPrev());
-        assertEquals(nftId2.asNftNumPair(), uniqueTokens.get(nftId4).getNext());
+        assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.merkleMap().get(nftId5).getNext());
+        assertEquals(nftId1.asNftNumPair(), uniqueTokens.merkleMap().get(nftId5).getPrev());
+        assertEquals(nftId5.asNftNumPair(), uniqueTokens.merkleMap().get(nftId1).getNext());
+        assertEquals(nftId3.asNftNumPair(), uniqueTokens.merkleMap().get(nftId1).getPrev());
+        assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.merkleMap().get(nftId3).getPrev());
+        assertEquals(nftId1.asNftNumPair(), uniqueTokens.merkleMap().get(nftId3).getNext());
+        assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.merkleMap().get(nftId2).getNext());
+        assertEquals(nftId4.asNftNumPair(), uniqueTokens.merkleMap().get(nftId2).getPrev());
+        assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.merkleMap().get(nftId4).getPrev());
+        assertEquals(nftId2.asNftNumPair(), uniqueTokens.merkleMap().get(nftId4).getNext());
     }
 
     private static void registerForMerkleMap() throws ConstructableRegistryException {

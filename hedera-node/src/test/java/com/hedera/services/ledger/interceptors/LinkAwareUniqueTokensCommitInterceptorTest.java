@@ -29,7 +29,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -128,12 +127,12 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
         final long serialNum = 2L;
         EntityNum owner = EntityNum.fromLong(ownerNum);
         EntityNum newOwner = EntityNum.fromLong(newOwnerNum);
-        EntityNumPair nftKey = EntityNumPair.fromLongs(tokenNum, serialNum);
+        NftId nftKey = NftId.withDefaultShardRealm(tokenNum, serialNum);
 
         given(changes.size()).willReturn(1);
         given(changes.entity(0)).willReturn(nft);
         given(changes.changes(0)).willReturn(change);
-        given(changes.id(0)).willReturn(nftKey.asNftNumPair().nftId());
+        given(changes.id(0)).willReturn(nftKey);
         given(change.containsKey(NftProperty.OWNER)).willReturn(true);
         given(change.get(NftProperty.OWNER)).willReturn(newOwner.toEntityId());
         given(nft.getOwner()).willReturn(owner.toEntityId());
@@ -193,11 +192,11 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
         final long ownerNum = 1111L;
         final long tokenNum = 2222L;
         final long serialNum = 2L;
-        EntityNum owner = EntityNum.fromLong(ownerNum);
-        EntityNumPair nftKey = EntityNumPair.fromLongs(tokenNum, serialNum);
+        final var owner = EntityNum.fromLong(ownerNum);
+        final var nftKey = NftId.withDefaultShardRealm(tokenNum, serialNum);
 
         given(changes.size()).willReturn(1);
-        given(changes.id(0)).willReturn(nftKey.asNftNumPair().nftId());
+        given(changes.id(0)).willReturn(nftKey);
         given(changes.entity(0)).willReturn(nft);
         given(changes.changes(0)).willReturn(null);
         given(nft.getOwner()).willReturn(owner.toEntityId());
@@ -217,17 +216,16 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
         final long tokenNum = 2222L;
         final long serialNum = 2L;
         final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
-        EntityNum owner = EntityNum.fromLong(ownerNum);
-        EntityNumPair nftKey = EntityNumPair.fromLongs(tokenNum, serialNum);
+        final var owner = EntityNum.fromLong(ownerNum);
+        final var nftKey = NftId.withDefaultShardRealm(tokenNum, serialNum);
         final var mintedNft = UniqueTokenAdapter.newEmptyMerkleToken();
 
         given(changes.size()).willReturn(1);
-        given(changes.id(0)).willReturn(nftKey.asNftNumPair().nftId());
+        given(changes.id(0)).willReturn(nftKey);
         given(changes.entity(0)).willReturn(null);
         given(changes.changes(0)).willReturn(scopedChanges);
         scopedChanges.put(NftProperty.OWNER, owner.toEntityId());
-        given(uniqueTokensLinkManager.updateLinks(null, owner, nftKey))
-                .willReturn(mintedNft.merkleUniqueToken());
+        given(uniqueTokensLinkManager.updateLinks(null, owner, nftKey)).willReturn(mintedNft);
 
         subject.preview(changes);
 
@@ -265,8 +263,6 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
         final var changes =
                 (EntityChangeSet<NftId, UniqueTokenAdapter, NftProperty>)
                         mock(EntityChangeSet.class);
-        final long tokenNum = 2222L;
-        final long serialNum = 2L;
         final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
 
         given(changes.size()).willReturn(1);

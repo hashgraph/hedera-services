@@ -56,7 +56,7 @@ class TokenPauseTransitionLogicTest {
     private TokenPauseTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         tokenStore = mock(TypedTokenStore.class);
         accessor = mock(SignedTxnAccessor.class);
         token = mock(Token.class);

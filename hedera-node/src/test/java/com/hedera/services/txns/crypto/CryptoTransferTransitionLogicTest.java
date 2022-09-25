@@ -107,7 +107,7 @@ class CryptoTransferTransitionLogicTest {
     private CryptoTransferTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject =
                 new CryptoTransferTransitionLogic(
                         ledger,

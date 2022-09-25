@@ -29,7 +29,7 @@ import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.NftAdjustments;
@@ -73,7 +73,7 @@ public class TreasuryReturns {
             List.of(ACCOUNTS_GET, TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
 
     private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
-    private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nfts;
+    private final Supplier<UniqueTokenMapAdapter> nfts;
     private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
 
     private final EntityLookup entityLookup;
@@ -86,7 +86,7 @@ public class TreasuryReturns {
     public TreasuryReturns(
             final EntityLookup entityLookup,
             final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-            final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nfts,
+            final Supplier<UniqueTokenMapAdapter> nfts,
             final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
             final ExpiryThrottle expiryThrottle,
             final TreasuryReturnHelper returnHelper) {
@@ -166,7 +166,9 @@ public class TreasuryReturns {
             }
             try {
                 final var returnedSerialNo = nftKey.getLowOrderAsLong();
-                nftKey = returnHelper.burnOrReturnNft(expectedBurn, nftKey, curNfts);
+                nftKey =
+                        returnHelper.burnOrReturnNft(
+                                expectedBurn, nftKey.asNftNumPair().nftId(), curNfts);
                 returnHelper.updateNftReturns(
                         expiredNum, tokenNum, token, returnedSerialNo, tokenTypes, returnExchanges);
                 n++;

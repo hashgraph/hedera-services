@@ -21,6 +21,10 @@ import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -57,10 +61,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,8 +108,9 @@ class AutoCreationLogicTest {
     @Test
     void refusesToCreateBeyondMaxNumber() {
         final var input = wellKnownChange();
+        final var changes = List.of(input);
 
-        final var result = subject.create(input, accountsLedger, new HashMap<>());
+        final var result = subject.create(input, accountsLedger, changes);
         assertEquals(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, result.getLeft());
     }
 
@@ -118,8 +122,9 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+        final var changes = List.of(input);
 
-        final var result = subject.create(input, accountsLedger, new HashMap<>());
+        final var result = subject.create(input, accountsLedger, changes);
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
@@ -135,6 +140,8 @@ class AutoCreationLogicTest {
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
+        assertNull(subject.getTokenAliasMap());
+        assertDoesNotThrow(() -> subject.clearTokenAliasMap());
     }
 
     @Test
@@ -145,10 +152,9 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownTokenChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
-        final var map = new HashMap<ByteString, HashSet<Id>>();
-        map.put(alias, new HashSet<>(Arrays.asList(Id.fromGrpcToken(token))));
+        final var changes = List.of(input);
 
-        final var result = subject.create(input, accountsLedger, map);
+        final var result = subject.create(input, accountsLedger, changes);
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
@@ -186,11 +192,9 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownNftChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+        final var changes = List.of(input);
 
-        final var map = new HashMap<ByteString, HashSet<Id>>();
-        map.put(alias, new HashSet<>(Arrays.asList(Id.fromGrpcToken(token))));
-
-        final var result = subject.create(input, accountsLedger, map);
+        final var result = subject.create(input, accountsLedger, changes);
         subject.submitRecordsTo(recordsHistorian);
 
         assertEquals(20L, input.getAggregatedUnits());
@@ -218,6 +222,53 @@ class AutoCreationLogicTest {
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(1, subject.getPendingCreations().size());
+
+        /* ---- clear pending creations */
+        assertTrue(subject.reclaimPendingAliases());
+        verify(aliasManager).unlink(alias);
+    }
+
+    @Test
+    void analyzesTokenTransfersInChangesForAutoCreation() {
+        givenCollaborators();
+        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 2))
+                .willReturn(mockSyntheticCreation);
+
+        final var input1 = wellKnownTokenChange();
+        final var input2 = anotherTokenChange();
+        final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+        final var changes = List.of(input1, input2);
+
+        final var result = subject.create(input1, accountsLedger, changes);
+        subject.submitRecordsTo(recordsHistorian);
+
+        assertEquals(16L, input1.getAggregatedUnits());
+        assertEquals(1, subject.getTokenAliasMap().size());
+        assertEquals(2, subject.getTokenAliasMap().get(alias).size());
+
+        verify(aliasManager).link(alias, createdNum);
+        verify(sigImpactHistorian).markAliasChanged(alias);
+        verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+        verify(accountsLedger).create(createdNum.toGrpcAccountId());
+
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 2);
+
+        verify(recordsHistorian)
+                .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
+        assertEquals(totalFee, mockBuilder.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
+
+        /* ---- clear tokenAliasMap */
+        subject.clearTokenAliasMap();
+        assertEquals(0, subject.getTokenAliasMap().size());
+
+        assertEquals(1, subject.getPendingCreations().size());
+        subject.reset();
+        assertEquals(0, subject.getPendingCreations().size());
+
+        assertFalse(subject.reclaimPendingAliases());
     }
 
     private void givenCollaborators() {
@@ -264,6 +315,17 @@ class AutoCreationLogicTest {
                 payer);
     }
 
+    private BalanceChange anotherTokenChange() {
+        return BalanceChange.changingFtUnits(
+                Id.fromGrpcToken(token1),
+                token1,
+                AccountAmount.newBuilder()
+                        .setAmount(initialTransfer)
+                        .setAccountID(AccountID.newBuilder().setAlias(alias).build())
+                        .build(),
+                payer);
+    }
+
     private static final TransactionBody.Builder mockSyntheticCreation =
             TransactionBody.newBuilder();
     private static final long initialTransfer = 16L;
@@ -285,4 +347,5 @@ class AutoCreationLogicTest {
                             TxnReceipt.newBuilder()
                                     .setAccountId(new EntityId(0, 0, createdNum.longValue())));
     public static final TokenID token = IdUtils.asToken("0.0.23456");
+    public static final TokenID token1 = IdUtils.asToken("0.0.123456");
 }

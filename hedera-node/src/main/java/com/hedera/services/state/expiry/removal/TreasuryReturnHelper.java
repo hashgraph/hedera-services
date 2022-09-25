@@ -20,10 +20,11 @@ import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.NftAdjustments;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
@@ -72,9 +73,7 @@ public class TreasuryReturnHelper {
     }
 
     EntityNumPair burnOrReturnNft(
-            final boolean burn,
-            final EntityNumPair rootKey,
-            final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts) {
+            final boolean burn, final NftId rootKey, final UniqueTokenMapAdapter nfts) {
         final NftNumPair nextKey;
         if (burn) {
             final var burnedNft = nfts.get(rootKey);

@@ -132,7 +132,7 @@ class ContractCreateTransitionLogicTest {
     private TransactionBody contractCreateTxn;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject =
                 new ContractCreateTransitionLogic(
                         hfs,

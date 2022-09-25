@@ -49,7 +49,7 @@ class BackingAccountsTest {
     private BackingAccounts subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         delegate = new MerkleMap<>();
         delegate.put(aKey, aValue);
         delegate.put(bKey, bValue);

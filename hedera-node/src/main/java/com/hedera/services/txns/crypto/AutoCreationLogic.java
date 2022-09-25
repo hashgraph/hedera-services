@@ -21,6 +21,7 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
@@ -53,10 +54,13 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -79,7 +83,7 @@ public class AutoCreationLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
-
+    private Map<ByteString, Set<Id>> tokenAliasMap;
     private FeeCalculator feeCalculator;
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
@@ -164,19 +168,27 @@ public class AutoCreationLogic {
      *
      * @param change a triggering change with unique alias
      * @param accountsLedger the accounts ledger to use for the provisional creation
-     * @param aliasTokensMap
+     * @param changes list of all changes need to construct tokenAliasMap
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change,
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-            final Map<ByteString, HashSet<Id>> aliasTokensMap) {
+            final List<BalanceChange> changes) {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
         }
 
         final ByteString alias = getAlias(change);
-        final var maxAutoAssociations = change.isForHbar() ? 0 : aliasTokensMap.get(alias).size();
+
+        if (shouldConstructTokenAliasMap(change)) {
+            // constructs tokenAliasMap lazily if the change consists of any token transfer to
+            // unknown alias. This map is used to count number of maxAutoAssociations needed on
+            // auto created account
+            analyzeTokenTransferCreations(changes);
+        }
+
+        final var maxAutoAssociations = change.isForHbar() ? 0 : tokenAliasMap.get(alias).size();
 
         final var key = asPrimitiveKeyUnchecked(alias);
         final var syntheticCreation =
@@ -217,6 +229,24 @@ public class AutoCreationLogic {
         aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
 
         return Pair.of(OK, fee);
+    }
+
+    /**
+     * Clears (if initialized) {@code tokenAliasMap} at the end of iterating through all balance
+     * changes in cryptoTransfer transaction.
+     */
+    public void clearTokenAliasMap() {
+        if (tokenAliasMap != null) {
+            tokenAliasMap.clear();
+        }
+    }
+
+    public Map<ByteString, Set<Id>> getTokenAliasMap() {
+        return tokenAliasMap;
+    }
+
+    private boolean shouldConstructTokenAliasMap(final BalanceChange change) {
+        return change.isForToken() && (tokenAliasMap == null || tokenAliasMap.isEmpty());
     }
 
     private void replaceAliasAndSetBalanceOnChange(
@@ -264,5 +294,34 @@ public class AutoCreationLogic {
         } else {
             return change.alias();
         }
+    }
+
+    private void analyzeTokenTransferCreations(final List<BalanceChange> changes) {
+        tokenAliasMap = new HashMap<>();
+
+        for (final var change : changes) {
+            var alias = ByteString.EMPTY;
+
+            if ((change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
+                alias = change.counterPartyAlias();
+            } else if (change.isForFungibleToken() && change.hasNonEmptyAlias()) {
+                alias = change.alias();
+            }
+
+            if (alias != ByteString.EMPTY) {
+                if (tokenAliasMap.containsKey(alias)) {
+                    final var oldSet = tokenAliasMap.get(alias);
+                    oldSet.add(change.getToken());
+                    tokenAliasMap.put(alias, oldSet);
+                } else {
+                    tokenAliasMap.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
+                }
+            }
+        }
+    }
+
+    @VisibleForTesting
+    public List<InProgressChildRecord> getPendingCreations() {
+        return pendingCreations;
     }
 }
