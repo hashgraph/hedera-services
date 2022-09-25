@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
+import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.synthFromBody;
 
@@ -130,7 +131,8 @@ public class ExpiryRecordsHelper {
 
         final var effectivePayerId =
                 (autoRenewId != null) ? autoRenewId : EntityId.fromGrpcAccountId(accountId);
-        final var txnId = new TxnId(effectivePayerId, at, false, USER_TRANSACTION_NONCE);
+        final var txnId =
+                new TxnId(effectivePayerId, MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
         return ExpirableTxnRecord.newBuilder()
                 .setTxnId(txnId)
                 .setReceipt(receipt)

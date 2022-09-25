@@ -239,55 +239,55 @@ public class ValidationScenarios extends HapiApiSuite {
                                 Optional.of(recordPayerBalance(startingBalance::set)),
                                 ofNullable(skipScenarioPayer() ? null : ensureScenarioPayer()),
                                 ofNullable(
-                                        !params.getScenarios().contains(CRYPTO)
+                                        params.getScenarios().contains(CRYPTO)
                                                 ? cryptoScenario()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(VERSIONS)
+                                        params.getScenarios().contains(VERSIONS)
                                                 ? versionsScenario()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(FILE)
+                                        params.getScenarios().contains(FILE)
                                                 ? fileScenario()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(CONTRACT)
+                                        params.getScenarios().contains(CONTRACT)
                                                 ? contractScenario()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(CONSENSUS)
+                                        params.getScenarios().contains(CONSENSUS)
                                                 ? consensusScenario()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(SYSTEM_KEYS)
+                                        params.getScenarios().contains(SYSTEM_KEYS)
                                                 ? getSystemKeys()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(TRANSFERS_ONLY)
+                                        params.getScenarios().contains(TRANSFERS_ONLY)
                                                 ? doJustTransfers()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(SYS_FILES_DOWN)
+                                        params.getScenarios().contains(SYS_FILES_DOWN)
                                                 ? sysFilesDown()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(SYS_FILES_UP)
+                                        params.getScenarios().contains(SYS_FILES_UP)
                                                 ? sysFilesUp()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(FEE_SNAPSHOTS)
+                                        params.getScenarios().contains(FEE_SNAPSHOTS)
                                                 ? ensureBytecode()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(FEE_SNAPSHOTS)
+                                        params.getScenarios().contains(FEE_SNAPSHOTS)
                                                 ? feeSnapshots()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().contains(FEE_SNAPSHOTS)
+                                        params.getScenarios().contains(FEE_SNAPSHOTS)
                                                 ? updatePaymentCsv()
                                                 : null),
                                 ofNullable(
-                                        !params.getScenarios().isEmpty()
+                                        params.getScenarios().isEmpty()
                                                 ? null
                                                 : recordPayerBalance(endingBalance::set)))
                         .flatMap(Optional::stream)
@@ -1830,7 +1830,7 @@ public class ValidationScenarios extends HapiApiSuite {
 
         private String configLoc = DEFAULT_CONFIG_LOC;
         private long defaultNodePayment = DEFAULT_NODE_PAYMENT_TINYBARS;
-        private String targetNetwork = "localhost";
+        private String targetNetwork;
         private boolean revocationService = false;
         private boolean novelContent = true;
         private EnumSet<Scenario> scenarios = EnumSet.noneOf(Scenario.class);
