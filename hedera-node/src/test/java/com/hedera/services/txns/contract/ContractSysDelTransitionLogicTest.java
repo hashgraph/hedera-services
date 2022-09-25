@@ -69,7 +69,7 @@ class ContractSysDelTransitionLogicTest {
     ContractSysDelTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         consensusTime = Instant.now();
 
         delegate = mock(ContractSysDelTransitionLogic.LegacySystemDeleter.class);

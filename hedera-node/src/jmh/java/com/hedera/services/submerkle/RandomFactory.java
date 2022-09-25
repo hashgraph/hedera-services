@@ -60,6 +60,9 @@ public class RandomFactory {
     private TransactionProcessingResult randomSuccess(final EvmResultRandomParams params) {
         final var logs = randomLogs(params.maxLogs(), params.maxLogData(), params.maxLogTopics());
         final var output = Bytes.wrap(randomBytes(32 * r.nextInt(params.maxOutputWords())));
+        // TODO(Nathan): An 8th argument was added to the method but this code was no updated. I
+        // added Collections.emptyList() to achieve successful compilation, but this logic may not
+        // be correct.
         final var ans =
                 TransactionProcessingResult.successful(
                         logs,
@@ -68,7 +71,8 @@ public class RandomFactory {
                         randomNonNegativeLong(),
                         output,
                         randomAddress(),
-                        randomStateChanges(params));
+                        randomStateChanges(params),
+                        Collections.emptyList());
         if (r.nextDouble() < params.creationProbability()) {
             ans.setCreatedContracts(randomCreations(params.maxCreations()));
         }
@@ -92,13 +96,17 @@ public class RandomFactory {
         } else {
             haltReason = Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS);
         }
+        // TODO(Nathan): An 8th argument was added to the method but this code was no updated. I
+        // added Collections.emptyList() to achieve successful compilation, but this logic may not
+        // be correct.
         return TransactionProcessingResult.failed(
                 randomNonNegativeLong(),
                 randomNonNegativeLong(),
                 randomNonNegativeLong(),
                 revertReason,
                 haltReason,
-                randomStateChanges(params));
+                randomStateChanges(params),
+                Collections.emptyList());
     }
 
     private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> randomStateChanges(

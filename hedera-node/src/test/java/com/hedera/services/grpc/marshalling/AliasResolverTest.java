@@ -50,7 +50,7 @@ class AliasResolverTest {
     private AliasResolver subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AliasResolver();
     }
 

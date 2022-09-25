@@ -67,7 +67,7 @@ class TokenUnfreezeTransitionLogicTest {
     private TokenUnfreezeTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         accessor = mock(SignedTxnAccessor.class);
         tokenRelationship = mock(TokenRelationship.class);
         token = mock(Token.class);

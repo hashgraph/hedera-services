@@ -58,8 +58,8 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.state.virtual.ContractKey;
@@ -339,7 +339,7 @@ public class StateView {
         final var currentNfts = uniqueTokens();
         final var tokenId = EntityNum.fromTokenId(target.getTokenID());
         final var targetKey =
-                EntityNumPair.fromLongs(tokenId.longValue(), target.getSerialNumber());
+                NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
         if (!currentNfts.containsKey(targetKey)) {
             return Optional.empty();
         }
@@ -369,9 +369,7 @@ public class StateView {
     }
 
     public boolean nftExists(final NftID id) {
-        final var tokenNum = EntityNum.fromTokenId(id.getTokenID());
-        final var key = EntityNumPair.fromLongs(tokenNum.longValue(), id.getSerialNumber());
-        return uniqueTokens().containsKey(key);
+        return uniqueTokens().containsKey(NftId.fromGrpc(id));
     }
 
     public Optional<TokenType> tokenType(final TokenID tokenId) {
@@ -677,7 +675,7 @@ public class StateView {
         return Objects.requireNonNull(stateChildren).tokenAssociations();
     }
 
-    public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
+    public UniqueTokenMapAdapter uniqueTokens() {
         return Objects.requireNonNull(stateChildren).uniqueTokens();
     }
 

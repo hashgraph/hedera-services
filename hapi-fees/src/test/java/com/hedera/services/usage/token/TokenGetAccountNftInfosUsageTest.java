@@ -36,7 +36,7 @@ class TokenGetAccountNftInfosUsageTest {
     private List<ByteString> metadata;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         metadata = List.of(ByteString.copyFromUtf8("some metadata"));
         id = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
         subject = TokenGetAccountNftInfosUsage.newEstimate(tokenQuery());

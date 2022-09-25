@@ -25,7 +25,7 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -52,7 +52,7 @@ class HashLoggerTest {
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+    @Mock private UniqueTokenMapAdapter uniqueTokens;
     @Mock private MerkleScheduledTransactions schedules;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;

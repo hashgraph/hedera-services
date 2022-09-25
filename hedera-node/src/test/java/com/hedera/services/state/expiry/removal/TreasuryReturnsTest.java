@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.throttling.ExpiryThrottle;
@@ -53,7 +54,7 @@ class TreasuryReturnsTest {
     @Mock private EntityLookup entityLookup;
     @Mock private RelRemover relRemover;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+    @Mock private UniqueTokenMapAdapter nfts;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 
     private TreasuryReturns subject;
@@ -164,7 +165,7 @@ class TreasuryReturnsTest {
         givenCorruptNfsSetup();
         given(expiryThrottle.allow(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
-        given(returnHelper.burnOrReturnNft(true, bNftKey, nfts))
+        given(returnHelper.burnOrReturnNft(true, bNftKey.asNftNumPair().nftId(), nfts))
                 .willThrow(NullPointerException.class);
 
         final var expected = NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
@@ -359,7 +360,8 @@ class TreasuryReturnsTest {
                                 any(List.class),
                                 any(List.class)))
                 .willReturn(true);
-        given(returnHelper.burnOrReturnNft(false, aNftKey, nfts)).willReturn(bNftKey);
+        given(returnHelper.burnOrReturnNft(false, aNftKey.asNftNumPair().nftId(), nfts))
+                .willReturn(bNftKey);
         if (includeBRemoval) {
             given(
                             returnHelper.updateNftReturns(
@@ -370,7 +372,8 @@ class TreasuryReturnsTest {
                                     any(List.class),
                                     any(List.class)))
                     .willReturn(false);
-            given(returnHelper.burnOrReturnNft(true, bNftKey, nfts)).willReturn(null);
+            given(returnHelper.burnOrReturnNft(true, bNftKey.asNftNumPair().nftId(), nfts))
+                    .willReturn(null);
         }
     }
 
