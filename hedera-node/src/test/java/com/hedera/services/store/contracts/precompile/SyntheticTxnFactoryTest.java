@@ -347,6 +347,7 @@ class SyntheticTxnFactoryTest {
         assertTrue(result.hasContractDeleteInstance());
         final var op = synthBody.getContractDeleteInstance();
         assertEquals(contractNum.toGrpcContractID(), op.getContractID());
+        assertTrue(op.getPermanentRemoval());
     }
 
     @Test

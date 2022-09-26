@@ -210,6 +210,7 @@ public class SyntheticTxnFactory {
     public TransactionBody.Builder synthContractAutoRemove(final EntityNum contractNum) {
         final var op =
                 ContractDeleteTransactionBody.newBuilder()
+                        .setPermanentRemoval(true)
                         .setContractID(contractNum.toGrpcContractID());
         return TransactionBody.newBuilder().setContractDeleteInstance(op);
     }
