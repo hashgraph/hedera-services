@@ -17,6 +17,7 @@ plugins {
     id("com.hedera.hashgraph.hedera-conventions")
 }
 
+group = "com.hedera.evm"
 description = "Hedera EVM - Implementation"
 
 dependencies {
