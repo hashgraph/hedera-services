@@ -17,6 +17,7 @@ package com.hedera.services.records;
 
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -152,6 +153,21 @@ public interface RecordsHistorian {
      * @return the consensus time that will be used for the next following child record
      */
     Instant nextFollowingChildConsensusTime();
+
+    /**
+     * Returns whether there is a usable system transaction id available.
+     *
+     * @return if a system transaction id is ccomputable
+     */
+    boolean nextSystemTransactionIdIsUnknown();
+
+    /**
+     * Returns the next transaction id usable for a system transaction (e.g., an expiry auto-renewal
+     * or auto-removal transaction).
+     *
+     * @return the transaction id to put in a system transaction and record
+     */
+    TxnId computeNextSystemTransactionId();
 
     /**
      * Applies the given customization to the first in-progress successor record (and synthetic

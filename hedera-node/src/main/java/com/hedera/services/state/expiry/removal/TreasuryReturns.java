@@ -21,6 +21,7 @@ import static com.hedera.services.state.expiry.removal.FungibleTreasuryReturns.U
 import static com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
 import static com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS;
 import static com.hedera.services.throttling.MapAccessType.*;
+import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.enums.TokenType;
@@ -151,9 +152,16 @@ public class TreasuryReturns {
         var n = 0;
         var i = expectedNfts;
         var nftKey = expired.getHeadNftKey();
+
         final List<EntityId> tokenTypes = new ArrayList<>();
         final List<NftAdjustments> returnExchanges = new ArrayList<>();
-
+        if (MISSING_NUM_PAIR.equals(nftKey) && i > 0) {
+            log.warn(
+                    "Account 0.0.{} claimed to own {} NFTs, but head key is missing",
+                    expiredNum.longValue(),
+                    i);
+            nftKey = null;
+        }
         while (nftKey != null && expiryThrottle.allow(TOKEN_DELETION_CHECK) && i-- > 0) {
             final var tokenNum = nftKey.getHiOrderAsNum();
             var token = tokens.get().get(tokenNum);
@@ -172,8 +180,10 @@ public class TreasuryReturns {
                 n++;
             } catch (Exception unrecoverable) {
                 log.error(
-                        "Unable to return all NFTs from account 0.0.{}",
+                        "Unable to return all NFTs from account 0.0.{} (failed with 0.0.{}.{})",
                         expiredNum.longValue(),
+                        nftKey.getHiOrderAsLong(),
+                        nftKey.getLowOrderAsLong(),
                         unrecoverable);
                 nftKey = null;
             }
