@@ -310,24 +310,6 @@ class EndToEndTests extends E2ETestBase {
                 });
     }
 
-    @Tag("contract")
-    @Tag("contract.traceability")
-    @TestFactory
-    Collection<DynamicContainer> contractTraceability() {
-        return List.of(
-                //				extractSpecsFromSuite(ContractTraceabilitySuite::new)
-                );
-    }
-
-    @Tag("contract")
-    @Tag("contract.traceability.eth")
-    @TestFactory
-    Collection<DynamicContainer> contractTraceabilityEth() {
-        return List.of(
-                //				extractSpecsFromSuiteForEth(ContractTraceabilitySuite::new)
-                );
-    }
-
     @Tag("crypto")
     @TestFactory
     Collection<DynamicContainer> crypto() {

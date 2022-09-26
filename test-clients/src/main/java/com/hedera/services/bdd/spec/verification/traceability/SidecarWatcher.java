@@ -49,9 +49,10 @@ public class SidecarWatcher {
 
     private boolean hasSeenFirstExpectedSidecar = false;
     private FileAlterationMonitor monitor;
+    private FileAlterationObserver observer;
 
     public void watch() throws Exception {
-        final var observer = new FileAlterationObserver(recordStreamFolderPath.toFile());
+        observer = new FileAlterationObserver(recordStreamFolderPath.toFile());
         final var listener =
                 new FileAlterationListenerAdaptor() {
                     @Override
@@ -153,7 +154,7 @@ public class SidecarWatcher {
     public void waitUntilFinished() {
         if (!expectedSidecars.isEmpty()) {
             log.info("Waiting a maximum of 10 seconds for expected sidecars");
-            var retryCount = 20;
+            var retryCount = 40;
             while (!expectedSidecars.isEmpty() && retryCount >= 0) {
                 try {
                     Thread.sleep(POLLING_INTERVAL_MS);
@@ -162,6 +163,7 @@ public class SidecarWatcher {
                     log.warn("Interrupted while waiting for sidecars.");
                     return;
                 }
+                observer.checkAndNotify();
                 retryCount--;
             }
         }
