@@ -123,8 +123,7 @@ class RenewalHelperTest {
         verify(expiryStats).countRenewedContract();
         final var expectedNewExpiry = now.getEpochSecond() + 3600L;
         verify(recordsHelper)
-                .streamCryptoRenewal(
-                        targetNum, nonZeroBalance, expectedNewExpiry, false, targetNum);
+                .streamCryptoRenewal(targetNum, nonZeroBalance, expectedNewExpiry, false);
         assertEquals(key, classificationWork.getPayerNumForLastClassified());
     }
 

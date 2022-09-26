@@ -19,6 +19,7 @@ import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -120,6 +121,16 @@ public class MockRecordsHistorian implements RecordsHistorian {
 
     @Override
     public RunningHash lastRunningHash() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean nextSystemTransactionIdIsUnknown() {
+        return true;
+    }
+
+    @Override
+    public TxnId computeNextSystemTransactionId() {
         throw new UnsupportedOperationException();
     }
 }

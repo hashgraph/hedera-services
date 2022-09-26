@@ -102,7 +102,7 @@ class RemovalHelperTest {
         var result = subject.tryToRemoveAccount(expiredNum);
 
         verify(expiryStats, never()).countRemovedContract();
-        verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, null, finishedReturns);
+        verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, finishedReturns);
         assertEquals(ExpiryProcessResult.DONE, result);
     }
 
@@ -139,8 +139,7 @@ class RemovalHelperTest {
 
         var result = subject.tryToRemoveContract(expiredNum);
 
-        verify(recordsHelper)
-                .streamCryptoRemovalStep(true, expiredNum, autoRenewId, finishedReturns);
+        verify(recordsHelper).streamCryptoRemovalStep(true, expiredNum, finishedReturns);
         verify(expiryStats).countRemovedContract();
         assertEquals(ExpiryProcessResult.DONE, result);
     }

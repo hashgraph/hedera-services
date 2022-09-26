@@ -71,6 +71,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -79,7 +80,13 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkle.tree.MerkleBinaryTree;
+import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -112,8 +119,8 @@ class MigrationRecordsManagerTest {
     private static final long contract2Expiry = 4000000L;
     private static final EntityId contract1Id = EntityId.fromIdentityCode(1);
     private static final EntityId contract2Id = EntityId.fromIdentityCode(2);
+    private static final EntityId deletedContractId = EntityId.fromIdentityCode(3);
     private static final long pretendExpiry = 2 * now.getEpochSecond();
-    private static final String pretendMemo = "WHATEVER";
     private static final JKey pretendTreasuryKey =
             new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
     private final List<MerkleAccount> treasuryClones = new ArrayList<>();
@@ -236,7 +243,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCall);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -252,7 +258,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.EthereumTransaction);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -268,7 +273,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -286,7 +290,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -446,7 +449,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -521,7 +523,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -537,7 +538,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
 
         subject.markTraceabilityMigrationAsDone();
         subject.publishMigrationRecords(now);
@@ -553,7 +553,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -585,7 +584,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -618,7 +616,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false).willReturn(true);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(true);
         given(txnAccessor.getFunction())
                 .willReturn(HederaFunctionality.ContractCreate)
                 .willReturn(HederaFunctionality.CryptoTransfer);
@@ -641,29 +638,34 @@ class MigrationRecordsManagerTest {
 
     @Test
     void ifContextIndicatesContractRenewRecordsNeedToBeStreamedThenDoesSo() {
+        registerConstructables();
+
         final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
                 forClass(TransactionBody.Builder.class);
         final ArgumentCaptor<ExpirableTxnRecord.Builder> recordCaptor =
                 forClass(ExpirableTxnRecord.Builder.class);
 
+        accounts.clear();
+        accounts.put(
+                contract1Id.asNum(),
+                MerkleAccountFactory.newContract().expirationTime(contract1Expiry).get());
+        accounts.put(
+                contract2Id.asNum(),
+                MerkleAccountFactory.newContract().expirationTime(contract2Expiry).get());
+        accounts.put(
+                deletedContractId.asNum(), MerkleAccountFactory.newContract().deleted(true).get());
         final var contractUpdateSynthBody1 =
-                factory.synthContractAutoRenew(
-                                contract1Id.asNum(), contract1Expiry, contract1Id.toGrpcAccountId())
-                        .build();
+                factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry).build();
         final var contractUpdateSynthBody2 =
-                factory.synthContractAutoRenew(
-                                contract2Id.asNum(), contract2Expiry, contract2Id.toGrpcAccountId())
-                        .build();
+                factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry).build();
 
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        given(merkleAccount.isSmartContract()).willReturn(true);
-        given(merkleAccount.getExpiry()).willReturn(contract1Expiry).willReturn(contract2Expiry);
-        MigrationRecordsManager.setExpiryJustEnabled(true);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
 
         subject.publishMigrationRecords(now);
-
-        MigrationRecordsManager.setExpiryJustEnabled(false);
 
         verify(recordsHistorian, times(2))
                 .trackPrecedingChildRecord(
@@ -782,5 +784,26 @@ class MigrationRecordsManagerTest {
         treasuryClones.get(0).setKey(EntityNum.fromLong(200L));
         treasuryClones.get(1).setKey(EntityNum.fromLong(201L));
         given(treasuryCloner.getClonesCreated()).willReturn(treasuryClones);
+    }
+
+    private void registerConstructables() {
+        try {
+            ConstructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+            ConstructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+            ConstructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+            ConstructableRegistry.registerConstructable(
+                    new ClassConstructorPair(
+                            MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+            ConstructableRegistry.registerConstructable(
+                    new ClassConstructorPair(
+                            MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+            ConstructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        } catch (ConstructableRegistryException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }
