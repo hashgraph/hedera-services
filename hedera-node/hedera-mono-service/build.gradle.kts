@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ dependencies {
     implementation(libs.hapi)
     implementation(libs.headlong)
     implementation(
-            variantOf(libs.netty.transport.native.epoll) {
-                classifier("linux-x86_64")
-            }
+        variantOf(libs.netty.transport.native.epoll) {
+            classifier("linux-x86_64")
+        }
     )
 
     testImplementation(testLibs.bundles.testing)
@@ -62,9 +62,9 @@ java.sourceSets["jmh"].java.srcDir(jmhDaggerSources)
 tasks.jar {
     manifest {
         attributes(
-                "Main-Class" to "com.hedera.services.ServicesMain",
-                "Class-Path" to configurations.getByName("runtimeClasspath")
-                        .joinToString(separator = " ") { "../lib/" + it.name }
+            "Main-Class" to "com.hedera.services.ServicesMain",
+            "Class-Path" to configurations.getByName("runtimeClasspath")
+                .joinToString(separator = " ") { "../lib/" + it.name }
         )
     }
 }
@@ -116,9 +116,9 @@ val cleanRun = tasks.register("cleanRun") {
     project.delete(File(project.projectDir, "settingsUsed.txt"))
     project.delete(File(project.projectDir, "swirlds.jar"))
     project.projectDir.list { _, fileName -> fileName.startsWith("MainNetStats") }
-            ?.forEach { file ->
-                project.delete(file)
-            }
+        ?.forEach { file ->
+            project.delete(file)
+        }
 
     val dataDir = File(project.projectDir, "data")
     project.delete(File(dataDir, "accountBalances"))
