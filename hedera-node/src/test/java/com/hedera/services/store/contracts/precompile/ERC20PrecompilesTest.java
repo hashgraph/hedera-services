@@ -1074,6 +1074,8 @@ class ERC20PrecompilesTest {
                 .thenReturn(APPROVE_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(encoder.encodeApprove(SUCCESS.getNumber(), true)).willReturn(successResult);
+        given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
+        given(wrappedLedgers.canonicalAddress(contractAddress)).willReturn(senderAddress);
 
         // when:
         subject.prepareFields(frame);
@@ -1086,6 +1088,15 @@ class ERC20PrecompilesTest {
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(frame)
+                .addLog(
+                        EncodingFacade.LogBuilder.logBuilder()
+                                .forLogger(tokenAddress)
+                                .forEventSignature(AbiConstants.APPROVAL_EVENT)
+                                .forIndexedArgument(senderAddress)
+                                .forIndexedArgument(recipientAddress)
+                                .forDataItem(APPROVE_WRAPPER.amount())
+                                .build());
     }
 
     @Test
@@ -1151,6 +1162,8 @@ class ERC20PrecompilesTest {
                 .thenReturn(APPROVE_NFT_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(encoder.encodeApproveNFT(SUCCESS.getNumber())).willReturn(successResult);
+        given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
+        given(wrappedLedgers.canonicalAddress(contractAddress)).willReturn(senderAddress);
 
         // when:
         subject.prepareFields(frame);
@@ -1163,6 +1176,15 @@ class ERC20PrecompilesTest {
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(frame)
+                .addLog(
+                        EncodingFacade.LogBuilder.logBuilder()
+                                .forLogger(tokenAddress)
+                                .forEventSignature(AbiConstants.APPROVAL_EVENT)
+                                .forIndexedArgument(senderAddress)
+                                .forIndexedArgument(recipientAddress)
+                                .forIndexedArgument(APPROVE_NFT_WRAPPER.serialNumber())
+                                .build());
     }
 
     @Test

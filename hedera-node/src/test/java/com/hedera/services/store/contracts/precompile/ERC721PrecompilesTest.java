@@ -1051,6 +1051,8 @@ class ERC721PrecompilesTest {
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
+        given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
+        given(wrappedLedgers.canonicalAddress(contractAddress)).willReturn(senderAddress);
 
         given(
                         allowanceChecks.allowancesValidation(
@@ -1079,6 +1081,15 @@ class ERC721PrecompilesTest {
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(frame)
+                .addLog(
+                        EncodingFacade.LogBuilder.logBuilder()
+                                .forLogger(tokenAddress)
+                                .forEventSignature(AbiConstants.APPROVAL_FOR_ALL_EVENT)
+                                .forIndexedArgument(senderAddress)
+                                .forIndexedArgument(recipientAddress)
+                                .forDataItem(SET_APPROVAL_FOR_ALL_WRAPPER.approved())
+                                .build());
     }
 
     @Test
