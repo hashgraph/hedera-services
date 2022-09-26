@@ -25,9 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
@@ -168,7 +166,7 @@ public class Token {
     public void mint(
             final TokenRelationship treasuryRel, final long amount, boolean ignoreSupplyKey) {
         validateTrue(
-                amount > 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
+                amount >= 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
         validateTrue(
                 type == TokenType.FUNGIBLE_COMMON,
                 FAIL_INVALID,
@@ -193,8 +191,6 @@ public class Token {
             final List<ByteString> metadata,
             final RichInstant creationTime) {
         final var metadataCount = metadata.size();
-        validateFalse(
-                metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
         validateTrue(
                 type == TokenType.NON_FUNGIBLE_UNIQUE,
                 FAIL_INVALID,
@@ -221,7 +217,7 @@ public class Token {
 
     public void burn(final TokenRelationship treasuryRel, final long amount) {
         validateTrue(
-                amount > 0, INVALID_TOKEN_BURN_AMOUNT, errorMessage("burn", amount, treasuryRel));
+                amount >= 0, INVALID_TOKEN_BURN_AMOUNT, errorMessage("burn", amount, treasuryRel));
         changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT, false);
     }
 
@@ -239,7 +235,6 @@ public class Token {
             final TokenRelationship treasuryRelationship,
             final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
-        validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
         final var treasuryId = treasury.getId();
         for (final long serialNum : serialNumbers) {
             final var uniqueToken = loadedUniqueTokens.get(serialNum);
@@ -418,7 +413,7 @@ public class Token {
     }
 
     private void amountWipeValidations(final TokenRelationship accountRel, final long amount) {
-        validateTrue(amount > 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
+        validateTrue(amount >= 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
 
         final var newTotalSupply = totalSupply - amount;
         validateTrue(

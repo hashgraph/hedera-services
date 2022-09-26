@@ -118,12 +118,12 @@ public final class TokenOpsValidator {
         }
 
         boolean bothPresent = (fungibleCount > 0 && nftCount > 0);
-        boolean nonePresent = (fungibleCount < 0 && nftCount == 0);
-        if (nonePresent) {
-            return invalidTokenAmount;
-        }
         if (bothPresent) {
             return INVALID_TRANSACTION_BODY;
+        }
+
+        if (fungibleCount < 0) {
+            return invalidTokenAmount;
         }
 
         if (fungibleCount <= 0 && nftCount > 0) {

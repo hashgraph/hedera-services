@@ -46,6 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
@@ -452,9 +453,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
                                 .hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
                         mintToken("supple", Long.MAX_VALUE)
                                 .hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
-                        mintToken("supple", 0).hasPrecheck(INVALID_TOKEN_MINT_AMOUNT),
+                        mintToken("supple", 0).hasPrecheck(OK),
+                        mintToken("supple", -1).hasPrecheck(INVALID_TOKEN_MINT_AMOUNT),
                         burnToken("supple", 2).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
-                        burnToken("supple", 0).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
+                        burnToken("supple", 0).hasPrecheck(OK),
+                        burnToken("supple", -1).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
     }
 
     @Override
