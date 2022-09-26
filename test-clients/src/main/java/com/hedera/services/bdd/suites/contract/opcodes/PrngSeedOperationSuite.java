@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -49,6 +50,9 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
 
     private static final String GET_SEED = "getPseudorandomSeed";
 
+    public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
+    public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
+
     public static void main(String... args) {
         new PrngSeedOperationSuite().runSuiteSync();
     }
@@ -68,7 +72,10 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
     }
 
     List<HapiApiSpec> positiveSpecs() {
-        return List.of(prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults());
+        return List.of(
+                prngPrecompileHappyPathWorks(),
+                multipleCallsHaveIndependentResults(),
+                prngPrecompileDisabledInV_0_30());
     }
 
     private HapiApiSpec multipleCallsHaveIndependentResults() {
@@ -77,7 +84,11 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
         final var numCalls = 5;
         final List<String> prngSeeds = new ArrayList<>();
         return defaultHapiSpec("MultipleCallsHaveIndependentResults")
-                .given(uploadInitCode(prng), contractCreate(prng))
+                .given(uploadInitCode(prng),
+                        contractCreate(prng),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, "true"),
+                        overriding(CONTRACTS_EVM_VERSION, "v0.31")
+                )
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -126,8 +137,11 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
                 .given(
-                        overriding("contracts.evm.version", "v0.31"),
-                        cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, "true"),
+                        overriding(CONTRACTS_EVM_VERSION, "v0.31"),
+                        cryptoCreate(BOB),
+                        uploadInitCode(prng),
+                        contractCreate(prng))
                 .when(
                         sourcing(
                                 () ->
@@ -137,15 +151,50 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
                                                 .via(randomBits)
                                                 .logged()))
                 .then(
-                        getTxnRecord(randomBits).hasPriority(
+                        getTxnRecord(randomBits)
+                                .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
                                                         resultWith()
                                                                 .resultViaFunctionName(
                                                                         GET_SEED,
                                                                         prng,
-                                                                        isRandomResult((
-                                                                                new Object[]{
+                                                                        isRandomResult(
+                                                                                (new Object[]{
+                                                                                        new byte[32]
+                                                                                })))))
+                                .logged());
+    }
+
+    private HapiApiSpec prngPrecompileDisabledInV_0_30() {
+        final var prng = THE_PRNG_CONTRACT;
+        final var randomBits = "randomBits";
+        return defaultHapiSpec("prngPrecompileDisabledInV_0_30")
+                .given(
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, "true"),
+                        overriding(CONTRACTS_EVM_VERSION, "v0.30"),
+                        cryptoCreate(BOB),
+                        uploadInitCode(prng),
+                        contractCreate(prng))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(prng, GET_SEED)
+                                                .gas(GAS_TO_OFFER)
+                                                .payingWith(BOB)
+                                                .via(randomBits)
+                                                .logged()))
+                .then(
+                        getTxnRecord(randomBits)
+                                .hasPriority(
+                                        recordWith()
+                                                .contractCallResult(
+                                                        resultWith()
+                                                                .resultViaFunctionName(
+                                                                        GET_SEED,
+                                                                        prng,
+                                                                        isLiteralResult(
+                                                                                (new Object[]{
                                                                                         new byte[32]
                                                                                 })))))
                                 .logged());

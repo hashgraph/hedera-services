@@ -21,11 +21,11 @@ import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFr
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
-import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
+import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -53,19 +53,23 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
+import dagger.multibindings.IntoSet;
 import dagger.multibindings.StringKey;
-import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
+import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
+import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.EvmConfiguration;
-import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Module(
         includes = {
@@ -159,27 +163,61 @@ public interface ContractsModule {
 
     @Provides
     @Singleton
+    @IntoSet
+    static ContractValidationRule provideMaxCodeSizeRule() {
+        return MaxCodeSizeRule.of(0x6000);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static ContractValidationRule providePrefixCodeRule() {
+        return PrefixCodeRule.of();
+    }
+
+    @Provides
+    @Singleton
     @IntoMap
     @StringKey("v0.30")
-    static EVM provideV30EVM(@V_0_30 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
-        var operationRegistry = new OperationRegistry();
-        // ChainID will be overridden
-        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
-        hederaOperations.forEach(operationRegistry::put);
+    static MessageCallProcessor provideV_0_30MessageCallProcessor(
+            final @V_0_30 EVM evm,
+            final @V_0_30 PrecompileContractRegistry precompiles,
+            final Map<String, PrecompiledContract> hederaPrecompileList) {
+        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
+    }
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey("v0.30")
+    static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
+            final GasCalculator gasCalculator,
+            final @V_0_30 EVM evm,
+            Set<ContractValidationRule> validationRules) {
+        return new ContractCreationProcessor(
+                gasCalculator, evm, true, List.copyOf(validationRules), 1);
     }
 
     @Provides
     @Singleton
     @IntoMap
     @StringKey("v0.31")
-    static EVM provideV31EVM(@V_0_31 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
-        var operationRegistry = new OperationRegistry();
-        // ChainID will be overridden
-        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
-        hederaOperations.forEach(operationRegistry::put);
+    static MessageCallProcessor provideV_0_31MessageCallProcessor(
+            final @V_0_31 EVM evm,
+            final @V_0_31 PrecompileContractRegistry precompiles,
+            final Map<String, PrecompiledContract> hederaPrecompileList) {
+        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
+    }
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey("v0.31")
+    static ContractCreationProcessor provideV_0_31ContractCreateProcessor(
+            final GasCalculator gasCalculator,
+            final @V_0_31 EVM evm,
+            Set<ContractValidationRule> validationRules) {
+        return new ContractCreationProcessor(
+                gasCalculator, evm, true, List.copyOf(validationRules), 1);
     }
 }

@@ -307,7 +307,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     int expectedLength = ((byte[]) expected).length;
                     Assertions.assertEquals(expectedLength, ((byte[]) actual).length);
                     // reject all zero result as not random
-                    Assertions.assertFalse(Arrays.equals(new byte[expectedLength], (byte[]) actual));
+                    Assertions.assertFalse(
+                            Arrays.equals(new byte[expectedLength], (byte[]) actual));
                 } else if (expected instanceof Integer) {
                     Assertions.assertTrue(
                             ((BigInteger) actual).intValue() >= 0

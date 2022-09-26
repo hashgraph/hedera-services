@@ -15,6 +15,7 @@
  */
 package com.hedera.services.contracts;
 
+import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
 import com.hedera.services.context.TransactionContext;
@@ -38,13 +39,20 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
+import java.math.BigInteger;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Module
@@ -172,7 +180,7 @@ public interface ContractsV_0_31Operations {
     static Operation bindSelfDestructOperation(
             GasCalculator gasCalculator,
             final TransactionContext txnCtx,
-            /* Deliberately import the V30 validator, we still want self-destructs to fail if the beneficiary is invalid */
+            /* Deliberately import the V_0_30 validator, we still want self-destructs to fail if the beneficiary is invalid */
             @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator);
     }
@@ -197,4 +205,26 @@ public interface ContractsV_0_31Operations {
     @IntoSet
     @V_0_31
     Operation bindHederaPrngSeedOperation(HederaPrngSeedOperator prngSeedOperator);
+
+    @Provides
+    @Singleton
+    @V_0_31
+    static EVM provideV_0_31EVM(
+            @V_0_31 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
+        var operationRegistry = new OperationRegistry();
+        // ChainID will be overridden
+        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        hederaOperations.forEach(operationRegistry::put);
+        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+    }
+
+    @Provides
+    @Singleton
+    @V_0_31
+    static PrecompileContractRegistry providePrecompiledContractRegistry(
+            GasCalculator gasCalculator) {
+        final var precompileContractRegistry = new PrecompileContractRegistry();
+        MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
+        return precompileContractRegistry;
+    }
 }

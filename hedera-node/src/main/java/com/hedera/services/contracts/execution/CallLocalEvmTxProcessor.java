@@ -30,10 +30,10 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 /**
  * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
@@ -50,10 +50,10 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<EVM>> evms,
-            final Map<String, PrecompiledContract> precompiledContractMap,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager) {
-        super(livePricesSource, dynamicProperties, gasCalculator, evms, precompiledContractMap);
+        super(livePricesSource, dynamicProperties, gasCalculator, mcps, ccps);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }

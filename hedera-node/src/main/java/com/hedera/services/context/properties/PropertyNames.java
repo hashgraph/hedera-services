@@ -86,6 +86,7 @@ public class PropertyNames {
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
     public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
     public static final String CONTRACTS_DEFAULT_LIFETIME = "contracts.defaultLifetime";
+    public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
     public static final String CONTRACTS_FREE_STORAGE_TIER_LIMIT = "contracts.freeStorageTierLimit";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";

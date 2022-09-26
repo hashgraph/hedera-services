@@ -103,6 +103,7 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_ALLOW_CREATE2, true),
                     entry(CONTRACTS_CHAIN_ID, 295),
                     entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
+                    entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
                     entry(CONTRACTS_EVM_VERSION, "v0.30"),
                     entry(CONTRACTS_FREE_STORAGE_TIER_LIMIT, 100),
                     entry(CONTRACTS_ITEMIZE_STORAGE_FEES, true),

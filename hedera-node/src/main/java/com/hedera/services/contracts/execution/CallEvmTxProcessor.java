@@ -33,10 +33,10 @@ import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
@@ -50,8 +50,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<EVM>> evms,
-            final Map<String, PrecompiledContract> precompiledContractMap,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
         super(
@@ -59,8 +59,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
                 livePricesSource,
                 dynamicProperties,
                 gasCalculator,
-                evms,
-                precompiledContractMap,
+                mcps,
+                ccps,
                 blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;

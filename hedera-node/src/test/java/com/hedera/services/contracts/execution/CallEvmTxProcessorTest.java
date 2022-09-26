@@ -82,7 +82,10 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer.ExecuteOperation;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
@@ -133,10 +136,17 @@ class CallEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn("v0.30");
-        Map<String, Provider<EVM>> evms =
+        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
                         "v0.30",
-                        () -> new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT));
+                        () -> new MessageCallProcessor(evm30, new PrecompileContractRegistry()));
+        Map<String, Provider<ContractCreationProcessor>> ccps =
+                Map.of(
+                        "v0.30",
+                        () ->
+                                new ContractCreationProcessor(
+                                        gasCalculator, evm30, true, List.of(), 1));
 
         callEvmTxProcessor =
                 new CallEvmTxProcessor(
@@ -145,8 +155,8 @@ class CallEvmTxProcessorTest {
                         codeCache,
                         globalDynamicProperties,
                         gasCalculator,
-                        evms,
-                        precompiledContractMap,
+                        mcps,
+                        ccps,
                         aliasManager,
                         blockMetaSource);
     }

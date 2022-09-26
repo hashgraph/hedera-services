@@ -195,7 +195,6 @@ public class Utils {
         final var path = String.format(RESOURCE_PATH + extension, resourceName);
         final var file = new File(path);
         if (!file.exists()) {
-            System.out.println(file.getAbsolutePath());
             throw new IllegalArgumentException(
                     "Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
         }

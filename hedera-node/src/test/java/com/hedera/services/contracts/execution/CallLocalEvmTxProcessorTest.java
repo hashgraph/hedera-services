@@ -38,6 +38,7 @@ import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -56,7 +57,10 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -97,10 +101,17 @@ class CallLocalEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn("v0.30");
-        Map<String, Provider<EVM>> evms =
+        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
                         "v0.30",
-                        () -> new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT));
+                        () -> new MessageCallProcessor(evm30, new PrecompileContractRegistry()));
+        Map<String, Provider<ContractCreationProcessor>> ccps =
+                Map.of(
+                        "v0.30",
+                        () ->
+                                new ContractCreationProcessor(
+                                        gasCalculator, evm30, true, List.of(), 1));
 
         callLocalEvmTxProcessor =
                 new CallLocalEvmTxProcessor(
@@ -108,8 +119,8 @@ class CallLocalEvmTxProcessorTest {
                         livePricesSource,
                         globalDynamicProperties,
                         gasCalculator,
-                        evms,
-                        precompiledContractMap,
+                        mcps,
+                        ccps,
                         aliasManager);
 
         callLocalEvmTxProcessor.setWorldState(worldState);
