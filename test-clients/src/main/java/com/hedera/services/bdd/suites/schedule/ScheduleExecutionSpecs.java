@@ -561,7 +561,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec scheduledMintFailsWithInvalidAmount() {
-        final var failingTxn = "failingTxn";
         final var zeroAmountTxn = "zeroAmountTxn";
         return defaultHapiSpec("ScheduledMintFailsWithInvalidAmount")
                 .given(

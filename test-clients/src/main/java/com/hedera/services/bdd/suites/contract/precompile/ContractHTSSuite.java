@@ -924,8 +924,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                             1L)
                                                     .alsoSigningWithFullPrefix(ACCOUNT)
                                                     .gas(GAS_TO_OFFER)
-                                                    .via("distributeTx")
-                                            );
+                                                    .via("distributeTx"));
                                 }))
                 .then(
                         getTokenInfo(NFT).hasTotalSupply(2),

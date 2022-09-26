@@ -69,9 +69,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(List.of(
-//                wipeFungibleTokenScenarios(),
-                wipeNonFungibleTokenScenarios()));
+        return allOf(List.of(wipeFungibleTokenScenarios(), wipeNonFungibleTokenScenarios()));
     }
 
     private HapiApiSpec wipeFungibleTokenScenarios() {
@@ -103,101 +101,105 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-//                                                contractCall(
-//                                                                WIPE_CONTRACT,
-//                                                                WIPE_FUNGIBLE_TOKEN,
-//                                                                asAddress(vanillaTokenID.get()),
-//                                                                asAddress(accountID.get()),
-//                                                                10L)
-//                                                        .payingWith(ADMIN_ACCOUNT)
-//                                                        .via("accountDoesNotOwnWipeKeyTxn")
-//                                                        .gas(GAS_TO_OFFER)
-//                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-//                                                cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
-//                                                contractCall(
-//                                                                WIPE_CONTRACT,
-//                                                                WIPE_FUNGIBLE_TOKEN,
-//                                                                asAddress(vanillaTokenID.get()),
-//                                                                asAddress(accountID.get()),
-//                                                                1_000L)
-//                                                        .payingWith(ADMIN_ACCOUNT)
-//                                                        .via("amountLargerThanBalanceTxn")
-//                                                        .gas(GAS_TO_OFFER)
-//                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-//                                                contractCall(
-//                                                                WIPE_CONTRACT,
-//                                                                WIPE_FUNGIBLE_TOKEN,
-//                                                                asAddress(vanillaTokenID.get()),
-//                                                                asAddress(secondAccountID.get()),
-//                                                                10L)
-//                                                        .payingWith(ADMIN_ACCOUNT)
-//                                                        .via("accountDoesNotOwnTokensTxn")
-//                                                        .gas(GAS_TO_OFFER)
-//                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-//                                                contractCall(
-//                                                                WIPE_CONTRACT,
-//                                                                WIPE_FUNGIBLE_TOKEN,
-//                                                                asAddress(vanillaTokenID.get()),
-//                                                                asAddress(accountID.get()),
-//                                                                10L)
-//                                                        .payingWith(ADMIN_ACCOUNT)
-//                                                        .via("wipeFungibleTxn")
-//                                                        .gas(GAS_TO_OFFER),
                                                 contractCall(
-                                                        WIPE_CONTRACT,
-                                                        WIPE_FUNGIBLE_TOKEN,
-                                                        asAddress(vanillaTokenID.get()),
-                                                        asAddress(accountID.get()),
-                                                        0L)
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()),
+                                                                10L)
+                                                        .payingWith(ADMIN_ACCOUNT)
+                                                        .via("accountDoesNotOwnWipeKeyTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
+                                                contractCall(
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()),
+                                                                1_000L)
+                                                        .payingWith(ADMIN_ACCOUNT)
+                                                        .via("amountLargerThanBalanceTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(secondAccountID.get()),
+                                                                10L)
+                                                        .payingWith(ADMIN_ACCOUNT)
+                                                        .via("accountDoesNotOwnTokensTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()),
+                                                                10L)
+                                                        .payingWith(ADMIN_ACCOUNT)
+                                                        .via("wipeFungibleTxn")
+                                                        .gas(GAS_TO_OFFER),
+                                                contractCall(
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()),
+                                                                0L)
                                                         .payingWith(ADMIN_ACCOUNT)
                                                         .via("wipeFungibleTxnWithZeroAmount")
+                                                        .gas(GAS_TO_OFFER),
+                                                //
+                                                // negative amount throws run time exception as
+                                                //
+                                                // amount is uint64 in solidity file
+
+                                                contractCall(
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()),
+                                                                -1L)
+                                                        .payingWith(ADMIN_ACCOUNT)
+                                                        .via("failedWipeFungibleTxn")
                                                         .gas(GAS_TO_OFFER)
-                                                // negative amount throws run time exception as amount is uint64 in solidity file
-//                                                contractCall(
-//                                                        WIPE_CONTRACT,
-//                                                        WIPE_FUNGIBLE_TOKEN,
-//                                                        asAddress(vanillaTokenID.get()),
-//                                                        asAddress(accountID.get()),
-//                                                        -1L)
-//                                                        .payingWith(ADMIN_ACCOUNT)
-//                                                        .via("failedWipeFungibleTxn")
-//                                                        .gas(GAS_TO_OFFER)
-//                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-//                                                        .logged()
-                                        ))).then(
-//                        childRecordsCheck(
-//                                "accountDoesNotOwnWipeKeyTxn",
-//                                CONTRACT_REVERT_EXECUTED,
-//                                recordWith()
-//                                        .status(INVALID_SIGNATURE)
-//                                        .contractCallResult(
-//                                                resultWith()
-//                                                        .contractCallResult(
-//                                                                htsPrecompileResult()
-//                                                                        .withStatus(
-//                                                                                INVALID_SIGNATURE)))),
-//                        childRecordsCheck(
-//                                "amountLargerThanBalanceTxn",
-//                                CONTRACT_REVERT_EXECUTED,
-//                                recordWith()
-//                                        .status(INVALID_WIPING_AMOUNT)
-//                                        .contractCallResult(
-//                                                resultWith()
-//                                                        .contractCallResult(
-//                                                                htsPrecompileResult()
-//                                                                        .withStatus(
-//                                                                                INVALID_WIPING_AMOUNT)))),
-//                        childRecordsCheck(
-//                                "accountDoesNotOwnTokensTxn",
-//                                CONTRACT_REVERT_EXECUTED,
-//                                recordWith()
-//                                        .status(INVALID_WIPING_AMOUNT)
-//                                        .contractCallResult(
-//                                                resultWith()
-//                                                        .contractCallResult(
-//                                                                htsPrecompileResult()
-//                                                                        .withStatus(
-//                                                                                INVALID_WIPING_AMOUNT)))),
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                        .logged())))
+                .then(
+                        childRecordsCheck(
+                                "accountDoesNotOwnWipeKeyTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
+                        childRecordsCheck(
+                                "amountLargerThanBalanceTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_WIPING_AMOUNT)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_WIPING_AMOUNT)))),
+                        childRecordsCheck(
+                                "accountDoesNotOwnTokensTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_WIPING_AMOUNT)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_WIPING_AMOUNT)))),
                         childRecordsCheck(
                                 "wipeFungibleTxnWithZeroAmount",
                                 SUCCESS,
@@ -207,8 +209,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                SUCCESS)))),
+                                                                        .withStatus(SUCCESS)))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(990),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
@@ -248,114 +249,113 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                     serialNumbers.add(1L);
                                     allRunFor(
                                             spec,
-//                                            contractCall(
-//                                                            WIPE_CONTRACT,
-//                                                            WIPE_NON_FUNGIBLE_TOKEN,
-//                                                            asAddress(vanillaTokenID.get()),
-//                                                            asAddress(accountID.get()),
-//                                                            serialNumbers)
-//                                                    .payingWith(ADMIN_ACCOUNT)
-//                                                    .via(
-//                                                            "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
-//                                                    .gas(GAS_TO_OFFER)
-//                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-//                                            cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
-//                                            contractCall(
-//                                                            WIPE_CONTRACT,
-//                                                            WIPE_NON_FUNGIBLE_TOKEN,
-//                                                            asAddress(vanillaTokenID.get()),
-//                                                            asAddress(accountID.get()),
-//                                                            List.of(2L))
-//                                                    .payingWith(ADMIN_ACCOUNT)
-//                                                    .via(
-//                                                            "wipeNonFungibleAccountDoesNotOwnTheSerialTxn")
-//                                                    .gas(GAS_TO_OFFER)
-//                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-//                                            contractCall(
-//                                                            WIPE_CONTRACT,
-//                                                            WIPE_NON_FUNGIBLE_TOKEN,
-//                                                            asAddress(vanillaTokenID.get()),
-//                                                            asAddress(accountID.get()),
-//                                                            List.of(-2L))
-//                                                    .payingWith(ADMIN_ACCOUNT)
-//                                                    .via("wipeNonFungibleNegativeSerialTxn")
-//                                                    .gas(GAS_TO_OFFER)
-//                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-//                                            contractCall(
-//                                                            WIPE_CONTRACT,
-//                                                            WIPE_NON_FUNGIBLE_TOKEN,
-//                                                            asAddress(vanillaTokenID.get()),
-//                                                            asAddress(accountID.get()),
-//                                                            List.of(3L))
-//                                                    .payingWith(ADMIN_ACCOUNT)
-//                                                    .via("wipeNonFungibleSerialDoesNotExistsTxn")
-//                                                    .gas(GAS_TO_OFFER)
-//                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
-                                                    WIPE_CONTRACT,
-                                                    WIPE_NON_FUNGIBLE_TOKEN,
-                                                    asAddress(vanillaTokenID.get()),
-                                                    asAddress(accountID.get()),
-                                                    List.of())
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            serialNumbers)
+                                                    .payingWith(ADMIN_ACCOUNT)
+                                                    .via(
+                                                            "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            List.of(2L))
+                                                    .payingWith(ADMIN_ACCOUNT)
+                                                    .via(
+                                                            "wipeNonFungibleAccountDoesNotOwnTheSerialTxn")
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            List.of(-2L))
+                                                    .payingWith(ADMIN_ACCOUNT)
+                                                    .via("wipeNonFungibleNegativeSerialTxn")
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            List.of(3L))
+                                                    .payingWith(ADMIN_ACCOUNT)
+                                                    .via("wipeNonFungibleSerialDoesNotExistsTxn")
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            List.of())
                                                     .payingWith(ADMIN_ACCOUNT)
                                                     .gas(GAS_TO_OFFER)
-                                                    .logged()
-//                                            contractCall(
-//                                                            WIPE_CONTRACT,
-//                                                            WIPE_NON_FUNGIBLE_TOKEN,
-//                                                            asAddress(vanillaTokenID.get()),
-//                                                            asAddress(accountID.get()),
-//                                                            serialNumbers)
-//                                                    .payingWith(ADMIN_ACCOUNT)
-//                                                    .via("wipeNonFungibleTxn")
-//                                                    .gas(GAS_TO_OFFER)
-                                    );
+                                                    .logged(),
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            serialNumbers)
+                                                    .payingWith(ADMIN_ACCOUNT)
+                                                    .via("wipeNonFungibleTxn")
+                                                    .gas(GAS_TO_OFFER));
                                 }))
                 .then(
-//                        childRecordsCheck(
-//                                "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn",
-//                                CONTRACT_REVERT_EXECUTED,
-//                                recordWith()
-//                                        .status(INVALID_SIGNATURE)
-//                                        .contractCallResult(
-//                                                resultWith()
-//                                                        .contractCallResult(
-//                                                                htsPrecompileResult()
-//                                                                        .withStatus(
-//                                                                                INVALID_SIGNATURE)))),
-//                        childRecordsCheck(
-//                                "wipeNonFungibleAccountDoesNotOwnTheSerialTxn",
-//                                CONTRACT_REVERT_EXECUTED,
-//                                recordWith()
-//                                        .status(ACCOUNT_DOES_NOT_OWN_WIPED_NFT)
-//                                        .contractCallResult(
-//                                                resultWith()
-//                                                        .contractCallResult(
-//                                                                htsPrecompileResult()
-//                                                                        .withStatus(
-//                                                                                ACCOUNT_DOES_NOT_OWN_WIPED_NFT)))),
-//                        childRecordsCheck(
-//                                "wipeNonFungibleNegativeSerialTxn",
-//                                CONTRACT_REVERT_EXECUTED,
-//                                recordWith()
-//                                        .status(INVALID_NFT_ID)
-//                                        .contractCallResult(
-//                                                resultWith()
-//                                                        .contractCallResult(
-//                                                                htsPrecompileResult()
-//                                                                        .withStatus(
-//                                                                                INVALID_NFT_ID)))),
-//                        childRecordsCheck(
-//                                "wipeNonFungibleSerialDoesNotExistsTxn",
-//                                CONTRACT_REVERT_EXECUTED,
-//                                recordWith()
-//                                        .status(INVALID_NFT_ID)
-//                                        .contractCallResult(
-//                                                resultWith()
-//                                                        .contractCallResult(
-//                                                                htsPrecompileResult()
-//                                                                        .withStatus(
-//                                                                                INVALID_NFT_ID)))),
+                        childRecordsCheck(
+                                "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
+                        childRecordsCheck(
+                                "wipeNonFungibleAccountDoesNotOwnTheSerialTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(ACCOUNT_DOES_NOT_OWN_WIPED_NFT)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                ACCOUNT_DOES_NOT_OWN_WIPED_NFT)))),
+                        childRecordsCheck(
+                                "wipeNonFungibleNegativeSerialTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_NFT_ID)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_NFT_ID)))),
+                        childRecordsCheck(
+                                "wipeNonFungibleSerialDoesNotExistsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_NFT_ID)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_NFT_ID)))),
                         getTxnRecord("wipeNonFungibleEmptySerialTxn").andAllChildRecords().logged(),
                         childRecordsCheck(
                                 "wipeNonFungibleEmptySerialTxn",
@@ -366,8 +366,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                SUCCESS)))),
+                                                                        .withStatus(SUCCESS)))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
     }
