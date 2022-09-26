@@ -86,7 +86,6 @@ public class MigrationRecordsManager {
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
-    private static boolean expiryJustEnabled = true;
     private final EntityCreator creator;
     private final TreasuryCloner treasuryCloner;
     private final SigImpactHistorian sigImpactHistorian;
@@ -134,11 +133,6 @@ public class MigrationRecordsManager {
         this.globalDynamicProperties = globalDynamicProperties;
         this.contractStorage = contractStorage;
         this.entityAccess = entityAccess;
-    }
-
-    @VisibleForTesting
-    static void setExpiryJustEnabled(boolean expiryJustEnabled) {
-        MigrationRecordsManager.expiryJustEnabled = expiryJustEnabled;
     }
 
     /**

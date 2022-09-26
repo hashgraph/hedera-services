@@ -53,7 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.util.List;
 import java.util.Map;
@@ -63,9 +62,6 @@ import org.apache.logging.log4j.Logger;
 
 public class ContractAutoExpirySpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ContractAutoExpirySpecs.class);
-
-    private static final String defaultMaxKvPairsToPurge =
-            HapiSpecSetup.getDefaultNodeProps().get("autoRemove.maxPurgedKvPairsPerTouch");
 
     public static void main(String... args) {
         new ContractAutoExpirySpecs().runSuiteSync();
