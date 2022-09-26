@@ -155,9 +155,10 @@ public interface RecordsHistorian {
     Instant nextFollowingChildConsensusTime();
 
     /**
-     * Returns whether there is a usable system transaction id available.
+     * Returns whether a problem with the top-level transaction has prevented system transaction ids from
+     * being computed. Should only happen in the case of an internal system error.
      *
-     * @return if a system transaction id is ccomputable
+     * @return if a system transaction id is computable
      */
     boolean nextSystemTransactionIdIsUnknown();
 
