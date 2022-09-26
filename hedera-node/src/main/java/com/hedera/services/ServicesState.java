@@ -114,8 +114,16 @@ public class ServicesState extends PartialNaryMerkleInternal
      */
     private MerkleScheduledTransactions migrationSchedules;
 
+    private final BootstrapProperties bootstrapProperties;
+
     public ServicesState() {
         // RuntimeConstructable
+        bootstrapProperties = null;
+    }
+
+    @VisibleForTesting
+    ServicesState(final BootstrapProperties bootstrapProperties) {
+        this.bootstrapProperties = bootstrapProperties;
     }
 
     private ServicesState(final ServicesState that) {
@@ -131,6 +139,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         // Copy the non-Merkle state from the source
         this.deserializedStateVersion = that.deserializedStateVersion;
         this.metadata = (that.metadata == null) ? null : that.metadata.copy();
+        this.bootstrapProperties = that.bootstrapProperties;
     }
 
     /** Log out the sizes the state children. */
@@ -210,6 +219,13 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion)) {
                 migrateFrom(deserializedVersion);
             }
+
+            // Because this flag can be toggled without a corresponding software upgrade,
+            // we need to check for migration regardless of versioning. This should be done
+            // after any other migrations are complete.
+            if (shouldMigrateNfts()) {
+                UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(this);
+            }
         }
     }
 
@@ -242,7 +258,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                     new MerkleScheduledTransactions(
                             ((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
         }
-        final var bootstrapProps = new BootstrapProperties();
+        final var bootstrapProps = getBootstrapProperties();
         enabledVirtualNft =
                 bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
@@ -256,7 +272,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 "Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 
         // Create the top-level children in the Merkle tree
-        final var bootstrapProps = new BootstrapProperties();
+        final var bootstrapProps = getBootstrapProperties();
         final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
         enabledVirtualNft =
                 bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
@@ -561,10 +577,10 @@ public class ServicesState extends PartialNaryMerkleInternal
                     vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
         }
         if (FIRST_027X_VERSION.isAfter(deserializedVersion)) {
+            final var bootstrapProps = getBootstrapProperties();
             setChild(
                     StateChildIndices.STAKING_INFO,
-                    stakingInfoBuilder.buildStakingInfoMap(
-                            addressBook(), new BootstrapProperties()));
+                    stakingInfoBuilder.buildStakingInfoMap(addressBook(), bootstrapProps));
         }
         // We know for a fact that we need to migrate scheduled transactions if they are a MerkleMap
         if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
@@ -585,6 +601,14 @@ public class ServicesState extends PartialNaryMerkleInternal
         app.workingState().updatePrimitiveChildrenFrom(this);
         log.info("Finished migrations needed for deserialized version {}", deserializedVersion);
         logStateChildrenSizes();
+    }
+
+    boolean shouldMigrateNfts() {
+        return enabledVirtualNft && !uniqueTokens().isVirtual();
+    }
+
+    private BootstrapProperties getBootstrapProperties() {
+        return bootstrapProperties == null ? new BootstrapProperties() : bootstrapProperties;
     }
 
     @FunctionalInterface
