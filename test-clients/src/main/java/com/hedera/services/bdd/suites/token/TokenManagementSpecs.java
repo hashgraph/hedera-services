@@ -197,6 +197,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
                         getAccountInfo("misc").logged(),
                         wipeTokenAccount(wipeableToken, "misc", 500).via("wipeTxn"),
+                        getAccountInfo("misc").logged(),
+                        wipeTokenAccount(wipeableToken, "misc", 0).via("wipeWithZeroAmount"),
                         getAccountInfo("misc").logged())
                 .then(
                         getAccountBalance("misc").hasTokenBalance(wipeableToken, 0),
@@ -252,8 +254,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
                         wipeTokenAccount(anotherWipeableToken, "misc", 501)
                                 .hasKnownStatus(INVALID_WIPING_AMOUNT),
                         wipeTokenAccount(anotherWipeableToken, "misc", -1)
-                                .hasPrecheck(INVALID_WIPING_AMOUNT),
-                        wipeTokenAccount(anotherWipeableToken, "misc", 0)
                                 .hasPrecheck(INVALID_WIPING_AMOUNT));
     }
 

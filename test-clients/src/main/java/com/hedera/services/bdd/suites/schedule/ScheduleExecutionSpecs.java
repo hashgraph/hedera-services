@@ -96,6 +96,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -560,7 +561,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec scheduledMintFailsWithInvalidAmount() {
-        String failingTxn = "failingTxn";
+        final var failingTxn = "failingTxn";
+        final var zeroAmountTxn = "zeroAmountTxn";
         return defaultHapiSpec("ScheduledMintFailsWithInvalidAmount")
                 .given(
                         cryptoCreate("treasury"),
@@ -572,12 +574,18 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .initialSupply(101),
                         scheduleCreate(A_SCHEDULE, mintToken(A_TOKEN, 0))
                                 .designatingPayer("schedulePayer")
+                                .via(zeroAmountTxn),
+                        scheduleCreate(A_SCHEDULE, mintToken(A_TOKEN, -1))
+                                .designatingPayer("schedulePayer")
                                 .via(failingTxn))
                 .when(
                         scheduleSign(A_SCHEDULE)
                                 .alsoSigningWith("supplyKey", "schedulePayer", "treasury")
                                 .hasKnownStatus(SUCCESS))
                 .then(
+                        getTxnRecord(zeroAmountTxn)
+                                .scheduled()
+                                .hasPriority(recordWith().status(OK)),
                         getTxnRecord(failingTxn)
                                 .scheduled()
                                 .hasPriority(recordWith().status(INVALID_TOKEN_MINT_AMOUNT)),

@@ -291,8 +291,6 @@ public class Token {
             TokenRelationship accountRel,
             List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
-        validateFalse(serialNumbers.isEmpty(), FAIL_INVALID);
-
         baseWipeValidations(accountRel);
         for (var serialNum : serialNumbers) {
             final var uniqueToken = loadedUniqueTokens.get(serialNum);

@@ -787,7 +787,11 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                 .when(
                         wipeTokenAccount(A_TOKEN, "account", List.of(1L, 2L))
                                 .hasKnownStatus(INVALID_WIPING_AMOUNT)
-                                .via("wipeTx"))
+                                .via("wipeTx"),
+                        wipeTokenAccount(A_TOKEN, "account", List.of())
+                                .hasKnownStatus(OK)
+                                .via("wipeEmptySerialTx")
+                )
                 .then(
                         getTokenInfo(A_TOKEN).hasTotalSupply(10),
                         getTxnRecord("wipeTx").showsNoTransfers(),
