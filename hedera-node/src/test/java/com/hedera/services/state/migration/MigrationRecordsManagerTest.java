@@ -243,7 +243,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCall);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -259,7 +258,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.EthereumTransaction);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -275,7 +273,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -293,7 +290,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -453,7 +449,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -528,7 +523,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -544,7 +538,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
 
         subject.markTraceabilityMigrationAsDone();
         subject.publishMigrationRecords(now);
@@ -560,7 +553,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -592,7 +584,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
@@ -625,7 +616,6 @@ class MigrationRecordsManagerTest {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false).willReturn(true);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(true);
         given(txnAccessor.getFunction())
                 .willReturn(HederaFunctionality.ContractCreate)
                 .willReturn(HederaFunctionality.CryptoTransfer);
