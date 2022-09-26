@@ -117,7 +117,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private static final ByteString SECOND_META =
             ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
     private static final String TRANSFER_SIG_NAME = "transferSig";
-    private static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
     private static final String ERC_20_CONTRACT = "ERC20Contract";
     private static final String ERC_721_CONTRACT = "ERC721Contract";
     private static final String NAME_TXN = "nameTxn";
@@ -169,6 +168,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private static final String WITH_SPENDER = "WITH_SPENDER";
     private static final String DO_SPECIFIC_APPROVAL = "doSpecificApproval";
     private static final String NFT_TOKEN_MINT = "nftTokenMint";
+    static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
 
     public static void main(String... args) {
         new ERCPrecompileSuite().runSuiteSync();

@@ -37,6 +37,8 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_FROM;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_FROM_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON;
@@ -53,6 +55,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiv
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.serialNumber;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
@@ -1364,6 +1367,192 @@ class ERC20PrecompilesTest {
     }
 
     @Test
+    void transferFromHapiFungible() throws InvalidProtocolBufferException {
+        final var pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
+        givenMinimalFrameContext(Bytes.EMPTY);
+        givenLedgers();
+        givenPricingUtilsContext();
+
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+                .willReturn(true, true);
+
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+
+        given(
+                        infrastructureFactory.newTransferLogic(
+                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+                .willReturn(transferLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        eq(pretendArguments),
+                                        eq(null),
+                                        eq(true),
+                                        any(),
+                                        any(),
+                                        any()))
+                .thenReturn(Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER));
+
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(transferLogic).doZeroSum(tokenTransferChanges);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(frame)
+                .addLog(
+                        EncodingFacade.LogBuilder.logBuilder()
+                                .forLogger(EntityIdUtils.asTypedEvmAddress(token))
+                                .forEventSignature(AbiConstants.TRANSFER_EVENT)
+                                .forIndexedArgument(sender)
+                                .forIndexedArgument(receiver)
+                                .forDataItem(AMOUNT)
+                                .build());
+    }
+
+    @Test
+    void transferFromNFTHapi() throws InvalidProtocolBufferException {
+        final var pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
+        givenMinimalFrameContext(Bytes.EMPTY);
+        givenLedgers();
+        givenPricingUtilsContext();
+
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(TOKEN_TRANSFER_FROM_NFT_WRAPPER)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(true);
+
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+
+        given(
+                        infrastructureFactory.newTransferLogic(
+                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+                .willReturn(transferLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(nfts.contains(NftId.fromGrpc(token, serialNumber))).willReturn(true);
+
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        eq(pretendArguments),
+                                        eq(null),
+                                        eq(false),
+                                        any(),
+                                        any(),
+                                        any()))
+                .thenReturn(Collections.singletonList(TOKEN_TRANSFER_FROM_NFT_WRAPPER));
+
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(transferLogic).doZeroSum(tokenTransferChanges);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(frame)
+                .addLog(
+                        EncodingFacade.LogBuilder.logBuilder()
+                                .forLogger(EntityIdUtils.asTypedEvmAddress(token))
+                                .forEventSignature(AbiConstants.TRANSFER_EVENT)
+                                .forIndexedArgument(sender)
+                                .forIndexedArgument(receiver)
+                                .forIndexedArgument(serialNumber)
+                                .build());
+    }
+
+    @Test
     void transferFails() throws InvalidProtocolBufferException {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
@@ -1520,6 +1709,13 @@ class ERC20PrecompilesTest {
                                     AMOUNT, true, token, null, receiver),
                             new SyntheticTxnFactory.FungibleTokenTransfer(
                                     -AMOUNT, true, token, sender, null)));
+
+    public static final TokenTransferWrapper TOKEN_TRANSFER_FROM_NFT_WRAPPER =
+            new TokenTransferWrapper(
+                    List.of(
+                            SyntheticTxnFactory.NftExchange.fromApproval(
+                                    serialNumber, token, sender, receiver)),
+                    new ArrayList<>() {});
 
     public static final ApproveWrapper APPROVE_WRAPPER =
             new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, true);
