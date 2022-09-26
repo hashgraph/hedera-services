@@ -242,7 +242,7 @@ class ExpiryProcessTest {
         assertEquals(DONE, result);
 
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
-        verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, null, treasuryReturns);
+        verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, treasuryReturns);
     }
 
     @Test
@@ -260,7 +260,7 @@ class ExpiryProcessTest {
 
         assertEquals(DONE, result);
         verify(accountGC).expireBestEffort(expiredNum, mockContract);
-        verify(recordsHelper).streamCryptoRemovalStep(true, expiredNum, null, finishedReturns);
+        verify(recordsHelper).streamCryptoRemovalStep(true, expiredNum, finishedReturns);
     }
 
     @Test
@@ -291,8 +291,7 @@ class ExpiryProcessTest {
 
         assertEquals(NO_CAPACITY_LEFT, result);
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
-        verify(recordsHelper)
-                .streamCryptoRemovalStep(false, expiredNum, null, partiallyFinishedReturns);
+        verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, partiallyFinishedReturns);
     }
 
     @Test
@@ -326,8 +325,7 @@ class ExpiryProcessTest {
 
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         verify(recordsHelper)
-                .streamCryptoRenewal(
-                        key, fee, now.getEpochSecond() + actualRenewalPeriod, false, key);
+                .streamCryptoRenewal(key, fee, now.getEpochSecond() + actualRenewalPeriod, false);
     }
 
     @Test
@@ -361,8 +359,7 @@ class ExpiryProcessTest {
 
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         verify(recordsHelper)
-                .streamCryptoRenewal(
-                        key, fee, now.getEpochSecond() + actualRenewalPeriod, true, key);
+                .streamCryptoRenewal(key, fee, now.getEpochSecond() + actualRenewalPeriod, true);
     }
 
     @Test
