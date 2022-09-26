@@ -59,10 +59,10 @@ RUN ./gradlew assemble copyLib copyApp
 FROM base-runtime AS final-image
 COPY image-utils/ /opt/hedera/services
 COPY --from=services-builder /opt/hedera/services/.VERSION /opt/hedera/services
-COPY --from=services-builder /opt/hedera/services/hedera-node/data/lib /opt/hedera/services/data/lib
+COPY --from=services-builder /opt/hedera/services/hedera-node/hedera-mono-service/data/lib /opt/hedera/services/data/lib
 RUN ls -al /opt/hedera/services/data/lib
-COPY --from=services-builder /opt/hedera/services/hedera-node/data/onboard/StartUpAccount.txt /opt/hedera/services/data/onboard
-COPY --from=services-builder /opt/hedera/services/hedera-node/data/apps /opt/hedera/services/data/apps
+COPY --from=services-builder /opt/hedera/services/hedera-node/hedera-mono-service/data/onboard/StartUpAccount.txt /opt/hedera/services/data/onboard
+COPY --from=services-builder /opt/hedera/services/hedera-node/hedera-mono-service/data/apps /opt/hedera/services/data/apps
 WORKDIR /opt/hedera/services
 RUN dos2unix start-services.sh
 CMD ["/bin/sh", "-c", "./start-services.sh"]
