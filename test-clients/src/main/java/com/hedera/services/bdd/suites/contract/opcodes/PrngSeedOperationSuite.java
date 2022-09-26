@@ -84,11 +84,11 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
         final var numCalls = 5;
         final List<String> prngSeeds = new ArrayList<>();
         return defaultHapiSpec("MultipleCallsHaveIndependentResults")
-                .given(uploadInitCode(prng),
+                .given(
+                        uploadInitCode(prng),
                         contractCreate(prng),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, "true"),
-                        overriding(CONTRACTS_EVM_VERSION, "v0.31")
-                )
+                        overriding(CONTRACTS_EVM_VERSION, "v0.31"))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -160,8 +160,8 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
                                                                         GET_SEED,
                                                                         prng,
                                                                         isRandomResult(
-                                                                                (new Object[]{
-                                                                                        new byte[32]
+                                                                                (new Object[] {
+                                                                                    new byte[32]
                                                                                 })))))
                                 .logged());
     }
@@ -194,8 +194,8 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
                                                                         GET_SEED,
                                                                         prng,
                                                                         isLiteralResult(
-                                                                                (new Object[]{
-                                                                                        new byte[32]
+                                                                                (new Object[] {
+                                                                                    new byte[32]
                                                                                 })))))
                                 .logged());
     }

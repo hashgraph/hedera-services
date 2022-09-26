@@ -115,18 +115,18 @@ abstract class EvmTxProcessor {
      * Executes the {@link MessageFrame} of the EVM transaction. Returns the result as {@link
      * TransactionProcessingResult}
      *
-     * @param sender           The origin {@link Account} that initiates the transaction
-     * @param receiver         the priority form of the receiving {@link Address} (i.e., EIP-1014 if
-     *                         present); or the newly created address
-     * @param gasPrice         GasPrice to use for gas calculations
-     * @param gasLimit         Externally provided gas limit
-     * @param value            transaction value
-     * @param payload          transaction payload. For Create transactions, the bytecode + constructor
-     *                         arguments
+     * @param sender The origin {@link Account} that initiates the transaction
+     * @param receiver the priority form of the receiving {@link Address} (i.e., EIP-1014 if
+     *     present); or the newly created address
+     * @param gasPrice GasPrice to use for gas calculations
+     * @param gasLimit Externally provided gas limit
+     * @param value transaction value
+     * @param payload transaction payload. For Create transactions, the bytecode + constructor
+     *     arguments
      * @param contractCreation if this is a contract creation transaction
-     * @param isStatic         Whether the execution is static
-     * @param mirrorReceiver   the mirror form of the receiving {@link Address}; or the newly created
-     *                         address
+     * @param isStatic Whether the execution is static
+     * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
+     *     address
      * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
      */
     protected TransactionProcessingResult execute(
@@ -184,8 +184,7 @@ abstract class EvmTxProcessor {
                         .apparentValue(valueAsWei)
                         .blockValues(blockValues)
                         .depth(0)
-                        .completer(unused -> {
-                        })
+                        .completer(unused -> {})
                         .isStatic(isStatic)
                         .miningBeneficiary(coinbase)
                         .blockHashLookup(blockMetaSource::getBlockHash)
@@ -199,15 +198,14 @@ abstract class EvmTxProcessor {
                 new HederaTracer(
                         !isStatic
                                 && dynamicProperties
-                                .enabledSidecars()
-                                .contains(SidecarType.CONTRACT_ACTION));
+                                        .enabledSidecars()
+                                        .contains(SidecarType.CONTRACT_ACTION));
         hederaTracer.init(initialFrame);
 
         if (dynamicProperties.dynamicEvmVersion()) {
             messageCallProcessor = mcps.get(dynamicProperties.evmVersion()).get();
             contractCreationProcessor = ccps.get(dynamicProperties.evmVersion()).get();
         }
-
 
         while (!messageFrameStack.isEmpty()) {
             process(messageFrameStack.peekFirst(), hederaTracer);
@@ -357,8 +355,8 @@ abstract class EvmTxProcessor {
                     mutableRelayer.decrementBalance(gasCost);
                     allowanceCharged = gasCost;
                 } else if (userOfferedGasPrice
-                        .divide(WEIBARS_TO_TINYBARS)
-                        .compareTo(BigInteger.valueOf(gasPrice))
+                                .divide(WEIBARS_TO_TINYBARS)
+                                .compareTo(BigInteger.valueOf(gasPrice))
                         < 0) {
                     // If sender gas price < current gas price, pay the difference from gas
                     // allowance
@@ -401,8 +399,8 @@ abstract class EvmTxProcessor {
         final long selfDestructRefund =
                 gasCalculator.getSelfDestructRefundAmount()
                         * Math.min(
-                        initialFrame.getSelfDestructs().size(),
-                        gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
+                                initialFrame.getSelfDestructs().size(),
+                                gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
 
         gasUsedByTransaction =
                 gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
