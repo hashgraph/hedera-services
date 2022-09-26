@@ -220,9 +220,9 @@ public class ServicesState extends PartialNaryMerkleInternal
                 migrateFrom(deserializedVersion);
             }
 
-            // Because this flag can be toggled anytime (even post-launch), we need to check for
-            // migration regardless of
-            // versioning. This should be done after any other migrations are complete.
+            // Because this flag can be toggled without a corresponding software upgrade,
+            // we need to check for migration regardless of versioning. This should be done
+            // after any other migrations are complete.
             if (shouldMigrateNfts()) {
                 UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(this);
             }
