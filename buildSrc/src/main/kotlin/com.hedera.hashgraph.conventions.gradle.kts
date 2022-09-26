@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import gradle.kotlin.dsl.accessors._de3ff27eccbd9efdc5c099f60a1d8f4c.check
-import net.swiftzer.semver.SemVer
 import java.text.SimpleDateFormat
 import java.util.*
 

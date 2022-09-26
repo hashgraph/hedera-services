@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 plugins {
-    id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.conventions")
 }
 
 description = "Hedera Application - Implementation"
