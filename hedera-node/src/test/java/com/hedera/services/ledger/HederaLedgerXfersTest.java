@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 class HederaLedgerXfersTest extends BaseHederaLedgerTestHelper {
     @BeforeEach
-    private void setup() {
+    void setup() {
         commonSetup();
         setupWithMockLedger();
     }

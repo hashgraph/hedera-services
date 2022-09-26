@@ -49,7 +49,7 @@ class PrecheckKeyReqsTest {
     private final CodeOrderResultFactory factory = CODE_ORDER_RESULT_FACTORY;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         keyOrder = mock(SigRequirements.class);
     }
 

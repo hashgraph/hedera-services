@@ -36,7 +36,7 @@ class FileDeleteResourceUsageTest {
     private TransactionBody fileDeleteTxn;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    void setup() throws Throwable {
         fileDeleteTxn = mock(TransactionBody.class);
         given(fileDeleteTxn.hasFileDelete()).willReturn(true);
 

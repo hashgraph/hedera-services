@@ -66,7 +66,7 @@ class ScheduleSignResourceUsageTest {
                     .build();
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleSignTxn = mock(TransactionBody.class);
