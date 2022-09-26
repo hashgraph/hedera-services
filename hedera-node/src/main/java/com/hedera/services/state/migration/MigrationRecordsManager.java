@@ -80,13 +80,13 @@ import org.apache.logging.log4j.Logger;
 public class MigrationRecordsManager {
 
     static final String AUTO_RENEW_MEMO_TPL =
-            "Contract {} was renewed during 0.26.0 upgrade; new expiry is {}";
+            "Contract 0.0.%d was renewed during 0.30.0 upgrade; new expiry is %d";
     private static final Logger log = LogManager.getLogger(MigrationRecordsManager.class);
     private static final Key immutableKey =
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
-    private static boolean expiryJustEnabled = false;
+    private static boolean expiryJustEnabled = true;
     private final EntityCreator creator;
     private final TreasuryCloner treasuryCloner;
     private final SigImpactHistorian sigImpactHistorian;
@@ -148,7 +148,7 @@ public class MigrationRecordsManager {
      * state).
      */
     public void publishMigrationRecords(final Instant now) {
-        // with 0.29.0 upgrade we are performing traceability migration
+        // with 0.30.0 upgrade we are performing traceability migration
         // which is independent of context.areMigrationRecordsStreamed flag
         // NOTE this call needs to be removed on the next upgrade
         if (!areTraceabilityRecordsStreamed) {
@@ -172,8 +172,8 @@ public class MigrationRecordsManager {
             stakingFundAccounts.forEach(
                     num -> publishSyntheticCreationForStakingFund(num, implicitAutoRenewPeriod));
         } else {
-            // Publish free auto-renewal migration records if expiry is just being enabled
-            if (expiryJustEnabled) {
+            // Publish free auto-renewal migration records if traceability is enabled
+            if (globalDynamicProperties.isTraceabilityMigrationEnabled()) {
                 publishContractFreeAutoRenewalRecords();
             }
         }
@@ -257,19 +257,15 @@ public class MigrationRecordsManager {
         accounts.get()
                 .forEach(
                         (id, account) -> {
-                            if (account.isSmartContract()) {
+                            if (account.isSmartContract() && !account.isDeleted()) {
                                 final var contractNum = id.toEntityId();
                                 final var newExpiry = account.getExpiry();
 
                                 final var syntheticSuccessReceipt =
                                         TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
-                                // for 0.26.0 migration we use the contract account's hbar since
-                                // auto-renew accounts are not set
                                 final var synthBody =
                                         syntheticTxnFactory.synthContractAutoRenew(
-                                                contractNum.asNum(),
-                                                newExpiry,
-                                                contractNum.toGrpcAccountId());
+                                                contractNum.asNum(), newExpiry);
                                 final var memo =
                                         String.format(
                                                 AUTO_RENEW_MEMO_TPL, contractNum.num(), newExpiry);

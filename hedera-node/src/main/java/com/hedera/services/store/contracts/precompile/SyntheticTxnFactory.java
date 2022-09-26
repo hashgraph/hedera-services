@@ -211,29 +211,22 @@ public class SyntheticTxnFactory {
         final var op =
                 ContractDeleteTransactionBody.newBuilder()
                         .setContractID(contractNum.toGrpcContractID());
-        return TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder().setAccountID(contractNum.toGrpcAccountId()))
-                .setContractDeleteInstance(op);
+        return TransactionBody.newBuilder().setContractDeleteInstance(op);
     }
 
     public TransactionBody.Builder synthAccountAutoRemove(final EntityNum accountNum) {
         final var grpcId = accountNum.toGrpcAccountId();
         final var op = CryptoDeleteTransactionBody.newBuilder().setDeleteAccountID(grpcId);
-        return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(grpcId))
-                .setCryptoDelete(op);
+        return TransactionBody.newBuilder().setCryptoDelete(op);
     }
 
     public TransactionBody.Builder synthContractAutoRenew(
-            final EntityNum contractNum, final long newExpiry, final AccountID payerForExpiry) {
+            final EntityNum contractNum, final long newExpiry) {
         final var op =
                 ContractUpdateTransactionBody.newBuilder()
                         .setContractID(contractNum.toGrpcContractID())
                         .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
-        return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(payerForExpiry))
-                .setContractUpdateInstance(op);
+        return TransactionBody.newBuilder().setContractUpdateInstance(op);
     }
 
     public TransactionBody.Builder synthAccountAutoRenew(

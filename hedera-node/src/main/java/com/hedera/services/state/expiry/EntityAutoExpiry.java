@@ -20,6 +20,7 @@ import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.ConsensusTimeTracker;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -36,6 +37,7 @@ public class EntityAutoExpiry {
     private final long firstEntityToScan;
     private final ExpiryThrottle expiryThrottle;
     private final ExpiryProcess expiryProcess;
+    private final RecordsHistorian recordsHistorian;
     private final NetworkCtxManager networkCtxManager;
     private final GlobalDynamicProperties dynamicProps;
     private final Supplier<MerkleNetworkContext> networkCtx;
@@ -52,6 +54,7 @@ public class EntityAutoExpiry {
             final HederaNumbers hederaNumbers,
             final ExpiryThrottle expiryThrottle,
             final ExpiryProcess expiryProcess,
+            final RecordsHistorian recordsHistorian,
             final GlobalDynamicProperties dynamicProps,
             final NetworkCtxManager networkCtxManager,
             final Supplier<MerkleNetworkContext> networkCtx,
@@ -60,6 +63,7 @@ public class EntityAutoExpiry {
         this.seqNo = seqNo;
         this.expiryStats = expiryStats;
         this.networkCtx = networkCtx;
+        this.recordsHistorian = recordsHistorian;
         this.networkCtxManager = networkCtxManager;
         this.expiryThrottle = expiryThrottle;
         this.expiryProcess = expiryProcess;
@@ -131,6 +135,7 @@ public class EntityAutoExpiry {
         return wrapNum != firstEntityToScan
                 && dynamicProps.shouldAutoRenewSomeEntityType()
                 && consensusTimeTracker.hasMoreStandaloneRecordTime()
+                && !recordsHistorian.nextSystemTransactionIdIsUnknown()
                 && !expiryThrottle.stillLacksMinFreeCapAfterLeakingUntil(now);
     }
 
