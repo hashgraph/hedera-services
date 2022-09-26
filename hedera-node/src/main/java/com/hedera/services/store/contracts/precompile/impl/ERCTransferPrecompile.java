@@ -196,16 +196,12 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             throw new InvalidTransactionException(e.getResponseCode(), true);
         }
 
+        final var tokenAddress =
+                asTypedEvmAddress(tokenID != null ? tokenID : extractTokenIdFromSyntheticOp());
         if (isFungible) {
-            frame.addLog(
-                    getLogForFungibleTransfer(
-                            asTypedEvmAddress(
-                                    tokenID != null ? tokenID : extractTokenIdFromSyntheticOp())));
+            frame.addLog(getLogForFungibleTransfer(tokenAddress));
         } else {
-            frame.addLog(
-                    getLogForNftExchange(
-                            asTypedEvmAddress(
-                                    tokenID != null ? tokenID : extractTokenIdFromSyntheticOp())));
+            frame.addLog(getLogForNftExchange(tokenAddress));
         }
     }
 
