@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.HIGH_SCAN_CYCLE_COUNT;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.defaultMinAutoRenewPeriod;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -79,8 +78,8 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                     renewsUsingContractFundsIfNoAutoRenewAccount(),
                     renewalFeeDistributedToStakingAccounts(),
                     renewsUsingAutoRenewAccountIfSet(),
-                    chargesContractFundsWhenAutoRenewAccountHasZeroBalance()
-                    //						storageExpiryWorksAtTheExpectedInterval(),
+                    chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
+                    storageExpiryWorksAtTheExpectedInterval(),
                 });
     }
 
@@ -141,9 +140,10 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                             getContractInfo(contractToRenew)
                                                     .has(
                                                             contractWith()
-                                                                    .expiry(
+                                                                    .approxExpiry(
                                                                             expectedExpiryPostRenew
-                                                                                    .get()))
+                                                                                    .get(),
+                                                                            5))
                                                     .logged();
 
                                     allRunFor(spec, lookup);
@@ -229,9 +229,10 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                             getContractInfo(contractToRenew)
                                                     .has(
                                                             contractWith()
-                                                                    .expiry(
+                                                                    .approxExpiry(
                                                                             expectedExpiryPostRenew
-                                                                                    .get()))
+                                                                                    .get(),
+                                                                            5))
                                                     .logged();
                                     final var lookupAccount =
                                             getAccountBalance(autoRenewAccount).logged();
@@ -314,9 +315,10 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                             getContractInfo(contractToRenew)
                                                     .has(
                                                             contractWith()
-                                                                    .expiry(
+                                                                    .approxExpiry(
                                                                             expectedExpiryPostRenew
-                                                                                    .get()))
+                                                                                    .get(),
+                                                                            5))
                                                     .logged();
                                     final var lookupAccount =
                                             getAccountBalance(autoRenewAccount).logged();
@@ -381,11 +383,8 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                 List.of(
                                         ByteString.copyFromUtf8("Time moved, yet seemed to stop"),
                                         ByteString.copyFromUtf8("As 'twere a spinning-top"))),
-                        overriding("autoRemove.maxPurgedKvPairsPerTouch", "20"),
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
-                        enableContractAutoRenewWith(
-                                minimalLifetime, 0,
-                                HIGH_SCAN_CYCLE_COUNT, 1),
+                        enableContractAutoRenewWith(minimalLifetime, 0),
                         contractCreate(contractToRemove, 63)
                                 .gas(2_000_000)
                                 .entityMemo("")
@@ -404,30 +403,23 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                         .between(TOKEN_TREASURY, contractToRemove)),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
-                        // It will take 4 renewal cycles (<= 20 purged pairs per cycle) to fully
-                        // expire the contract
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
-                        getContractInfo(contractToRemove)
-                                .payingWith(TOKEN_TREASURY)
-                                .nodePayment(42L))
-                .then(
-                        // Let the above query payment reach consensus
                         sleepFor(2_000L),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
+                .then(
                         // Now the contract is gone
                         getContractInfo(contractToRemove)
                                 .hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
-                        // And the fungible units were returned to the treasury; but not the NFTs
+                        // And the fungible units were returned to the treasury
                         getAccountBalance(TOKEN_TREASURY)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
                                 .hasTokenBalance(bFungibleToken, bFungibleAmount)
                                 .hasTokenBalance(nonFungibleToken, 0),
-                        // The NFTs are "stranded"---still owned by the now-removed contract
-                        getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(contractToRemove),
-                        getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(contractToRemove),
-                        overriding(
-                                "autoRemove.maxPurgedKvPairsPerTouch", defaultMaxKvPairsToPurge));
+                        // And the NFTs are now owned by the treasury
+                        getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
+                        getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));
     }
 
     private HapiApiSpec renewsUsingContractFundsIfNoAutoRenewAccount() {
@@ -475,9 +467,10 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                             getContractInfo(contractToRenew)
                                                     .has(
                                                             contractWith()
-                                                                    .expiry(
+                                                                    .approxExpiry(
                                                                             expectedExpiryPostRenew
-                                                                                    .get()))
+                                                                                    .get(),
+                                                                            5))
                                                     .logged();
                                     allRunFor(spec, lookup);
                                     final var balance =
