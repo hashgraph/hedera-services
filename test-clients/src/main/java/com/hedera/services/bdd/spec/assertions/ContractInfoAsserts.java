@@ -232,6 +232,24 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
         return this;
     }
 
+    public ContractInfoAsserts approxExpiry(final long expectedExpiry, final long epsilonSecs) {
+        registerProvider(
+                (spec, o) -> {
+                    final var actualExpiry =
+                            object2ContractInfo(o).getExpirationTime().getSeconds();
+                    final var diff = Math.abs(expectedExpiry - actualExpiry);
+                    assertTrue(
+                            diff <= epsilonSecs,
+                            "Expected expiry of "
+                                    + expectedExpiry
+                                    + " +/- "
+                                    + epsilonSecs
+                                    + "s, but got "
+                                    + actualExpiry);
+                });
+        return this;
+    }
+
     public ContractInfoAsserts propertiesInheritedFrom(String contract) {
         registerProvider(
                 (spec, o) -> {

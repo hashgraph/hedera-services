@@ -330,16 +330,12 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void synthesizesExpectedContractAutoRenew() {
-        final var result =
-                subject.synthContractAutoRenew(
-                        contractNum, newExpiry, autoRenewAccountNum.toGrpcAccountId());
+        final var result = subject.synthContractAutoRenew(contractNum, newExpiry);
         final var synthBody = result.build();
 
         assertTrue(result.hasContractUpdateInstance());
         final var op = synthBody.getContractUpdateInstance();
         assertEquals(contractNum.toGrpcContractID(), op.getContractID());
-        assertEquals(
-                autoRenewAccountNum.toGrpcAccountId(), synthBody.getTransactionID().getAccountID());
         assertEquals(newExpiry, op.getExpirationTime().getSeconds());
     }
 
@@ -351,6 +347,7 @@ class SyntheticTxnFactoryTest {
         assertTrue(result.hasContractDeleteInstance());
         final var op = synthBody.getContractDeleteInstance();
         assertEquals(contractNum.toGrpcContractID(), op.getContractID());
+        assertTrue(op.getPermanentRemoval());
     }
 
     @Test
@@ -1262,7 +1259,6 @@ class SyntheticTxnFactoryTest {
     private static final long newExpiry = 1_234_567L;
     private final EntityNum contractNum = EntityNum.fromLong(666);
     private final EntityNum accountNum = EntityNum.fromLong(1234);
-    private final EntityNum autoRenewAccountNum = EntityNum.fromLong(999);
     private static final AccountID a = IdUtils.asAccount("0.0.2");
     private static final AccountID b = IdUtils.asAccount("0.0.3");
     private static final AccountID c = IdUtils.asAccount("0.0.4");

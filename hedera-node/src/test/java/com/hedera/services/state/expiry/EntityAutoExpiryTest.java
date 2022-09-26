@@ -28,6 +28,7 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.records.ConsensusTimeTracker;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -54,6 +55,7 @@ class EntityAutoExpiryTest {
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
     @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private RecordsHistorian recordsHistorian;
     @Mock private ExpiryStats expiryStats;
 
     private EntityAutoExpiry subject;
@@ -66,6 +68,7 @@ class EntityAutoExpiryTest {
                         mockHederaNums,
                         expiryThrottle,
                         expiryProcess,
+                        recordsHistorian,
                         mockDynamicProps,
                         networkCtxManager,
                         () -> networkCtx,
@@ -103,6 +106,19 @@ class EntityAutoExpiryTest {
     void abortsIfNoMoreStandaloneRecordTime() {
         // setup:
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(false);
+
+        // when:
+        subject.execute(instantNow);
+
+        // then:
+        verifyNoInteractions(expiryProcess);
+    }
+
+    @Test
+    void abortsIfSystemTxnIdIsUnknown() {
+        // setup:
+        given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
+        given(recordsHistorian.nextSystemTransactionIdIsUnknown()).willReturn(true);
 
         // when:
         subject.execute(instantNow);

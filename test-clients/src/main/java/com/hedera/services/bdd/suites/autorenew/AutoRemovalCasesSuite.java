@@ -34,8 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -55,9 +54,9 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
+                    ignoresExpiredDeletedContracts(),
                     displacesTokenUnitsAsExpected(),
                     immediatelyRemovesDeletedAccountOnExpiry(),
-                    ignoresExpiredDeletedContracts(),
                     autoRemovalCasesSuiteCleanup(),
                 });
     }
@@ -75,7 +74,7 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
                         contractCreate(tbd).balance(0L).autoRenewSecs(5).adminKey(adminKey),
                         contractDelete(tbd))
                 .when(sleepFor(5_500L), cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
-                .then(getContractInfo(tbd).hasCostAnswerPrecheck(CONTRACT_DELETED));
+                .then(getContractInfo(tbd).hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
     private HapiApiSpec immediatelyRemovesDeletedAccountOnExpiry() {
