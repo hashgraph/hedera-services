@@ -64,7 +64,7 @@ import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSu
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
-import com.hedera.services.bdd.suites.contract.traceability.NewTraceabilitySuite;
+import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
@@ -413,8 +413,7 @@ class EndToEndPackageRunner extends TestBase {
     @Tag("contract.traceability")
     @TestFactory
     Collection<DynamicContainer> contractTraceability() {
-        // FUTURE WORK - re-add traceability suites when updated for sidecar support
-        return List.of(extractSpecsFromSuite(NewTraceabilitySuite::new));
+        return List.of(extractSpecsFromSuite(TraceabilitySuite::new));
     }
 
     @Tag("contract")
