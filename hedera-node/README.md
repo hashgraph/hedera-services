@@ -29,16 +29,16 @@ originating the transaction. In the case of a non-free query, the request
 must include a `CryptoTransfer` transaction in its header which
 compensates the receiving node for answering the query.
 
+## Sub-project Structure Of `hedera-node`
+
+The code inside the `hedera-node` module is all intended to be packaged as
+a single application. However, we're undergoing a refactoring effort to
+tease out the APIs from their implementations. The `hedera-mono-service`
+module now acts as the new `hedera-node` module, and serves as the code from
+which the APIs will be extracted. The extracted APIs will go into the
+`hedera-app-api` module, and the implementations into `hedera-app`.
+
 ## Deprecations
 
 See the [_deprecations.md_](deprecations.md) for how to understand the use of
 deprecated protobuf elements in the Java code.
-
-## Sub-project Structure Of `hedera-node`
-
-The code inside the `hedera-node` module is all intended to be packaged as 
-a single application. However, we're undergoing a refactoring effort to 
-tease out the APIs from their implementations. The `hedera-mono-service` 
-module now acts as the new `hedera-node` module, and serves as the code from 
-which the APIs will be extracted. The extracted APIs will go into the 
-`hedera-app-api` module, and the implementations into `hedera-app`.  
