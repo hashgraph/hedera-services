@@ -59,7 +59,7 @@ class UtilPrngTransitionLogicTest {
     private PrngLogic logic;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         logic = new PrngLogic(properties, () -> runningHashLeaf, tracker);
         subject = new UtilPrngTransitionLogic(txnCtx, logic);
     }

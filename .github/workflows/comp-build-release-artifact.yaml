@@ -219,7 +219,7 @@ jobs:
       - name: Compute Final Effective Version
         id: effective-version
         run: |
-          EFF_VERSION="$(./gradlew :hedera-node:showVersion --quiet | tr -d '[:space:]')"
+          EFF_VERSION="$(./gradlew showVersion --quiet | tr -d '[:space:]')"
           echo "::set-output name=number::${EFF_VERSION}"
 
       - name: Stage Artifact Build Folder

@@ -72,7 +72,7 @@ class TokenMintTransitionLogicTest {
     private TokenMintTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         mintLogic =
                 new MintLogic(usageLimits, validator, tokenStore, accountStore, dynamicProperties);
         subject = new TokenMintTransitionLogic(txnCtx, mintLogic);

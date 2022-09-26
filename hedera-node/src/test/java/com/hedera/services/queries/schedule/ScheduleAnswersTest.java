@@ -25,7 +25,7 @@ class ScheduleAnswersTest {
     GetScheduleInfoAnswer scheduleInfo;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         scheduleInfo = mock(GetScheduleInfoAnswer.class);
     }
 

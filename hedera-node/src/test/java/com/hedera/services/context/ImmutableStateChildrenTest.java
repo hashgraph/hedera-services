@@ -69,7 +69,7 @@ class ImmutableStateChildrenTest {
     private ImmutableStateChildren subject;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         subject = new ImmutableStateChildren(state);
     }
 

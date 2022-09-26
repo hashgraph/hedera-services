@@ -89,7 +89,7 @@ class ContractCallTransitionLogicTest {
     ContractCallTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject =
                 new ContractCallTransitionLogic(
                         txnCtx,
