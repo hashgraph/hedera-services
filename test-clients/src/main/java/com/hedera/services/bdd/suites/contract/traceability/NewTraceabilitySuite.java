@@ -136,7 +136,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     }
 
     HapiApiSpec setNeededProps() {
-        return defaultHapiSpec("SetChainId")
+        return defaultHapiSpec("setNeededProps")
                 .given()
                 .when()
                 .then(
