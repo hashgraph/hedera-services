@@ -94,7 +94,7 @@ class CallLocalEvmTxProcessorTest {
     private CallLocalEvmTxProcessor callLocalEvmTxProcessor;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         CommonProcessorSetup.setup(gasCalculator);
 
         var operationRegistry = new OperationRegistry();

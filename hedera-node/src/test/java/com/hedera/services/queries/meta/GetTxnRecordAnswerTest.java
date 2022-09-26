@@ -102,7 +102,7 @@ class GetTxnRecordAnswerTest {
     private NodeLocalProperties nodeProps;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         recordCache = mock(RecordCache.class);
         accounts = mock(MerkleMap.class);
         nodeProps = mock(NodeLocalProperties.class);

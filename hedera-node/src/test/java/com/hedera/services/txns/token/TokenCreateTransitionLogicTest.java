@@ -108,7 +108,7 @@ class TokenCreateTransitionLogicTest {
     private TokenCreateTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         createLogic =
                 new CreateLogic(
                         usageLimits,

@@ -280,7 +280,7 @@ class BootstrapPropertiesTest {
                     entry(TOKENS_MAX_AGGREGATE_RELS, 10_000_000L),
                     entry(UTIL_PRNG_IS_ENABLED, true),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
-                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
+                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, false),
                     entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
                     entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true));
 

@@ -81,6 +81,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
@@ -186,7 +188,7 @@ class StateViewTest {
     private MerkleMap<EntityNum, MerkleToken> tokens;
     private MerkleMap<EntityNum, MerkleTopic> topics;
     private MerkleMap<EntityNum, MerkleAccount> contracts;
-    private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+    private UniqueTokenMapAdapter uniqueTokens;
     private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
     private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     private VirtualMap<ContractKey, IterableContractValue> contractStorage;
@@ -215,7 +217,7 @@ class StateViewTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    private void setup() throws Throwable {
+    public void setup() throws Throwable {
         metadata =
                 new HFileMeta(
                         false, TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(), expiry, fileMemo);
@@ -331,9 +333,9 @@ class StateViewTest {
         bytecode = mock(Map.class);
         specialFiles = mock(MerkleSpecialFiles.class);
 
-        uniqueTokens = new MerkleMap<>();
-        uniqueTokens.put(targetNftKey, targetNft);
-        uniqueTokens.put(treasuryNftKey, treasuryNft);
+        uniqueTokens = UniqueTokenMapAdapter.wrap(new MerkleMap<>());
+        uniqueTokens.put(targetNftKey.asNftNumPair().nftId(), targetNft);
+        uniqueTokens.put(treasuryNftKey.asNftNumPair().nftId(), treasuryNft);
 
         storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
         contractStorage = (VirtualMap<ContractKey, IterableContractValue>) mock(VirtualMap.class);
@@ -1296,12 +1298,18 @@ class StateViewTest {
             NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.9")).setSerialNumber(5L).build();
     private final EntityNumPair targetNftKey = EntityNumPair.fromLongs(3, 4);
     private final EntityNumPair treasuryNftKey = EntityNumPair.fromLongs(3, 5);
-    private final MerkleUniqueToken targetNft =
-            new MerkleUniqueToken(
-                    EntityId.fromGrpcAccountId(nftOwnerId), nftMeta, fromJava(nftCreation));
-    private final MerkleUniqueToken treasuryNft =
-            new MerkleUniqueToken(
-                    EntityId.fromGrpcAccountId(treasuryOwnerId), nftMeta, fromJava(nftCreation));
+    private final UniqueTokenAdapter targetNft =
+            UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(
+                            EntityId.fromGrpcAccountId(nftOwnerId),
+                            nftMeta,
+                            fromJava(nftCreation)));
+    private final UniqueTokenAdapter treasuryNft =
+            UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(
+                            EntityId.fromGrpcAccountId(treasuryOwnerId),
+                            nftMeta,
+                            fromJava(nftCreation)));
 
     private final CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);
     private final CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));

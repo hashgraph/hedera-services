@@ -83,7 +83,7 @@ class HederaKeyActivationTest {
                             String.format("DATA%d", i).getBytes());
 
     @BeforeAll
-    private static void setupAll() throws Throwable {
+    static void setupAll() throws Throwable {
         keyList = withRoot(list(ecdsa384Secp256k1(), ed25519())).asJKey();
 
         complexKey =

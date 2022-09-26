@@ -114,7 +114,7 @@ class FileUpdateTransitionLogicTest {
     FileUpdateTransitionLogic subject;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    void setup() throws Throwable {
         oldWacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
         oldAttr = new HFileMeta(false, oldWacl, oldExpiry, oldMemo);
         deletedAttr = new HFileMeta(true, oldWacl, oldExpiry);
