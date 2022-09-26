@@ -15,6 +15,7 @@
  */
 plugins {
     id("com.hedera.hashgraph.conventions")
+    id("com.hedera.hashgraph.maven-publish")
 }
 
 group = "com.hedera.evm"

@@ -19,7 +19,6 @@ import java.util.*
 
 plugins {
     `java-library`
-    `maven-publish`
     jacoco
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-java-conventions")
@@ -39,7 +38,6 @@ java {
 
 // Define the repositories from which we will pull dependencies
 repositories {
-    mavenLocal()
     maven {
         url = uri("https://repo.maven.apache.org/maven2/")
     }
@@ -72,13 +70,6 @@ repositories {
     }
 }
 
-// Enable maven publications
-publishing {
-    publications.create<MavenPublication>("maven") {
-        from(components["java"])
-    }
-}
-
 // Make sure we use UTF-8 encoding when compiling
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
@@ -86,6 +77,13 @@ tasks.withType<JavaCompile> {
 
 tasks.withType<Javadoc> {
     options.encoding = "UTF-8"
+}
+
+tasks.withType<Jar> {
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
 }
 
 testing {
@@ -205,11 +203,4 @@ tasks.assemble {
     if (tasks.findByName("jmhClasses") != null) {
         dependsOn(tasks.named("jmhClasses"))
     }
-}
-
-tasks.withType<Jar> {
-    isReproducibleFileOrder = true
-    isPreserveFileTimestamps = false
-    fileMode = 664
-    dirMode = 775
 }
