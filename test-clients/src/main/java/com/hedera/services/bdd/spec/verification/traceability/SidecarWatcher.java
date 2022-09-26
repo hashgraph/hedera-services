@@ -60,15 +60,20 @@ public class SidecarWatcher {
                         if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
                             log.info("New sidecar file: {}", newFilePath);
                             var retryCount = 0;
-                            while (retryCount++ < 4) {
+                            while (true) {
+                                retryCount++;
                                 try {
-                                    final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
+                                    final var sidecarFile =
+                                            RecordStreamingUtils.readSidecarFile(newFilePath);
                                     onNewSidecarFile(sidecarFile);
+                                    return;
                                 } catch (IOException e) {
                                     // given that there is a slight chance we poll the
                                     // file system at the exact time the file is being created,
-                                    // *but not yet finished*, we wait a little and try reading
-                                    // the file again, waiting a maximum of 1s for the file to be finished
+                                    // *but not yet finished*, and we try reading it in this
+                                    // unfinished state, which will throw an exception,
+                                    // we wait 250ms and try reading the file again
+                                    // we wait for a maximum of 1s for the file to be finished
                                     log.warn(
                                             "Attempt #{} - an error occurred trying to parse"
                                                     + " sidecar file {} - {}.",
@@ -79,6 +84,7 @@ public class SidecarWatcher {
                                         try {
                                             Thread.sleep(POLLING_INTERVAL_MS);
                                         } catch (InterruptedException ignored) {
+                                            Thread.currentThread().interrupt();
                                         }
                                     } else {
                                         log.fatal(
