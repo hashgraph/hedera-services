@@ -77,7 +77,7 @@ class GetAccountBalanceAnswerTest {
     private GetAccountBalanceAnswer subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new GetAccountBalanceAnswer(aliasManager, optionValidator, dynamicProperties);
     }
 

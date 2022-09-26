@@ -79,7 +79,7 @@ class GetScheduleInfoResourceUsageTest {
     private GetScheduleInfoResourceUsage subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         view = mock(StateView.class);
         given(view.infoForSchedule(target)).willReturn(Optional.of(info));
 

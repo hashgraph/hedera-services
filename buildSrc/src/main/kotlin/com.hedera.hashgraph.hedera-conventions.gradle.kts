@@ -25,7 +25,6 @@ plugins {
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-java-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
-    id("lazy.zoo.gradle.git-data-plugin")
 }
 
 group = "com.hedera.hashgraph"
@@ -202,48 +201,10 @@ tasks.check {
     dependsOn(tasks.named<JacocoReport>("jacocoTestReport"))
 }
 
-
-tasks.create("showVersion") {
-    doLast {
-        println(project.version)
-    }
-}
-
-tasks.create("versionAsPrefixedCommit") {
-    doLast {
-        gitData.lastCommitHash?.let {
-            val prefix = findProperty("commitPrefix")?.toString() ?: "adhoc"
-            val newPrerel = prefix + ".x" + it.take(8)
-            val currVer = SemVer.parse(rootProject.version.toString())
-            try {
-                val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
-                Utils.updateVersion(rootProject, newVer)
-            } catch (e: java.lang.IllegalArgumentException) {
-                throw IllegalArgumentException(String.format("%s: %s", e.message, newPrerel), e)
-            }
-        }
-    }
-}
-
-tasks.create("versionAsSnapshot") {
-    doLast {
-        val currVer = SemVer.parse(rootProject.version.toString())
-        val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
-
-        Utils.updateVersion(rootProject, newVer)
-    }
-}
-
-tasks.create("versionAsSpecified") {
-    doLast {
-        val verStr = findProperty("newVersion")?.toString()
-
-        if (verStr == null) {
-            throw IllegalArgumentException("No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task.")
-        }
-
-        val newVer = SemVer.parse(verStr)
-        Utils.updateVersion(rootProject, newVer)
+tasks.assemble {
+    dependsOn(tasks.testClasses)
+    if (tasks.findByName("jmhClasses") != null) {
+        dependsOn(tasks.named("jmhClasses"))
     }
 }
 

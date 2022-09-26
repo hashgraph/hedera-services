@@ -47,7 +47,7 @@ class PureBackingAccountsTest {
     private PureBackingAccounts subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         map = mock(MerkleMap.class);
 
         subject = new PureBackingAccounts(() -> map);

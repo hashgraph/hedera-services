@@ -75,7 +75,7 @@ class MintLogicTest {
     private MintLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new MintLogic(usageLimits, validator, store, accountStore, dynamicProperties);
     }
 

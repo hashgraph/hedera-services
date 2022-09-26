@@ -75,7 +75,7 @@ class GasCalculatorHederaV18Test {
     private GasCalculatorHederaV18 gasCalculatorHedera;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         gasCalculatorHedera =
                 new GasCalculatorHederaV18(properties, usagePricesProvider, hbarCentExchange);
     }

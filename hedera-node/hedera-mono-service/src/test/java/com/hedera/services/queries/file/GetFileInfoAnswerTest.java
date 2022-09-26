@@ -67,7 +67,7 @@ class GetFileInfoAnswerTest {
     GetFileInfoAnswer subject;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    void setup() throws Throwable {
         expected =
                 FileGetInfoResponse.FileInfo.newBuilder()
                         .setLedgerId(ledgerId)

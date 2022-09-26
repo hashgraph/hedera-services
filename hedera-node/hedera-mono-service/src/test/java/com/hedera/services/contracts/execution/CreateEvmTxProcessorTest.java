@@ -87,7 +87,7 @@ class CreateEvmTxProcessorTest {
     private final long GAS_LIMIT = 300_000L;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         CommonProcessorSetup.setup(gasCalculator);
 
         createEvmTxProcessor =

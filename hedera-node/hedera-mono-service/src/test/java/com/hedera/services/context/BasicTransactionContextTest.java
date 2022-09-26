@@ -167,7 +167,7 @@ class BasicTransactionContextTest {
     @LoggingSubject private BasicTransactionContext subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject =
                 new BasicTransactionContext(
                         narratedCharging,

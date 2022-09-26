@@ -16,21 +16,14 @@
 package com.hedera.services.utils.accessors;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import java.util.Map;
 
 /**
@@ -119,6 +112,9 @@ public interface TxnAccessor {
     boolean areAutoCreationsCounted();
 
     void countAutoCreationsWith(AliasManager aliasManager);
+
+    // Used only for EthereumTransaction
+    EthTxData opEthTxData();
 
     // Used only for SubmitMessage
     SubmitMessageMeta availSubmitUsageMeta();

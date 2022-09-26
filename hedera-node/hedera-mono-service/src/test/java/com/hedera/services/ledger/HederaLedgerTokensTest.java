@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 
 class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
     @BeforeEach
-    private void setup() {
+    void setup() {
         commonSetup();
         setupWithMockLedger();
     }

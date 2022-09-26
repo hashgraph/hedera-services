@@ -29,24 +29,10 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleScheduledTransactions;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,14 +55,6 @@ class StateInitializationFlowTest {
     @Mock private FileUpdateInterceptor aFileInterceptor;
     @Mock private FileUpdateInterceptor bFileInterceptor;
     @Mock private StateInitializationFlow.NumberConfigurer numberConfigurer;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
-    @Mock private MerkleScheduledTransactions schedules;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
-    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
 
     private StateInitializationFlow subject;
 
@@ -133,17 +111,6 @@ class StateInitializationFlowTest {
         verify(numberConfigurer).configureNumbers(defaultNumbers, 100L);
 
         cleanupMockNumInitialization();
-    }
-
-    private void givenMockMerkleMaps() {
-        given(activeState.accounts()).willReturn(accounts);
-        given(activeState.uniqueTokens()).willReturn(uniqueTokens);
-        given(activeState.tokenAssociations()).willReturn(tokenAssociations);
-        given(activeState.topics()).willReturn(topics);
-        given(activeState.tokens()).willReturn(tokens);
-        given(activeState.scheduleTxs()).willReturn(schedules);
-        given(activeState.storage()).willReturn(storage);
-        given(activeState.contractStorage()).willReturn(contractStorage);
     }
 
     private void setupMockNumInitialization() {

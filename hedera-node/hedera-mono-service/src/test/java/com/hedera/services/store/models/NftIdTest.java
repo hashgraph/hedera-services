@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
 
@@ -88,6 +89,14 @@ class NftIdTest {
         final var expected = EntityNumPair.fromLongs(num, serialNo);
 
         assertEquals(expected, subject.asEntityNumPair());
+    }
+
+    @Test
+    void asNftNumPairWorks() {
+        final var subject = new NftId(shard, realm, num, serialNo);
+        final var expected = NftNumPair.fromLongs(num, serialNo);
+
+        assertEquals(expected, subject.asNftNumPair());
     }
 
     @Test

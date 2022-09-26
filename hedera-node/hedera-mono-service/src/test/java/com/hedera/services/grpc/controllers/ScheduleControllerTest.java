@@ -46,7 +46,7 @@ class ScheduleControllerTest {
     ScheduleController subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         answers = mock(ScheduleAnswers.class);
         txnObserver = mock(StreamObserver.class);
         queryObserver = mock(StreamObserver.class);

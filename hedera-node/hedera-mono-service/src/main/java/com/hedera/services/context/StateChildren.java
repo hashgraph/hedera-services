@@ -24,7 +24,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -61,7 +61,7 @@ public interface StateChildren {
 
     MerkleSpecialFiles specialFiles();
 
-    MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens();
+    UniqueTokenMapAdapter uniqueTokens();
 
     MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo();
 

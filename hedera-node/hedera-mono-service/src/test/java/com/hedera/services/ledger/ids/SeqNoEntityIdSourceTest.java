@@ -42,7 +42,7 @@ class SeqNoEntityIdSourceTest {
     SeqNoEntityIdSource subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         seqNo = mock(SequenceNumber.class);
         subject = new SeqNoEntityIdSource(() -> seqNo);
     }

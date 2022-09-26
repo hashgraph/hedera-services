@@ -122,7 +122,7 @@ class CallEvmTxProcessorTest {
     private CallEvmTxProcessor callEvmTxProcessor;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         CommonProcessorSetup.setup(gasCalculator);
 
         callEvmTxProcessor =

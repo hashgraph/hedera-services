@@ -68,7 +68,7 @@ class ScheduleDeleteResourceUsageTest {
                     .build();
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleDeleteTxn = mock(TransactionBody.class);

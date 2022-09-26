@@ -77,7 +77,7 @@ class RecordCacheTest {
     private RecordCache subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new RecordCache(receiptCache, histories);
 
         subject.setCreator(creator);

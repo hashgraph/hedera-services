@@ -65,7 +65,7 @@ class MerkleTopicDeleteTransitionLogicTest {
     MerkleTopic deletableTopic;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         consensusTime = Instant.ofEpochSecond(1546304461);
 
         transactionContext = mock(TransactionContext.class);

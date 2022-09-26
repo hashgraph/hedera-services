@@ -62,7 +62,7 @@ class DissociateLogicTest {
     private DissociateLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new DissociateLogic(validator, tokenStore, accountStore, relsFactory);
     }
 

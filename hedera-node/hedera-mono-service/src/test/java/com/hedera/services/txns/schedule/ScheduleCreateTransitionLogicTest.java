@@ -125,7 +125,7 @@ class ScheduleCreateTransitionLogicTest {
     private ScheduleCreateTransitionLogic subject;
 
     @BeforeEach
-    private void setup() throws InvalidProtocolBufferException {
+    void setup() throws InvalidProtocolBufferException {
         validator = mock(OptionValidator.class);
         store = mock(ScheduleStore.class);
         accessor = mock(SignedTxnAccessor.class);

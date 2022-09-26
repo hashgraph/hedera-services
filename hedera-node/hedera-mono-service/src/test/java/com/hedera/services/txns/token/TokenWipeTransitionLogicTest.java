@@ -80,7 +80,7 @@ class TokenWipeTransitionLogicTest {
     private Account account;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         swirldsTxnAccessor = mock(SwirldsTxnAccessor.class);
         merkleToken = mock(MerkleToken.class);
         token = mock(Token.class);

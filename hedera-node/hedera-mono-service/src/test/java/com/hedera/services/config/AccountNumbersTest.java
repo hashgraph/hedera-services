@@ -40,7 +40,7 @@ class AccountNumbersTest {
     AccountNumbers subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         properties = mock(PropertySource.class);
         given(properties.getLongProperty(ACCOUNTS_ADDRESS_BOOK_ADMIN)).willReturn(55L);
         given(properties.getLongProperty(ACCOUNTS_FEE_SCHEDULE_ADMIN)).willReturn(56L);

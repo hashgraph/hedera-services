@@ -37,8 +37,8 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -80,12 +80,12 @@ class SignedStateViewFactoryTest {
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private AddressBook addressBook;
     @Mock private MerkleSpecialFiles specialFiles;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+    @Mock private UniqueTokenMapAdapter uniqueTokens;
     @Mock private RecordsRunningHashLeaf runningHashLeaf;
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         factory = new SignedStateViewFactory(platform, scheduleStore, networkInfo);
     }
 

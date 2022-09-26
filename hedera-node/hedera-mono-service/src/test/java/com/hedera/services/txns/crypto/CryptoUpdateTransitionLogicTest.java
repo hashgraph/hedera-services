@@ -114,7 +114,7 @@ class CryptoUpdateTransitionLogicTest {
     private NodeInfo nodeInfo;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         useLegacyFields = false;
 
         txnCtx = mock(TransactionContext.class);

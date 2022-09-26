@@ -68,7 +68,7 @@ class HederaToPlatformSigOpsTest {
     private SigRequirements keyOrdering;
 
     @BeforeAll
-    private static void setupAll() throws Throwable {
+    static void setupAll() throws Throwable {
         payerKey = List.of(KeyTree.withRoot(ed25519()).asJKey());
         otherKeys =
                 List.of(KeyTree.withRoot(ed25519()).asJKey(), KeyTree.withRoot(ed25519()).asJKey());
@@ -76,7 +76,7 @@ class HederaToPlatformSigOpsTest {
     }
 
     @BeforeEach
-    private void setup() throws Throwable {
+    void setup() throws Throwable {
         allSigBytes = mock(PubKeyToSigBytes.class);
         keyOrdering = mock(SigRequirements.class);
         platformTxn =

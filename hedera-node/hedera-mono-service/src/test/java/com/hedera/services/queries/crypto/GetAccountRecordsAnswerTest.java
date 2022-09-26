@@ -74,7 +74,7 @@ class GetAccountRecordsAnswerTest {
     private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
     @BeforeEach
-    private void setup() throws Exception {
+    void setup() throws Exception {
         payerAccount =
                 MerkleAccountFactory.newAccount()
                         .accountKeys(COMPLEX_KEY_ACCOUNT_KT)

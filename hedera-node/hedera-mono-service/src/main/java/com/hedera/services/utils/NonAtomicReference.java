@@ -22,13 +22,20 @@ package com.hedera.services.utils;
  * @param <T> the type of value being referenced
  */
 public class NonAtomicReference<T> {
+
+    public NonAtomicReference() {}
+
+    public NonAtomicReference(final T value) {
+        this.value = value;
+    }
+
     private T value;
 
     public T get() {
         return value;
     }
 
-    public void set(T value) {
+    public void set(final T value) {
         this.value = value;
     }
 }

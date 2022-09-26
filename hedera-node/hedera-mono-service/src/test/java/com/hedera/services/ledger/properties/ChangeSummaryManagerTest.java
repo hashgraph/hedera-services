@@ -41,7 +41,7 @@ class ChangeSummaryManagerTest {
     @Mock private PropertyChangeObserver<Long, TestAccountProperty> observer;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         changes.clear();
     }
 

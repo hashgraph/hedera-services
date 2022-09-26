@@ -126,7 +126,7 @@ class GetAccountDetailsAnswerTest {
     private GetAccountDetailsAnswer subject;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    void setup() throws Throwable {
         tokenRels = new MerkleMap<>();
 
         final var firstRel = new MerkleTokenRelStatus(firstBalance, true, true, true);

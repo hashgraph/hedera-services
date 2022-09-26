@@ -24,9 +24,10 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.NftNumPair;
-import com.swirlds.merkle.map.MerkleMap;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UniqueTokensListMutationTest {
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+    @Mock private UniqueTokenMapAdapter uniqueTokens;
 
     private UniqueTokensListMutation subject;
 
@@ -149,16 +150,22 @@ class UniqueTokensListMutationTest {
     private final NftNumPair nextPair = NftNumPair.fromLongs(tokenNum, nextNum);
     private final NftNumPair targetPair = NftNumPair.fromLongs(tokenNum, targetNum);
     private final long packedTime = BitPackUtils.packedTime(seconds, nanos);
-    private final EntityNumPair rootNftKey = EntityNumPair.fromLongs(tokenNum, rootNum);
-    private final EntityNumPair nextNftKey = EntityNumPair.fromLongs(tokenNum, nextNum);
-    private final EntityNumPair targetNftKey = EntityNumPair.fromLongs(tokenNum, targetNum);
-    private final MerkleUniqueToken rootNft =
-            new MerkleUniqueToken(
-                    ownerNum, "aa".getBytes(StandardCharsets.UTF_8), packedTime, rootNum);
-    private final MerkleUniqueToken nextNft =
-            new MerkleUniqueToken(
-                    ownerNum, "bb".getBytes(StandardCharsets.UTF_8), packedTime, nextNum);
-    private final MerkleUniqueToken targetNft =
-            new MerkleUniqueToken(
-                    ownerNum, "cc".getBytes(StandardCharsets.UTF_8), packedTime, targetNum);
+    private final NftId rootNftKey = NftId.withDefaultShardRealm(tokenNum, rootNum);
+    private final NftId nextNftKey = NftId.withDefaultShardRealm(tokenNum, nextNum);
+    private final NftId targetNftKey = NftId.withDefaultShardRealm(tokenNum, targetNum);
+    private final UniqueTokenAdapter rootNft =
+            UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(
+                            ownerNum, "aa".getBytes(StandardCharsets.UTF_8), packedTime, rootNum));
+    private final UniqueTokenAdapter nextNft =
+            UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(
+                            ownerNum, "bb".getBytes(StandardCharsets.UTF_8), packedTime, nextNum));
+    private final UniqueTokenAdapter targetNft =
+            UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(
+                            ownerNum,
+                            "cc".getBytes(StandardCharsets.UTF_8),
+                            packedTime,
+                            targetNum));
 }

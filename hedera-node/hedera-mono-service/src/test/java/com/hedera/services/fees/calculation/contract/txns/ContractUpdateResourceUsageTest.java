@@ -53,7 +53,7 @@ class ContractUpdateResourceUsageTest {
     private TransactionBody contractUpdateTxn;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    void setup() throws Throwable {
         contractUpdateTxn = mock(TransactionBody.class);
         ContractUpdateTransactionBody update = mock(ContractUpdateTransactionBody.class);
         given(update.getContractID()).willReturn(target);

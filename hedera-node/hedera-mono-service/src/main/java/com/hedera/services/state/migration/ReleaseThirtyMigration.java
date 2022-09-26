@@ -22,7 +22,6 @@ import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -41,7 +40,7 @@ public class ReleaseThirtyMigration {
 
     public static void rebuildNftOwners(
             final MerkleMap<EntityNum, MerkleAccount> accounts,
-            final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
+            final UniqueTokenMapAdapter uniqueTokensMapAdapter) {
 
         // First reset all account owned-NFT-list root pointers
         withLoggedDuration(
@@ -56,6 +55,7 @@ public class ReleaseThirtyMigration {
                 "NFT root key reset");
         withLoggedDuration(
                 () -> {
+                    final var uniqueTokens = uniqueTokensMapAdapter.merkleMap();
                     for (final var nftId : uniqueTokens.keySet()) {
                         var nft = uniqueTokens.getForModify(nftId);
                         // Ensure the NFT doesn't have corrupt prev/next pointers

@@ -30,6 +30,8 @@ dependencies {
     implementation(libs.jetbrains.annotation)
     implementation(libs.headlong)
     implementation(libs.besu.secp256k1)
+    implementation(libs.commons.codec)
+    implementation(libs.jna)
 
     testImplementation(testLibs.bundles.testing)
     itestImplementation(libs.hapi)
