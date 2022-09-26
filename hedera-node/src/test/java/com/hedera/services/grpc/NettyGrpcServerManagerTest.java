@@ -61,7 +61,7 @@ class NettyGrpcServerManagerTest {
     private NettyGrpcServerManager subject;
 
     @BeforeEach
-    private void setup() throws Exception {
+    void setup() throws Exception {
         server = mock(Server.class);
         tlsServer = mock(Server.class);
         a = mock(BindableService.class);

@@ -22,7 +22,6 @@ import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -226,12 +225,12 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                 throw new InvalidTransactionException(e.getResponseCode(), true);
             }
         }
-        final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
+        final var tokenAddress = asTypedEvmAddress(approveOp.tokenId());
         if (approveOp.isFungible()) {
-            frame.addLog(getLogForFungibleAdjustAllowance(precompileAddress));
+            frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress));
         } else {
-            frame.addLog(getLogForNftAdjustAllowance(precompileAddress));
+            frame.addLog(getLogForNftAdjustAllowance(tokenAddress));
         }
     }
 
@@ -316,8 +315,9 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                .forIndexedArgument(senderAddress)
-                .forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
+                .forIndexedArgument(ledgers.canonicalAddress(senderAddress))
+                .forIndexedArgument(
+                        ledgers.canonicalAddress(asTypedEvmAddress(approveOp.spender())))
                 .forDataItem(approveOp.amount())
                 .build();
     }
@@ -326,8 +326,9 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                .forIndexedArgument(senderAddress)
-                .forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
+                .forIndexedArgument(ledgers.canonicalAddress(senderAddress))
+                .forIndexedArgument(
+                        ledgers.canonicalAddress(asTypedEvmAddress(approveOp.spender())))
                 .forIndexedArgument(approveOp.serialNumber())
                 .build();
     }

@@ -121,7 +121,7 @@ class TxnAwareEvmSigsVerifierTest {
     private TxnAwareEvmSigsVerifier subject;
 
     @BeforeEach
-    private void setup() throws Exception {
+    void setup() throws Exception {
         expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
         subject = new TxnAwareEvmSigsVerifier(activationTest, txnCtx, cryptoValidity);

@@ -15,8 +15,6 @@
  */
 package com.hedera.services.setup;
 
-import static com.hedera.services.setup.InfrastructureManager.CRYPTO;
-
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -31,6 +29,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -170,7 +169,7 @@ public enum InfrastructureType {
             final var contractStorage = (VirtualMap<ContractKey, IterableContractValue>) fromBundle;
             final var metaLoc = locWithin(dir);
             final var newContractStorage = contractStorage.copy();
-            CRYPTO.digestTreeSync(contractStorage);
+            MerkleCryptoFactory.getInstance().digestTreeSync(contractStorage);
             try (final var fout =
                     new SerializableDataOutputStream(Files.newOutputStream(Paths.get(metaLoc)))) {
                 contractStorage.serialize(fout, Paths.get(dir));

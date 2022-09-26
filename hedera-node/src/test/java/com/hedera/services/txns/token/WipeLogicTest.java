@@ -65,7 +65,7 @@ class WipeLogicTest {
     private WipeLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new WipeLogic(typedTokenStore, accountStore, dynamicProperties);
     }
 

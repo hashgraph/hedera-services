@@ -69,7 +69,7 @@ class GetTxnReceiptAnswerTest {
     GetTxnReceiptAnswer subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         view = null;
         recordCache = mock(RecordCache.class);
 

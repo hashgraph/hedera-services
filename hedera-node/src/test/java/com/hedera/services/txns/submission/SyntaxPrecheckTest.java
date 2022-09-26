@@ -72,7 +72,7 @@ class SyntaxPrecheckTest {
     private SyntaxPrecheck subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new SyntaxPrecheck(recordCache, validator, dynamicProperties);
 
         txn =

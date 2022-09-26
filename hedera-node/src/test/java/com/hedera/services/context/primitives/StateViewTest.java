@@ -217,7 +217,7 @@ class StateViewTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    private void setup() throws Throwable {
+    public void setup() throws Throwable {
         metadata =
                 new HFileMeta(
                         false, TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(), expiry, fileMemo);
