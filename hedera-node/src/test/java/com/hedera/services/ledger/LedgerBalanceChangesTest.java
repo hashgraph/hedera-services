@@ -33,11 +33,15 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.charging.FeeDistribution;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -106,7 +110,6 @@ class LedgerBalanceChangesTest {
     @Mock private UsageLimits usageLimits;
     @Mock private EntityCreator creator;
     @Mock private OptionValidator validator;
-    @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private RecordsHistorian historian;
     @Mock private MutableEntityAccess mutableEntityAccess;
     @Mock private AutoCreationLogic autoCreationLogic;
@@ -114,7 +117,10 @@ class LedgerBalanceChangesTest {
     @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
     @Mock private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
     @Mock private TransactionContext txnCtx;
-    @Mock private StateView workingView;
+    @Mock private AliasManager aliasManager;
+    private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
+    private AccountNumbers accountNums = new MockAccountNumbers();
+    private FeeDistribution feeDistribution = new FeeDistribution(accountNums, dynamicProperties);
 
     private HederaLedger subject;
 
@@ -180,7 +186,8 @@ class LedgerBalanceChangesTest {
                         autoCreationLogic,
                         historian,
                         txnCtx,
-                        () -> workingView);
+                        aliasManager,
+                        feeDistribution);
 
         subject =
                 new HederaLedger(
@@ -294,7 +301,8 @@ class LedgerBalanceChangesTest {
                         autoCreationLogic,
                         historian,
                         txnCtx,
-                        () -> workingView);
+                        aliasManager,
+                        feeDistribution);
         subject =
                 new HederaLedger(
                         tokenStore,
@@ -401,11 +409,11 @@ class LedgerBalanceChangesTest {
                 .willAnswer(
                         invocationOnMock -> {
                             final var change = (BalanceChange) invocationOnMock.getArgument(0);
-                            change.replaceAliasWith(validAliasEntityNum.toGrpcAccountId());
+                            change.replaceNonEmptyAliasWith(validAliasEntityNum);
                             return Pair.of(OK, 100L);
                         });
-        given(dynamicProperties.fundingAccount()).willReturn(funding);
         given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
 
         subject.begin();
         assertDoesNotThrow(() -> subject.doZeroSum(changes));

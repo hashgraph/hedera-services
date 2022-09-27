@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -198,8 +199,8 @@ class BalanceChangeTest {
                                 .build(),
                         payer);
 
-        subject.replaceAliasWith(created);
-        assertFalse(subject.hasNonEmptyAlias());
+        subject.replaceNonEmptyAliasWith(EntityNum.fromAccountId(created));
+        assertFalse(subject.hasAlias());
         assertEquals(created, subject.accountId());
         assertFalse(subject.hasNonEmptyCounterPartyAlias());
     }
@@ -210,7 +211,7 @@ class BalanceChangeTest {
         final var anAlias = ByteString.copyFromUtf8("abcdefg");
         final var xfer =
                 NftTransfer.newBuilder()
-                        .setSenderAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
+                        .setSenderAccountID(asAccount("0.0.2000"))
                         .setReceiverAccountID(asAccountWithAlias(String.valueOf(anAlias)))
                         .setSerialNumber(serialNo)
                         .setIsApproval(true)
@@ -219,7 +220,7 @@ class BalanceChangeTest {
         assertTrue(subject.hasNonEmptyCounterPartyAlias());
         assertFalse(subject.counterPartyAlias().isEmpty());
 
-        subject.replaceCounterPartyAliasWith(created);
+        subject.replaceNonEmptyAliasWith(EntityNum.fromAccountId(created));
         assertFalse(subject.hasNonEmptyCounterPartyAlias());
         assertEquals(created, subject.counterPartyAccountId());
         assertNotEquals(0, subject.counterPartyAccountId().getAccountNum());

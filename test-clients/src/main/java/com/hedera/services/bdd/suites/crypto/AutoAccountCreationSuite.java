@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
@@ -82,6 +83,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.tuple.Pair;
@@ -521,6 +523,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private HapiApiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
+        final long transferFee = 1163019L;
 
         return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
@@ -592,7 +595,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     final var parent = lookup.getResponseRecord();
                                     final var child = lookup.getChildRecord(0);
                                     assertAliasBalanceAndFeeInChildRecord(
-                                            parent, child, sponsor, payer, 0L);
+                                            parent, child, sponsor, payer, 0L, transferFee);
                                 }))
                 .then(
                         /* --- transfer another token to created alias */
@@ -1027,8 +1030,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
     private HapiApiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
+        final long transferFee = 185030L;
         return defaultHapiSpec("AutoAccountCreationsHappyPath")
                 .given(
+                        overridingAllOf(
+                                Map.of(
+                                        "staking.fees.nodeRewardPercentage", "10",
+                                        "staking.fees.stakingRewardPercentage", "10")),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
@@ -1076,7 +1084,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                             child,
                                             sponsor,
                                             payer,
-                                            ONE_HUNDRED_HBARS + ONE_HBAR);
+                                            ONE_HUNDRED_HBARS + ONE_HBAR,
+                                            transferFee);
                                     creationTime.set(child.getConsensusTimestamp().getSeconds());
                                 }),
                         sourcing(
@@ -1107,9 +1116,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
             final TransactionRecord child,
             final AccountID sponsor,
             final AccountID defaultPayer,
-            final long newAccountFunding) {
+            final long newAccountFunding,
+            final long transferFee) {
         long receivedBalance = 0;
-        long fundingAccountBalance = 0;
+        long creationFeeSplit = 0;
         long payerBalWithAutoCreationFee = 0;
         for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
             final var id = adjust.getAccountID();
@@ -1121,9 +1131,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 receivedBalance = adjust.getAmount();
             }
 
-            // auto-creation fee is transferred to 0.0.98 (funding account) from payer
-            if (id.getAccountNum() == 98) {
-                fundingAccountBalance = adjust.getAmount();
+            // auto-creation fee is transferred to 0.0.98 (funding account) and 0.0.800, 0.0.801 (if
+            // staking is active)
+            // from payer
+            if (id.getAccountNum() == 98
+                    || id.getAccountNum() == 800
+                    || id.getAccountNum() == 801) {
+                creationFeeSplit += adjust.getAmount();
             }
             // sum of all deductions from the payer along with auto creation fee
             if ((id.getAccountNum() <= 98
@@ -1135,14 +1149,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         }
         assertEquals(newAccountFunding, receivedBalance, "Transferred incorrect amount to alias");
         assertEquals(
-                fundingAccountBalance,
+                creationFeeSplit - transferFee,
                 child.getTransactionFee(),
                 "Child record did not specify deducted fee");
         assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
-        assertEquals(
-                child.getTransactionFee(),
-                fundingAccountBalance,
-                "Auto creation fee transferred to funding account");
     }
 
     private HapiApiSpec multipleAutoAccountCreations() {

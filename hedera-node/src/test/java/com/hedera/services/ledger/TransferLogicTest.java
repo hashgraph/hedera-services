@@ -15,11 +15,13 @@
  */
 package com.hedera.services.ledger;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,11 +34,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.charging.FeeDistribution;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -59,7 +65,6 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -76,7 +81,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TransferLogicTest {
     private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
-
+    private AccountNumbers accountNums = new MockAccountNumbers();
     private final long initialBalance = 1_000_000L;
     private final long initialAllowance = 100L;
     private final AccountID revokedSpender = AccountID.newBuilder().setAccountNum(12346L).build();
@@ -86,6 +91,7 @@ class TransferLogicTest {
     private final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
     private final TokenID anotherFungibleTokenID = TokenID.newBuilder().setTokenNum(12345L).build();
     private final TokenID nonFungibleTokenID = TokenID.newBuilder().setTokenNum(1235L).build();
+    private final long initialPayerBalance = 10000L;
     private final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
     private final Id funding = new Id(0, 0, 98);
@@ -120,7 +126,8 @@ class TransferLogicTest {
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
     @Mock private TransactionContext txnCtx;
-    @Mock private StateView workingView;
+    @Mock private AliasManager aliasManager;
+    private FeeDistribution feeDistribution = new FeeDistribution(accountNums, dynamicProperties);
 
     private TransferLogic subject;
 
@@ -145,7 +152,8 @@ class TransferLogicTest {
                         autoCreationLogic,
                         recordsHistorian,
                         txnCtx,
-                        () -> workingView);
+                        aliasManager,
+                        feeDistribution);
     }
 
     @Test
@@ -154,6 +162,7 @@ class TransferLogicTest {
         final var firstAlias = ByteString.copyFromUtf8("fake");
         final var inappropriateTrigger =
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
 
         subject =
                 new TransferLogic(
@@ -167,7 +176,8 @@ class TransferLogicTest {
                         null,
                         recordsHistorian,
                         txnCtx,
-                        () -> workingView);
+                        aliasManager,
+                        feeDistribution);
 
         final var triggerList = List.of(inappropriateTrigger);
         assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList));
@@ -181,6 +191,7 @@ class TransferLogicTest {
         final var failingTrigger =
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         final var changes = List.of(failingTrigger);
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
 
         given(autoCreationLogic.create(failingTrigger, accountsLedger, changes))
                 .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
@@ -215,9 +226,11 @@ class TransferLogicTest {
         accountsLedger.create(mockCreation);
         accountsLedger.create(funding.asGrpcAccount());
         accountsLedger.create(payer);
+        accountsLedger.set(payer, BALANCE, initialPayerBalance);
 
         given(tokenStore.tryTokenChange(any())).willReturn(OK);
         given(txnCtx.activePayer()).willReturn(payer);
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
 
         subject.doZeroSum(changes);
 
@@ -252,9 +265,11 @@ class TransferLogicTest {
         accountsLedger.create(mockCreation);
         accountsLedger.create(funding.asGrpcAccount());
         accountsLedger.create(payer);
+        accountsLedger.set(payer, BALANCE, initialPayerBalance);
 
         given(tokenStore.tryTokenChange(any())).willReturn(OK);
         given(txnCtx.activePayer()).willReturn(payer);
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
 
         subject.doZeroSum(changes);
 
@@ -284,8 +299,7 @@ class TransferLogicTest {
                         Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, transfer, payer);
         final var changes = List.of(fungibleTransfer, nftTransfer);
 
-        Map<ByteString, EntityNum> immutableMap = Map.of(firstAlias, payerNum);
-        given(workingView.aliases()).willReturn(new HashMap<>(immutableMap));
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(payerNum);
 
         accountsLedger.begin();
         accountsLedger.create(mockCreation);
@@ -305,10 +319,13 @@ class TransferLogicTest {
         final var autoFee = 500L;
         final var firstAmount = 1_000L;
         final var secondAmount = 2_000;
+
         final var firstAlias = ByteString.copyFromUtf8("fake");
         final var secondAlias = ByteString.copyFromUtf8("mock");
         final var firstNewAccount = IdUtils.asAccount("0.0.1234");
         final var secondNewAccount = IdUtils.asAccount("0.0.1235");
+        final var firstNewAccountNum = EntityNum.fromAccountId(firstNewAccount);
+        final var secondNewAccountNum = EntityNum.fromAccountId(secondNewAccount);
 
         final var firstTrigger =
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
@@ -321,7 +338,7 @@ class TransferLogicTest {
                         invocationOnMock -> {
                             accountsLedger.create(firstNewAccount);
                             final var change = (BalanceChange) invocationOnMock.getArgument(0);
-                            change.replaceAliasWith(firstNewAccount);
+                            change.replaceNonEmptyAliasWith(firstNewAccountNum);
                             change.setNewBalance(change.getAggregatedUnits());
                             return Pair.of(OK, autoFee);
                         });
@@ -330,7 +347,66 @@ class TransferLogicTest {
                         invocationOnMock -> {
                             accountsLedger.create(secondNewAccount);
                             final var change = (BalanceChange) invocationOnMock.getArgument(0);
-                            change.replaceAliasWith(secondNewAccount);
+                            change.replaceNonEmptyAliasWith(secondNewAccountNum);
+                            change.setNewBalance(change.getAggregatedUnits());
+                            return Pair.of(OK, autoFee);
+                        });
+
+        final var funding = IdUtils.asAccount("0.0.98");
+        accountsLedger.begin();
+        accountsLedger.create(funding);
+        accountsLedger.create(payer);
+        accountsLedger.set(payer, BALANCE, initialPayerBalance);
+
+        given(txnCtx.activePayer()).willReturn(payer);
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(aliasManager.lookupIdBy(secondAlias)).willReturn(EntityNum.MISSING_NUM);
+        subject.doZeroSum(changes);
+
+        assertEquals(2 * autoFee, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
+        assertEquals(
+                initialPayerBalance - 2 * autoFee,
+                (long) accountsLedger.get(payer, AccountProperty.BALANCE));
+        assertEquals(
+                firstAmount, (long) accountsLedger.get(firstNewAccount, AccountProperty.BALANCE));
+        assertEquals(
+                secondAmount, (long) accountsLedger.get(secondNewAccount, AccountProperty.BALANCE));
+        verify(autoCreationLogic).submitRecordsTo(recordsHistorian);
+    }
+
+    @Test
+    void failsIfPayerDoesntHaveEnoughBalance() {
+        final var autoFee = 500L;
+        final var firstAmount = 1_000L;
+        final var secondAmount = 2_000;
+        final var firstAlias = ByteString.copyFromUtf8("fake");
+        final var secondAlias = ByteString.copyFromUtf8("mock");
+        final var firstNewAccount = IdUtils.asAccount("0.0.1234");
+        final var secondNewAccount = IdUtils.asAccount("0.0.1235");
+        final var firstNewAccountNum = EntityNum.fromAccountId(firstNewAccount);
+        final var secondNewAccountNum = EntityNum.fromAccountId(secondNewAccount);
+
+        final var firstTrigger =
+                BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
+        final var secondTrigger =
+                BalanceChange.changingHbar(aliasedAa(secondAlias, secondAmount), payer);
+        final var changes = List.of(firstTrigger, secondTrigger);
+
+        given(autoCreationLogic.create(firstTrigger, accountsLedger, changes))
+                .willAnswer(
+                        invocationOnMock -> {
+                            accountsLedger.create(firstNewAccount);
+                            final var change = (BalanceChange) invocationOnMock.getArgument(0);
+                            change.replaceNonEmptyAliasWith(firstNewAccountNum);
+                            change.setNewBalance(change.getAggregatedUnits());
+                            return Pair.of(OK, autoFee);
+                        });
+        given(autoCreationLogic.create(secondTrigger, accountsLedger, changes))
+                .willAnswer(
+                        invocationOnMock -> {
+                            accountsLedger.create(secondNewAccount);
+                            final var change = (BalanceChange) invocationOnMock.getArgument(0);
+                            change.replaceNonEmptyAliasWith(secondNewAccountNum);
                             change.setNewBalance(change.getAggregatedUnits());
                             return Pair.of(OK, autoFee);
                         });
@@ -341,16 +417,15 @@ class TransferLogicTest {
         accountsLedger.create(payer);
 
         given(txnCtx.activePayer()).willReturn(payer);
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(aliasManager.lookupIdBy(secondAlias)).willReturn(EntityNum.MISSING_NUM);
+        final var ex =
+                assertThrows(InvalidTransactionException.class, () -> subject.doZeroSum(changes));
+        assertEquals(INSUFFICIENT_PAYER_BALANCE, ex.getResponseCode());
 
-        subject.doZeroSum(changes);
-
-        assertEquals(2 * autoFee, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
-        assertEquals(-2 * autoFee, (long) accountsLedger.get(payer, AccountProperty.BALANCE));
-        assertEquals(
-                firstAmount, (long) accountsLedger.get(firstNewAccount, AccountProperty.BALANCE));
-        assertEquals(
-                secondAmount, (long) accountsLedger.get(secondNewAccount, AccountProperty.BALANCE));
-        verify(autoCreationLogic).submitRecordsTo(recordsHistorian);
+        assertEquals(0L, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
+        assertEquals(0L, (long) accountsLedger.get(payer, AccountProperty.BALANCE));
+        verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
     }
 
     @Test

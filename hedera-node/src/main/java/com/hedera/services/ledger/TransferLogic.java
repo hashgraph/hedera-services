@@ -25,13 +25,15 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.charging.FeeDistribution;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -50,7 +52,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -78,7 +79,8 @@ public class TransferLogic {
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
     private final TransactionContext txnCtx;
-    private final Supplier<StateView> currentView;
+    private final AliasManager aliasManager;
+    private final FeeDistribution feeDistribution;
 
     @Inject
     public TransferLogic(
@@ -94,7 +96,8 @@ public class TransferLogic {
             final @Nullable AutoCreationLogic autoCreationLogic,
             final RecordsHistorian recordsHistorian,
             final TransactionContext txnCtx,
-            final Supplier<StateView> currentView) {
+            final AliasManager aliasManager,
+            final FeeDistribution feeDistribution) {
         this.tokenStore = tokenStore;
         this.nftsLedger = nftsLedger;
         this.accountsLedger = accountsLedger;
@@ -104,7 +107,8 @@ public class TransferLogic {
         this.dynamicProperties = dynamicProperties;
         this.sideEffectsTracker = sideEffectsTracker;
         this.txnCtx = txnCtx;
-        this.currentView = currentView;
+        this.aliasManager = aliasManager;
+        this.feeDistribution = feeDistribution;
 
         scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
     }
@@ -119,7 +123,7 @@ public class TransferLogic {
             checkIfExistingAlias(change);
 
             // create a new account for alias when the no account is already created using the alias
-            if (shouldAutoCreate(change)) {
+            if (change.hasAlias()) {
                 if (autoCreationLogic == null) {
                     throw new IllegalStateException(
                             "Cannot auto-create account from "
@@ -150,6 +154,12 @@ public class TransferLogic {
             }
         }
 
+        if (validity == OK && autoCreationFee > 0) {
+            if (autoCreationFee > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE)) {
+                validity = INSUFFICIENT_PAYER_BALANCE;
+            }
+        }
+
         if (validity == OK) {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
@@ -167,16 +177,8 @@ public class TransferLogic {
         }
     }
 
-    private boolean shouldAutoCreate(final BalanceChange change) {
-        return change.hasNonEmptyAlias()
-                || (change.isForNft() && change.hasNonEmptyCounterPartyAlias());
-    }
-
     private void payAutoCreationFee(final long autoCreationFee) {
-        final var funding = dynamicProperties.fundingAccount();
-        final var fundingBalance = (long) accountsLedger.get(funding, BALANCE);
-        final var newFundingBalance = fundingBalance + autoCreationFee;
-        accountsLedger.set(funding, BALANCE, newFundingBalance);
+        feeDistribution.distributeChargedFee(autoCreationFee, accountsLedger);
 
         // deduct the auto creation fee from payer of the transaction
         final var payerBalance = (long) accountsLedger.get(txnCtx.activePayer(), BALANCE);
@@ -262,29 +264,13 @@ public class TransferLogic {
      * @param change change that contains alias
      */
     private void checkIfExistingAlias(final BalanceChange change) {
-        if (change.hasNonEmptyAlias() && isKnownAlias(change.accountId(), currentView)) {
-            final var aliasNum =
-                    currentView
-                            .get()
-                            .aliases()
-                            .get(change.accountId().getAlias())
-                            .toGrpcAccountId();
-            change.replaceAliasWith(aliasNum);
-        }
-        if (change.hasNonEmptyCounterPartyAlias()
-                && isKnownAlias(change.counterPartyAccountId(), currentView)) {
-            final var aliasNum =
-                    currentView
-                            .get()
-                            .aliases()
-                            .get(change.counterPartyAccountId().getAlias())
-                            .toGrpcAccountId();
-            change.replaceCounterPartyAliasWith(aliasNum);
-        }
-    }
+        final var alias = change.getNonEmptyAliasIfPresent();
 
-    private boolean isKnownAlias(final AccountID accountId, final Supplier<StateView> workingView) {
-        final var aliases = workingView.get().aliases();
-        return aliases.containsKey(accountId.getAlias());
+        if (!alias.isEmpty()) {
+            final var aliasNum = aliasManager.lookupIdBy(alias);
+            if (aliasNum != EntityNum.MISSING_NUM) {
+                change.replaceNonEmptyAliasWith(aliasNum);
+            }
+        }
     }
 }
