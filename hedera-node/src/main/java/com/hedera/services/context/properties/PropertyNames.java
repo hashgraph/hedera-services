@@ -81,43 +81,43 @@ public class PropertyNames {
     public static final String BALANCES_NODE_BALANCE_WARN_THRESHOLD =
             "balances.nodeBalanceWarningThreshold";
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
-    public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS =
-            "contracts.allowAutoAssociations";
-    public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
-    public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
-    public static final String CONTRACTS_DEFAULT_LIFETIME = "contracts.defaultLifetime";
-    public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
-    public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
-    public static final String CONTRACTS_FREE_STORAGE_TIER_LIMIT = "contracts.freeStorageTierLimit";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
+    public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME =
+            "contracts.referenceSlotLifetime";
+    public static final String CONTRACTS_FREE_STORAGE_TIER_LIMIT = "contracts.freeStorageTierLimit";
+    public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS =
+            "contract.storageSlotPriceTiers";
+    public static final String CONTRACTS_DEFAULT_LIFETIME = "contracts.defaultLifetime";
     public static final String CONTRACTS_KNOWN_BLOCK_HASH = "contracts.knownBlockHash";
     public static final String CONTRACTS_LOCAL_CALL_EST_RET_BYTES =
             "contracts.localCall.estRetBytes";
+    public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
+    public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS =
+            "contracts.allowAutoAssociations";
     public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     public static final String CONTRACTS_MAX_KV_PAIRS_AGGREGATE = "contracts.maxKvPairs.aggregate";
     public static final String CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL =
             "contracts.maxKvPairs.individual";
     public static final String CONTRACTS_MAX_NUM = "contracts.maxNumber";
-    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
-            "contracts.maxRefundPercentOfGasLimit";
-    public static final String CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST =
-            "contracts.precompile.exchangeRateGasCost";
-    public static final String CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS =
-            "contracts.precompile.exportRecordResults";
-    public static final String CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST =
-            "contracts.precompile.htsDefaultGasCost";
-    public static final String CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE =
-            "contracts.precompile.htsEnableTokenCreate";
-    public static final String CONTRACTS_REDIRECT_TOKEN_CALLS = "contracts.redirectTokenCalls";
-    public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME =
-            "contracts.referenceSlotLifetime";
-    public static final String CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT =
-            "contracts.scheduleThrottleMaxGasLimit";
+    public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
     public static final String CONTRACTS_SIDECARS = "contracts.sidecars";
-    public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS =
-            "contract.storageSlotPriceTiers";
     public static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS =
             "contracts.throttle.throttleByGas";
+    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
+            "contracts.maxRefundPercentOfGasLimit";
+    public static final String CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT =
+            "contracts.scheduleThrottleMaxGasLimit";
+    public static final String CONTRACTS_REDIRECT_TOKEN_CALLS = "contracts.redirectTokenCalls";
+    public static final String CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST =
+            "contracts.precompile.exchangeRateGasCost";
+    public static final String CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST =
+            "contracts.precompile.htsDefaultGasCost";
+    public static final String CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS =
+            "contracts.precompile.exportRecordResults";
+    public static final String CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE =
+            "contracts.precompile.htsEnableTokenCreate";
+    public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
+    public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
     public static final String FILES_MAX_NUM = "files.maxNumber";
     public static final String FILES_MAX_SIZE_KB = "files.maxSizeKb";
     public static final String HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB =
