@@ -44,12 +44,12 @@ public class AliasResolver {
     private int perceivedMissing = 0;
     private int perceivedCreations = 0;
     private int perceivedInvalidCreations = 0;
-    private Map<ByteString, EntityNum> resolutions = new HashMap<>();
+    private final Map<ByteString, EntityNum> resolutions = new HashMap<>();
 
     /* ---- temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
     an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
     token transfer list ---- */
-    private Map<ByteString, EntityNum> tokenTransferResolutions = new HashMap<>();
+    private final Map<ByteString, EntityNum> tokenTransferResolutions = new HashMap<>();
 
     private final GlobalDynamicProperties properties;
 
@@ -240,11 +240,7 @@ public class AliasResolver {
             }
             final var resolution = aliasManager.lookupIdBy(alias);
             if (resolution == MISSING_NUM) {
-                if (isForToken) {
-                    result = netOf(isEvmAddress, alias, false);
-                } else {
-                    result = netOf(isEvmAddress, alias, true);
-                }
+                result = netOf(isEvmAddress, alias, !isForToken);
             } else {
                 resolvedAdjust =
                         adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();

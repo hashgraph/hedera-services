@@ -20,11 +20,12 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -42,7 +43,6 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
-import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -100,9 +100,10 @@ class InfrastructureFactoryTest {
     @Mock private MessageFrame frame;
     @Mock private ViewGasCalculator gasCalculator;
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
-    @Mock private StateView stateView;
     @Mock private WorldLedgers ledgers;
     @Mock private TransactionContext txnCtx;
+    @Mock private AliasManager aliasManager;
+    @Mock private FeeDistribution feeDistribution;
 
     private InfrastructureFactory subject;
 
@@ -119,7 +120,8 @@ class InfrastructureFactoryTest {
                         dissociationFactory,
                         dynamicProperties,
                         txnCtx,
-                        () -> stateView);
+                        aliasManager,
+                        feeDistribution);
     }
 
     @Test
@@ -257,13 +259,6 @@ class InfrastructureFactoryTest {
         assertInstanceOf(
                 RedirectViewExecutor.class,
                 subject.newRedirectExecutor(Bytes.EMPTY, frame, gasCalculator));
-    }
-
-    @Test
-    void canCreateNewViewExecutor() {
-        assertInstanceOf(
-                ViewExecutor.class,
-                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, stateView, ledgers));
     }
 
     @Test

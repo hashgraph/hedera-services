@@ -250,16 +250,11 @@ public class AutoCreationLogic {
     }
 
     private void replaceAliasAndSetBalanceOnChange(
-            final BalanceChange change, final AccountID newId) {
+            final BalanceChange change, final AccountID newAccountId) {
         if (change.isForHbar()) {
             change.setNewBalance(change.getAggregatedUnits());
         }
-
-        if (change.hasNonEmptyCounterPartyAlias()) {
-            change.replaceCounterPartyAliasWith(newId);
-        } else {
-            change.replaceAliasWith(newId);
-        }
+        change.replaceNonEmptyAliasWith(EntityNum.fromAccountId(newAccountId));
     }
 
     private long autoCreationFeeFor(final TransactionBody.Builder cryptoCreateTxn) {
@@ -300,15 +295,9 @@ public class AutoCreationLogic {
         tokenAliasMap = new HashMap<>();
 
         for (final var change : changes) {
-            var alias = ByteString.EMPTY;
+            var alias = change.getNonEmptyAliasIfPresent();
 
-            if ((change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
-                alias = change.counterPartyAlias();
-            } else if (change.isForFungibleToken() && change.hasNonEmptyAlias()) {
-                alias = change.alias();
-            }
-
-            if (alias != ByteString.EMPTY) {
+            if (!alias.isEmpty()) {
                 if (tokenAliasMap.containsKey(alias)) {
                     final var oldSet = tokenAliasMap.get(alias);
                     oldSet.add(change.getToken());

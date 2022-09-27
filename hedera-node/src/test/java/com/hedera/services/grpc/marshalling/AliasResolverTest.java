@@ -328,6 +328,27 @@ class AliasResolverTest {
                 .build();
     }
 
+    @Test
+    void doesntAllowRepeatedAliasesInSingleTokenTransferList() {
+        final var op =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(someToken)
+                                        .addTransfers(aaAlias(anAlias, 10L))
+                                        .addTransfers(aaAlias(anotherValidAlias, -10L))
+                                        .addTransfers(aaAlias(anAlias, 20L))
+                                        .addTransfers(aaAlias(anotherValidAlias, -20L))
+                                        .build())
+                        .build();
+        given(aliasManager.lookupIdBy(anotherValidAlias)).willReturn(aNum);
+        given(aliasManager.lookupIdBy(anAlias)).willReturn(MISSING_NUM);
+        final var body = subject.resolve(op, aliasManager);
+
+        assertEquals(1, subject.perceivedInvalidCreations());
+        assertTrue(AliasResolver.usesAliases(body));
+    }
+
     private AccountAmount aaAlias(final ByteString alias, final long amount) {
         return AccountAmount.newBuilder()
                 .setAmount(amount)

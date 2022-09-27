@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -193,15 +194,15 @@ public class BalanceChange {
         this.aggregatedUnits = serialNo;
     }
 
-    public void replaceAliasWith(final AccountID createdId) {
-        accountId = createdId;
-        account = Id.fromGrpcAccount(createdId);
-        alias = ByteString.EMPTY;
-    }
-
-    public void replaceCounterPartyAliasWith(final AccountID createdId) {
-        counterPartyAccountId = createdId;
-        counterPartyAlias = ByteString.EMPTY;
+    public void replaceNonEmptyAliasWith(final EntityNum createdId) {
+        if (isAlias(accountId)) {
+            accountId = createdId.toGrpcAccountId();
+            account = Id.fromGrpcAccount(accountId);
+            alias = ByteString.EMPTY;
+        } else if (hasNonEmptyCounterPartyAlias()) {
+            counterPartyAccountId = createdId.toGrpcAccountId();
+            counterPartyAlias = ByteString.EMPTY;
+        }
     }
 
     public boolean isForHbar() {
@@ -362,11 +363,23 @@ public class BalanceChange {
         return exemptFromCustomFees;
     }
 
-    public boolean hasNonEmptyAlias() {
-        return isAlias(accountId);
+    public boolean hasAlias() {
+        return isAlias(accountId) || hasNonEmptyCounterPartyAlias();
     }
 
     public boolean hasNonEmptyCounterPartyAlias() {
         return isForNft() && counterPartyAccountId != null && isAlias(counterPartyAccountId);
+    }
+
+    /**
+     * Since a change can have either an unknown alias or a counterPartyAlias (but not both),
+     * returns any non-empty unknown alias in the change.
+     *
+     * @return non-empty alias
+     */
+    public ByteString getNonEmptyAliasIfPresent() {
+        if (isAlias(accountId)) return alias;
+        else if (hasNonEmptyCounterPartyAlias()) return counterPartyAlias;
+        else return ByteString.EMPTY;
     }
 }
