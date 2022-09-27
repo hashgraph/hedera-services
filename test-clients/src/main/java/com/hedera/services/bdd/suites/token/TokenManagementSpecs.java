@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.token;
 
+import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -92,12 +94,70 @@ public class TokenManagementSpecs extends HapiApiSuite {
                     fungibleCommonMaxSupplyReachWork(),
                     mintingMaxLongValueWorks(),
                     nftMintProvidesMintedNftsAndNewTotalSupply(),
+                    zeroUnitTokenOperationsWorkAsExpected()
                 });
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    private HapiApiSpec zeroUnitTokenOperationsWorkAsExpected() {
+        final var civilian = "civilian";
+        final var adminKey = "adminKey";
+        final var fungible = "fungible";
+        final var nft = "non-fungible";
+        return defaultHapiSpec("zeroUnitTokenOperationsWorkAsExpected")
+                .given(
+                        newKeyNamed(adminKey),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(civilian).balance(0L))
+                .when(
+                        tokenCreate(fungible)
+                                .supplyKey(adminKey)
+                                .adminKey(adminKey)
+                                .wipeKey(adminKey)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .maxSupply(100)
+                                .initialSupply(10)
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(nft)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .supplyKey(adminKey)
+                                .adminKey(adminKey)
+                                .wipeKey(adminKey)
+                                .maxSupply(10)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(civilian, fungible, nft),
+                        mintToken(nft, List.of(copyFromUtf8("Please mind the vase."))),
+                        cryptoTransfer(moving(2, fungible).between(TOKEN_TREASURY, civilian))
+                                .logged(),
+                        cryptoTransfer(movingUnique(nft, 1L).between(TOKEN_TREASURY, civilian))
+                                .logged(),
+                        getAccountInfo(civilian)
+                                .hasToken(relationshipWith(fungible).balance(2))
+                                .hasOwnedNfts(1)
+                                .logged())
+                .then(
+                        cryptoTransfer(moving(0, fungible).between(TOKEN_TREASURY, civilian))
+                                .logged(),
+                        mintToken(fungible, 0).logged(),
+                        mintToken(nft, List.of()).logged(),
+                        burnToken(fungible, 0).logged(),
+                        burnToken(nft, List.of()).logged(),
+                        wipeTokenAccount(fungible, civilian, 0).logged(),
+                        wipeTokenAccount(nft, civilian, List.of()).logged(),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasToken(relationshipWith(fungible).balance(8))
+                                .hasOwnedNfts(0)
+                                .logged(),
+                        getAccountInfo(civilian)
+                                .hasToken(relationshipWith(fungible).balance(2))
+                                .hasOwnedNfts(1)
+                                .logged());
     }
 
     private HapiApiSpec frozenTreasuryCannotBeMintedOrBurned() {

@@ -459,7 +459,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec scheduledBurnForUniqueSucceedsWithExistingAmount() {
-        String failingTxn = "failingTxn";
         return defaultHapiSpec("scheduledBurnForUniqueSucceedsWithExistingAmount")
                 .given(
                         cryptoCreate("treasury"),
