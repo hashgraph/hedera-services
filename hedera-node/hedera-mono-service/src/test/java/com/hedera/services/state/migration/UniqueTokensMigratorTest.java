@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test;
 
 class UniqueTokensMigratorTest {
     private ServicesState state;
-
     private MerkleMap<EntityNumPair, MerkleUniqueToken> legacyTokens = new MerkleMap<>();
 
     @BeforeEach
