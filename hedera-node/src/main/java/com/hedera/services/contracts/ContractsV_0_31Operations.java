@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts;
 
-import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
+import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
 import com.hedera.services.context.TransactionContext;
@@ -213,7 +213,7 @@ public interface ContractsV_0_31Operations {
             @V_0_31 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
         var operationRegistry = new OperationRegistry();
         // ChainID will be overridden
-        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        registerParisOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         hederaOperations.forEach(operationRegistry::put);
         return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
     }
