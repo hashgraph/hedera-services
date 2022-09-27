@@ -15,8 +15,10 @@
  */
 package com.hedera.services.contracts;
 
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 
@@ -41,10 +43,13 @@ import java.util.OptionalLong;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.BlockValues;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,6 +76,7 @@ class ContractsModuleTest {
     @Mock TransactionContext transactionContext;
     @Mock EntityCreator entityCreator;
     @Mock MessageFrame messageFrame;
+    @Mock WorldUpdater worldUpdater;
 
     ContractsTestComponent subject;
 
@@ -172,6 +178,18 @@ class ContractsModuleTest {
     }
 
     @Test
+    void prngSeedOutOfGas() {
+        var evm = subject.evmV_0_31();
+        var prngOperation =
+                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
+
+        given(messageFrame.getRemainingGas()).willReturn(0L);
+
+        var result = prngOperation.execute(messageFrame, evm);
+        assertEquals(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS), result.getHaltReason());
+    }
+
+    @Test
     void difficultyInV_0_30() {
         var evm = subject.evmV_0_30();
         var difficultyOperation =
@@ -218,6 +236,53 @@ class ContractsModuleTest {
             assertEquals(Optional.empty(), result.getHaltReason());
             assertArrayEquals(chainIdBytes.toArray(), bytesCaptor.getValue().toArray());
         }
+    }
+
+    @Test
+    void chainIdOutOfGas() {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_31())) {
+            var chainIdOperation =
+                    evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x46), Hash.ZERO), 0);
+            given(messageFrame.getRemainingGas()).willReturn(0L);
+            var result = chainIdOperation.execute(messageFrame, evm);
+            assertEquals(
+                    Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS), result.getHaltReason());
+        }
+    }
+
+    @Test
+    void balanceBadAddress() {
+        var evm = subject.evmV_0_30();
+        var balanceOperation =
+                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x31), Hash.ZERO), 0);
+        given(messageFrame.getStackItem(0))
+                .willReturn(Bytes.fromHexString("0xdeadc0dedeadc0dedeadc0dedeadc0de"));
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(any())).willReturn(null);
+        var result = balanceOperation.execute(messageFrame, evm);
+        assertEquals("BALANCE", balanceOperation.getName());
+        assertEquals(Optional.of(INVALID_SOLIDITY_ADDRESS), result.getHaltReason());
+    }
+
+    @Test
+    void balanceGoodAddress() {
+        var evm = subject.evmV_0_31();
+        var balanceOperation =
+                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x31), Hash.ZERO), 0);
+        given(messageFrame.getRemainingGas()).willReturn(3000L);
+        given(messageFrame.popStackItem())
+                .willReturn(Bytes.fromHexString("0xdeadc0dedeadc0dedeadc0dedeadc0de"));
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(any())).willReturn(null);
+
+        final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);
+        doNothing().when(messageFrame).pushStackItem(bytesCaptor.capture());
+
+        var result = balanceOperation.execute(messageFrame, evm);
+        assertEquals("BALANCE", balanceOperation.getName());
+        assertEquals(Optional.empty(), result.getHaltReason());
+        assertEquals(OptionalLong.of(2600), result.getGasCost());
+        assertEquals(UInt256.ZERO, bytesCaptor.getValue());
     }
 
     @Test

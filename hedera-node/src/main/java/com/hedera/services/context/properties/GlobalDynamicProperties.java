@@ -426,7 +426,7 @@ public class GlobalDynamicProperties {
     }
 
     public String evmVersion() {
-        return evmVersion == null ? "v0.30" : evmVersion;
+        return evmVersion;
     }
 
     public boolean dynamicEvmVersion() {
