@@ -192,20 +192,19 @@ jobs:
           fi
           
           
-          REQ_JSON="$(jq --null-input \
+          REQ_JSON="$(jq --compact-output --null-input \
                       --arg ref "${{ github.ref }}" \
                       --arg jdist "${{ github.event.inputs.java-distribution }}" \
                       --arg jver "${{ github.event.inputs.java-version }}" \
                       --arg gver "${{ github.event.inputs.gradle-version }}" \
                       --arg vpol "${VERSION_POLICY}" \
                       --arg vnum "${VERSION_NUM}" \
-                      '{"ref": $ref, "java": {"distribution": $jdist, "version": $jver}, "gradle": {"version": $gver}, "release": {"version": {"policy": $vpol, "number": $vnum}}}' \
-                    )"
+                      '{"ref": $ref, "java": {"distribution": $jdist, "version": $jver}, "gradle": {"version": $gver}, "release": {"version": {"policy": $vpol, "number": $vnum}}}')"
           
           echo "::set-output name=payload::${REQ_JSON}"
 
   dispatch-mc-release:
-    name: Release / MC / Prepare
+    name: Release / MC / Dispatch
     runs-on: [ self-hosted, Linux, services, standard, ephemeral ]
     needs:
       - prepare-mc-release
@@ -217,7 +216,7 @@ jobs:
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v2
         with:
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           repository: hashgraph/hedera-internal-workflows
           event-type: hedera-svcs-mc-release
           client-payload: ${{ needs.prepare-mc-release.outputs.payload }}
