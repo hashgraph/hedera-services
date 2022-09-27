@@ -4,7 +4,7 @@
 [![Made With](https://img.shields.io/badge/made_with-java-blue)](https://github.com/hashgraph/hedera-services/)
 [![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](docs/gradle-quickstart.md)
 [![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
-
+ 
 # Hedera Services
 
 Implementation of the [services offered](https://github.com/hashgraph/hedera-protobufs) by
