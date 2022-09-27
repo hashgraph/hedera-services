@@ -127,4 +127,5 @@ class UniqueTokensMigratorTest {
         assertThat(result).isSameInstanceAs(virtualMap);
         virtualMap.release();
     }
+
 }
