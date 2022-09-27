@@ -45,38 +45,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractsModuleTest {
-    @Mock
-    GlobalDynamicProperties globalDynamicProperties;
-    @Mock
-    UsagePricesProvider usagePricesProvider;
-    @Mock
-    HbarCentExchange hbarCentExchange;
-    @Mock
-    EvmSigsVerifier evmSigsVerifier;
-    @Mock
-    RecordsHistorian recordsHistorian;
-    @Mock
-    ImpliedTransfersMarshal impliedTransfersMarshal;
-    @Mock
-    FeeCalculator feeCalculatorProvider;
-    @Mock
-    StateView stateView;
-    @Mock
-    TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier;
-    @Mock
-    com.hedera.services.state.expiry.ExpiringCreations ExpiringCreations;
-    @Mock
-    InfrastructureFactory InfrastructureFactory;
-    @Mock
-    Supplier<Instant> now;
-    @Mock
-    PrngLogic prngLogic;
-    @Mock
-    LivePricesSource livePricesSource;
-    @Mock
-    TransactionContext transactionContext;
-    @Mock
-    EntityCreator entityCreator;
+    @Mock GlobalDynamicProperties globalDynamicProperties;
+    @Mock UsagePricesProvider usagePricesProvider;
+    @Mock HbarCentExchange hbarCentExchange;
+    @Mock EvmSigsVerifier evmSigsVerifier;
+    @Mock RecordsHistorian recordsHistorian;
+    @Mock ImpliedTransfersMarshal impliedTransfersMarshal;
+    @Mock FeeCalculator feeCalculatorProvider;
+    @Mock StateView stateView;
+    @Mock TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier;
+    @Mock com.hedera.services.state.expiry.ExpiringCreations ExpiringCreations;
+    @Mock InfrastructureFactory InfrastructureFactory;
+    @Mock Supplier<Instant> now;
+    @Mock PrngLogic prngLogic;
+    @Mock LivePricesSource livePricesSource;
+    @Mock TransactionContext transactionContext;
+    @Mock EntityCreator entityCreator;
 
     ContractsTestComponent subject;
 
@@ -105,10 +89,7 @@ class ContractsModuleTest {
 
     @Test
     void logOperationsAreProvided() {
-        for (var evm : List.of(
-                subject.evmV_0_30(),
-                subject.evmV_0_31()
-        )) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_31())) {
             Bytes testCode = Bytes.fromHexString("0xA0A1A2A3A4");
             Code legacyCode = Code.createLegacyCode(testCode, Hash.hash(testCode));
             final var log0 = evm.operationAtOffset(legacyCode, 0);
