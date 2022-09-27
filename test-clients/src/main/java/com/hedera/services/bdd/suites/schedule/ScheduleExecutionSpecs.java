@@ -89,14 +89,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -214,7 +212,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 scheduledUniqueBurnFailsWithInvalidBatchSize(),
                                 scheduledUniqueBurnFailsWithInvalidNftId(),
                                 scheduledBurnForUniqueFailsWithInvalidAmount(),
-                                scheduledBurnForUniqueFailsWithExistingAmount(),
+                                scheduledBurnForUniqueSucceedsWithExistingAmount(),
                                 scheduledBurnFailsWithInvalidTxBody(),
                                 scheduledFreezeWorksAsExpected(),
                                 scheduledFreezeWithUnauthorizedPayerFails(isLongTermEnabled),
@@ -460,9 +458,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .hasPriority(recordWith().status(INVALID_NFT_ID)));
     }
 
-    private HapiApiSpec scheduledBurnForUniqueFailsWithExistingAmount() {
+    private HapiApiSpec scheduledBurnForUniqueSucceedsWithExistingAmount() {
         String failingTxn = "failingTxn";
-        return defaultHapiSpec("ScheduledBurnForUniqueFailsWithExistingAmount")
+        return defaultHapiSpec("scheduledBurnForUniqueSucceedsWithExistingAmount")
                 .given(
                         cryptoCreate("treasury"),
                         cryptoCreate("schedulePayer"),
@@ -474,15 +472,15 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .initialSupply(0),
                         scheduleCreate(A_SCHEDULE, burnToken(A_TOKEN, 123L))
                                 .designatingPayer("schedulePayer")
-                                .via(failingTxn))
+                                .via(successTxn))
                 .when(
                         scheduleSign(A_SCHEDULE)
                                 .alsoSigningWith("supplyKey", "schedulePayer", "treasury")
                                 .hasKnownStatus(SUCCESS))
                 .then(
-                        getTxnRecord(failingTxn)
+                        getTxnRecord(successTxn)
                                 .scheduled()
-                                .hasPriority(recordWith().status(INVALID_TOKEN_BURN_METADATA)),
+                                .hasPriority(recordWith().status(SUCCESS)),
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
@@ -582,9 +580,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .alsoSigningWith("supplyKey", "schedulePayer", "treasury")
                                 .hasKnownStatus(SUCCESS))
                 .then(
-                        getTxnRecord(zeroAmountTxn)
-                                .scheduled()
-                                .hasPriority(recordWith().status(OK)),
                         getTxnRecord(failingTxn)
                                 .scheduled()
                                 .hasPriority(recordWith().status(INVALID_TOKEN_MINT_AMOUNT)),
