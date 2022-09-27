@@ -75,9 +75,10 @@ under paths of the form _compose-network/node0/output/_.
 
 During the initial startup, the network creates system accounts `0.0.1` through `0.0.100`. 
 It sets the key for each account to a `KeyList` of size one with a well-known Ed25519 
-keypair. The network reads the keypair in a legacy format from [here](../hedera-node/data/onboard/StartUpAccount.txt), 
-but the same keypair is available in PEM format using the PKCS8 encoding 
-[here](../hedera-node/data/onboard/devGenesisKeypair.pem) (the passphrase is `passphrase`).
+keypair. The network reads the keypair in a legacy format from 
+[here](../hedera-node/hedera-mono-service/data/onboard/StartUpAccount.txt), but the same keypair is available in PEM 
+format using the PKCS8 encoding [here](../hedera-node/hedera-mono-service/data/onboard/devGenesisKeypair.pem) 
+(the passphrase is `passphrase`).
 
 Even more explicitly, the 32-byte hex-encoded private and public keys of the Ed25519 keypair are:
 ```
