@@ -56,6 +56,8 @@ import static com.hedera.services.grpc.controllers.NetworkController.GET_EXECUTI
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
@@ -988,5 +990,15 @@ public final class MiscUtils {
         for (int i = 0, n = knownCompatible.size(); i < n; i++) {
             throttles.get(i).resetUsageTo(knownCompatible.get(i));
         }
+    }
+
+    public static Transaction synthWithRecordTxnId(
+            final TransactionBody.Builder txnBody, final ExpirableTxnRecord.Builder inProgress) {
+        final var synthTxn =
+                synthFromBody(txnBody.setTransactionID(inProgress.getTxnId().toGrpc()).build());
+        final var synthHash =
+                noThrowSha384HashOf(unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
+        inProgress.setTxnHash(synthHash);
+        return synthTxn;
     }
 }

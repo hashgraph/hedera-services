@@ -370,6 +370,37 @@ class TxnAwareRecordsHistorianTest {
     }
 
     @Test
+    void systemTransactionNotAvailableUnlessTopLevelIsNonNull() {
+        assertTrue(subject.nextSystemTransactionIdIsUnknown());
+        assertThrows(IllegalStateException.class, () -> subject.computeNextSystemTransactionId());
+    }
+
+    @Test
+    void systemTransactionIdsClearScheduledAndIncrementNonce() {
+        final var scheduledTopLevelId = txnIdA.toBuilder().setScheduled(true).build();
+        givenTopLevelContextWith(scheduledTopLevelId);
+        given(txnCtx.recordSoFar()).willReturn(jFinalRecord);
+        given(creator.saveExpiringRecord(effPayer, finalRecord.build(), nows, submittingMember))
+                .willReturn(payerRecord);
+        final var mockTxn = Transaction.getDefaultInstance();
+        given(accessor.getSignedTxnWrapper()).willReturn(mockTxn);
+
+        // when:
+        subject.saveExpirableTransactionRecords();
+
+        // then:
+        final var firstExpectedId =
+                TxnId.fromGrpc(
+                        scheduledTopLevelId.toBuilder().clearScheduled().setNonce(1).build());
+        final var secondExpectedId =
+                TxnId.fromGrpc(
+                        scheduledTopLevelId.toBuilder().clearScheduled().setNonce(2).build());
+        assertFalse(subject.nextSystemTransactionIdIsUnknown());
+        assertEquals(firstExpectedId, subject.computeNextSystemTransactionId());
+        assertEquals(secondExpectedId, subject.computeNextSystemTransactionId());
+    }
+
+    @Test
     void constructsTopLevelAsExpected() {
         givenTopLevelContext();
         given(txnCtx.recordSoFar()).willReturn(jFinalRecord);
@@ -503,7 +534,11 @@ class TxnAwareRecordsHistorianTest {
     }
 
     private void givenTopLevelContext() {
-        given(accessor.getTxnId()).willReturn(txnIdA);
+        givenTopLevelContextWith(txnIdA);
+    }
+
+    private void givenTopLevelContextWith(final TransactionID txnId) {
+        given(accessor.getTxnId()).willReturn(txnId);
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(topLevelNow);
         given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);

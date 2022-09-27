@@ -120,8 +120,7 @@ public class RenewalHelper implements RenewalWork {
         sideEffectsTracker.reset();
         final var newExpiry = now.getEpochSecond() + renewalPeriod;
         renewWith(renewalFee, newExpiry);
-        recordsHelper.streamCryptoRenewal(
-                account, renewalFee, newExpiry, isContract, payer.getKey());
+        recordsHelper.streamCryptoRenewal(account, renewalFee, newExpiry, isContract);
         expiryStats.countRenewedContract();
 
         return DONE;
