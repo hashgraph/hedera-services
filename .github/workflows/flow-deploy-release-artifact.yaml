@@ -190,8 +190,8 @@ jobs:
             VERSION_POLICY="specified"
             VERSION_NUM="${{ needs.prepare-tag-release.outputs.version }}"
           fi
-          
-          
+
+
           REQ_JSON="$(jq --compact-output --null-input \
                       --arg ref "${{ github.ref }}" \
                       --arg jdist "${{ github.event.inputs.java-distribution }}" \
@@ -200,7 +200,7 @@ jobs:
                       --arg vpol "${VERSION_POLICY}" \
                       --arg vnum "${VERSION_NUM}" \
                       '{"ref": $ref, "java": {"distribution": $jdist, "version": $jver}, "gradle": {"version": $gver}, "release": {"version": {"policy": $vpol, "number": $vnum}}}')"
-          
+
           echo "::set-output name=payload::${REQ_JSON}"
 
   dispatch-mc-release:
