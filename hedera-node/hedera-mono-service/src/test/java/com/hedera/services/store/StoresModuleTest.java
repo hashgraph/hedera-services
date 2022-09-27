@@ -53,5 +53,4 @@ class StoresModuleTest {
         transactionalLedger.commit();
         assertEquals(token, transactionalLedger.getImmutableRef(nftId));
     }
-
 }

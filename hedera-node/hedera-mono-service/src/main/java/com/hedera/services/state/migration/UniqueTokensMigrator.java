@@ -71,5 +71,4 @@ public class UniqueTokensMigrator {
     private UniqueTokensMigrator() {
         /* disallow construction */
     }
-
 }
