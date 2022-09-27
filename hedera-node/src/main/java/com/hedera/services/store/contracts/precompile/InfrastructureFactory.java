@@ -201,7 +201,6 @@ public class InfrastructureFactory {
                 tokenRelsLedger,
                 tokenStore,
                 sideEffects,
-                dynamicProperties,
                 validator,
                 null,
                 recordsHistorian,

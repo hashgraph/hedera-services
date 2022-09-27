@@ -30,7 +30,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -71,7 +70,6 @@ public class TransferLogic {
     private final AutoCreationLogic autoCreationLogic;
     private final SideEffectsTracker sideEffectsTracker;
     private final RecordsHistorian recordsHistorian;
-    private final GlobalDynamicProperties dynamicProperties;
     private final MerkleAccountScopedCheck scopedCheck;
     private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
@@ -91,7 +89,6 @@ public class TransferLogic {
                     tokenRelsLedger,
             final TokenStore tokenStore,
             final SideEffectsTracker sideEffectsTracker,
-            final GlobalDynamicProperties dynamicProperties,
             final OptionValidator validator,
             final @Nullable AutoCreationLogic autoCreationLogic,
             final RecordsHistorian recordsHistorian,
@@ -104,7 +101,6 @@ public class TransferLogic {
         this.tokenRelsLedger = tokenRelsLedger;
         this.recordsHistorian = recordsHistorian;
         this.autoCreationLogic = autoCreationLogic;
-        this.dynamicProperties = dynamicProperties;
         this.sideEffectsTracker = sideEffectsTracker;
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
@@ -154,10 +150,10 @@ public class TransferLogic {
             }
         }
 
-        if (validity == OK && autoCreationFee > 0) {
-            if (autoCreationFee > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE)) {
-                validity = INSUFFICIENT_PAYER_BALANCE;
-            }
+        if (validity == OK
+                && (autoCreationFee > 0)
+                && (autoCreationFee > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE))) {
+            validity = INSUFFICIENT_PAYER_BALANCE;
         }
 
         if (validity == OK) {

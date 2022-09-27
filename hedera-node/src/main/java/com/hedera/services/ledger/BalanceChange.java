@@ -372,8 +372,8 @@ public class BalanceChange {
     }
 
     /**
-     * Since a change can have either an alias or a counterPartyAlias (but not both), returns any
-     * non-empty alias in the change.
+     * Since a change can have either an unknown alias or a counterPartyAlias (but not both),
+     * returns any non-empty unknown alias in the change.
      *
      * @return non-empty alias
      */
