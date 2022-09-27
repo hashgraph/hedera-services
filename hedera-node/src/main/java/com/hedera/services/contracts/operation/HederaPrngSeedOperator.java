@@ -15,6 +15,8 @@
  */
 package com.hedera.services.contracts.operation;
 
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.*;
+
 import com.hedera.services.txns.util.PrngLogic;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -29,19 +31,26 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 public class HederaPrngSeedOperator extends AbstractOperation {
 
     private final OperationResult successResponse;
+    private final OperationResult oogResponse;
     private final PrngLogic prngLogic;
+
+    private final long gasCost;
 
     @Inject
     public HederaPrngSeedOperator(PrngLogic prngLogic, GasCalculator gasCalculator) {
         super(0x44, "PRNGSEED", 0, 1, 1, gasCalculator);
         this.prngLogic = prngLogic;
-        successResponse =
-                new OperationResult(
-                        OptionalLong.of(gasCalculator.getBaseTierGasCost()), Optional.empty());
+        this.gasCost = gasCalculator.getBaseTierGasCost();
+        OptionalLong optionalGasCost = OptionalLong.of(gasCost);
+        this.successResponse = new OperationResult(optionalGasCost, Optional.empty());
+        this.oogResponse = new OperationResult(optionalGasCost, Optional.of(INSUFFICIENT_GAS));
     }
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
+        if (frame.getRemainingGas() < gasCost) {
+            return oogResponse;
+        }
         Bytes seed = Bytes.wrap(prngLogic.getNMinus3RunningHashBytes());
         if (seed.size() > Bytes32.SIZE) {
             frame.pushStackItem(seed.slice(0, Bytes32.SIZE));

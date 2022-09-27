@@ -15,16 +15,12 @@
  */
 package com.hedera.services.contracts;
 
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.contracts.annotations.BytecodeSource;
-import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.ledger.HederaLedger;
@@ -92,20 +88,6 @@ public interface ContractsModule {
     @Binds
     @Singleton
     HederaMutableWorldState provideMutableWorldState(HederaWorldState hederaWorldState);
-
-    @Provides
-    @Singleton
-    @BytecodeSource
-    static Map<byte[], byte[]> provideBytecodeSource(Map<String, byte[]> blobStore) {
-        return bytecodeMapFrom(blobStore);
-    }
-
-    @Provides
-    @Singleton
-    @StorageSource
-    static Map<byte[], byte[]> provideStorageSource(Map<String, byte[]> blobStore) {
-        return storageMapFrom(blobStore);
-    }
 
     @Provides
     @Singleton

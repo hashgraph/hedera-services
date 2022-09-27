@@ -15,7 +15,10 @@
  */
 package com.hedera.services.contracts;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
@@ -33,13 +36,19 @@ import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.frame.BlockValues;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -61,6 +70,7 @@ class ContractsModuleTest {
     @Mock LivePricesSource livePricesSource;
     @Mock TransactionContext transactionContext;
     @Mock EntityCreator entityCreator;
+    @Mock MessageFrame messageFrame;
 
     ContractsTestComponent subject;
 
@@ -103,6 +113,121 @@ class ContractsModuleTest {
             assertEquals("LOG2", log2.getName());
             assertEquals("LOG3", log3.getName());
             assertEquals("LOG4", log4.getName());
+        }
+    }
+
+    @Test
+    void prngSeedOverwritesDifficulty() {
+        var evm = subject.evmV_0_31();
+        var prngOperation =
+                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
+
+        byte[] testBytes = {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            25, 26, 27, 28, 29, 30, 31, 32
+        };
+        given(prngLogic.getNMinus3RunningHashBytes()).willReturn(testBytes);
+
+        final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);
+
+        doNothing().when(messageFrame).pushStackItem(bytesCaptor.capture());
+        given(messageFrame.getRemainingGas()).willReturn(300L);
+
+        var result = prngOperation.execute(messageFrame, evm);
+        assertEquals("PRNGSEED", prngOperation.getName());
+        assertEquals(OptionalLong.of(2L), result.getGasCost());
+        assertEquals(1, result.getPcIncrement());
+        assertEquals(Optional.empty(), result.getHaltReason());
+        assertArrayEquals(testBytes, bytesCaptor.getValue().toArray());
+    }
+
+    @Test
+    void largePrngSeedTrimsAsExpected() {
+        var evm = subject.evmV_0_31();
+        var prngOperation =
+                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
+
+        byte[] testBytes = {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            25, 26, 27, 28, 29, 30, 31, 32
+        };
+        byte[] seedBytes = {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46,
+            47, 48
+        };
+        given(prngLogic.getNMinus3RunningHashBytes()).willReturn(seedBytes);
+
+        final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);
+
+        doNothing().when(messageFrame).pushStackItem(bytesCaptor.capture());
+        given(messageFrame.getRemainingGas()).willReturn(300L);
+
+        var result = prngOperation.execute(messageFrame, evm);
+        assertEquals("PRNGSEED", prngOperation.getName());
+        assertEquals(OptionalLong.of(2L), result.getGasCost());
+        assertEquals(1, result.getPcIncrement());
+        assertEquals(Optional.empty(), result.getHaltReason());
+        assertArrayEquals(testBytes, bytesCaptor.getValue().toArray());
+    }
+
+    @Test
+    void difficultyInV_0_30() {
+        var evm = subject.evmV_0_30();
+        var difficultyOperation =
+                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
+
+        final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);
+
+        doNothing().when(messageFrame).pushStackItem(bytesCaptor.capture());
+        given(messageFrame.getBlockValues())
+                .willReturn(
+                        new BlockValues() {
+                            @Override
+                            public Bytes getDifficultyBytes() {
+                                return Bytes32.ZERO;
+                            }
+                        });
+        given(messageFrame.getRemainingGas()).willReturn(300L);
+
+        var result = difficultyOperation.execute(messageFrame, evm);
+        assertEquals("DIFFICULTY", difficultyOperation.getName());
+        assertEquals(OptionalLong.of(2L), result.getGasCost());
+        assertEquals(1, result.getPcIncrement());
+        assertEquals(Optional.empty(), result.getHaltReason());
+        assertArrayEquals(new byte[32], bytesCaptor.getValue().toArray());
+    }
+
+    @Test
+    void chainId() {
+        Bytes32 chainIdBytes = Bytes32.fromHexStringLenient("0x12345678");
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_31())) {
+            var chainIdOperation =
+                    evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x46), Hash.ZERO), 0);
+
+            final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);
+
+            doNothing().when(messageFrame).pushStackItem(bytesCaptor.capture());
+            given(globalDynamicProperties.chainIdBytes32()).willReturn(chainIdBytes);
+            given(messageFrame.getRemainingGas()).willReturn(300L);
+
+            var result = chainIdOperation.execute(messageFrame, evm);
+            assertEquals("CHAINID", chainIdOperation.getName());
+            assertEquals(OptionalLong.of(2L), result.getGasCost());
+            assertEquals(1, result.getPcIncrement());
+            assertEquals(Optional.empty(), result.getHaltReason());
+            assertArrayEquals(chainIdBytes.toArray(), bytesCaptor.getValue().toArray());
+        }
+    }
+
+    @Test
+    void allProcessorsLoad() {
+        var versions = subject.contractCreateProcessors().keySet();
+        assertEquals(versions, subject.messageCallProcessors().keySet());
+
+        for (var version : versions) {
+            subject.messageCallProcessors().get(version).get();
+            subject.contractCreateProcessors().get(version).get();
         }
     }
 }

@@ -203,8 +203,9 @@ abstract class EvmTxProcessor {
         hederaTracer.init(initialFrame);
 
         if (dynamicProperties.dynamicEvmVersion()) {
-            messageCallProcessor = mcps.get(dynamicProperties.evmVersion()).get();
-            contractCreationProcessor = ccps.get(dynamicProperties.evmVersion()).get();
+            String evmVersion = dynamicProperties.evmVersion();
+            messageCallProcessor = mcps.get(evmVersion).get();
+            contractCreationProcessor = ccps.get(evmVersion).get();
         }
 
         while (!messageFrameStack.isEmpty()) {

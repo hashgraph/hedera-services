@@ -35,13 +35,23 @@ import com.hedera.services.txns.util.PrngLogic;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.time.Instant;
+import java.util.Map;
 import java.util.function.Supplier;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Singleton
 @Component(modules = {ContractsModule.class})
 public interface ContractsTestComponent {
+
+    @Singleton
+    Map<String, Provider<MessageCallProcessor>> messageCallProcessors();
+
+    @Singleton
+    Map<String, Provider<ContractCreationProcessor>> contractCreateProcessors();
 
     @Singleton
     @V_0_30

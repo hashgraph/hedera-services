@@ -112,7 +112,6 @@ class CallEvmTxProcessorTest {
     @Mock private HederaWorldState.Updater updater;
     @Mock private HederaStackedWorldStateUpdater stackedUpdater;
     @Mock private AliasManager aliasManager;
-    @Mock private Map<String, PrecompiledContract> precompiledContractMap;
     @Mock private HederaBlockValues hederaBlockValues;
     @Mock private BlockValues blockValues;
     @Mock private InHandleBlockMetaSource blockMetaSource;
@@ -128,6 +127,8 @@ class CallEvmTxProcessorTest {
     private final long GAS_LIMIT = 300_000L;
 
     private CallEvmTxProcessor callEvmTxProcessor;
+    private String mcpVersion;
+    private String ccpVersion;
 
     @BeforeEach
     void setup() {
@@ -140,13 +141,32 @@ class CallEvmTxProcessorTest {
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
                         "v0.30",
-                        () -> new MessageCallProcessor(evm30, new PrecompileContractRegistry()));
+                        () -> {
+                            mcpVersion = "v0.30";
+                            return new MessageCallProcessor(
+                                    evm30, new PrecompileContractRegistry());
+                        },
+                        "v0.31",
+                        () -> {
+                            mcpVersion = "v0.31";
+                            return new MessageCallProcessor(
+                                    evm30, new PrecompileContractRegistry());
+                        });
         Map<String, Provider<ContractCreationProcessor>> ccps =
                 Map.of(
                         "v0.30",
-                        () ->
-                                new ContractCreationProcessor(
-                                        gasCalculator, evm30, true, List.of(), 1));
+                        () -> {
+                            ccpVersion = "v0.30";
+
+                            return new ContractCreationProcessor(
+                                    gasCalculator, evm30, true, List.of(), 1);
+                        },
+                        "v0.31",
+                        () -> {
+                            ccpVersion = "v0.31";
+                            return new ContractCreationProcessor(
+                                    gasCalculator, evm30, true, List.of(), 1);
+                        });
 
         callEvmTxProcessor =
                 new CallEvmTxProcessor(
@@ -169,8 +189,6 @@ class CallEvmTxProcessorTest {
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 
         givenSenderWithBalance(350_000L);
-        callEvmTxProcessor.execute(
-                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
         var result =
                 callEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
@@ -1133,5 +1151,47 @@ class CallEvmTxProcessorTest {
                 .willReturn(wrappedSenderAccount);
 
         given(mutableSenderAccount.getBalance()).willReturn(Wei.of(amount));
+    }
+
+    @Test
+    void testEvmVersionLoading() {
+        given(globalDynamicProperties.evmVersion()).willReturn("v0.31", "vDoesn'tExist");
+        given(globalDynamicProperties.dynamicEvmVersion()).willReturn(false, false, true, true);
+
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccount())
+                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        givenSenderWithBalance(350_000L);
+
+        // uses default setup
+        callEvmTxProcessor.execute(
+                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+        assertEquals("v0.30", mcpVersion);
+        assertEquals("v0.30", ccpVersion);
+
+        // version changes, but dynamic not set
+        callEvmTxProcessor.execute(
+                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+        assertEquals("v0.30", mcpVersion);
+        assertEquals("v0.30", ccpVersion);
+
+        // version changes, dynamic set
+        callEvmTxProcessor.execute(
+                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+        assertEquals("v0.31", mcpVersion);
+        assertEquals("v0.31", ccpVersion);
+
+        // bad version
+        assertThrows(
+                NullPointerException.class,
+                () ->
+                        callEvmTxProcessor.execute(
+                                sender,
+                                receiverAddress,
+                                33_333L,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime));
     }
 }
