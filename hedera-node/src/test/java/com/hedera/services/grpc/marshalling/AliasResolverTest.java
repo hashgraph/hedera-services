@@ -330,6 +330,7 @@ class AliasResolverTest {
 
     @Test
     void doesntAllowRepeatedAliasesInSingleTokenTransferList() {
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         final var op =
                 CryptoTransferTransactionBody.newBuilder()
                         .addTokenTransfers(
