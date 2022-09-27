@@ -115,6 +115,10 @@ In this flow
     2. b) Don’t overwrite the alias field, instead add logic during the map rebuilding
     - if the value of the alias field of the account has the evm_address format, add an entry to the aliases map with the value of 0.0.ECDSA key which is set on the account
 
+- Ethereum Transaction for crypto transfer should create an account with its alias field set to the `to` value of the transaction and its key will be empty (i.e. lazy create hollow account)
+  1. Validate that `to` and `value` are set, `to` should be an EVM address and `value` should be non-zero
+  2. If there is no existing account with the `to` EVM address execute the same logic as in Crypto Transfer with EVM address
+
 ### Notes
 
 - For the EVM address cases we should store the alias value in the state not only in the memory structure
