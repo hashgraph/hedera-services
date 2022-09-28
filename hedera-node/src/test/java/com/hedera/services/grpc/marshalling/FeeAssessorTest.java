@@ -62,12 +62,7 @@ class FeeAssessorTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new FeeAssessor(
-                        fixedFeeAssessor,
-                        royaltyFeeAssessor,
-                        fractionalFeeAssessor,
-                        globalDynamicProperties);
+        subject = new FeeAssessor(fixedFeeAssessor, royaltyFeeAssessor, fractionalFeeAssessor);
     }
 
     @Test
@@ -245,11 +240,7 @@ class FeeAssessorTest {
         givenFees(uniqueTokenId.asEntityId(), fees);
         given(
                         royaltyFeeAssessor.assessAllRoyalties(
-                                royaltyTrigger,
-                                fees,
-                                balanceChangeManager,
-                                accumulator,
-                                globalDynamicProperties))
+                                royaltyTrigger, fees, balanceChangeManager, accumulator))
                 .willReturn(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
@@ -263,12 +254,7 @@ class FeeAssessorTest {
 
         // then:
         verify(royaltyFeeAssessor)
-                .assessAllRoyalties(
-                        royaltyTrigger,
-                        fees,
-                        balanceChangeManager,
-                        accumulator,
-                        globalDynamicProperties);
+                .assessAllRoyalties(royaltyTrigger, fees, balanceChangeManager, accumulator);
         assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
     }
 
@@ -279,11 +265,7 @@ class FeeAssessorTest {
         givenFees(uniqueTokenId.asEntityId(), fees);
         given(
                         royaltyFeeAssessor.assessAllRoyalties(
-                                royaltyTrigger,
-                                fees,
-                                balanceChangeManager,
-                                accumulator,
-                                globalDynamicProperties))
+                                royaltyTrigger, fees, balanceChangeManager, accumulator))
                 .willReturn(OK);
 
         // when:
@@ -297,12 +279,7 @@ class FeeAssessorTest {
 
         // then:
         verify(royaltyFeeAssessor)
-                .assessAllRoyalties(
-                        royaltyTrigger,
-                        fees,
-                        balanceChangeManager,
-                        accumulator,
-                        globalDynamicProperties);
+                .assessAllRoyalties(royaltyTrigger, fees, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 

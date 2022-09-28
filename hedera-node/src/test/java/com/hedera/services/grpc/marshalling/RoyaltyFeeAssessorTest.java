@@ -27,8 +27,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -53,7 +51,6 @@ class RoyaltyFeeAssessorTest {
     @Mock private FixedFeeAssessor fixedFeeAssessor;
     @Mock private FungibleAdjuster fungibleAdjuster;
     @Mock private BalanceChangeManager changeManager;
-    @Mock private GlobalDynamicProperties globalDynamicProperties;
 
     private RoyaltyFeeAssessor subject;
 
@@ -71,9 +68,7 @@ class RoyaltyFeeAssessorTest {
                         FcCustomFee.royaltyFee(1, 2, null, targetCollector));
 
         // when:
-        final var result =
-                subject.assessAllRoyalties(
-                        trigger, fees, changeManager, accumulator, globalDynamicProperties);
+        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -92,9 +87,7 @@ class RoyaltyFeeAssessorTest {
                         FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
 
         // when:
-        final var result =
-                subject.assessAllRoyalties(
-                        trigger, fees, changeManager, accumulator, globalDynamicProperties);
+        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -115,12 +108,7 @@ class RoyaltyFeeAssessorTest {
                 List.of(FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
 
         final var result =
-                subject.assessAllRoyalties(
-                        htsPayerPlusChange,
-                        fees,
-                        changeManager,
-                        accumulator,
-                        globalDynamicProperties);
+                subject.assessAllRoyalties(htsPayerPlusChange, fees, changeManager, accumulator);
 
         assertEquals(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, result);
     }
@@ -136,9 +124,7 @@ class RoyaltyFeeAssessorTest {
                         FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
 
         // when:
-        final var result =
-                subject.assessAllRoyalties(
-                        trigger, fees, changeManager, accumulator, globalDynamicProperties);
+        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -161,43 +147,14 @@ class RoyaltyFeeAssessorTest {
                 List.of(
                         FcCustomFee.fixedFee(1, null, otherCollector),
                         FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
-        given(globalDynamicProperties.areTokenAutoCreationsEnabled()).willReturn(true);
 
         // when:
         final var result =
                 subject.assessAllRoyalties(
-                        triggerWithAliasTransfer,
-                        fees,
-                        changeManager,
-                        accumulator,
-                        globalDynamicProperties);
+                        triggerWithAliasTransfer, fees, changeManager, accumulator);
 
         // then:
         assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
-    }
-
-    @Test
-    void doesntFailHereIfFallbackNftTransferredToUnknownAliasIfFeatureDisabled() {
-        // setup:
-        final var denom = new EntityId(1, 2, 3);
-        final var fallback = new FixedFeeSpec(33, denom);
-        final List<FcCustomFee> fees =
-                List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
-        given(globalDynamicProperties.areTokenAutoCreationsEnabled()).willReturn(false);
-
-        // when:
-        final var result =
-                subject.assessAllRoyalties(
-                        triggerWithAliasTransfer,
-                        fees,
-                        changeManager,
-                        accumulator,
-                        globalDynamicProperties);
-
-        // then:
-        assertEquals(OK, result);
     }
 
     @Test
@@ -213,9 +170,7 @@ class RoyaltyFeeAssessorTest {
         given(changeManager.isRoyaltyPaid(nonFungibleTokenId, payer)).willReturn(true);
 
         // when:
-        final var result =
-                subject.assessAllRoyalties(
-                        trigger, fees, changeManager, accumulator, globalDynamicProperties);
+        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -240,9 +195,7 @@ class RoyaltyFeeAssessorTest {
         given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
 
         // when:
-        final var result =
-                subject.assessAllRoyalties(
-                        trigger, fees, changeManager, accumulator, globalDynamicProperties);
+        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -286,9 +239,7 @@ class RoyaltyFeeAssessorTest {
         given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
 
         // when:
-        final var result =
-                subject.assessAllRoyalties(
-                        trigger, fees, changeManager, accumulator, globalDynamicProperties);
+        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
 
         // then:
         assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
