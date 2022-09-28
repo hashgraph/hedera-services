@@ -183,6 +183,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithFungibleTokenChangeWorks() {
         givenCollaborators();
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
 
@@ -223,6 +224,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithNonFungibleTokenChangeWorks() {
         givenCollaborators();
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
 
@@ -268,6 +270,7 @@ class AutoCreationLogicTest {
     @Test
     void analyzesTokenTransfersInChangesForAutoCreation() {
         givenCollaborators();
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 2))
                 .willReturn(mockSyntheticCreation);
 
