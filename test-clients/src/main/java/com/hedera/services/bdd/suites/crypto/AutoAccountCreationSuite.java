@@ -184,7 +184,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .tokenType(FUNGIBLE_COMMON)
                                 .supplyType(FINITE)
                                 .initialSupply(initialTokenSupply)
-                                .maxSupply(10 * initialTokenSupply)
+                                .maxSupply(10L * initialTokenSupply)
                                 .treasury(TOKEN_TREASURY)
                                 .via(TOKEN_A_CREATE),
                         getTxnRecord(TOKEN_A_CREATE)
