@@ -20,6 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
@@ -561,7 +562,9 @@ class TokenTest {
                 });
 
         subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        assertDoesNotThrow(() -> subject.burn(ownershipTracker, treasuryRel, emptySerialNumber));
+        assertFailsWith(
+                () -> subject.burn(ownershipTracker, treasuryRel, emptySerialNumber),
+                INVALID_TOKEN_BURN_METADATA);
     }
 
     @Test
@@ -617,7 +620,8 @@ class TokenTest {
                 });
 
         subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        assertDoesNotThrow(
+        assertThrows(
+                InvalidTransactionException.class,
                 () -> {
                     subject.mint(
                             ownershipTracker,
