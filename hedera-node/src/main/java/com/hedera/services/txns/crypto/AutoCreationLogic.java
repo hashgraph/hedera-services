@@ -186,9 +186,9 @@ public class AutoCreationLogic {
                     "Cannot auto-create an account from unaliased change " + change);
         }
 
-        // constructs tokenAliasMap lazily if the change consists of any token transfer to
-        // unknown alias. This map is used to count number of maxAutoAssociations needed on
-        // auto created account
+        // checks tokenAliasMap if the change consists an alias that is already used in previous
+        // iteration of the token transfer list. This map is used to count number of
+        // maxAutoAssociations needed on auto created account
         analyzeTokenTransferCreations(changes);
 
         final var maxAutoAssociations =
@@ -233,14 +233,6 @@ public class AutoCreationLogic {
         aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
 
         return Pair.of(OK, fee);
-    }
-
-    public Map<ByteString, Set<Id>> getTokenAliasMap() {
-        return tokenAliasMap;
-    }
-
-    private boolean shouldConstructTokenAliasMap(final BalanceChange change) {
-        return change.isForToken() && tokenAliasMap.isEmpty();
     }
 
     private void replaceAliasAndSetBalanceOnChange(
@@ -299,5 +291,10 @@ public class AutoCreationLogic {
     @VisibleForTesting
     public List<InProgressChildRecord> getPendingCreations() {
         return pendingCreations;
+    }
+
+    @VisibleForTesting
+    public Map<ByteString, Set<Id>> getTokenAliasMap() {
+        return tokenAliasMap;
     }
 }
