@@ -275,24 +275,6 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                     .via("wipeNonFungibleSerialDoesNotExistsTxn")
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            //
-                                            // contractCall(
-                                            //
-                                            //      WIPE_CONTRACT,
-                                            //
-                                            //      WIPE_NON_FUNGIBLE_TOKEN,
-                                            //
-                                            //      asAddress(vanillaTokenID.get()),
-                                            //
-                                            //      asAddress(accountID.get()),
-                                            //
-                                            //      List.of())
-                                            //
-                                            // .payingWith(ADMIN_ACCOUNT)
-                                            //
-                                            // .gas(GAS_TO_OFFER)
-                                            //
-                                            // .logged(),
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
@@ -348,21 +330,6 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(
                                                                                 INVALID_NFT_ID)))),
-                        //
-                        // getTxnRecord("wipeNonFungibleEmptySerialTxn").andAllChildRecords().logged(),
-                        //                        childRecordsCheck(
-                        //                                "wipeNonFungibleEmptySerialTxn",
-                        //                                SUCCESS,
-                        //                                recordWith()
-                        //                                        .status(SUCCESS)
-                        //                                        .contractCallResult(
-                        //                                                resultWith()
-                        //
-                        // .contractCallResult(
-                        //
-                        // htsPrecompileResult()
-                        //
-                        // .withStatus(SUCCESS)))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
     }
