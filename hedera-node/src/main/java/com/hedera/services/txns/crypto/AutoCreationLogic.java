@@ -83,7 +83,7 @@ public class AutoCreationLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
-    private Map<ByteString, Set<Id>> tokenAliasMap;
+    private final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
     private FeeCalculator feeCalculator;
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
@@ -118,6 +118,7 @@ public class AutoCreationLogic {
      */
     public void reset() {
         pendingCreations.clear();
+        tokenAliasMap.clear();
     }
 
     /**
@@ -179,16 +180,19 @@ public class AutoCreationLogic {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
         }
 
-        final ByteString alias = getAlias(change);
-
-        if (shouldConstructTokenAliasMap(change)) {
-            // constructs tokenAliasMap lazily if the change consists of any token transfer to
-            // unknown alias. This map is used to count number of maxAutoAssociations needed on
-            // auto created account
-            analyzeTokenTransferCreations(changes);
+        final var alias = change.getNonEmptyAliasIfPresent();
+        if (alias == null) {
+            throw new IllegalStateException(
+                    "Cannot auto-create an account from unaliased change " + change);
         }
 
-        final var maxAutoAssociations = change.isForHbar() ? 0 : tokenAliasMap.get(alias).size();
+        // checks tokenAliasMap if the change consists an alias that is already used in previous
+        // iteration of the token transfer list. This map is used to count number of
+        // maxAutoAssociations needed on auto created account
+        analyzeTokenTransferCreations(changes);
+
+        final var maxAutoAssociations =
+                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
 
         final var key = asPrimitiveKeyUnchecked(alias);
         final var syntheticCreation =
@@ -231,24 +235,6 @@ public class AutoCreationLogic {
         return Pair.of(OK, fee);
     }
 
-    /**
-     * Clears (if initialized) {@code tokenAliasMap} at the end of iterating through all balance
-     * changes in cryptoTransfer transaction.
-     */
-    public void clearTokenAliasMap() {
-        if (tokenAliasMap != null) {
-            tokenAliasMap.clear();
-        }
-    }
-
-    public Map<ByteString, Set<Id>> getTokenAliasMap() {
-        return tokenAliasMap;
-    }
-
-    private boolean shouldConstructTokenAliasMap(final BalanceChange change) {
-        return change.isForToken() && (tokenAliasMap == null || tokenAliasMap.isEmpty());
-    }
-
     private void replaceAliasAndSetBalanceOnChange(
             final BalanceChange change, final AccountID newAccountId) {
         if (change.isForHbar()) {
@@ -283,21 +269,14 @@ public class AutoCreationLogic {
         }
     }
 
-    private ByteString getAlias(final BalanceChange change) {
-        if (change.hasNonEmptyCounterPartyAlias()) {
-            return change.counterPartyAccountId().getAlias();
-        } else {
-            return change.alias();
-        }
-    }
-
     private void analyzeTokenTransferCreations(final List<BalanceChange> changes) {
-        tokenAliasMap = new HashMap<>();
-
         for (final var change : changes) {
+            if (change.isForHbar()) {
+                continue;
+            }
             var alias = change.getNonEmptyAliasIfPresent();
 
-            if (!alias.isEmpty()) {
+            if (alias != null) {
                 if (tokenAliasMap.containsKey(alias)) {
                     final var oldSet = tokenAliasMap.get(alias);
                     oldSet.add(change.getToken());
@@ -312,5 +291,10 @@ public class AutoCreationLogic {
     @VisibleForTesting
     public List<InProgressChildRecord> getPendingCreations() {
         return pendingCreations;
+    }
+
+    @VisibleForTesting
+    public Map<ByteString, Set<Id>> getTokenAliasMap() {
+        return tokenAliasMap;
     }
 }
