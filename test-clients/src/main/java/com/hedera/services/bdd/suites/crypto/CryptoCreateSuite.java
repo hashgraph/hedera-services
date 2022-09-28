@@ -26,10 +26,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -69,19 +72,21 @@ public class CryptoCreateSuite extends HapiApiSuite {
 
     private List<HapiApiSpec> negativeTests() {
         return List.of(
-                createAnAccountEmptyThresholdKey(),
-                createAnAccountEmptyKeyList(),
-                createAnAccountEmptyNestedKey(),
-                createAnAccountInvalidKeyList(),
-                createAnAccountInvalidNestedKeyList(),
-                createAnAccountInvalidThresholdKey(),
-                createAnAccountInvalidNestedThresholdKey(),
-                createAnAccountThresholdKeyWithInvalidThreshold(),
-                createAnAccountInvalidED25519(),
-                syntaxChecksAreAsExpected(),
-                maxAutoAssociationSpec(),
-                usdFeeAsExpected(),
-                createAnAccountWithStakingFields());
+                //                createAnAccountEmptyThresholdKey(),
+                //                createAnAccountEmptyKeyList(),
+                //                createAnAccountEmptyNestedKey(),
+                //                createAnAccountInvalidKeyList(),
+                //                createAnAccountInvalidNestedKeyList(),
+                //                createAnAccountInvalidThresholdKey(),
+                //                createAnAccountInvalidNestedThresholdKey(),
+                //                createAnAccountThresholdKeyWithInvalidThreshold(),
+                //                createAnAccountInvalidED25519(),
+                //                syntaxChecksAreAsExpected(),
+                //                maxAutoAssociationSpec(),
+                //                usdFeeAsExpected(),
+                //                createAnAccountWithStakingFields()
+                accountCreationWithECDSAAlias(),
+            accountCreationWithEVMAddressAlias());
     }
 
     private HapiApiSpec createAnAccountWithStakingFields() {
@@ -457,6 +462,46 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                 .signedBy(GENESIS)
                                 .logged()
                                 .hasPrecheck(BAD_ENCODING));
+    }
+
+    private HapiApiSpec accountCreationWithECDSAAlias() {
+        return defaultHapiSpec("AccountCreationWithECDSAAlias")
+                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var op =
+                                            cryptoCreate("account")
+                                                    .withAlias(ecdsaKey.toByteString())
+                                                    .balance(100 * ONE_HBAR);
+
+                                    allRunFor(spec, op);
+                                }))
+                .then(getAccountInfo("account").logged());
+    }
+
+    private HapiApiSpec accountCreationWithEVMAddressAlias() {
+        return defaultHapiSpec("AccountCreationWithEVMAddressAlias")
+                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    assert addressBytes != null;
+                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                                    final var op =
+                                            cryptoCreate("account")
+                                                    .withAlias(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR);
+
+                                    allRunFor(spec, op);
+                                }))
+                .then(getAccountInfo("account").logged());
     }
 
     @Override

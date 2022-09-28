@@ -61,6 +61,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -85,6 +86,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 class CryptoCreateTransitionLogicTest {
     private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -114,6 +116,7 @@ class CryptoCreateTransitionLogicTest {
     private MerkleMap<EntityNum, MerkleAccount> accounts;
     private NodeInfo nodeInfo;
     private UsageLimits usageLimits;
+    @Mock private AliasManager aliasManager;
 
     @BeforeEach
     void setup() {
@@ -139,7 +142,8 @@ class CryptoCreateTransitionLogicTest {
                         txnCtx,
                         dynamicProperties,
                         () -> accounts,
-                        nodeInfo);
+                        nodeInfo,
+                        aliasManager);
     }
 
     @Test
