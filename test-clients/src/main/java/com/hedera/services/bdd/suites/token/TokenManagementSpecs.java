@@ -84,19 +84,19 @@ public class TokenManagementSpecs extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                    freezeMgmtSuccessCasesWork(),
-                    //                    kycMgmtFailureCasesWork(),
-                    //                    kycMgmtSuccessCasesWork(),
-                    //                    supplyMgmtSuccessCasesWork(),
-                    //                    wipeAccountFailureCasesWork(),
-                    //                    wipeAccountSuccessCasesWork(),
-                    //                    supplyMgmtFailureCasesWork(),
-                    //                    burnTokenFailsDueToInsufficientTreasuryBalance(),
-                    //                    frozenTreasuryCannotBeMintedOrBurned(),
-                    //                    revokedKYCTreasuryCannotBeMintedOrBurned(),
-                    //                    fungibleCommonMaxSupplyReachWork(),
-                    //                    mintingMaxLongValueWorks(),
-                    //                    nftMintProvidesMintedNftsAndNewTotalSupply(),
+                    freezeMgmtSuccessCasesWork(),
+                    kycMgmtFailureCasesWork(),
+                    kycMgmtSuccessCasesWork(),
+                    supplyMgmtSuccessCasesWork(),
+                    wipeAccountFailureCasesWork(),
+                    wipeAccountSuccessCasesWork(),
+                    supplyMgmtFailureCasesWork(),
+                    burnTokenFailsDueToInsufficientTreasuryBalance(),
+                    frozenTreasuryCannotBeMintedOrBurned(),
+                    revokedKYCTreasuryCannotBeMintedOrBurned(),
+                    fungibleCommonMaxSupplyReachWork(),
+                    mintingMaxLongValueWorks(),
+                    nftMintProvidesMintedNftsAndNewTotalSupply(),
                     zeroUnitTokenOperationsWorkAsExpected()
                 });
     }
