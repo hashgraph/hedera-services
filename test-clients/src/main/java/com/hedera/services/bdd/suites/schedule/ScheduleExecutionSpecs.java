@@ -89,6 +89,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
@@ -220,7 +221,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
                                 scheduledSystemDeleteWorksAsExpected(),
                                 scheduledSystemDeleteUnauthorizedPayerFails(isLongTermEnabled),
-                                congestionPricingAffectsImmediateScheduleExecution()));
+                                congestionPricingAffectsImmediateScheduleExecution()
+                                ));
     }
 
     private HapiApiSpec scheduledBurnFailsWithInvalidTxBody() {
@@ -479,7 +481,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                 .then(
                         getTxnRecord(successTxn)
                                 .scheduled()
-                                .hasPriority(recordWith().status(SUCCESS)),
+                                .hasPriority(recordWith().status(INVALID_TOKEN_BURN_METADATA)),
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
