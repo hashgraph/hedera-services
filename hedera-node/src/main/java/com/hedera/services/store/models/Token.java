@@ -296,9 +296,7 @@ public class Token {
             TokenRelationship accountRel,
             List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
-        validateFalse(
-                serialNumbers.isEmpty(),
-                FAIL_INVALID); // why is this FAIL_INVALID , should be INVALID_TOKEN_WIPE_METADATA ?
+        validateFalse(serialNumbers.isEmpty(), INVALID_WIPING_AMOUNT);
 
         baseWipeValidations(accountRel);
         for (var serialNum : serialNumbers) {

@@ -42,7 +42,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -152,7 +151,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
                         burnToken(fungible, 0),
                         burnToken(nft, List.of()).hasKnownStatus(INVALID_TOKEN_BURN_METADATA),
                         wipeTokenAccount(fungible, civilian, 0),
-                        wipeTokenAccount(nft, civilian, List.of()).hasKnownStatus(FAIL_INVALID),
+                        wipeTokenAccount(nft, civilian, List.of())
+                                .hasKnownStatus(INVALID_WIPING_AMOUNT),
                         getAccountInfo(TOKEN_TREASURY)
                                 .hasToken(relationshipWith(fungible).balance(8))
                                 .hasOwnedNfts(0)
