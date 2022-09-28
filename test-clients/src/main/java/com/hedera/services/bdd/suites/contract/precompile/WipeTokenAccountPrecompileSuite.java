@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -149,23 +148,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 0L)
                                                         .payingWith(ADMIN_ACCOUNT)
                                                         .via("wipeFungibleTxnWithZeroAmount")
-                                                        .gas(GAS_TO_OFFER),
-                                                //
-                                                // negative amount throws run time exception as
-                                                //
-                                                // amount is uint64 in solidity file
-
-                                                contractCall(
-                                                                WIPE_CONTRACT,
-                                                                WIPE_FUNGIBLE_TOKEN,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(accountID.get()),
-                                                                -1L)
-                                                        .payingWith(ADMIN_ACCOUNT)
-                                                        .via("failedWipeFungibleTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .logged())))
+                                                        .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "accountDoesNotOwnWipeKeyTxn",
@@ -292,15 +275,24 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                     .via("wipeNonFungibleSerialDoesNotExistsTxn")
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            WIPE_CONTRACT,
-                                                            WIPE_NON_FUNGIBLE_TOKEN,
-                                                            asAddress(vanillaTokenID.get()),
-                                                            asAddress(accountID.get()),
-                                                            List.of())
-                                                    .payingWith(ADMIN_ACCOUNT)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .logged(),
+                                            //
+                                            // contractCall(
+                                            //
+                                            //      WIPE_CONTRACT,
+                                            //
+                                            //      WIPE_NON_FUNGIBLE_TOKEN,
+                                            //
+                                            //      asAddress(vanillaTokenID.get()),
+                                            //
+                                            //      asAddress(accountID.get()),
+                                            //
+                                            //      List.of())
+                                            //
+                                            // .payingWith(ADMIN_ACCOUNT)
+                                            //
+                                            // .gas(GAS_TO_OFFER)
+                                            //
+                                            // .logged(),
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
@@ -356,17 +348,21 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(
                                                                                 INVALID_NFT_ID)))),
-                        getTxnRecord("wipeNonFungibleEmptySerialTxn").andAllChildRecords().logged(),
-                        childRecordsCheck(
-                                "wipeNonFungibleEmptySerialTxn",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                        //
+                        // getTxnRecord("wipeNonFungibleEmptySerialTxn").andAllChildRecords().logged(),
+                        //                        childRecordsCheck(
+                        //                                "wipeNonFungibleEmptySerialTxn",
+                        //                                SUCCESS,
+                        //                                recordWith()
+                        //                                        .status(SUCCESS)
+                        //                                        .contractCallResult(
+                        //                                                resultWith()
+                        //
+                        // .contractCallResult(
+                        //
+                        // htsPrecompileResult()
+                        //
+                        // .withStatus(SUCCESS)))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
     }
