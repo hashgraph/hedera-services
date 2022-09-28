@@ -25,7 +25,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -48,13 +47,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AliasResolverTest {
     @Mock private AliasManager aliasManager;
-    @Mock private GlobalDynamicProperties properties;
 
     private AliasResolver subject;
 
     @BeforeEach
     void setUp() {
-        subject = new AliasResolver(properties);
+        subject = new AliasResolver();
     }
 
     @Test
@@ -67,52 +65,12 @@ class AliasResolverTest {
         given(aliasManager.lookupIdBy(someAlias)).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(otherAlias)).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(anotherValidAlias)).willReturn(MISSING_NUM);
-        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
 
         final var resolvedOp = subject.resolve(op, aliasManager);
 
         assertEquals(1, subject.perceivedMissingAliases());
         assertEquals(1, subject.perceivedInvalidCreations());
         assertEquals(1, subject.perceivedAutoCreations());
-        assertEquals(
-                Map.of(
-                        anAlias,
-                        aNum,
-                        someAlias,
-                        MISSING_NUM,
-                        otherAlias,
-                        MISSING_NUM,
-                        anotherValidAlias,
-                        MISSING_NUM),
-                subject.resolutions());
-        final var tokensAdjusts = resolvedOp.getTokenTransfers(0);
-        assertEquals(someToken, tokensAdjusts.getToken());
-        assertEquals(aNum.toGrpcAccountId(), tokensAdjusts.getTransfers(0).getAccountID());
-        assertEquals(unresolved, tokensAdjusts.getTransfers(1));
-        final var ownershipChange = tokensAdjusts.getNftTransfers(0);
-        assertEquals(aNum.toGrpcAccountId(), ownershipChange.getSenderAccountID());
-        assertEquals(bNum.toGrpcAccountId(), ownershipChange.getReceiverAccountID());
-        assertEquals(1L, ownershipChange.getSerialNumber());
-        assertEquals(Map.of(anAlias, aNum, someAlias, MISSING_NUM), subject.tokenResolutions());
-    }
-
-    @Test
-    void doesntAutoCreateWhenTokenTransferToAliasFeatureDisabled() {
-        final var unresolved = aaId(bNum.longValue(), theAmount);
-        final var op = setUpTokenTransferOp();
-        assertTrue(AliasResolver.usesAliases(op));
-
-        given(aliasManager.lookupIdBy(anAlias)).willReturn(aNum);
-        given(aliasManager.lookupIdBy(someAlias)).willReturn(MISSING_NUM);
-        given(aliasManager.lookupIdBy(otherAlias)).willReturn(MISSING_NUM);
-        given(aliasManager.lookupIdBy(anotherValidAlias)).willReturn(MISSING_NUM);
-        given(properties.areTokenAutoCreationsEnabled()).willReturn(false);
-
-        final var resolvedOp = subject.resolve(op, aliasManager);
-
-        assertEquals(4, subject.perceivedMissingAliases());
-        assertEquals(0, subject.perceivedInvalidCreations());
-        assertEquals(0, subject.perceivedAutoCreations());
         assertEquals(
                 Map.of(
                         anAlias,
@@ -330,7 +288,6 @@ class AliasResolverTest {
 
     @Test
     void doesntAllowRepeatedAliasesInSingleTokenTransferList() {
-        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         final var op =
                 CryptoTransferTransactionBody.newBuilder()
                         .addTokenTransfers(

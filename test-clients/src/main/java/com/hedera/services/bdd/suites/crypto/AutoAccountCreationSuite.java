@@ -64,7 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
@@ -180,6 +180,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         final var initialTokenSupply = 1000;
         return defaultHapiSpec("hbarAndTokenTransfers")
                 .given(
+                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(CIVILIAN)
@@ -256,14 +257,14 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         cryptoTransfer(moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
                                 .via(fungibleTokenXfer)
                                 .payingWith(CIVILIAN)
-                                .hasKnownStatus(INVALID_ACCOUNT_ID)
+                                .hasKnownStatus(NOT_SUPPORTED)
                                 .logged(),
                         cryptoTransfer(
                                         movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
                                                 .between(CIVILIAN, VALID_ALIAS))
                                 .via(nftXfer)
                                 .payingWith(CIVILIAN)
-                                .hasKnownStatus(INVALID_ACCOUNT_ID)
+                                .hasKnownStatus(NOT_SUPPORTED)
                                 .logged(),
                         getTxnRecord(fungibleTokenXfer).andAllChildRecords().hasChildRecordCount(0),
                         getTxnRecord(nftXfer).andAllChildRecords().hasNonStakingChildRecordCount(0),
@@ -540,6 +541,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("multipleTokenTransfersSucceed")
                 .given(
+                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -639,6 +641,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
+                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)

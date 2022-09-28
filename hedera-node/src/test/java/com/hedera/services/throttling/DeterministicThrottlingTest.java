@@ -895,7 +895,7 @@ class DeterministicThrottlingTest {
 
         var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 
-        verify(accessor).countAutoCreationsWith(aliasManager, dynamicProperties);
+        verify(accessor).countAutoCreationsWith(aliasManager);
         assertFalse(ans);
     }
 
@@ -915,7 +915,7 @@ class DeterministicThrottlingTest {
             subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
         }
 
-        verify(accessor, never()).countAutoCreationsWith(aliasManager, dynamicProperties);
+        verify(accessor, never()).countAutoCreationsWith(aliasManager);
         assertFalse(firstAns);
         assertTrue(subsequentAns);
     }

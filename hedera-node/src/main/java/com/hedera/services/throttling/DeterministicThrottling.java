@@ -338,7 +338,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
             if (dynamicProperties.isAutoCreationEnabled() && scheduledFunction == CryptoTransfer) {
                 final var xfer = scheduled.getCryptoTransfer();
                 if (usesAliases(xfer)) {
-                    final var resolver = new AliasResolver(dynamicProperties);
+                    final var resolver = new AliasResolver();
                     resolver.resolve(xfer, aliasManager);
                     final var numAutoCreations = resolver.perceivedAutoCreations();
                     if (numAutoCreations > 0) {
@@ -664,7 +664,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
         @Override
         public int getNumAutoCreations() {
             if (!accessor.areAutoCreationsCounted()) {
-                accessor.countAutoCreationsWith(aliasManager, dynamicProperties);
+                accessor.countAutoCreationsWith(aliasManager);
             }
             return accessor.getNumAutoCreations();
         }
@@ -706,7 +706,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
         @Override
         public int getNumAutoCreations() {
-            final var resolver = new AliasResolver(dynamicProperties);
+            final var resolver = new AliasResolver();
             resolver.resolve(txn.getCryptoTransfer(), aliasManager);
             return resolver.perceivedAutoCreations();
         }

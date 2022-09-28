@@ -207,7 +207,7 @@ class SignedTxnAccessorTest {
         final var body = CommonUtils.extractTransactionBody(xferNoAliases);
 
         var accessor = SignedTxnAccessor.uncheckedFrom(xferNoAliases);
-        accessor.countAutoCreationsWith(aliasManager, properties);
+        accessor.countAutoCreationsWith(aliasManager);
         final var txnUsageMeta = accessor.baseUsageMeta();
 
         assertEquals(xferNoAliases, accessor.getSignedTxnWrapper());
@@ -237,11 +237,11 @@ class SignedTxnAccessorTest {
         assertEquals(memoUtf8Bytes.length, txnUsageMeta.memoUtf8Bytes());
 
         accessor = SignedTxnAccessor.uncheckedFrom(xferWithAutoCreation);
-        accessor.countAutoCreationsWith(aliasManager, properties);
+        accessor.countAutoCreationsWith(aliasManager);
         assertEquals(1, accessor.getNumAutoCreations());
 
         accessor = SignedTxnAccessor.uncheckedFrom(xferWithAliasesNoAutoCreation);
-        accessor.countAutoCreationsWith(aliasManager, properties);
+        accessor.countAutoCreationsWith(aliasManager);
         assertEquals(0, accessor.getNumAutoCreations());
     }
 

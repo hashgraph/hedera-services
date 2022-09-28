@@ -400,7 +400,7 @@ class PlatformTxnAccessorTest {
 
         assertEquals(delegate, subject.getDelegate());
 
-        subject.countAutoCreationsWith(aliasManager, properties);
+        subject.countAutoCreationsWith(aliasManager);
 
         subject.markCongestionExempt();
         subject.markThrottleExempt();

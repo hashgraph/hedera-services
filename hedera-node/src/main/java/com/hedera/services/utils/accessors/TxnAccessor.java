@@ -16,7 +16,6 @@
 package com.hedera.services.utils.accessors;
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
@@ -120,8 +119,7 @@ public interface TxnAccessor {
 
     boolean areAutoCreationsCounted();
 
-    void countAutoCreationsWith(
-            final AliasManager aliasManager, final GlobalDynamicProperties properties);
+    void countAutoCreationsWith(final AliasManager aliasManager);
 
     // Used only for EthereumTransaction
     EthTxData opEthTxData();
