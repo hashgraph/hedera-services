@@ -74,8 +74,7 @@ public class RemovalHelper implements RemovalWork {
         }
         final var gcOutcome = accountGC.expireBestEffort(num, lastClassified);
         if (gcOutcome.needsExternalizing()) {
-            final var autoRenewId = isContract ? lastClassified.getAutoRenewAccount() : null;
-            recordsHelper.streamCryptoRemovalStep(isContract, num, autoRenewId, gcOutcome);
+            recordsHelper.streamCryptoRemovalStep(isContract, num, gcOutcome);
         }
         if (gcOutcome.finished()) {
             if (isContract) {

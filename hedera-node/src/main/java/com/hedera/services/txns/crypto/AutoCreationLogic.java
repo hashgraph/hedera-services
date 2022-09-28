@@ -86,6 +86,7 @@ public class AutoCreationLogic {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
     private final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
+
     private final GlobalDynamicProperties properties;
     private FeeCalculator feeCalculator;
 

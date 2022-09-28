@@ -17,7 +17,6 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -149,9 +148,8 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
                 transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
                 EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
 
-        final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
-
-        frame.addLog(getLogForSetApprovalForAll(precompileAddress));
+        final var tokenAddress = asTypedEvmAddress(setApprovalForAllWrapper.tokenId());
+        frame.addLog(getLogForSetApprovalForAll(tokenAddress));
     }
 
     @Override
@@ -163,8 +161,9 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_FOR_ALL_EVENT)
-                .forIndexedArgument(senderAddress)
-                .forIndexedArgument(asTypedEvmAddress(setApprovalForAllWrapper.to()))
+                .forIndexedArgument(ledgers.canonicalAddress(senderAddress))
+                .forIndexedArgument(
+                        ledgers.canonicalAddress(asTypedEvmAddress(setApprovalForAllWrapper.to())))
                 .forDataItem(setApprovalForAllWrapper.approved())
                 .build();
     }

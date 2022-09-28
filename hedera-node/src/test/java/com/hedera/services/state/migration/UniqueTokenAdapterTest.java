@@ -80,6 +80,8 @@ class UniqueTokenAdapterTest {
         assertEquals(456L, merkleSubject.getSpender().num());
         assertArrayEquals("hello".getBytes(), merkleSubject.getMetadata());
         assertEquals(0L, merkleSubject.getPackedCreationTime());
+
+        assertTrue(UniqueTokenAdapter.newEmptyVirtualToken().isVirtual());
     }
 
     @Test

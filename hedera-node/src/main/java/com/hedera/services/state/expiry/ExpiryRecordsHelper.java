@@ -15,29 +15,27 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
-import static com.hedera.services.utils.MiscUtils.synthFromBody;
+import static com.hedera.services.utils.MiscUtils.synthWithRecordTxnId;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.ConsensusTimeTracker;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.*;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class ExpiryRecordsHelper {
     private final RecordStreaming recordStreaming;
+    private final RecordsHistorian recordsHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final ConsensusTimeTracker consensusTimeTracker;
     private final SideEffectsTracker sideEffectsTracker;
@@ -45,10 +43,12 @@ public class ExpiryRecordsHelper {
     @Inject
     public ExpiryRecordsHelper(
             final RecordStreaming recordStreaming,
+            final RecordsHistorian recordsHistorian,
             final SyntheticTxnFactory syntheticTxnFactory,
             final ConsensusTimeTracker consensusTimeTracker,
             final SideEffectsTracker sideEffectsTracker) {
         this.recordStreaming = recordStreaming;
+        this.recordsHistorian = recordsHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.consensusTimeTracker = consensusTimeTracker;
         this.sideEffectsTracker = sideEffectsTracker;
@@ -57,10 +57,9 @@ public class ExpiryRecordsHelper {
     public void streamCryptoRemovalStep(
             final boolean isContract,
             final EntityNum entityNum,
-            @Nullable final EntityId autoRenewId,
             final CryptoGcOutcome cryptoGcOutcome) {
         final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
-        final var grpcId = entityNum.toGrpcAccountId();
+        final var txnId = recordsHistorian.computeNextSystemTransactionId();
         final var memo =
                 (isContract ? "Contract " : "Account ")
                         + entityNum.toIdString()
@@ -69,16 +68,20 @@ public class ExpiryRecordsHelper {
                                 : " returned treasury assets");
 
         final var expirableTxnRecord =
-                forTouchedAccount(grpcId, eventTime, autoRenewId)
+                forTouchedAccount(entityNum, eventTime, txnId)
                         .setMemo(memo)
                         .setTokens(cryptoGcOutcome.allReturnedTokens())
                         .setTokenAdjustments(cryptoGcOutcome.parallelAdjustments())
-                        .setNftTokenAdjustments(cryptoGcOutcome.parallelExchanges())
-                        .build();
-        final var synthBody =
-                cryptoGcOutcome.finished()
-                        ? syntheticTxnFactory.synthAccountAutoRemove(entityNum)
-                        : syntheticTxnFactory.synthTokenTransfer(cryptoGcOutcome);
+                        .setNftTokenAdjustments(cryptoGcOutcome.parallelExchanges());
+        final TransactionBody.Builder synthBody;
+        if (cryptoGcOutcome.finished()) {
+            synthBody =
+                    isContract
+                            ? syntheticTxnFactory.synthContractAutoRemove(entityNum)
+                            : syntheticTxnFactory.synthAccountAutoRemove(entityNum);
+        } else {
+            synthBody = syntheticTxnFactory.synthTokenTransfer(cryptoGcOutcome);
+        }
         stream(expirableTxnRecord, synthBody, eventTime);
     }
 
@@ -86,11 +89,8 @@ public class ExpiryRecordsHelper {
             final EntityNum entityNum,
             final long fee,
             final long newExpiry,
-            final boolean isContract,
-            final EntityNum payerForExpiry) {
+            final boolean isContract) {
         final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
-        final var grpcId = entityNum.toGrpcAccountId();
-        final var payerId = payerForExpiry.toGrpcAccountId();
         final var memo =
                 (isContract ? "Contract " : "Account ")
                         + entityNum.toIdString()
@@ -99,40 +99,32 @@ public class ExpiryRecordsHelper {
                         + ".";
         final var synthBody =
                 isContract
-                        ? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry, payerId)
+                        ? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry)
                         : syntheticTxnFactory.synthAccountAutoRenew(entityNum, newExpiry);
+        final var txnId = recordsHistorian.computeNextSystemTransactionId();
         final var expirableTxnRecord =
-                forTouchedAccount(grpcId, eventTime, payerForExpiry.toEntityId())
+                forTouchedAccount(entityNum, eventTime, txnId)
                         .setMemo(memo)
                         .setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
                         .setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
-                        .setFee(fee)
-                        .build();
+                        .setFee(fee);
         stream(expirableTxnRecord, synthBody, eventTime);
     }
 
     private void stream(
-            final ExpirableTxnRecord expiringRecord,
+            final ExpirableTxnRecord.Builder expiringRecord,
             final TransactionBody.Builder synthBody,
             final Instant at) {
-        final var rso =
-                new RecordStreamObject(expiringRecord, synthFromBody(synthBody.build()), at);
+        final var synthTxn = synthWithRecordTxnId(synthBody, expiringRecord);
+        final var rso = new RecordStreamObject(expiringRecord.build(), synthTxn, at);
         recordStreaming.streamSystemRecord(rso);
     }
 
     private ExpirableTxnRecord.Builder forTouchedAccount(
-            final AccountID accountId,
-            final Instant consensusTime,
-            @Nullable EntityId autoRenewId) {
+            final EntityNum expiryNum, final Instant consensusTime, final TxnId txnId) {
         final var at = RichInstant.fromJava(consensusTime);
-        final var id = EntityId.fromGrpcAccountId(accountId);
         final var receipt = new TxnReceipt();
-        receipt.setAccountId(id);
-
-        final var effectivePayerId =
-                (autoRenewId != null) ? autoRenewId : EntityId.fromGrpcAccountId(accountId);
-        final var txnId =
-                new TxnId(effectivePayerId, MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
+        receipt.setAccountId(expiryNum.toEntityId());
         return ExpirableTxnRecord.newBuilder()
                 .setTxnId(txnId)
                 .setReceipt(receipt)

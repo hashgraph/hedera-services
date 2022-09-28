@@ -51,6 +51,10 @@ public class UniqueTokenAdapter implements FastCopyable {
         return wrap(new MerkleUniqueToken());
     }
 
+    public static UniqueTokenAdapter newEmptyVirtualToken() {
+        return wrap(new UniqueTokenValue());
+    }
+
     UniqueTokenAdapter(final UniqueTokenValue token) {
         merkleUniqueToken = null;
 
@@ -185,7 +189,7 @@ public class UniqueTokenAdapter implements FastCopyable {
         }
     }
 
-    public void setPrev(NftNumPair prev) {
+    public void setPrev(final NftNumPair prev) {
         if (isVirtual) {
             uniqueTokenValue.setPrev(prev);
         } else {
@@ -193,7 +197,7 @@ public class UniqueTokenAdapter implements FastCopyable {
         }
     }
 
-    public void setNext(NftNumPair next) {
+    public void setNext(final NftNumPair next) {
         if (isVirtual) {
             uniqueTokenValue.setNext(next);
         } else {

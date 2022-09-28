@@ -120,6 +120,9 @@ public class AliasResolver {
                 final var result =
                         resolveInternalFungible(
                                 aliasManager, adjust, resolvedTokenAdjust::addTransfers, true);
+
+                // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
+                // result
                 perceiveNonNftResult(result, adjust);
             }
 
@@ -141,7 +144,10 @@ public class AliasResolver {
                                 change.getReceiverAccountID(),
                                 resolvedChange::setReceiverAccountID);
 
+                // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
+                // result
                 perceiveNftReceiverResult(receiverResult, change);
+
                 resolvedTokenAdjust.addNftTransfers(resolvedChange.build());
             }
 
