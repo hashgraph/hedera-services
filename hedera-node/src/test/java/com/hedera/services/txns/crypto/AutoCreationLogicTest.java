@@ -22,11 +22,11 @@ import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -115,6 +115,27 @@ class AutoCreationLogicTest {
     }
 
     @Test
+    void cannotCreateAccountFromUnaliasedChange() {
+        given(usageLimits.areCreatableAccounts(anyInt())).willReturn(true);
+        final var input =
+                BalanceChange.changingHbar(
+                        AccountAmount.newBuilder()
+                                .setAmount(initialTransfer)
+                                .setAccountID(payer)
+                                .build(),
+                        payer);
+        final var changes = List.of(input);
+
+        final var result =
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> subject.create(input, accountsLedger, changes));
+        assertTrue(
+                result.getMessage()
+                        .contains("Cannot auto-create an account from unaliased change"));
+    }
+
+    @Test
     void happyPathWithHbarChangeWorks() {
         givenCollaborators();
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 0))
@@ -140,8 +161,7 @@ class AutoCreationLogicTest {
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
-        assertNull(subject.getTokenAliasMap());
-        assertDoesNotThrow(() -> subject.clearTokenAliasMap());
+        assertTrue(subject.getTokenAliasMap().isEmpty());
     }
 
     @Test
@@ -237,7 +257,6 @@ class AutoCreationLogicTest {
 
         final var input1 = wellKnownTokenChange();
         final var input2 = anotherTokenChange();
-        final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
         final var changes = List.of(input1, input2);
 
         final var result = subject.create(input1, accountsLedger, changes);
@@ -261,12 +280,10 @@ class AutoCreationLogicTest {
         assertEquals(Pair.of(OK, totalFee), result);
 
         /* ---- clear tokenAliasMap */
-        subject.clearTokenAliasMap();
-        assertEquals(0, subject.getTokenAliasMap().size());
-
         assertEquals(1, subject.getPendingCreations().size());
         subject.reset();
         assertEquals(0, subject.getPendingCreations().size());
+        assertEquals(0, subject.getTokenAliasMap().size());
 
         assertFalse(subject.reclaimPendingAliases());
     }

@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -64,6 +65,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -164,7 +167,42 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 multipleTokenTransfersSucceed(),
                 nftTransfersToAlias(),
                 autoCreateWithNftFallBackFeeFails(),
-                repeatedAliasInSameTransferListFails());
+                repeatedAliasInSameTransferListFails(),
+                canAutoCreateWithHbarAndTokenTransfers());
+    }
+
+    private HapiApiSpec canAutoCreateWithHbarAndTokenTransfers() {
+        final var initialTokenSupply = 1000;
+        return defaultHapiSpec("hbarAndTokenTransfers")
+                .given(
+                        newKeyNamed(VALID_ALIAS),
+                        cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(CIVILIAN)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(2),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(FINITE)
+                                .initialSupply(initialTokenSupply)
+                                .maxSupply(10 * initialTokenSupply)
+                                .treasury(TOKEN_TREASURY)
+                                .via(TOKEN_A_CREATE),
+                        getTxnRecord(TOKEN_A_CREATE)
+                                .hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY))
+                .when(
+                        tokenAssociate(CIVILIAN, A_TOKEN),
+                        cryptoTransfer(moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
+                        getAccountInfo(CIVILIAN).hasToken(relationshipWith(A_TOKEN).balance(10)))
+                .then(
+                        cryptoTransfer(
+                                        movingHbar(10L).between(CIVILIAN, VALID_ALIAS),
+                                        moving(1, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
+                                .signedBy(DEFAULT_PAYER, CIVILIAN)
+                                .via(TRANSFER_TXN),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith().balance(10L))
+                                .hasToken(relationshipWith(A_TOKEN)));
     }
 
     private HapiApiSpec repeatedAliasInSameTransferListFails() {
@@ -186,7 +224,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .balance(ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(2),
                         tokenCreate(A_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
                                 .initialSupply(Long.MAX_VALUE)
                                 .treasury(TOKEN_TREASURY)
                                 .via(TOKEN_A_CREATE),
@@ -360,7 +398,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .via(NFT_CREATE),
                         tokenCreate(NFT_FINITE_SUPPLY_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
+                                .supplyType(FINITE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
                                 .maxSupply(12L)
@@ -431,12 +469,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
                                 .initialSupply(initialTokenSupply)
                                 .treasury(TOKEN_TREASURY)
                                 .via(TOKEN_A_CREATE),
                         tokenCreate(B_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
                                 .initialSupply(initialTokenSupply)
                                 .treasury(TOKEN_TREASURY)
                                 .via(TOKEN_B_CREATE),
@@ -530,12 +568,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
                                 .initialSupply(initialTokenSupply)
                                 .treasury(TOKEN_TREASURY)
                                 .via(TOKEN_A_CREATE),
                         tokenCreate(B_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
                                 .initialSupply(initialTokenSupply)
                                 .treasury(TOKEN_TREASURY)
                                 .via(TOKEN_B_CREATE),

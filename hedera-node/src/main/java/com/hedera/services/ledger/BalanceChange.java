@@ -368,7 +368,7 @@ public class BalanceChange {
     }
 
     public boolean hasNonEmptyCounterPartyAlias() {
-        return isForNft() && counterPartyAccountId != null && isAlias(counterPartyAccountId);
+        return counterPartyAccountId != null && isAlias(counterPartyAccountId);
     }
 
     /**
@@ -380,6 +380,6 @@ public class BalanceChange {
     public ByteString getNonEmptyAliasIfPresent() {
         if (isAlias(accountId)) return alias;
         else if (hasNonEmptyCounterPartyAlias()) return counterPartyAlias;
-        else return ByteString.EMPTY;
+        else return null;
     }
 }

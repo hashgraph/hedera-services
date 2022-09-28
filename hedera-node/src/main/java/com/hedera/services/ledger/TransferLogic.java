@@ -116,7 +116,7 @@ public class TransferLogic {
         for (var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
-            checkIfExistingAlias(change);
+            replaceAliasWithIdIfExisting(change);
 
             // create a new account for alias when the no account is already created using the alias
             if (change.hasAlias()) {
@@ -161,13 +161,11 @@ public class TransferLogic {
             if (autoCreationFee > 0) {
                 payAutoCreationFee(autoCreationFee);
                 autoCreationLogic.submitRecordsTo(recordsHistorian);
-                autoCreationLogic.clearTokenAliasMap();
             }
         } else {
             dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
             if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
                 accountsLedger.undoCreations();
-                autoCreationLogic.clearTokenAliasMap();
             }
             throw new InvalidTransactionException(validity);
         }
@@ -259,10 +257,10 @@ public class TransferLogic {
      *
      * @param change change that contains alias
      */
-    private void checkIfExistingAlias(final BalanceChange change) {
+    private void replaceAliasWithIdIfExisting(final BalanceChange change) {
         final var alias = change.getNonEmptyAliasIfPresent();
 
-        if (!alias.isEmpty()) {
+        if (alias != null) {
             final var aliasNum = aliasManager.lookupIdBy(alias);
             if (aliasNum != EntityNum.MISSING_NUM) {
                 change.replaceNonEmptyAliasWith(aliasNum);
