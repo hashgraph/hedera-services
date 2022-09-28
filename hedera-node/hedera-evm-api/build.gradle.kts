@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 plugins {
-    id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.conventions")
+    id("com.hedera.hashgraph.maven-publish")
 }
 
+group = "com.hedera.evm"
 description = "Hedera EVM - API"
