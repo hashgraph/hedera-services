@@ -473,16 +473,24 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
     }
 
-    public TransactionBody.Builder createAccount(final Key alias, final long balance) {
-        final var txnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(alias)
-                        .setMemo(AUTO_MEMO)
-                        .setInitialBalance(balance)
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
-                        .build();
-        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
+    public TransactionBody.Builder createAccount(
+            final Key alias, final long balance, final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(alias, balance);
+
+        if (maxAutoAssociations > 0) {
+            baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
+        }
+
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    private CryptoCreateTransactionBody.Builder createAccountBase(
+            final Key alias, final long balance) {
+        return CryptoCreateTransactionBody.newBuilder()
+                .setKey(alias)
+                .setMemo(AUTO_MEMO)
+                .setInitialBalance(balance)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
     }
 
     public TransactionBody.Builder nodeStakeUpdate(
