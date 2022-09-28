@@ -182,7 +182,7 @@ jobs:
       - name: Prepare Dispatch Payload
         id: dispatch
         env:
-          REQ_IS_TAG_PUSH: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
+          REQ_IS_TAG_PUSH: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
         run: |
           VERSION_POLICY="snapshot"
           VERSION_NUM=""
@@ -194,9 +194,9 @@ jobs:
 
           REQ_JSON="$(jq --compact-output --null-input \
                       --arg ref "${{ github.ref }}" \
-                      --arg jdist "${{ github.event.inputs.java-distribution }}" \
-                      --arg jver "${{ github.event.inputs.java-version }}" \
-                      --arg gver "${{ github.event.inputs.gradle-version }}" \
+                      --arg jdist "${{ github.event.inputs.java-distribution || 'temurin' }}" \
+                      --arg jver "${{ github.event.inputs.java-version || '17.0.3' }}" \
+                      --arg gver "${{ github.event.inputs.gradle-version || 'wrapper' }}" \
                       --arg vpol "${VERSION_POLICY}" \
                       --arg vnum "${VERSION_NUM}" \
                       '{"ref": $ref, "java": {"distribution": $jdist, "version": $jver}, "gradle": {"version": $gver}, "release": {"version": {"policy": $vpol, "number": $vnum}}}')"
