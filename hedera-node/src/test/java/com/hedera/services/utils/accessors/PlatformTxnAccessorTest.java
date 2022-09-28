@@ -31,7 +31,6 @@ import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -49,7 +48,7 @@ import org.junit.jupiter.api.Test;
 
 class PlatformTxnAccessorTest {
     private static final byte[] NONSENSE = "Jabberwocky".getBytes();
-    private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
+
     TransactionBody someTxn =
             TransactionBody.newBuilder()
                     .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))

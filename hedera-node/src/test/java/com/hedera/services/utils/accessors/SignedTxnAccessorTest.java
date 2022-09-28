@@ -31,12 +31,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
-import com.google.protobuf.BoolValue;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.Int32Value;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.StringValue;
-import com.hedera.services.config.MockGlobalDynamicProps;
+import com.google.protobuf.*;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
@@ -109,8 +104,6 @@ class SignedTxnAccessorTest {
                                     .setPubKeyPrefix(ByteString.copyFromUtf8("s"))
                                     .setEd25519(ByteString.copyFromUtf8("econd")))
                     .build();
-
-    private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
 
     @Test
     @SuppressWarnings("uncheckeed")

@@ -27,7 +27,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -49,14 +48,11 @@ class FeeAssessorTest {
     private final ImpliedTransfersMeta.ValidationProps props =
             new ImpliedTransfersMeta.ValidationProps(0, 0, 0, 1, 20, true, true, true);
 
-    @Mock private HtsFeeAssessor htsFeeAssessor;
-    @Mock private HbarFeeAssessor hbarFeeAssessor;
     @Mock private FixedFeeAssessor fixedFeeAssessor;
     @Mock private FractionalFeeAssessor fractionalFeeAssessor;
     @Mock private RoyaltyFeeAssessor royaltyFeeAssessor;
     @Mock private CustomSchedulesManager customSchedulesManager;
     @Mock private BalanceChangeManager balanceChangeManager;
-    @Mock private GlobalDynamicProperties globalDynamicProperties;
 
     private FeeAssessor subject;
 

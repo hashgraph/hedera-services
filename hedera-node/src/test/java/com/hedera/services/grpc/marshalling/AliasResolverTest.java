@@ -51,14 +51,60 @@ class AliasResolverTest {
     private AliasResolver subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AliasResolver();
     }
 
     @Test
     void transformsTokenAdjusts() {
         final var unresolved = aaId(bNum.longValue(), theAmount);
-        final var op = setUpTokenTransferOp();
+        final var op =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(someToken)
+                                        .addTransfers(aaAlias(anAlias, anAmount))
+                                        .addTransfers(unresolved)
+                                        .addTransfers(aaAlias(someAlias, -anAmount))
+                                        .addNftTransfers(
+                                                NftTransfer.newBuilder()
+                                                        .setSenderAccountID(
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(anAlias))
+                                                        .setReceiverAccountID(
+                                                                bNum.toGrpcAccountId())
+                                                        .setSerialNumber(1L)
+                                                        .build())
+                                        .addNftTransfers(
+                                                NftTransfer.newBuilder()
+                                                        .setSenderAccountID(bNum.toGrpcAccountId())
+                                                        .setReceiverAccountID(
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(otherAlias))
+                                                        .setSerialNumber(2L)
+                                                        .build())
+                                        .addNftTransfers(
+                                                NftTransfer.newBuilder()
+                                                        .setSenderAccountID(
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(anAlias))
+                                                        .setReceiverAccountID(
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(someAlias))
+                                                        .setSerialNumber(2L)
+                                                        .build())
+                                        .addNftTransfers(
+                                                NftTransfer.newBuilder()
+                                                        .setSenderAccountID(
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(anAlias))
+                                                        .setReceiverAccountID(
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(
+                                                                                anotherValidAlias))
+                                                        .setSerialNumber(2L)
+                                                        .build()))
+                        .build();
         assertTrue(AliasResolver.usesAliases(op));
 
         given(aliasManager.lookupIdBy(anAlias)).willReturn(aNum);
@@ -241,49 +287,6 @@ class AliasResolverTest {
                                         .build())
                         .build();
         assertTrue(AliasResolver.usesAliases(op));
-    }
-
-    private CryptoTransferTransactionBody setUpTokenTransferOp() {
-        final var unresolved = aaId(bNum.longValue(), theAmount);
-        return CryptoTransferTransactionBody.newBuilder()
-                .addTokenTransfers(
-                        TokenTransferList.newBuilder()
-                                .setToken(someToken)
-                                .addTransfers(aaAlias(anAlias, anAmount))
-                                .addTransfers(unresolved)
-                                .addTransfers(aaAlias(someAlias, -anAmount))
-                                .addNftTransfers(
-                                        NftTransfer.newBuilder()
-                                                .setSenderAccountID(
-                                                        AccountID.newBuilder().setAlias(anAlias))
-                                                .setReceiverAccountID(bNum.toGrpcAccountId())
-                                                .setSerialNumber(1L)
-                                                .build())
-                                .addNftTransfers(
-                                        NftTransfer.newBuilder()
-                                                .setSenderAccountID(bNum.toGrpcAccountId())
-                                                .setReceiverAccountID(
-                                                        AccountID.newBuilder().setAlias(otherAlias))
-                                                .setSerialNumber(2L)
-                                                .build())
-                                .addNftTransfers(
-                                        NftTransfer.newBuilder()
-                                                .setSenderAccountID(
-                                                        AccountID.newBuilder().setAlias(anAlias))
-                                                .setReceiverAccountID(
-                                                        AccountID.newBuilder().setAlias(someAlias))
-                                                .setSerialNumber(2L)
-                                                .build())
-                                .addNftTransfers(
-                                        NftTransfer.newBuilder()
-                                                .setSenderAccountID(
-                                                        AccountID.newBuilder().setAlias(anAlias))
-                                                .setReceiverAccountID(
-                                                        AccountID.newBuilder()
-                                                                .setAlias(anotherValidAlias))
-                                                .setSerialNumber(2L)
-                                                .build()))
-                .build();
     }
 
     @Test
