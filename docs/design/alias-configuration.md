@@ -103,7 +103,7 @@ In this flow
             - alias: EVM_address alias
         - AliasManager with:
             - map with the EVM_address alias based on the ECDSA key → hedera id
-    2. a) When a signed transaction referencing the account by the EVM_address alias is received:
+    2. When a signed transaction referencing the account by the EVM_address alias is received:
         - Account with:
             - hedera id: 0.0.20
             - admin key: ECDSA key
@@ -111,9 +111,6 @@ In this flow
         - AliasManager with:
             - map with the EVM_address alias based on the ECDSA key → hedera id
             - map with the 0.0.ECDSA key alias → hedera id
-    
-    2. b) Don’t overwrite the alias field, instead add logic during the map rebuilding
-    - if the value of the alias field of the account has the evm_address format, add an entry to the aliases map with the value of 0.0.ECDSA key which is set on the account
 
 - Ethereum Transaction for crypto transfer should create an account with its alias field set to the `to` value of the transaction and its key will be empty (i.e. lazy create hollow account)
   1. Validate that `to` and `value` are set, `to` should be an EVM address and `value` should be non-zero
