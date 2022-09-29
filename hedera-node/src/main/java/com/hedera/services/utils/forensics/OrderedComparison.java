@@ -43,7 +43,7 @@ public class OrderedComparison {
      * @param secondStreamDir the second record stream
      * @return the stream diff
      * @throws IOException if any of the record stream files cannot be read or parsed
-     * @throws AssertionError if the directories contain different record streams
+     * @throws IllegalArgumentException if the directories contain misaligned record streams
      */
     public static List<DifferingEntries> findDifferencesBetweenV6(
             final String firstStreamDir, final String secondStreamDir) throws IOException {
