@@ -17,6 +17,8 @@ package com.hedera.services.txns.token;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -75,7 +77,7 @@ class MintLogicTest {
     private MintLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new MintLogic(usageLimits, validator, store, accountStore, dynamicProperties);
     }
 
@@ -164,6 +166,18 @@ class MintLogicTest {
         verify(accountStore).commitAccount(any(Account.class));
     }
 
+    @Test
+    void precheckWorksForZeroFungibleAmount() {
+        givenValidTxnCtxWithZeroAmount();
+        assertEquals(OK, subject.validateSyntax(tokenMintTxn));
+    }
+
+    @Test
+    void precheckWorksForNonZeroFungibleAmount() {
+        givenUniqueTxnCtxWithNoSerials();
+        assertEquals(OK, subject.validateSyntax(tokenMintTxn));
+    }
+
     private void givenValidUniqueTxnCtx() {
         tokenMintTxn =
                 TransactionBody.newBuilder()
@@ -181,6 +195,24 @@ class MintLogicTest {
                                 TokenMintTransactionBody.newBuilder()
                                         .setToken(grpcId)
                                         .setAmount(amount))
+                        .build();
+    }
+
+    private void givenValidTxnCtxWithZeroAmount() {
+        tokenMintTxn =
+                TransactionBody.newBuilder()
+                        .setTokenMint(
+                                TokenMintTransactionBody.newBuilder().setToken(grpcId).setAmount(0))
+                        .build();
+    }
+
+    private void givenUniqueTxnCtxWithNoSerials() {
+        tokenMintTxn =
+                TransactionBody.newBuilder()
+                        .setTokenMint(
+                                TokenMintTransactionBody.newBuilder()
+                                        .setToken(grpcId)
+                                        .addAllMetadata(List.of()))
                         .build();
     }
 }

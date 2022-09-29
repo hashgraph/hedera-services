@@ -681,7 +681,7 @@ public class SigRequirements {
         KeyOrderingFailure failure;
         for (TokenTransferList xfers : op.getTokenTransfersList()) {
             for (AccountAmount adjust : xfers.getTransfersList()) {
-                if ((failure = includeIfNecessary(payer, adjust, required, false, linkedRefs))
+                if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs, false))
                         != NONE) {
                     return accountFailure(failure, factory);
                 }
@@ -698,7 +698,8 @@ public class SigRequirements {
                                         required,
                                         token,
                                         op,
-                                        linkedRefs))
+                                        linkedRefs,
+                                        false))
                         != NONE) {
                     return accountFailure(failure, factory);
                 }
@@ -712,7 +713,8 @@ public class SigRequirements {
                                         required,
                                         token,
                                         op,
-                                        linkedRefs))
+                                        linkedRefs,
+                                        true))
                         != NONE) {
                     return (failure == MISSING_TOKEN)
                             ? factory.forMissingToken()
@@ -721,7 +723,8 @@ public class SigRequirements {
             }
         }
         for (AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
-            if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs)) != NONE) {
+            if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs, true))
+                    != NONE) {
                 return accountFailure(failure, factory);
             }
         }
@@ -1268,7 +1271,8 @@ public class SigRequirements {
             final AccountAmount adjust,
             final List<JKey> required,
             final boolean autoCreationAllowed,
-            final @Nullable LinkedRefs linkedRefs) {
+            final @Nullable LinkedRefs linkedRefs,
+            final boolean isForHbar) {
         var account = adjust.getAccountID();
         if (!payer.equals(account)) {
             var result = sigMetaLookup.aliasableAccountSigningMetaFor(account, linkedRefs);
@@ -1284,7 +1288,10 @@ public class SigRequirements {
             } else {
                 final var reason = result.failureIfAny();
                 final var isCredit = adjust.getAmount() > 0L;
-                if (reason == IMMUTABLE_ACCOUNT && isCredit) {
+                // Since the immutable accounts 0.0.800 and 0.0.801 allows crediting hbar,
+                // it is not treated as a failure. But token transfer to the immutable accounts is
+                // not valid.
+                if (reason == IMMUTABLE_ACCOUNT && isCredit && isForHbar) {
                     return NONE;
                 } else if (reason == MISSING_ACCOUNT
                         && autoCreationAllowed
@@ -1308,14 +1315,24 @@ public class SigRequirements {
             final List<JKey> required,
             final TokenID token,
             final CryptoTransferTransactionBody op,
-            final @Nullable LinkedRefs linkedRefs) {
+            final @Nullable LinkedRefs linkedRefs,
+            final boolean autoCreationAllowed) {
+        final var isSender = counterparty == null;
         if (!payer.equals(party)) {
             var result = sigMetaLookup.aliasableAccountSigningMetaFor(party, linkedRefs);
             if (!result.succeeded()) {
-                return result.failureIfAny();
+                final var reason = result.failureIfAny();
+                // Any token transfer to immutable accounts 0.0.800 and 0.0.801 is not valid.
+                if (reason == MISSING_ACCOUNT
+                        && autoCreationAllowed
+                        && isAlias(party)
+                        && !isSender) {
+                    return NONE;
+                } else {
+                    return reason;
+                }
             }
             final var meta = result.metadata();
-            final var isSender = counterparty == null;
             final var isUnapprovedTransfer = isSender && !isApproval;
             final var isGatedReceipt = !isSender && meta.receiverSigRequired();
 

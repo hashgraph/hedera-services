@@ -35,20 +35,7 @@ import com.hedera.services.state.submerkle.*;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
@@ -492,5 +479,42 @@ public class TxnUtils {
                                                                                 .getReceiverAccountID()))
                                                 .toList()))
                 .toList();
+    }
+
+    public static TransactionBody ethereumTransactionOp() {
+        final var op =
+                EthereumTransactionBody.newBuilder()
+                        .setEthereumData(
+                                ByteString.copyFrom(
+                                        com.swirlds.common.utility.CommonUtils.unhex(
+                                                "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792")))
+                        .build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(
+                        TransactionID.newBuilder()
+                                .setTransactionValidStart(
+                                        Timestamp.newBuilder().setSeconds(1_234_567L)))
+                .setEthereumTransaction(op)
+                .build();
+    }
+
+    public static Transaction buildTransactionFrom(final TransactionBody transactionBody) {
+        return buildTransactionFrom(signedTransactionFrom(transactionBody).toByteString());
+    }
+
+    public static Transaction buildTransactionFrom(final ByteString signedTransactionBytes) {
+        return Transaction.newBuilder().setSignedTransactionBytes(signedTransactionBytes).build();
+    }
+
+    private static SignedTransaction signedTransactionFrom(final TransactionBody txnBody) {
+        return signedTransactionFrom(txnBody, SignatureMap.getDefaultInstance());
+    }
+
+    public static SignedTransaction signedTransactionFrom(
+            final TransactionBody txnBody, final SignatureMap sigMap) {
+        return SignedTransaction.newBuilder()
+                .setBodyBytes(txnBody.toByteString())
+                .setSigMap(sigMap)
+                .build();
     }
 }

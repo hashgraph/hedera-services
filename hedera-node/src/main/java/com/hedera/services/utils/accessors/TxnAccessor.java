@@ -16,6 +16,7 @@
 package com.hedera.services.utils.accessors;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -118,7 +119,10 @@ public interface TxnAccessor {
 
     boolean areAutoCreationsCounted();
 
-    void countAutoCreationsWith(AliasManager aliasManager);
+    void countAutoCreationsWith(final AliasManager aliasManager);
+
+    // Used only for EthereumTransaction
+    EthTxData opEthTxData();
 
     // Used only for SubmitMessage
     SubmitMessageMeta availSubmitUsageMeta();

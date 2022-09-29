@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 plugins {
-    id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.conventions")
 }
 
 description = "Hedera Services API Utilities"
@@ -30,6 +30,8 @@ dependencies {
     implementation(libs.jetbrains.annotation)
     implementation(libs.headlong)
     implementation(libs.besu.secp256k1)
+    implementation(libs.commons.codec)
+    implementation(libs.jna)
 
     testImplementation(testLibs.bundles.testing)
     itestImplementation(libs.hapi)

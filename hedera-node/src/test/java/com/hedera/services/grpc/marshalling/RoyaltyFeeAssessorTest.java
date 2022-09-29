@@ -16,6 +16,7 @@
 package com.hedera.services.grpc.marshalling;
 
 import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -25,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -32,6 +34,7 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import java.util.ArrayList;
 import java.util.List;
@@ -136,6 +139,25 @@ class RoyaltyFeeAssessorTest {
     }
 
     @Test
+    void failsIfFallbackNftTransferredToUnknownAlias() {
+        // setup:
+        final var denom = new EntityId(1, 2, 3);
+        final var fallback = new FixedFeeSpec(33, denom);
+        final List<FcCustomFee> fees =
+                List.of(
+                        FcCustomFee.fixedFee(1, null, otherCollector),
+                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+
+        // when:
+        final var result =
+                subject.assessAllRoyalties(
+                        triggerWithAliasTransfer, fees, changeManager, accumulator);
+
+        // then:
+        assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
+    }
+
+    @Test
     void skipsIfRoyaltyAlreadyPaid() {
         // setup:
         final List<FcCustomFee> fees =
@@ -235,6 +257,8 @@ class RoyaltyFeeAssessorTest {
     private final EntityId targetCollector = new EntityId(9, 8, 7);
     private final Id funding = new Id(0, 0, 98);
     private final Id firstFungibleTokenId = new Id(1, 2, 3);
+    private final AccountID alias =
+            asAliasAccount(ByteString.copyFromUtf8("01234567890123456789012345678901"));
     private final AccountAmount payerCredit =
             AccountAmount.newBuilder()
                     .setAccountID(payer.asGrpcAccount())
@@ -253,12 +277,25 @@ class RoyaltyFeeAssessorTest {
                     .setSenderAccountID(payer.asGrpcAccount())
                     .setReceiverAccountID(funding.asGrpcAccount())
                     .build();
+
+    private final NftTransfer ownershipChangeWithAlias =
+            NftTransfer.newBuilder()
+                    .setSenderAccountID(payer.asGrpcAccount())
+                    .setReceiverAccountID(alias)
+                    .build();
     private final Id nonFungibleTokenId = new Id(7, 4, 7);
     private final BalanceChange trigger =
             BalanceChange.changingNftOwnership(
                     nonFungibleTokenId,
                     nonFungibleTokenId.asGrpcToken(),
                     ownershipChange,
+                    payer.asGrpcAccount());
+
+    private final BalanceChange triggerWithAliasTransfer =
+            BalanceChange.changingNftOwnership(
+                    nonFungibleTokenId,
+                    nonFungibleTokenId.asGrpcToken(),
+                    ownershipChangeWithAlias,
                     payer.asGrpcAccount());
     private final long[] effPayerNum = new long[] {payer.num()};
     private final FcAssessedCustomFee hbarAssessed =

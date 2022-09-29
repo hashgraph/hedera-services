@@ -57,9 +57,11 @@ class TokenOpsValidatorTest {
 
     @Test
     void tokenMintFailsWithInvalidTokenCounts() {
-        assertEquals(INVALID_TOKEN_MINT_AMOUNT, forMintWith(0, 0, true));
+        assertEquals(OK, forMintWith(0, 0, true));
 
         assertEquals(INVALID_TRANSACTION_BODY, forMintWith(1, 1, true));
+        assertEquals(INVALID_TOKEN_MINT_AMOUNT, forMintWith(1, -1, true));
+        assertEquals(INVALID_TOKEN_MINT_AMOUNT, forMintWith(0, -1, true));
     }
 
     @Test

@@ -210,30 +210,24 @@ public class SyntheticTxnFactory {
     public TransactionBody.Builder synthContractAutoRemove(final EntityNum contractNum) {
         final var op =
                 ContractDeleteTransactionBody.newBuilder()
+                        .setPermanentRemoval(true)
                         .setContractID(contractNum.toGrpcContractID());
-        return TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder().setAccountID(contractNum.toGrpcAccountId()))
-                .setContractDeleteInstance(op);
+        return TransactionBody.newBuilder().setContractDeleteInstance(op);
     }
 
     public TransactionBody.Builder synthAccountAutoRemove(final EntityNum accountNum) {
         final var grpcId = accountNum.toGrpcAccountId();
         final var op = CryptoDeleteTransactionBody.newBuilder().setDeleteAccountID(grpcId);
-        return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(grpcId))
-                .setCryptoDelete(op);
+        return TransactionBody.newBuilder().setCryptoDelete(op);
     }
 
     public TransactionBody.Builder synthContractAutoRenew(
-            final EntityNum contractNum, final long newExpiry, final AccountID payerForExpiry) {
+            final EntityNum contractNum, final long newExpiry) {
         final var op =
                 ContractUpdateTransactionBody.newBuilder()
                         .setContractID(contractNum.toGrpcContractID())
                         .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
-        return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(payerForExpiry))
-                .setContractUpdateInstance(op);
+        return TransactionBody.newBuilder().setContractUpdateInstance(op);
     }
 
     public TransactionBody.Builder synthAccountAutoRenew(
@@ -312,14 +306,14 @@ public class SyntheticTxnFactory {
                     TokenAllowance.newBuilder()
                             .setTokenId(approveWrapper.tokenId())
                             .setSpender(approveWrapper.spender())
-                            .setAmount(approveWrapper.amount().longValue())
+                            .setAmount(approveWrapper.amount().longValueExact())
                             .build());
         } else {
             final var op =
                     NftAllowance.newBuilder()
                             .setTokenId(approveWrapper.tokenId())
                             .setSpender(approveWrapper.spender())
-                            .addSerialNumbers(approveWrapper.serialNumber().longValue());
+                            .addSerialNumbers(approveWrapper.serialNumber().longValueExact());
             if (ownerId != null) {
                 op.setOwner(ownerId.toGrpcAccountId());
                 if (!ownerId.equals(operatorId)) {
@@ -340,7 +334,10 @@ public class SyntheticTxnFactory {
                                         .setOwner(owner.toGrpcAccountId())
                                         .setTokenId(approveWrapper.tokenId())
                                         .addAllSerialNumbers(
-                                                List.of(approveWrapper.serialNumber().longValue()))
+                                                List.of(
+                                                        approveWrapper
+                                                                .serialNumber()
+                                                                .longValueExact()))
                                         .build()))
                 .build();
         return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
@@ -427,7 +424,7 @@ public class SyntheticTxnFactory {
                         ? TokenSupplyType.FINITE
                         : TokenSupplyType.INFINITE);
         txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
-        txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValue());
+        txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValueExact());
         if (tokenCreateWrapper.getTreasury() != null)
             txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
         txnBodyBuilder.setFreezeDefault(tokenCreateWrapper.isFreezeDefault());
@@ -476,16 +473,24 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
     }
 
-    public TransactionBody.Builder createAccount(final Key alias, final long balance) {
-        final var txnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(alias)
-                        .setMemo(AUTO_MEMO)
-                        .setInitialBalance(balance)
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
-                        .build();
-        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
+    public TransactionBody.Builder createAccount(
+            final Key alias, final long balance, final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(alias, balance);
+
+        if (maxAutoAssociations > 0) {
+            baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
+        }
+
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    private CryptoCreateTransactionBody.Builder createAccountBase(
+            final Key alias, final long balance) {
+        return CryptoCreateTransactionBody.newBuilder()
+                .setKey(alias)
+                .setMemo(AUTO_MEMO)
+                .setInitialBalance(balance)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
     }
 
     public TransactionBody.Builder nodeStakeUpdate(

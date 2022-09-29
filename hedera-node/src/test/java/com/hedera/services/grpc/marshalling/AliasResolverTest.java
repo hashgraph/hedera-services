@@ -16,6 +16,7 @@
 package com.hedera.services.grpc.marshalling;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,7 +51,7 @@ class AliasResolverTest {
     private AliasResolver subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AliasResolver();
     }
 
@@ -76,11 +77,31 @@ class AliasResolverTest {
                                                         .build())
                                         .addNftTransfers(
                                                 NftTransfer.newBuilder()
-                                                        .setSenderAccountID(
+                                                        .setSenderAccountID(bNum.toGrpcAccountId())
+                                                        .setReceiverAccountID(
                                                                 AccountID.newBuilder()
                                                                         .setAlias(otherAlias))
+                                                        .setSerialNumber(2L)
+                                                        .build())
+                                        .addNftTransfers(
+                                                NftTransfer.newBuilder()
+                                                        .setSenderAccountID(
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(anAlias))
                                                         .setReceiverAccountID(
-                                                                bNum.toGrpcAccountId())
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(someAlias))
+                                                        .setSerialNumber(2L)
+                                                        .build())
+                                        .addNftTransfers(
+                                                NftTransfer.newBuilder()
+                                                        .setSenderAccountID(
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(anAlias))
+                                                        .setReceiverAccountID(
+                                                                AccountID.newBuilder()
+                                                                        .setAlias(
+                                                                                anotherValidAlias))
                                                         .setSerialNumber(2L)
                                                         .build()))
                         .build();
@@ -89,12 +110,23 @@ class AliasResolverTest {
         given(aliasManager.lookupIdBy(anAlias)).willReturn(aNum);
         given(aliasManager.lookupIdBy(someAlias)).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(otherAlias)).willReturn(MISSING_NUM);
+        given(aliasManager.lookupIdBy(anotherValidAlias)).willReturn(MISSING_NUM);
 
         final var resolvedOp = subject.resolve(op, aliasManager);
 
-        assertEquals(2, subject.perceivedMissingAliases());
+        assertEquals(1, subject.perceivedMissingAliases());
+        assertEquals(1, subject.perceivedInvalidCreations());
+        assertEquals(1, subject.perceivedAutoCreations());
         assertEquals(
-                Map.of(anAlias, aNum, someAlias, MISSING_NUM, otherAlias, MISSING_NUM),
+                Map.of(
+                        anAlias,
+                        aNum,
+                        someAlias,
+                        MISSING_NUM,
+                        otherAlias,
+                        MISSING_NUM,
+                        anotherValidAlias,
+                        MISSING_NUM),
                 subject.resolutions());
         final var tokensAdjusts = resolvedOp.getTokenTransfers(0);
         assertEquals(someToken, tokensAdjusts.getToken());
@@ -104,6 +136,7 @@ class AliasResolverTest {
         assertEquals(aNum.toGrpcAccountId(), ownershipChange.getSenderAccountID());
         assertEquals(bNum.toGrpcAccountId(), ownershipChange.getReceiverAccountID());
         assertEquals(1L, ownershipChange.getSerialNumber());
+        assertEquals(Map.of(anAlias, aNum, someAlias, MISSING_NUM), subject.tokenResolutions());
     }
 
     @Test
@@ -227,6 +260,56 @@ class AliasResolverTest {
         assertFalse(AliasResolver.usesAliases(CryptoTransferTransactionBody.getDefaultInstance()));
     }
 
+    @Test
+    void allowsAliasesInTokens() {
+        var op =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(someToken)
+                                        .addNftTransfers(
+                                                NftTransfer.newBuilder()
+                                                        .setSenderAccountID(
+                                                                asAliasAccount(someAlias))
+                                                        .setReceiverAccountID(
+                                                                asAliasAccount(create2Alias))
+                                                        .setSerialNumber(1L)))
+                        .build();
+        assertTrue(AliasResolver.usesAliases(op));
+
+        op =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(someToken)
+                                        .addTransfers(aaAlias(someAlias, 10L))
+                                        .addTransfers(aaAlias(anotherValidAlias, -10L))
+                                        .build())
+                        .build();
+        assertTrue(AliasResolver.usesAliases(op));
+    }
+
+    @Test
+    void doesntAllowRepeatedAliasesInSingleTokenTransferList() {
+        final var op =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(someToken)
+                                        .addTransfers(aaAlias(anAlias, 10L))
+                                        .addTransfers(aaAlias(anotherValidAlias, -10L))
+                                        .addTransfers(aaAlias(anAlias, 20L))
+                                        .addTransfers(aaAlias(anotherValidAlias, -20L))
+                                        .build())
+                        .build();
+        given(aliasManager.lookupIdBy(anotherValidAlias)).willReturn(aNum);
+        given(aliasManager.lookupIdBy(anAlias)).willReturn(MISSING_NUM);
+        final var body = subject.resolve(op, aliasManager);
+
+        assertEquals(1, subject.perceivedInvalidCreations());
+        assertTrue(AliasResolver.usesAliases(body));
+    }
+
     private AccountAmount aaAlias(final ByteString alias, final long amount) {
         return AccountAmount.newBuilder()
                 .setAmount(amount)
@@ -245,6 +328,10 @@ class AliasResolverTest {
             Key.newBuilder()
                     .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
                     .build();
+    private static final Key anotherPrimitiveKey =
+            Key.newBuilder()
+                    .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678911"))
+                    .build();
     private static final long anAmount = 1234;
     private static final long theAmount = 12345;
     private static final long someAmount = -1234;
@@ -255,6 +342,7 @@ class AliasResolverTest {
     private static final EntityNum mirrorNum =
             EntityNum.fromLong(Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20)));
     private static final ByteString anAlias = aPrimitiveKey.toByteString();
+    private static final ByteString anotherValidAlias = anotherPrimitiveKey.toByteString();
     private static final ByteString theAlias = ByteString.copyFromUtf8("second");
     private static final ByteString someAlias = ByteString.copyFromUtf8("third");
     private static final ByteString otherAlias = ByteString.copyFromUtf8("fourth");

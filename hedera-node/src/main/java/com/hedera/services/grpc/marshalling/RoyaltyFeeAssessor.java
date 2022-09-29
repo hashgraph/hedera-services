@@ -71,6 +71,12 @@ public class RoyaltyFeeAssessor {
             if (exchangedValue.isEmpty()) {
                 final var fallback = spec.fallbackFee();
                 if (fallback != null) {
+                    // A NFT transfer with royalty fees to an unknown alias is not possible, since
+                    // the auto-created
+                    // account will not have any hbar to pay the fallback fee
+                    if (change.hasNonEmptyCounterPartyAlias()) {
+                        return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+                    }
                     final var receiver = Id.fromGrpcAccount(change.counterPartyAccountId());
                     final var fallbackFee =
                             FcCustomFee.fixedFee(

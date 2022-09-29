@@ -1,3 +1,4 @@
+import net.swiftzer.semver.SemVer
 import java.io.BufferedOutputStream
 
 /*
@@ -19,6 +20,7 @@ import java.io.BufferedOutputStream
 plugins {
     `java-platform`
     id("org.sonarqube")
+    id("lazy.zoo.gradle.git-data-plugin")
 }
 
 //  Configure the Sonarqube extension for SonarCloud reporting. These properties should not be changed so no need to
@@ -51,6 +53,7 @@ sonarqube {
 }
 
 tasks.create("githubVersionSummary") {
+    group = "github"
     doLast {
         val ghStepSummaryPath: String? = System.getenv("GITHUB_STEP_SUMMARY")
         if (ghStepSummaryPath == null) {
@@ -62,3 +65,50 @@ tasks.create("githubVersionSummary") {
     }
 }
 
+tasks.create("showVersion") {
+    group = "versioning"
+    doLast {
+        println(project.version)
+    }
+}
+
+tasks.create("versionAsPrefixedCommit") {
+    group = "versioning"
+    doLast {
+        gitData.lastCommitHash?.let {
+            val prefix = findProperty("commitPrefix")?.toString() ?: "adhoc"
+            val newPrerel = prefix + ".x" + it.take(8)
+            val currVer = SemVer.parse(rootProject.version.toString())
+            try {
+                val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
+                Utils.updateVersion(rootProject, newVer)
+            } catch (e: java.lang.IllegalArgumentException) {
+                throw IllegalArgumentException(String.format("%s: %s", e.message, newPrerel), e)
+            }
+        }
+    }
+}
+
+tasks.create("versionAsSnapshot") {
+    group = "versioning"
+    doLast {
+        val currVer = SemVer.parse(rootProject.version.toString())
+        val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
+
+        Utils.updateVersion(rootProject, newVer)
+    }
+}
+
+tasks.create("versionAsSpecified") {
+    group = "versioning"
+    doLast {
+        val verStr = findProperty("newVersion")?.toString()
+
+        if (verStr == null) {
+            throw IllegalArgumentException("No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task.")
+        }
+
+        val newVer = SemVer.parse(verStr)
+        Utils.updateVersion(rootProject, newVer)
+    }
+}

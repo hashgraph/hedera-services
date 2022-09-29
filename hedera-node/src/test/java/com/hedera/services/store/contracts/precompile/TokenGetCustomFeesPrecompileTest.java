@@ -26,7 +26,9 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
+import static com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -47,9 +49,9 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
+import com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -64,6 +66,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -85,7 +88,6 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
@@ -104,8 +106,16 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private FeeObject mockFeeObject;
     @Mock private AccessorFactory accessorFactory;
 
+    private static final Bytes GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
+            Bytes.fromHexString(
+                    "0xae7611a000000000000000000000000000000000000000000000000000000000000003ee");
+
+    private static final Bytes GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
+            Bytes.fromHexString(
+                    "0xae7611a000000000000000000000000000000000000000000000000000000000000003f6");
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
+    private MockedStatic<TokenGetCustomFeesPrecompile> tokenGetCustomFeesPrecompile;
 
     // Common token properties
     private final EntityId treasury = senderId;
@@ -132,7 +142,6 @@ class TokenGetCustomFeesPrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -141,19 +150,22 @@ class TokenGetCustomFeesPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        tokenGetCustomFeesPrecompile = Mockito.mockStatic(TokenGetCustomFeesPrecompile.class);
     }
 
     @AfterEach
     void closeMocks() {
         entityIdUtils.close();
+        tokenGetCustomFeesPrecompile.close();
     }
 
     @Test
     void getTokenCustomFeesWorks() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
         final var fractionalFee = getFractionalFee();
@@ -161,8 +173,9 @@ class TokenGetCustomFeesPrecompileTest {
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeTokenGetCustomFees(pretendArguments))
-                .willReturn(tokenCustomFeesWrapper);
+        tokenGetCustomFeesPrecompile
+                .when(() -> decodeTokenGetCustomFees(pretendArguments))
+                .thenReturn(tokenCustomFeesWrapper);
 
         given(stateView.tokenCustomFees(tokenMerkleId)).willReturn(List.of(fractionalFee));
         given(stateView.tokenExists(tokenMerkleId)).willReturn(true);
@@ -187,14 +200,18 @@ class TokenGetCustomFeesPrecompileTest {
     @Test
     void getTokenCustomFeesMissingTokenIdFails() {
         givenMinimalFrameContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        given(decoder.decodeTokenGetCustomFees(pretendArguments))
-                .willReturn(tokenCustomFeesWrapper);
+        tokenGetCustomFeesPrecompile
+                .when(() -> decodeTokenGetCustomFees(pretendArguments))
+                .thenReturn(tokenCustomFeesWrapper);
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -210,6 +227,40 @@ class TokenGetCustomFeesPrecompileTest {
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void decodeGetFungibleTokenCustomFeesInput() {
+        final var address = "0x00000000000000000000000000000000000003ee";
+        tokenGetCustomFeesPrecompile
+                .when(() -> decodeTokenGetCustomFees(GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT))
+                .thenCallRealMethod();
+        entityIdUtils
+                .when(
+                        () ->
+                                EntityIdUtils.tokenIdFromEvmAddress(
+                                        Address.fromHexString(address).toArray()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeTokenGetCustomFees(GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeGetNonFungibleTokenCustomFeesInput() {
+        final var address = "0x00000000000000000000000000000000000003f6";
+        tokenGetCustomFeesPrecompile
+                .when(() -> decodeTokenGetCustomFees(GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT))
+                .thenCallRealMethod();
+        entityIdUtils
+                .when(
+                        () ->
+                                EntityIdUtils.tokenIdFromEvmAddress(
+                                        Address.fromHexString(address).toArray()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeTokenGetCustomFees(GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
     }
 
     private void givenMinimalFrameContext() {

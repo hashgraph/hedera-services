@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 plugins {
-    id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.conventions")
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
@@ -39,8 +39,15 @@ dependencies {
             classifier("linux-x86_64")
         }
     )
+    implementation(libs.commons.codec)
+    implementation(libs.commons.io)
+    implementation(libs.commons.collections4)
+    implementation(libs.eclipse.collections)
 
     testImplementation(testLibs.bundles.testing)
+    testImplementation(testLibs.classgraph)
+
+    jmhImplementation(libs.swirlds.common)
 
     runtimeOnly(libs.bundles.netty)
 }

@@ -66,7 +66,7 @@ class GetFileInfoResourceUsageTest {
     private GetFileInfoResourceUsage subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         fileOpsUsage = mock(FileOpsUsage.class);
         view = mock(StateView.class);
 

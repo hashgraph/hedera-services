@@ -48,8 +48,6 @@ class FeeAssessorTest {
     private final ImpliedTransfersMeta.ValidationProps props =
             new ImpliedTransfersMeta.ValidationProps(0, 0, 0, 1, 20, true, true, true);
 
-    @Mock private HtsFeeAssessor htsFeeAssessor;
-    @Mock private HbarFeeAssessor hbarFeeAssessor;
     @Mock private FixedFeeAssessor fixedFeeAssessor;
     @Mock private FractionalFeeAssessor fractionalFeeAssessor;
     @Mock private RoyaltyFeeAssessor royaltyFeeAssessor;

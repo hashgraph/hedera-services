@@ -15,7 +15,8 @@
  */
 package com.hedera.services.utils;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +26,14 @@ class NonAtomicReferenceTest {
         final NonAtomicReference<String> subject = new NonAtomicReference<>();
 
         assertNull(subject.get());
+        subject.set("HELLO");
+        assertEquals("HELLO", subject.get());
+    }
+
+    @Test
+    void constructorWithValueWorks() {
+        final NonAtomicReference<String> subject = new NonAtomicReference<>("hello");
+        assertEquals("hello", subject.get());
         subject.set("HELLO");
         assertEquals("HELLO", subject.get());
     }

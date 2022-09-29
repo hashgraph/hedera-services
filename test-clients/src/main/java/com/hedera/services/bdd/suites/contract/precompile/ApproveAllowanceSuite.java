@@ -17,7 +17,9 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -38,6 +40,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -67,6 +71,8 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
     private static final String ALLOWANCE_TX = "allowanceTxn";
     private static final String EXPORT_RECORD_RESULTS_FEATURE_FLAG =
             "contracts.precompile.exportRecordResults";
+    private static final String APPROVE_SIGNATURE = "Approval(address,address,uint256)";
+    private static final String APPROVE_FOR_ALL_SIGNATURE = "ApprovalForAll(address,address,bool)";
 
     public static void main(String... args) {
         new ApproveAllowanceSuite().runSuiteSync();
@@ -203,7 +209,46 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
-                        getTxnRecord(approveTxn).andAllChildRecords().logged());
+                        getTxnRecord(approveTxn).andAllChildRecords().logged(),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var sender =
+                                            spec.registry()
+                                                    .getContractId(HTS_APPROVE_ALLOWANCE_CONTRACT);
+                                    final var receiver = spec.registry().getAccountID(theSpender);
+                                    final var idOfToken =
+                                            "0.0."
+                                                    + (spec.registry()
+                                                            .getTokenID(FUNGIBLE_TOKEN)
+                                                            .getTokenNum());
+                                    var txnRecord =
+                                            getTxnRecord(approveTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCallResult(
+                                                                            resultWith()
+                                                                                    .logs(
+                                                                                            inOrder(
+                                                                                                    logWith()
+                                                                                                            .contract(
+                                                                                                                    idOfToken)
+                                                                                                            .withTopicsInOrder(
+                                                                                                                    List
+                                                                                                                            .of(
+                                                                                                                                    eventSignatureOf(
+                                                                                                                                            APPROVE_SIGNATURE),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            sender
+                                                                                                                                                    .getContractNum()),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            receiver
+                                                                                                                                                    .getAccountNum())))
+                                                                                                            .longValue(
+                                                                                                                    10)))))
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, txnRecord);
+                                }));
     }
 
     private HapiApiSpec nftApprove() {
@@ -255,10 +300,46 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                         .gas(4_000_000L)
                                                         .via(approveTxn))))
                 .then(
-                        getTxnRecord(approveTxn).andAllChildRecords().logged(),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(theSpender),
-                        childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)));
+                        childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var sender = spec.registry().getAccountID(OWNER);
+                                    final var receiver = spec.registry().getAccountID(theSpender);
+                                    final var idOfToken =
+                                            "0.0."
+                                                    + (spec.registry()
+                                                            .getTokenID(NON_FUNGIBLE_TOKEN)
+                                                            .getTokenNum());
+                                    var txnRecord =
+                                            getTxnRecord(approveTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCallResult(
+                                                                            resultWith()
+                                                                                    .logs(
+                                                                                            inOrder(
+                                                                                                    logWith()
+                                                                                                            .contract(
+                                                                                                                    idOfToken)
+                                                                                                            .withTopicsInOrder(
+                                                                                                                    List
+                                                                                                                            .of(
+                                                                                                                                    eventSignatureOf(
+                                                                                                                                            APPROVE_SIGNATURE),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            sender
+                                                                                                                                                    .getAccountNum()),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            receiver
+                                                                                                                                                    .getAccountNum()),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            2L)))))))
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, txnRecord);
+                                }));
     }
 
     private HapiApiSpec nftIsApprovedForAll() {
@@ -514,6 +595,45 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(allowanceTxn, SUCCESS, recordWith().status(SUCCESS)),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var sender =
+                                            spec.registry()
+                                                    .getContractId(HTS_APPROVE_ALLOWANCE_CONTRACT);
+                                    final var receiver = spec.registry().getAccountID(theSpender);
+                                    final var idOfToken =
+                                            "0.0."
+                                                    + (spec.registry()
+                                                            .getTokenID(NON_FUNGIBLE_TOKEN)
+                                                            .getTokenNum());
+                                    var txnRecord =
+                                            getTxnRecord(allowanceTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCallResult(
+                                                                            resultWith()
+                                                                                    .logs(
+                                                                                            inOrder(
+                                                                                                    logWith()
+                                                                                                            .contract(
+                                                                                                                    idOfToken)
+                                                                                                            .withTopicsInOrder(
+                                                                                                                    List
+                                                                                                                            .of(
+                                                                                                                                    eventSignatureOf(
+                                                                                                                                            APPROVE_FOR_ALL_SIGNATURE),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            sender
+                                                                                                                                                    .getContractNum()),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            receiver
+                                                                                                                                                    .getAccountNum())))
+                                                                                                            .booleanValue(
+                                                                                                                    true)))))
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, txnRecord);
+                                }),
                         UtilVerbs.resetToDefault(EXPORT_RECORD_RESULTS_FEATURE_FLAG));
     }
 }

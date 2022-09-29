@@ -261,6 +261,9 @@ public class ContractHTSSuite extends HapiApiSuite {
                         contractCall(theContract, "depositTokens", 50)
                                 .gas(GAS_TO_OFFER)
                                 .via("zeno"),
+                        contractCall(theContract, "depositTokens", 0)
+                                .gas(GAS_TO_OFFER)
+                                .via("zeroTransfers"),
                         contractCall(theContract, "withdrawTokens")
                                 .payingWith(RECEIVER)
                                 .alsoSigningWithFullPrefix(theContract)

@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 import gradle.kotlin.dsl.accessors._de3ff27eccbd9efdc5c099f60a1d8f4c.check
-import net.swiftzer.semver.SemVer
 import java.text.SimpleDateFormat
 import java.util.*
 
 plugins {
     `java-library`
-    `maven-publish`
     jacoco
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-java-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
-    id("lazy.zoo.gradle.git-data-plugin")
 }
 
 group = "com.hedera.hashgraph"
@@ -41,7 +38,6 @@ java {
 
 // Define the repositories from which we will pull dependencies
 repositories {
-    mavenLocal()
     maven {
         url = uri("https://repo.maven.apache.org/maven2/")
     }
@@ -74,13 +70,6 @@ repositories {
     }
 }
 
-// Enable maven publications
-publishing {
-    publications.create<MavenPublication>("maven") {
-        from(components["java"])
-    }
-}
-
 // Make sure we use UTF-8 encoding when compiling
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
@@ -88,6 +77,13 @@ tasks.withType<JavaCompile> {
 
 tasks.withType<Javadoc> {
     options.encoding = "UTF-8"
+}
+
+tasks.withType<Jar> {
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
 }
 
 testing {
@@ -202,54 +198,9 @@ tasks.check {
     dependsOn(tasks.named<JacocoReport>("jacocoTestReport"))
 }
 
-
-tasks.create("showVersion") {
-    doLast {
-        println(project.version)
+tasks.assemble {
+    dependsOn(tasks.testClasses)
+    if (tasks.findByName("jmhClasses") != null) {
+        dependsOn(tasks.named("jmhClasses"))
     }
-}
-
-tasks.create("versionAsPrefixedCommit") {
-    doLast {
-        gitData.lastCommitHash?.let {
-            val prefix = findProperty("commitPrefix")?.toString() ?: "adhoc"
-            val newPrerel = prefix + ".x" + it.take(8)
-            val currVer = SemVer.parse(rootProject.version.toString())
-            try {
-                val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
-                Utils.updateVersion(rootProject, newVer)
-            } catch (e: java.lang.IllegalArgumentException) {
-                throw IllegalArgumentException(String.format("%s: %s", e.message, newPrerel), e)
-            }
-        }
-    }
-}
-
-tasks.create("versionAsSnapshot") {
-    doLast {
-        val currVer = SemVer.parse(rootProject.version.toString())
-        val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
-
-        Utils.updateVersion(rootProject, newVer)
-    }
-}
-
-tasks.create("versionAsSpecified") {
-    doLast {
-        val verStr = findProperty("newVersion")?.toString()
-
-        if (verStr == null) {
-            throw IllegalArgumentException("No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task.")
-        }
-
-        val newVer = SemVer.parse(verStr)
-        Utils.updateVersion(rootProject, newVer)
-    }
-}
-
-tasks.withType<Jar> {
-    isReproducibleFileOrder = true
-    isPreserveFileTimestamps = false
-    fileMode = 664
-    dirMode = 775
 }

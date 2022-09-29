@@ -74,7 +74,7 @@ class CallLocalExecutorTest {
     @Mock private EntityAccess entityAccess;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         query = localCallQuery(contractID.asGrpcContract(), ANSWER_ONLY);
     }
 

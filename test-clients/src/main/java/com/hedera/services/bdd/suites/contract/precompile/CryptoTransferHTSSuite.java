@@ -16,18 +16,23 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
@@ -46,10 +51,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -60,6 +71,8 @@ import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -84,6 +97,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String DELEGATE_KEY = "contractKey";
     private static final String CONTRACT = "CryptoTransfer";
     private static final String MULTI_KEY = "purpose";
+    private static final String HTS_TRANSFER_FROM_CONTRACT = "HtsTransferFrom";
+    private static final String OWNER = "Owner";
 
     public static void main(String... args) {
         new CryptoTransferHTSSuite().runSuiteAsync();
@@ -105,8 +120,423 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                     nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
                     nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
                     repeatedTokenIdsAreAutomaticallyConsolidated(),
-                    activeContractInFrameIsVerifiedWithoutNeedForSignature()
+                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
+                    hapiTransferFromForFungibleToken(),
+                    hapiTransferFromForNFT()
                 });
+    }
+
+    private HapiApiSpec hapiTransferFromForFungibleToken() {
+        final var theSpender = "spender";
+        final var allowance = 10L;
+        final var successfulTransferFromTxn = "txn";
+        final var successfulTransferFromTxn2 = "txn2";
+        final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
+        final var revertingTransferFromTxn2 = "revertingTxn";
+        final var htsTransferFrom = "htsTransferFrom";
+        return defaultHapiSpec("hapiTransferFromForFungibleToken")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(5),
+                        cryptoCreate(theSpender).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(10L)
+                                .maxSupply(1000L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(OWNER),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addTokenAllowance(
+                                        OWNER,
+                                        FUNGIBLE_TOKEN,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        allowance)
+                                .via("baseApproveTxn")
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .fee(ONE_HBAR),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(
+                                        accountWith()
+                                                .tokenAllowancesContaining(
+                                                        FUNGIBLE_TOKEN,
+                                                        HTS_TRANSFER_FROM_CONTRACT,
+                                                        allowance)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                // trying to transfer more than allowance should
+                                                // revert
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                htsTransferFrom,
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        FUNGIBLE_TOKEN)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        OWNER)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        RECEIVER)),
+                                                                allowance + 1)
+                                                        .via(revertingTransferFromTxn)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                // transfer allowance/2 amount
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                htsTransferFrom,
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        FUNGIBLE_TOKEN)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        OWNER)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        RECEIVER)),
+                                                                allowance / 2)
+                                                        .via(successfulTransferFromTxn)
+                                                        .hasKnownStatus(SUCCESS),
+                                                // transfer the rest of the allowance
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                htsTransferFrom,
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        FUNGIBLE_TOKEN)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        OWNER)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        RECEIVER)),
+                                                                allowance / 2)
+                                                        .via(successfulTransferFromTxn2)
+                                                        .hasKnownStatus(SUCCESS),
+                                                getAccountDetails(OWNER)
+                                                        .payingWith(GENESIS)
+                                                        .has(accountWith().noAllowances()),
+                                                // no allowance left, should fail
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                htsTransferFrom,
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        FUNGIBLE_TOKEN)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        OWNER)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        RECEIVER)),
+                                                                1)
+                                                        .via(revertingTransferFromTxn2)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                revertingTransferFromTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(AMOUNT_EXCEEDS_ALLOWANCE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .HAPI_TRANSFER_FROM)
+                                                                        .withStatus(
+                                                                                AMOUNT_EXCEEDS_ALLOWANCE)))),
+                        childRecordsCheck(
+                                successfulTransferFromTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .HAPI_TRANSFER_FROM)
+                                                                        .withStatus(SUCCESS)))),
+                        withOpContext(
+                                (spec, log) -> {
+                                    final var idOfToken =
+                                            "0.0."
+                                                    + (spec.registry()
+                                                            .getTokenID(FUNGIBLE_TOKEN)
+                                                            .getTokenNum());
+                                    var txnRecord =
+                                            getTxnRecord(successfulTransferFromTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCallResult(
+                                                                            resultWith()
+                                                                                    .logs(
+                                                                                            inOrder(
+                                                                                                    logWith()
+                                                                                                            .contract(
+                                                                                                                    idOfToken)
+                                                                                                            .withTopicsInOrder(
+                                                                                                                    List
+                                                                                                                            .of(
+                                                                                                                                    eventSignatureOf(
+                                                                                                                                            TRANSFER_SIGNATURE),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            spec.registry()
+                                                                                                                                                    .getAccountID(
+                                                                                                                                                            OWNER)
+                                                                                                                                                    .getAccountNum()),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            spec.registry()
+                                                                                                                                                    .getAccountID(
+                                                                                                                                                            RECEIVER)
+                                                                                                                                                    .getAccountNum())))
+                                                                                                            .longValue(
+                                                                                                                    allowance
+                                                                                                                            / 2)))))
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, txnRecord);
+                                }),
+                        childRecordsCheck(
+                                successfulTransferFromTxn2,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .HAPI_TRANSFER_FROM)
+                                                                        .withStatus(SUCCESS)))),
+                        withOpContext(
+                                (spec, log) -> {
+                                    final var idOfToken =
+                                            "0.0."
+                                                    + (spec.registry()
+                                                            .getTokenID(FUNGIBLE_TOKEN)
+                                                            .getTokenNum());
+                                    var txnRecord =
+                                            getTxnRecord(successfulTransferFromTxn2)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCallResult(
+                                                                            resultWith()
+                                                                                    .logs(
+                                                                                            inOrder(
+                                                                                                    logWith()
+                                                                                                            .contract(
+                                                                                                                    idOfToken)
+                                                                                                            .withTopicsInOrder(
+                                                                                                                    List
+                                                                                                                            .of(
+                                                                                                                                    eventSignatureOf(
+                                                                                                                                            TRANSFER_SIGNATURE),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            spec.registry()
+                                                                                                                                                    .getAccountID(
+                                                                                                                                                            OWNER)
+                                                                                                                                                    .getAccountNum()),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            spec.registry()
+                                                                                                                                                    .getAccountID(
+                                                                                                                                                            RECEIVER)
+                                                                                                                                                    .getAccountNum())))
+                                                                                                            .longValue(
+                                                                                                                    allowance
+                                                                                                                            / 2)))))
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, txnRecord);
+                                }),
+                        childRecordsCheck(
+                                revertingTransferFromTxn2,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .HAPI_TRANSFER_FROM)
+                                                                        .withStatus(
+                                                                                SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
+    }
+
+    private HapiApiSpec hapiTransferFromForNFT() {
+        final var theSpender = "spender";
+        final var successfulTransferFromTxn = "txn";
+        final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
+        final var htsTransferFromNFT = "htsTransferFromNFT";
+        return defaultHapiSpec("hapiTransferFromForNFT")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(5),
+                        cryptoCreate(theSpender).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
+                        tokenCreate(NFT_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        mintToken(
+                                NFT_TOKEN,
+                                List.of(
+                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
+                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(
+                                        OWNER,
+                                        NFT_TOKEN,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        false,
+                                        List.of(2L))
+                                .via("baseApproveTxn")
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .fee(ONE_HBAR))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                // trying to transfer NFT that is not approved
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                htsTransferFromNFT,
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        NFT_TOKEN)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        OWNER)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        RECEIVER)),
+                                                                1L)
+                                                        .via(revertingTransferFromTxn)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                // transfer allowed NFT
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                htsTransferFromNFT,
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        NFT_TOKEN)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        OWNER)),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        RECEIVER)),
+                                                                2L)
+                                                        .via(successfulTransferFromTxn)
+                                                        .hasKnownStatus(SUCCESS))))
+                .then(
+                        childRecordsCheck(
+                                revertingTransferFromTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .HAPI_TRANSFER_FROM_NFT)
+                                                                        .withStatus(
+                                                                                SPENDER_DOES_NOT_HAVE_ALLOWANCE)))),
+                        childRecordsCheck(
+                                successfulTransferFromTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .HAPI_TRANSFER_FROM_NFT)
+                                                                        .withStatus(SUCCESS)))),
+                        withOpContext(
+                                (spec, log) -> {
+                                    final var idOfToken =
+                                            "0.0."
+                                                    + (spec.registry()
+                                                            .getTokenID(NFT_TOKEN)
+                                                            .getTokenNum());
+                                    var txnRecord =
+                                            getTxnRecord(successfulTransferFromTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCallResult(
+                                                                            resultWith()
+                                                                                    .logs(
+                                                                                            inOrder(
+                                                                                                    logWith()
+                                                                                                            .contract(
+                                                                                                                    idOfToken)
+                                                                                                            .withTopicsInOrder(
+                                                                                                                    List
+                                                                                                                            .of(
+                                                                                                                                    eventSignatureOf(
+                                                                                                                                            TRANSFER_SIGNATURE),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            spec.registry()
+                                                                                                                                                    .getAccountID(
+                                                                                                                                                            OWNER)
+                                                                                                                                                    .getAccountNum()),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            spec.registry()
+                                                                                                                                                    .getAccountID(
+                                                                                                                                                            RECEIVER)
+                                                                                                                                                    .getAccountNum()),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            2L)))))))
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, txnRecord);
+                                }));
     }
 
     private HapiApiSpec repeatedTokenIdsAreAutomaticallyConsolidated() {

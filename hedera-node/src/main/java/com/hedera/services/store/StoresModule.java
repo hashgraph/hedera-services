@@ -16,11 +16,13 @@
 package com.hedera.services.store;
 
 import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -42,8 +44,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
@@ -81,13 +83,18 @@ public interface StoresModule {
     @Provides
     @Singleton
     static TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> provideNftsLedger(
+            final BootstrapProperties bootstrapProperties,
             final UsageLimits usageLimits,
             final UniqueTokensLinkManager uniqueTokensLinkManager,
-            final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens) {
+            final Supplier<UniqueTokenMapAdapter> uniqueTokens) {
+        final boolean isVirtual =
+                bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         final var uniqueTokensLedger =
                 new TransactionalLedger<>(
                         NftProperty.class,
-                        UniqueTokenAdapter::newEmptyMerkleToken,
+                        isVirtual
+                                ? UniqueTokenAdapter::newEmptyVirtualToken
+                                : UniqueTokenAdapter::newEmptyMerkleToken,
                         new BackingNfts(uniqueTokens),
                         new ChangeSummaryManager<>());
         final var uniqueTokensCommitInterceptor =

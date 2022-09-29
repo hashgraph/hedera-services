@@ -226,6 +226,8 @@ public class PropertyNames {
     public static final String HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION =
             "hedera.recordStream.compressFilesOnCreation";
 
+    public static final String TOKENS_AUTO_CREATIONS_ENABLED = "tokens.autoCreations.isEnabled";
+
     /* ---- Node properties ----- */
     public static final String DEV_ONLY_DEFAULT_NODE_LISTENS = "dev.onlyDefaultNodeListens";
     public static final String DEV_DEFAULT_LISTENING_NODE_ACCOUNT =

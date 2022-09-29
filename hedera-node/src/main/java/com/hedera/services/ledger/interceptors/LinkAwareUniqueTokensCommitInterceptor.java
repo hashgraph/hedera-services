@@ -61,15 +61,14 @@ public class LinkAwareUniqueTokensCommitInterceptor
                     if (!MISSING_ENTITY_ID.equals(fromAccount)) {
                         // Non-treasury-owned NFT wiped (or burned via a multi-stage contract
                         // operation)
-                        uniqueTokensLinkManager.updateLinks(
-                                fromAccount.asNum(), null, nftId.asEntityNumPair());
+                        uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), null, nftId);
                     }
                 } else if (changes.containsKey(OWNER)) {
                     final var toAccount = (EntityId) changes.get(OWNER);
                     if (!Objects.equals(fromAccount, toAccount)) {
                         // NFT owner changed (could be a treasury exit or return)
                         uniqueTokensLinkManager.updateLinks(
-                                fromAccount.asNum(), toAccount.asNum(), nftId.asEntityNumPair());
+                                fromAccount.asNum(), toAccount.asNum(), nftId);
                     }
                 }
             } else if (changes != null) {
@@ -77,10 +76,10 @@ public class LinkAwareUniqueTokensCommitInterceptor
                 final var newOwner = (EntityId) changes.get(OWNER);
                 if (!MISSING_ENTITY_ID.equals(newOwner)) {
                     // Non-treasury-owned NFT minted via a multi-stage contract operation
-                    final var nftKey = pendingChanges.id(i).asEntityNumPair();
+                    final var nftKey = pendingChanges.id(i);
                     final var mintedNft =
                             uniqueTokensLinkManager.updateLinks(null, newOwner.asNum(), nftKey);
-                    pendingChanges.cacheEntity(i, UniqueTokenAdapter.wrap(mintedNft));
+                    pendingChanges.cacheEntity(i, mintedNft);
                 }
             }
         }

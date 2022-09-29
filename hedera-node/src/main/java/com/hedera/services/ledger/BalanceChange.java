@@ -15,6 +15,7 @@
  */
 package com.hedera.services.ledger;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -23,11 +24,13 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -60,6 +63,7 @@ public class BalanceChange {
     private TokenID tokenId = null;
     private AccountID accountId;
     private AccountID counterPartyAccountId = null;
+    private ByteString counterPartyAlias;
     private ResponseCodeEnum codeForInsufficientBalance;
     private ByteString alias;
     private int expectedDecimals = -1;
@@ -183,16 +187,22 @@ public class BalanceChange {
         this.nftId = new NftId(token.shard(), token.realm(), token.num(), serialNo);
         this.accountId = sender;
         this.counterPartyAccountId = receiver;
+        this.counterPartyAlias = receiver.getAlias();
         this.account = Id.fromGrpcAccount(accountId);
         this.alias = accountId.getAlias();
         this.codeForInsufficientBalance = code;
         this.aggregatedUnits = serialNo;
     }
 
-    public void replaceAliasWith(final AccountID createdId) {
-        accountId = createdId;
-        account = Id.fromGrpcAccount(createdId);
-        alias = ByteString.EMPTY;
+    public void replaceNonEmptyAliasWith(final EntityNum createdId) {
+        if (isAlias(accountId)) {
+            accountId = createdId.toGrpcAccountId();
+            account = Id.fromGrpcAccount(accountId);
+            alias = ByteString.EMPTY;
+        } else if (hasNonEmptyCounterPartyAlias()) {
+            counterPartyAccountId = createdId.toGrpcAccountId();
+            counterPartyAlias = ByteString.EMPTY;
+        }
     }
 
     public boolean isForHbar() {
@@ -205,6 +215,10 @@ public class BalanceChange {
 
     public boolean isForNft() {
         return token != null && counterPartyAccountId != null;
+    }
+
+    public boolean isForToken() {
+        return isForFungibleToken() || isForNft();
     }
 
     public NftId nftId() {
@@ -241,6 +255,10 @@ public class BalanceChange {
 
     public AccountID counterPartyAccountId() {
         return counterPartyAccountId;
+    }
+
+    public ByteString counterPartyAlias() {
+        return counterPartyAlias;
     }
 
     public Id getAccount() {
@@ -318,7 +336,7 @@ public class BalanceChange {
             return MoreObjects.toStringHelper(BalanceChange.class)
                     .add("token", token == null ? "ℏ" : token)
                     .add("account", account)
-                    .add("alias", alias.toStringUtf8())
+                    .add("alias", CommonUtils.hex(alias.toByteArray()))
                     .add("units", aggregatedUnits)
                     .add("expectedDecimals", expectedDecimals)
                     .toString();
@@ -328,6 +346,7 @@ public class BalanceChange {
                     .add("serialNo", aggregatedUnits)
                     .add("from", account)
                     .add("to", Id.fromGrpcAccount(counterPartyAccountId))
+                    .add("counterPartyAlias", CommonUtils.hex(counterPartyAlias.toByteArray()))
                     .toString();
         }
     }
@@ -344,7 +363,23 @@ public class BalanceChange {
         return exemptFromCustomFees;
     }
 
-    public boolean hasNonEmptyAlias() {
-        return accountId.getAccountNum() == 0 && !alias.isEmpty();
+    public boolean hasAlias() {
+        return isAlias(accountId) || hasNonEmptyCounterPartyAlias();
+    }
+
+    public boolean hasNonEmptyCounterPartyAlias() {
+        return counterPartyAccountId != null && isAlias(counterPartyAccountId);
+    }
+
+    /**
+     * Since a change can have either an unknown alias or a counterPartyAlias (but not both),
+     * returns any non-empty unknown alias in the change.
+     *
+     * @return non-empty alias
+     */
+    public ByteString getNonEmptyAliasIfPresent() {
+        if (isAlias(accountId)) return alias;
+        else if (hasNonEmptyCounterPartyAlias()) return counterPartyAlias;
+        else return null;
     }
 }

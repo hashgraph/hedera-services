@@ -18,11 +18,14 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -37,7 +40,6 @@ import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
@@ -77,33 +79,39 @@ public class InfrastructureFactory {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EncodingFacade encoder;
-    private final DecodingFacade decoder;
     private final OptionValidator validator;
     private final RecordsHistorian recordsHistorian;
     private final SigImpactHistorian sigImpactHistorian;
     private final DissociationFactory dissociationFactory;
     private final GlobalDynamicProperties dynamicProperties;
+    private final TransactionContext txnCtx;
+    private final AliasManager aliasManager;
+    private final FeeDistribution feeDistribution;
 
     @Inject
     public InfrastructureFactory(
             final UsageLimits usageLimits,
             final EntityIdSource ids,
             final EncodingFacade encoder,
-            final DecodingFacade decoder,
             final OptionValidator validator,
             final RecordsHistorian recordsHistorian,
             final SigImpactHistorian sigImpactHistorian,
             final DissociationFactory dissociationFactory,
-            final GlobalDynamicProperties dynamicProperties) {
+            final GlobalDynamicProperties dynamicProperties,
+            final TransactionContext txnCtx,
+            final AliasManager aliasManager,
+            final FeeDistribution feeDistribution) {
         this.ids = ids;
         this.encoder = encoder;
-        this.decoder = decoder;
         this.validator = validator;
         this.usageLimits = usageLimits;
         this.recordsHistorian = recordsHistorian;
         this.dynamicProperties = dynamicProperties;
         this.sigImpactHistorian = sigImpactHistorian;
         this.dissociationFactory = dissociationFactory;
+        this.txnCtx = txnCtx;
+        this.aliasManager = aliasManager;
+        this.feeDistribution = feeDistribution;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -193,15 +201,17 @@ public class InfrastructureFactory {
                 tokenRelsLedger,
                 tokenStore,
                 sideEffects,
-                dynamicProperties,
                 validator,
                 null,
-                recordsHistorian);
+                recordsHistorian,
+                txnCtx,
+                aliasManager,
+                feeDistribution);
     }
 
     public RedirectViewExecutor newRedirectExecutor(
             final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-        return new RedirectViewExecutor(input, frame, encoder, decoder, gasCalculator);
+        return new RedirectViewExecutor(input, frame, encoder, gasCalculator);
     }
 
     public ViewExecutor newViewExecutor(
@@ -210,7 +220,7 @@ public class InfrastructureFactory {
             final ViewGasCalculator gasCalculator,
             final StateView stateView,
             final WorldLedgers ledgers) {
-        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView, ledgers);
+        return new ViewExecutor(input, frame, encoder, gasCalculator, stateView, ledgers);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(

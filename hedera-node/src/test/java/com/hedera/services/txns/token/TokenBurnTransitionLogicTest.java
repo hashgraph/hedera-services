@@ -70,7 +70,7 @@ class TokenBurnTransitionLogicTest {
     private TokenBurnTransitionLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         burnLogic = new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
         subject = new TokenBurnTransitionLogic(txnCtx, burnLogic);
     }
@@ -118,11 +118,11 @@ class TokenBurnTransitionLogicTest {
     }
 
     @Test
-    void rejectsInvalidZeroAmount() {
+    void allowsZeroAmount() {
         givenInvalidZeroAmount();
 
         // expect:
-        assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
+        assertEquals(OK, subject.semanticCheck().apply(tokenBurnTxn));
     }
 
     @Test
@@ -142,13 +142,13 @@ class TokenBurnTransitionLogicTest {
     }
 
     @Test
-    void rejectsInvalidTxnBodyWithNoProps() {
+    void allowsTxnBodyWithNoProps() {
         tokenBurnTxn =
                 TransactionBody.newBuilder()
                         .setTokenBurn(TokenBurnTransactionBody.newBuilder().setToken(grpcId))
                         .build();
 
-        assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
+        assertEquals(OK, subject.semanticCheck().apply(tokenBurnTxn));
     }
 
     @Test

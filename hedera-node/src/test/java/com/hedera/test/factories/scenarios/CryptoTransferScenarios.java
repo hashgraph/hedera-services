@@ -21,12 +21,15 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
 import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND_ID;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.approvedTinyBarsFromTo;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAccountToAlias;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAliasToAlias;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 public enum CryptoTransferScenarios implements TxnHandlingScenario {
@@ -84,6 +87,78 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
+
+    CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoTransfer()
+                                    .nonPayerKts(DEFAULT_PAYER_KT)
+                                    .adjusting(DEFAULT_PAYER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+                                    .adjusting(STAKING_FUND, KNOWN_TOKEN_NO_SPECIAL_KEYS, 1_000)
+                                    .get()));
+        }
+    },
+    CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoTransfer()
+                                    .nonPayerKts(DEFAULT_PAYER_KT)
+                                    .changingOwner(
+                                            KNOWN_TOKEN_NFT,
+                                            asAliasAccount(
+                                                    ByteString.copyFromUtf8(
+                                                            CURRENTLY_UNUSED_ALIAS)),
+                                            FIRST_TOKEN_SENDER)
+                                    .get()));
+        }
+    },
+
+    CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoTransfer()
+                                    .nonPayerKts(DEFAULT_PAYER_KT)
+                                    .changingOwner(
+                                            KNOWN_TOKEN_NFT,
+                                            FIRST_TOKEN_SENDER,
+                                            asAliasAccount(
+                                                    ByteString.copyFromUtf8(
+                                                            CURRENTLY_UNUSED_ALIAS)))
+                                    .get()));
+        }
+    },
+
+    CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoTransfer()
+                                    .nonPayerKts(DEFAULT_PAYER_KT)
+                                    .changingOwner(
+                                            KNOWN_TOKEN_NFT,
+                                            STAKING_FUND,
+                                            asAliasAccount(
+                                                    ByteString.copyFromUtf8(
+                                                            CURRENTLY_UNUSED_ALIAS)))
+                                    .get()));
+        }
+    },
+
+    CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoTransfer()
+                                    .nonPayerKts(DEFAULT_PAYER_KT)
+                                    .changingOwner(
+                                            KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, STAKING_FUND)
+                                    .get()));
+        }
+    },
+
     CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(

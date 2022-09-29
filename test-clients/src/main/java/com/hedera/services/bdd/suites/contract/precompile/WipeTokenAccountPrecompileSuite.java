@@ -139,6 +139,15 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 10L)
                                                         .payingWith(ADMIN_ACCOUNT)
                                                         .via("wipeFungibleTxn")
+                                                        .gas(GAS_TO_OFFER),
+                                                contractCall(
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()),
+                                                                0L)
+                                                        .payingWith(ADMIN_ACCOUNT)
+                                                        .via("wipeFungibleTxnWithZeroAmount")
                                                         .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
@@ -174,6 +183,16 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(
                                                                                 INVALID_WIPING_AMOUNT)))),
+                        childRecordsCheck(
+                                "wipeFungibleTxnWithZeroAmount",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS)))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(990),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }

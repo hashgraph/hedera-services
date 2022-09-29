@@ -15,26 +15,41 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.WIPE_NFT;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
+    private static final Function WIPE_TOKEN_ACCOUNT_NFT_FUNCTION =
+            new Function("wipeTokenAccountNFT(address,address,int64[])", INT);
+    private static final Bytes WIPE_TOKEN_ACCOUNT_NFT_SELECTOR =
+            Bytes.wrap(WIPE_TOKEN_ACCOUNT_NFT_FUNCTION.selector());
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_NFT_DECODER =
+            TypeFactory.create("(bytes32,bytes32,int64[])");
+
     public WipeNonFungiblePrecompile(
             WorldLedgers ledgers,
-            DecodingFacade decoder,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
             SideEffectsTracker sideEffects,
@@ -43,7 +58,6 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
             PrecompilePricingUtils pricingUtils) {
         super(
                 ledgers,
-                decoder,
                 aliases,
                 sigsVerifier,
                 sideEffects,
@@ -54,7 +68,7 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        wipeOp = decoder.decodeWipeNFT(input, aliasResolver);
+        wipeOp = decodeWipeNFT(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createWipe(wipeOp);
         return transactionBody;
     }
@@ -64,5 +78,20 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
         Objects.requireNonNull(
                 wipeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(WIPE_NFT, consensusTime);
+    }
+
+    public static WipeWrapper decodeWipeNFT(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, WIPE_TOKEN_ACCOUNT_NFT_SELECTOR, WIPE_TOKEN_ACCOUNT_NFT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var serialNumbers = ((long[]) decodedArguments.get(2));
+
+        return WipeWrapper.forNonFungible(
+                tokenID, accountID, Arrays.stream(serialNumbers).boxed().toList());
     }
 }

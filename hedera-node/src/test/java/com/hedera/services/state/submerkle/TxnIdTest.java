@@ -43,6 +43,22 @@ class TxnIdTest {
     }
 
     @Test
+    void changesWork() {
+        final var newNonce = 666;
+        subject = scheduledSubject();
+        final var expectedNewNonce =
+                TxnId.fromGrpc(base().setScheduled(true).setNonce(newNonce).build());
+        final var expectedUnscheduledNewNonce =
+                TxnId.fromGrpc(base().setScheduled(false).setNonce(newNonce).build());
+
+        final var actualNewNonce = subject.withNonce(newNonce);
+        final var actualUnscheduledNewNonce = subject.unscheduledWithNonce(newNonce);
+
+        assertEquals(expectedNewNonce, actualNewNonce);
+        assertEquals(expectedUnscheduledNewNonce, actualUnscheduledNewNonce);
+    }
+
+    @Test
     void sameAndNullEqualsWork() {
         subject = scheduledSubject();
         final var same = subject;

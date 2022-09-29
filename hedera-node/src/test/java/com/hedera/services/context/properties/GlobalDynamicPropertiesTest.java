@@ -97,7 +97,8 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.requireMinStakeToReward());
         assertTrue(subject.isTraceabilityMigrationEnabled());
         assertFalse(subject.shouldCompressRecordFilesOnCreation());
-        assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
+        assertTrue(subject.areTokenAutoCreationsEnabled());
+        assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
     }
 
     @Test
@@ -246,7 +247,8 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isTraceabilityMigrationEnabled());
         assertTrue(subject.shouldItemizeStorageFees());
         assertTrue(subject.shouldCompressRecordFilesOnCreation());
-        assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
+        assertFalse(subject.areTokenAutoCreationsEnabled());
+        assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
     }
 
     @Test
@@ -500,8 +502,10 @@ class GlobalDynamicPropertiesTest {
                 .willReturn("0til100M,2000til450M");
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION))
                 .willReturn((i + 82) % 2 == 0);
-        given(properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION))
+        given(properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED))
                 .willReturn((i + 83) % 2 == 0);
+        given(properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION))
+                .willReturn((i + 84) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

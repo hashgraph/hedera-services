@@ -34,7 +34,7 @@ class FreezeControllerTest {
     FreezeController subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         txnResponseHelper = mock(TxnResponseHelper.class);
 
         subject = new FreezeController(txnResponseHelper);

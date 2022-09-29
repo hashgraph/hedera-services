@@ -15,6 +15,8 @@
  */
 package com.hedera.services.txns.token;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -56,7 +58,7 @@ class BurnLogicTest {
     private BurnLogic subject;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
         subject = new BurnLogic(validator, store, accountStore, dynamicProperties);
     }
 
@@ -102,6 +104,18 @@ class BurnLogicTest {
         verify(accountStore).commitAccount(any(Account.class));
     }
 
+    @Test
+    void precheckWorksForZeroFungibleAmount() {
+        givenValidTxnCtxWithZeroAmount();
+        assertEquals(OK, subject.validateSyntax(tokenBurnTxn));
+    }
+
+    @Test
+    void precheckWorksForNonZeroFungibleAmount() {
+        givenUniqueTxnCtxWithNoSerials();
+        assertEquals(OK, subject.validateSyntax(tokenBurnTxn));
+    }
+
     private void givenValidTxnCtx() {
         tokenBurnTxn =
                 TransactionBody.newBuilder()
@@ -109,6 +123,24 @@ class BurnLogicTest {
                                 TokenBurnTransactionBody.newBuilder()
                                         .setToken(grpcId)
                                         .setAmount(amount))
+                        .build();
+    }
+
+    private void givenValidTxnCtxWithZeroAmount() {
+        tokenBurnTxn =
+                TransactionBody.newBuilder()
+                        .setTokenBurn(
+                                TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(0))
+                        .build();
+    }
+
+    private void givenUniqueTxnCtxWithNoSerials() {
+        tokenBurnTxn =
+                TransactionBody.newBuilder()
+                        .setTokenBurn(
+                                TokenBurnTransactionBody.newBuilder()
+                                        .setToken(grpcId)
+                                        .addAllSerialNumbers(List.of()))
                         .build();
     }
 

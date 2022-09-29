@@ -24,7 +24,9 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenFreezeUnFreezeWrapper;
+import static com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile.decodeUnfreeze;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -55,8 +57,8 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.UnfreezeLogic;
@@ -81,10 +83,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -96,7 +101,6 @@ class UnfreezeTokenPrecompileTest {
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private DecodingFacade decoder;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
@@ -124,6 +128,7 @@ class UnfreezeTokenPrecompileTest {
     @Mock private AssetsLoader assetLoader;
 
     private HTSPrecompiledContract subject;
+    private MockedStatic<UnfreezeTokenPrecompile> unfreezeTokenPrecompile;
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
@@ -131,6 +136,9 @@ class UnfreezeTokenPrecompileTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    public static final Bytes UNFREEZE_INPUT =
+            Bytes.fromHexString(
+                    "0x52f9138700000000000000000000000000000000000000000000000000000000000005180000000000000000000000000000000000000000000000000000000000000516");
 
     @BeforeEach
     void setUp() throws IOException {
@@ -153,7 +161,6 @@ class UnfreezeTokenPrecompileTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -162,6 +169,12 @@ class UnfreezeTokenPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory);
+        unfreezeTokenPrecompile = Mockito.mockStatic(UnfreezeTokenPrecompile.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        unfreezeTokenPrecompile.close();
     }
 
     @Test
@@ -196,7 +209,9 @@ class UnfreezeTokenPrecompileTest {
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
                 .willReturn(DEFAULT_GAS_PRICE);
-        given(decoder.decodeUnfreeze(any(), any())).willReturn(tokenFreezeUnFreezeWrapper);
+        unfreezeTokenPrecompile
+                .when(() -> decodeUnfreeze(any(), any()))
+                .thenReturn(tokenFreezeUnFreezeWrapper);
         given(syntheticTxnFactory.createUnFreeze(tokenFreezeUnFreezeWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -208,6 +223,16 @@ class UnfreezeTokenPrecompileTest {
         final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
+    }
+
+    @Test
+    void decodeTokenUnFreezeWithValidInput() {
+        unfreezeTokenPrecompile
+                .when(() -> decodeUnfreeze(UNFREEZE_INPUT, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeUnfreeze(UNFREEZE_INPUT, identity());
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1304).build(), decodedInput.token());
     }
 
     private void givenMinimalFrameContext() {
@@ -240,7 +265,9 @@ class UnfreezeTokenPrecompileTest {
         given(infrastructureFactory.newUnfreezeLogic(accountStore, tokenStore))
                 .willReturn(unFreezeLogic);
         given(unFreezeLogic.validate(any())).willReturn(OK);
-        given(decoder.decodeUnfreeze(any(), any())).willReturn(tokenFreezeUnFreezeWrapper);
+        unfreezeTokenPrecompile
+                .when(() -> decodeUnfreeze(any(), any()))
+                .thenReturn(tokenFreezeUnFreezeWrapper);
         given(syntheticTxnFactory.createUnFreeze(tokenFreezeUnFreezeWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
