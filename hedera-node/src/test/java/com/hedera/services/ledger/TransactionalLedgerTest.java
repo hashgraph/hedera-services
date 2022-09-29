@@ -99,7 +99,6 @@ class TransactionalLedgerTest {
     @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
     @Mock private PropertyChangeObserver<Long, TestAccountProperty> propertyChangeObserver;
     @Mock private CommitInterceptor<Long, TestAccount, TestAccountProperty> testInterceptor;
-
     private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> testLedger;
     private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;

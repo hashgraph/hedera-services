@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -73,7 +74,7 @@ public class AutoAssocAsserts {
 
                             final var expectedPair =
                                     Pair.of(
-                                            registry.getAccountID(expectedAssoc.getLeft()),
+                                            asIdForKeyLookUp(expectedAssoc.getLeft(), spec),
                                             registry.getTokenID(expectedAssoc.getRight()));
                             expectedPairs.add(expectedPair);
                         }
@@ -86,8 +87,8 @@ public class AutoAssocAsserts {
                         assertEquals(expectedPairs, actualPairs, "Wrong auto-associations");
 
                         return Collections.emptyList();
-                    } catch (Throwable t) {
-                        return List.of(t);
+                    } catch (Exception ex) {
+                        return List.of(ex);
                     }
                 };
     }

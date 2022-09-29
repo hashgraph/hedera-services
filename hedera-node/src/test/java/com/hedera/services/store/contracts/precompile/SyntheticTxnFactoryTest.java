@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -34,6 +35,7 @@ import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,6 +76,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInf
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -421,7 +424,7 @@ class SyntheticTxnFactoryTest {
     void createsExpectedCryptoCreate() {
         final var balance = 10L;
         final var alias = KeyFactory.getDefaultInstance().newEd25519();
-        final var result = subject.createAccount(alias, balance);
+        final var result = subject.createAccount(alias, balance, 0);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -430,6 +433,54 @@ class SyntheticTxnFactoryTest {
                 THREE_MONTHS_IN_SECONDS,
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
+        assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+        assertEquals(
+                alias.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+    }
+
+    @Test
+    void fungibleTokenChangeAddsAutoAssociations() {
+        final var balance = 10L;
+        final var alias = KeyFactory.getDefaultInstance().newEd25519();
+        final var result = subject.createAccount(alias, balance, 1);
+        final var txnBody = result.build();
+
+        assertTrue(txnBody.hasCryptoCreateAccount());
+        assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
+        assertEquals(
+                THREE_MONTHS_IN_SECONDS,
+                txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
+        assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
+        assertEquals(1, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+        assertEquals(
+                alias.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+    }
+
+    @Test
+    void nftOwnershipChangeAddsAutoAssociations() {
+        final var balance = 10L;
+        final var alias = KeyFactory.getDefaultInstance().newEd25519();
+        final var xfer =
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
+                        .setReceiverAccountID(a)
+                        .setSerialNumber(serialNo)
+                        .setIsApproval(true)
+                        .build();
+
+        final var nftChange = changingNftOwnership(Id.fromGrpcToken(token), token, xfer, payer);
+
+        final var result = subject.createAccount(alias, balance, 1);
+
+        final var txnBody = result.build();
+
+        assertTrue(txnBody.hasCryptoCreateAccount());
+        assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
+        assertEquals(
+                THREE_MONTHS_IN_SECONDS,
+                txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
+        assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
+        assertEquals(1L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
         assertEquals(
                 alias.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
     }

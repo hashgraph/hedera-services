@@ -56,11 +56,6 @@ public class TinyBarsFromTo {
         return new TinyBarsFromTo(payer, payee, amount);
     }
 
-    public static TinyBarsFromTo tinyBarsFromAliasToAccount(
-            String payer, String payee, long amount) {
-        return new TinyBarsFromTo(payer, payee, amount, true, false);
-    }
-
     public static TinyBarsFromTo tinyBarsFromAccountToAlias(
             String payer, String payee, long amount) {
         return new TinyBarsFromTo(payer, payee, amount, false, true);

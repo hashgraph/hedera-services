@@ -19,13 +19,16 @@ import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -42,6 +45,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -51,10 +55,14 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -68,7 +76,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class AutoCreationLogic {
     private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 
-    private final StateView currentView;
+    private final Supplier<StateView> currentView;
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EntityCreator creator;
@@ -77,8 +85,9 @@ public class AutoCreationLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
 
+    private final GlobalDynamicProperties properties;
     private FeeCalculator feeCalculator;
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
@@ -92,18 +101,18 @@ public class AutoCreationLogic {
             final EntityIdSource ids,
             final AliasManager aliasManager,
             final SigImpactHistorian sigImpactHistorian,
-            final StateView currentView,
+            final Supplier<StateView> currentView,
             final TransactionContext txnCtx,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+            final GlobalDynamicProperties properties) {
         this.ids = ids;
         this.txnCtx = txnCtx;
         this.creator = creator;
-        this.accounts = accounts;
         this.usageLimits = usageLimits;
         this.currentView = currentView;
         this.sigImpactHistorian = sigImpactHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.aliasManager = aliasManager;
+        this.properties = properties;
     }
 
     public void setFeeCalculator(final FeeCalculator feeCalculator) {
@@ -115,6 +124,7 @@ public class AutoCreationLogic {
      */
     public void reset() {
         pendingCreations.clear();
+        tokenAliasMap.clear();
     }
 
     /**
@@ -165,28 +175,44 @@ public class AutoCreationLogic {
      *
      * @param change a triggering change with unique alias
      * @param accountsLedger the accounts ledger to use for the provisional creation
+     * @param changes list of all changes need to construct tokenAliasMap
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final List<BalanceChange> changes) {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
         }
-        final var alias = change.alias();
-        final var key = asPrimitiveKeyUnchecked(alias);
-        final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L);
-        final var fee = autoCreationFeeFor(syntheticCreation);
-        if (fee > change.getAggregatedUnits()) {
-            return Pair.of(change.codeForInsufficientBalance(), 0L);
-        }
-        change.aggregateUnits(-fee);
-        change.setNewBalance(change.getAggregatedUnits());
 
-        final var sideEffects = new SideEffectsTracker();
+        if (change.isForToken() && !properties.areTokenAutoCreationsEnabled()) {
+            return Pair.of(NOT_SUPPORTED, 0L);
+        }
+
+        final var alias = change.getNonEmptyAliasIfPresent();
+        if (alias == null) {
+            throw new IllegalStateException(
+                    "Cannot auto-create an account from unaliased change " + change);
+        }
+
+        // checks tokenAliasMap if the change consists an alias that is already used in previous
+        // iteration of the token transfer list. This map is used to count number of
+        // maxAutoAssociations needed on auto created account
+        analyzeTokenTransferCreations(changes);
+
+        final var maxAutoAssociations =
+                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+
+        final var key = asPrimitiveKeyUnchecked(alias);
+        final var syntheticCreation =
+                syntheticTxnFactory.createAccount(key, 0L, maxAutoAssociations);
+        final var fee = autoCreationFeeFor(syntheticCreation);
+
         final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
         accountsLedger.create(newId);
-        change.replaceAliasWith(newId);
+        replaceAliasAndSetBalanceOnChange(change, newId);
+
         JKey jKey = asFcKeyUnchecked(key);
         final var customizer =
                 new HederaAccountCustomizer()
@@ -196,12 +222,17 @@ public class AutoCreationLogic {
                         .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
                         .isReceiverSigRequired(false)
                         .isSmartContract(false)
-                        .alias(alias);
+                        .alias(alias)
+                        .maxAutomaticAssociations(maxAutoAssociations);
         customizer.customize(newId, accountsLedger);
+
+        final var sideEffects = new SideEffectsTracker();
         sideEffects.trackAutoCreation(newId, alias);
+
         final var childRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
         childRecord.setFee(fee);
+
         final var inProgress =
                 new InProgressChildRecord(
                         DEFAULT_SOURCE_ID, syntheticCreation, childRecord, Collections.emptyList());
@@ -212,6 +243,14 @@ public class AutoCreationLogic {
         aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
 
         return Pair.of(OK, fee);
+    }
+
+    private void replaceAliasAndSetBalanceOnChange(
+            final BalanceChange change, final AccountID newAccountId) {
+        if (change.isForHbar()) {
+            change.setNewBalance(change.getAggregatedUnits());
+        }
+        change.replaceNonEmptyAliasWith(EntityNum.fromAccountId(newAccountId));
     }
 
     private long autoCreationFeeFor(final TransactionBody.Builder cryptoCreateTxn) {
@@ -227,7 +266,8 @@ public class AutoCreationLogic {
 
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
         final var fees =
-                feeCalculator.computeFee(accessor, EMPTY_KEY, currentView, txnCtx.consensusTime());
+                feeCalculator.computeFee(
+                        accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
@@ -237,5 +277,34 @@ public class AutoCreationLogic {
         } catch (InvalidProtocolBufferException internal) {
             throw new IllegalStateException(internal);
         }
+    }
+
+    private void analyzeTokenTransferCreations(final List<BalanceChange> changes) {
+        for (final var change : changes) {
+            if (change.isForHbar()) {
+                continue;
+            }
+            var alias = change.getNonEmptyAliasIfPresent();
+
+            if (alias != null) {
+                if (tokenAliasMap.containsKey(alias)) {
+                    final var oldSet = tokenAliasMap.get(alias);
+                    oldSet.add(change.getToken());
+                    tokenAliasMap.put(alias, oldSet);
+                } else {
+                    tokenAliasMap.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
+                }
+            }
+        }
+    }
+
+    @VisibleForTesting
+    public List<InProgressChildRecord> getPendingCreations() {
+        return pendingCreations;
+    }
+
+    @VisibleForTesting
+    public Map<ByteString, Set<Id>> getTokenAliasMap() {
+        return tokenAliasMap;
     }
 }

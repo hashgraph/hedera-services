@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 
 class PlatformTxnAccessorTest {
     private static final byte[] NONSENSE = "Jabberwocky".getBytes();
+
     TransactionBody someTxn =
             TransactionBody.newBuilder()
                     .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))

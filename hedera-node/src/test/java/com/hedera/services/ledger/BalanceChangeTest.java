@@ -18,6 +18,8 @@ package com.hedera.services.ledger;
 import static com.hedera.services.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -56,7 +59,8 @@ class BalanceChangeTest {
         final var tokenRepr =
                 "BalanceChange{token=1.2.3, account=1.2.3, alias=, units=-1234,"
                         + " expectedDecimals=-1}";
-        final var nftRepr = "BalanceChange{nft=1.2.3, serialNo=1234, from=1.2.3, to=2.3.4}";
+        final var nftRepr =
+                "BalanceChange{nft=1.2.3, serialNo=1234, from=1.2.3, to=2.3.4, counterPartyAlias=}";
 
         // expect:
         assertFalse(nftChange.isApprovedAllowance());
@@ -80,9 +84,11 @@ class BalanceChangeTest {
 
         assertTrue(hbarChange.isForHbar());
         assertFalse(tokenChange.isForHbar());
+        assertFalse(hbarChange.isForToken());
         // and:
         assertFalse(hbarChange.isForNft());
         assertFalse(tokenChange.isForNft());
+        assertTrue(tokenChange.isForToken());
     }
 
     @Test
@@ -96,6 +102,7 @@ class BalanceChangeTest {
         final var hbarAdjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10);
         assertEquals(Id.DEFAULT, hbarAdjust.getAccount());
         assertTrue(hbarAdjust.isForHbar());
+        assertFalse(hbarAdjust.isForToken());
         assertEquals(0, hbarAdjust.getAllowanceUnits());
         assertEquals(10, hbarAdjust.getAggregatedUnits());
         assertEquals(10, hbarAdjust.originalUnits());
@@ -145,8 +152,39 @@ class BalanceChangeTest {
         assertEquals(serialNo, nftChange.serialNo());
         // and:
         assertTrue(nftChange.isForNft());
+        assertTrue(nftChange.isForToken());
+        assertFalse(nftChange.hasNonEmptyCounterPartyAlias());
         assertTrue(nftChange.isApprovedAllowance());
         assertEquals(new NftId(t.shard(), t.realm(), t.num(), serialNo), nftChange.nftId());
+    }
+
+    @Test
+    void checksCounterPartyAliasExists() {
+        var xfer =
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(a)
+                        .setReceiverAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
+                        .setSerialNumber(serialNo)
+                        .setIsApproval(true)
+                        .build();
+
+        var nftChange = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
+        assertTrue(nftChange.isForNft());
+        assertTrue(nftChange.isForToken());
+        assertTrue(nftChange.hasNonEmptyCounterPartyAlias());
+
+        xfer =
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
+                        .setReceiverAccountID(a)
+                        .setSerialNumber(serialNo)
+                        .setIsApproval(true)
+                        .build();
+
+        nftChange = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
+        assertTrue(nftChange.isForNft());
+        assertTrue(nftChange.isForToken());
+        assertFalse(nftChange.hasNonEmptyCounterPartyAlias());
     }
 
     @Test
@@ -161,9 +199,32 @@ class BalanceChangeTest {
                                 .build(),
                         payer);
 
-        subject.replaceAliasWith(created);
-        assertFalse(subject.hasNonEmptyAlias());
+        subject.replaceNonEmptyAliasWith(EntityNum.fromAccountId(created));
+        assertFalse(subject.hasAlias());
         assertEquals(created, subject.accountId());
+        assertFalse(subject.hasNonEmptyCounterPartyAlias());
+    }
+
+    @Test
+    void canReplaceCounterpartyAlias() {
+        final var created = IdUtils.asAccount("0.0.1234");
+        final var anAlias = ByteString.copyFromUtf8("abcdefg");
+        final var xfer =
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(asAccount("0.0.2000"))
+                        .setReceiverAccountID(asAccountWithAlias(String.valueOf(anAlias)))
+                        .setSerialNumber(serialNo)
+                        .setIsApproval(true)
+                        .build();
+        final var subject = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
+        assertTrue(subject.hasNonEmptyCounterPartyAlias());
+        assertFalse(subject.counterPartyAlias().isEmpty());
+
+        subject.replaceNonEmptyAliasWith(EntityNum.fromAccountId(created));
+        assertFalse(subject.hasNonEmptyCounterPartyAlias());
+        assertEquals(created, subject.counterPartyAccountId());
+        assertNotEquals(0, subject.counterPartyAccountId().getAccountNum());
+        assertTrue(subject.isForNft());
     }
 
     @Test
