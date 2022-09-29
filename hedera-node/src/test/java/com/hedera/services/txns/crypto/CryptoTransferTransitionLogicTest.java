@@ -184,7 +184,7 @@ class CryptoTransferTransitionLogicTest {
         // and :
         final var customFeesBalanceChange =
                 List.of(new FcAssessedCustomFee(a.asEntityId(), 10L, new long[] {123L}));
-        final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId()));
+        final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId(), false));
         final List<CustomFeeMeta> customFees = List.of(new CustomFeeMeta(c, d, customFee));
         final var impliedTransfers =
                 ImpliedTransfers.valid(

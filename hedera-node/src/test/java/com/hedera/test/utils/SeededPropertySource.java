@@ -197,27 +197,37 @@ public class SeededPropertySource {
 
     public FcCustomFee nextCustomFee() {
         final var type = nextFeeType();
-        return switch (type) {
-            case FIXED_FEE -> FcCustomFee.fixedFee(
-                    nextUnsignedLong(), nextEntityId(), nextEntityId());
-            case ROYALTY_FEE -> {
-                final var denom = 1 + nextNonZeroInt(100);
-                final var numer = nextNonZeroInt(denom - 1);
-                if (nextBoolean()) {
-                    yield FcCustomFee.royaltyFee(numer, denom, null, nextEntityId());
-                } else {
-                    yield FcCustomFee.royaltyFee(numer, denom, nextFixedFeeSpec(), nextEntityId());
-                }
-            }
-            case FRACTIONAL_FEE -> {
-                final var denom = 1 + nextNonZeroInt(100);
-                final var numer = nextNonZeroInt(denom - 1);
-                final var minUnits = nextNonZeroInt(100);
-                final var maxUnits = minUnits + nextNonZeroInt(100);
-                yield FcCustomFee.fractionalFee(
-                        numer, denom, minUnits, maxUnits, nextBoolean(), nextEntityId());
-            }
-        };
+        final FcCustomFee release17Type =
+                switch (type) {
+                    case FIXED_FEE -> FcCustomFee.fixedFee(
+                            nextUnsignedLong(), nextEntityId(), nextEntityId(), false);
+                    case ROYALTY_FEE -> {
+                        final var denom = 1 + nextNonZeroInt(100);
+                        final var numer = nextNonZeroInt(denom - 1);
+                        if (nextBoolean()) {
+                            yield FcCustomFee.royaltyFee(numer, denom, null, nextEntityId(), false);
+                        } else {
+                            yield FcCustomFee.royaltyFee(
+                                    numer, denom, nextFixedFeeSpec(), nextEntityId(), false);
+                        }
+                    }
+                    case FRACTIONAL_FEE -> {
+                        final var denom = 1 + nextNonZeroInt(100);
+                        final var numer = nextNonZeroInt(denom - 1);
+                        final var minUnits = nextNonZeroInt(100);
+                        final var maxUnits = minUnits + nextNonZeroInt(100);
+                        yield FcCustomFee.fractionalFee(
+                                numer,
+                                denom,
+                                minUnits,
+                                maxUnits,
+                                nextBoolean(),
+                                nextEntityId(),
+                                false);
+                    }
+                };
+        release17Type.setAllCollectorsAreExempt(nextBoolean());
+        return release17Type;
     }
 
     private FixedFeeSpec nextFixedFeeSpec() {

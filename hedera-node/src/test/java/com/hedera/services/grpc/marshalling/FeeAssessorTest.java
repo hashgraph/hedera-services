@@ -469,9 +469,9 @@ class FeeAssessorTest {
                             .build(),
                     payer.asGrpcAccount());
     private final FcCustomFee hbarFee =
-            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector);
+            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector, false);
     private final FcCustomFee htsFee =
-            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector);
+            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector, false);
     private final FcCustomFee fractionalFee =
             FcCustomFee.fractionalFee(
                     numerator,
@@ -479,6 +479,8 @@ class FeeAssessorTest {
                     minAmountOfFractionalFee,
                     maxAmountOfFractionalFee,
                     false,
-                    fractionalFeeCollector);
-    private final FcCustomFee royaltyFee = FcCustomFee.royaltyFee(1, 2, null, royaltyFeeCollector);
+                    fractionalFeeCollector,
+                    false);
+    private final FcCustomFee royaltyFee =
+            FcCustomFee.royaltyFee(1, 2, null, royaltyFeeCollector, false);
 }

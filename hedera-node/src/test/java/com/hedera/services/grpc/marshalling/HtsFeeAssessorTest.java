@@ -121,6 +121,6 @@ class HtsFeeAssessorTest {
     private final EntityId feeDenom = new EntityId(6, 6, 6);
     private final EntityId htsFeeCollector = feeCollector.asEntityId();
     private final FcCustomFee htsFee =
-            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector);
+            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector, false);
     private final long[] effPayerNums = new long[] {2L};
 }

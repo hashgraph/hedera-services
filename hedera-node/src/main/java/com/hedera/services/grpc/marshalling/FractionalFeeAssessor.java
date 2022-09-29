@@ -73,7 +73,7 @@ public class FractionalFeeAssessor {
 
             if (spec.isNetOfTransfers()) {
                 final var addedFee =
-                        fixedFee(assessedAmount, denom.asEntityId(), fee.getFeeCollector());
+                        fixedFee(assessedAmount, denom.asEntityId(), fee.getFeeCollector(), false);
                 fixedFeeAssessor.assess(payer, denom, addedFee, changeManager, accumulator);
             } else {
                 unitsLeft -= assessedAmount;

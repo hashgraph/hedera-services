@@ -84,7 +84,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenCreate()
                                     .missingAdmin()
-                                    .plusCustomFee(fixedFee(123L, null, collector))
+                                    .plusCustomFee(fixedFee(123L, null, collector, false))
                                     .get()));
         }
     },
@@ -95,7 +95,8 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenCreate()
                                     .missingAdmin()
-                                    .plusCustomFee(fixedFee(123L, MISSING_ENTITY_ID, collector))
+                                    .plusCustomFee(
+                                            fixedFee(123L, MISSING_ENTITY_ID, collector, false))
                                     .get()));
         }
     },
@@ -106,7 +107,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenCreate()
                                     .missingAdmin()
-                                    .plusCustomFee(fixedFee(123L, null, collector))
+                                    .plusCustomFee(fixedFee(123L, null, collector, false))
                                     .get()));
         }
     },
@@ -117,7 +118,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenCreate()
                                     .missingAdmin()
-                                    .plusCustomFee(fixedFee(123L, null, collector))
+                                    .plusCustomFee(fixedFee(123L, null, collector, false))
                                     .get()));
         }
     },
@@ -128,7 +129,8 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenCreate()
                                     .missingAdmin()
-                                    .plusCustomFee(fractionalFee(1, 2, 3, 4, false, collector))
+                                    .plusCustomFee(
+                                            fractionalFee(1, 2, 3, 4, false, collector, false))
                                     .get()));
         }
     },
@@ -139,7 +141,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenCreate()
                                     .missingAdmin()
-                                    .plusCustomFee(royaltyFee(1, 2, null, collector))
+                                    .plusCustomFee(royaltyFee(1, 2, null, collector, false))
                                     .get()));
         }
     },
@@ -150,7 +152,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenCreate()
                                     .missingAdmin()
-                                    .plusCustomFee(royaltyFee(1, 2, null, collector))
+                                    .plusCustomFee(royaltyFee(1, 2, null, collector, false))
                                     .get()));
         }
     },
@@ -166,7 +168,8 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                                                     1,
                                                     2,
                                                     new FixedFeeSpec(1, new EntityId(2, 3, 4)),
-                                                    collector))
+                                                    collector,
+                                                    false))
                                     .get()));
         }
     },
@@ -182,7 +185,8 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                                                     1,
                                                     2,
                                                     new FixedFeeSpec(1, MISSING_ENTITY_ID),
-                                                    collector))
+                                                    collector,
+                                                    false))
                                     .get()));
         }
     },
@@ -193,7 +197,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenCreate()
                                     .missingAdmin()
-                                    .plusCustomFee(fixedFee(123L, null, collector))
+                                    .plusCustomFee(fixedFee(123L, null, collector, false))
                                     .get()));
         }
     },

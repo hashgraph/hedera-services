@@ -64,8 +64,8 @@ class RoyaltyFeeAssessorTest {
         // setup:
         final List<FcCustomFee> fees =
                 List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector));
+                        FcCustomFee.fixedFee(1, null, otherCollector, false),
+                        FcCustomFee.royaltyFee(1, 2, null, targetCollector, false));
 
         // when:
         final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
@@ -83,8 +83,8 @@ class RoyaltyFeeAssessorTest {
         final var fallback = new FixedFeeSpec(33, null);
         final List<FcCustomFee> fees =
                 List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+                        FcCustomFee.fixedFee(1, null, otherCollector, false),
+                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false));
 
         // when:
         final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
@@ -96,7 +96,7 @@ class RoyaltyFeeAssessorTest {
                 .assess(
                         funding,
                         MISSING_ID,
-                        FcCustomFee.fixedFee(33, null, targetCollector),
+                        FcCustomFee.fixedFee(33, null, targetCollector, false),
                         changeManager,
                         accumulator);
     }
@@ -105,7 +105,7 @@ class RoyaltyFeeAssessorTest {
     void abortsWithNecessaryResponseCodeIfNoCounterpartyId() {
         final var fallback = new FixedFeeSpec(33, null);
         final List<FcCustomFee> fees =
-                List.of(FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+                List.of(FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false));
 
         final var result =
                 subject.assessAllRoyalties(htsPayerPlusChange, fees, changeManager, accumulator);
@@ -120,8 +120,8 @@ class RoyaltyFeeAssessorTest {
         final var fallback = new FixedFeeSpec(33, denom);
         final List<FcCustomFee> fees =
                 List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+                        FcCustomFee.fixedFee(1, null, otherCollector, false),
+                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false));
 
         // when:
         final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
@@ -133,7 +133,7 @@ class RoyaltyFeeAssessorTest {
                 .assess(
                         funding,
                         MISSING_ID,
-                        FcCustomFee.fixedFee(33, denom, targetCollector),
+                        FcCustomFee.fixedFee(33, denom, targetCollector, false),
                         changeManager,
                         accumulator);
     }
@@ -145,8 +145,8 @@ class RoyaltyFeeAssessorTest {
         final var fallback = new FixedFeeSpec(33, denom);
         final List<FcCustomFee> fees =
                 List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+                        FcCustomFee.fixedFee(1, null, otherCollector, false),
+                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false));
 
         // when:
         final var result =
@@ -162,8 +162,8 @@ class RoyaltyFeeAssessorTest {
         // setup:
         final List<FcCustomFee> fees =
                 List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector));
+                        FcCustomFee.fixedFee(1, null, otherCollector, false),
+                        FcCustomFee.royaltyFee(1, 2, null, targetCollector, false));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 
@@ -187,8 +187,8 @@ class RoyaltyFeeAssessorTest {
         // setup:
         final List<FcCustomFee> fees =
                 List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector));
+                        FcCustomFee.fixedFee(1, null, otherCollector, false),
+                        FcCustomFee.royaltyFee(1, 2, null, targetCollector, false));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 
@@ -230,9 +230,9 @@ class RoyaltyFeeAssessorTest {
         // setup:
         final List<FcCustomFee> fees =
                 List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector));
+                        FcCustomFee.fixedFee(1, null, otherCollector, false),
+                        FcCustomFee.royaltyFee(1, 2, null, targetCollector, false),
+                        FcCustomFee.royaltyFee(1, 2, null, targetCollector, false));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 

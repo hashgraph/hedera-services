@@ -82,7 +82,8 @@ public class RoyaltyFeeAssessor {
                             FcCustomFee.fixedFee(
                                     fallback.getUnitsToCollect(),
                                     fallback.getTokenDenomination(),
-                                    collector.asEntityId());
+                                    collector.asEntityId(),
+                                    false);
                     /* Since a fallback fee for a charging non-fungible token can never be
                     denominated in the units of its charging token (by definition), just
                     use MISSING_ID for the charging token here. */

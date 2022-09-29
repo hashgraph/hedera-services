@@ -339,7 +339,7 @@ public interface TxnHandlingScenario {
         royaltyFeeWithFallbackToken.setFeeSchedule(
                 List.of(
                         FcCustomFee.royaltyFee(
-                                1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5))));
+                                1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
         given(tokenStore.resolve(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
                 .willReturn(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK);
         given(tokenStore.get(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))

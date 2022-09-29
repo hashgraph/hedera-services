@@ -31,7 +31,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(MISSING_TOKEN)
-                                    .withCustom(fixedFee(1, null, MISSING_ENTITY_ID))
+                                    .withCustom(fixedFee(1, null, MISSING_ENTITY_ID, false))
                                     .get()));
         }
     },
@@ -42,7 +42,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                                    .withCustom(fixedFee(1, null, MISSING_ENTITY_ID))
+                                    .withCustom(fixedFee(1, null, MISSING_ENTITY_ID, false))
                                     .get()));
         }
     },
@@ -54,7 +54,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
-                                    .withCustom(fixedFee(1, null, feeCollectorSigReq))
+                                    .withCustom(fixedFee(1, null, feeCollectorSigReq, false))
                                     .get()));
         }
     },
@@ -66,7 +66,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
-                                    .withCustom(fixedFee(1, null, feeCollectorNoSigReq))
+                                    .withCustom(fixedFee(1, null, feeCollectorNoSigReq, false))
                                     .get()));
         }
     },
@@ -79,8 +79,8 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
-                                    .withCustom(fixedFee(1, null, feeCollectorNoSigReq))
-                                    .withCustom(fixedFee(2, null, feeCollectorWithSigReq))
+                                    .withCustom(fixedFee(1, null, feeCollectorNoSigReq, false))
+                                    .withCustom(fixedFee(2, null, feeCollectorWithSigReq, false))
                                     .get()));
         }
     },
@@ -97,7 +97,8 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                                             fixedFee(
                                                     2,
                                                     null,
-                                                    EntityId.fromGrpcAccountId(RECEIVER_SIG)))
+                                                    EntityId.fromGrpcAccountId(RECEIVER_SIG),
+                                                    false))
                                     .get()));
         }
     },
@@ -114,7 +115,8 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                                             fixedFee(
                                                     2,
                                                     null,
-                                                    EntityId.fromGrpcAccountId(NO_RECEIVER_SIG)))
+                                                    EntityId.fromGrpcAccountId(NO_RECEIVER_SIG),
+                                                    false))
                                     .get()));
         }
     },
@@ -126,7 +128,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                     from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
-                                    .withCustom(fixedFee(1, null, missingFeeCollector))
+                                    .withCustom(fixedFee(1, null, missingFeeCollector, false))
                                     .get()));
         }
     },

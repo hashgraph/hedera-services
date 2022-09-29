@@ -88,5 +88,5 @@ class HbarFeeAssessorTest {
     private final Id feeCollector = new Id(1, 2, 3);
     private final EntityId hbarFeeCollector = feeCollector.asEntityId();
     private final FcCustomFee hbarFee =
-            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector);
+            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector, false);
 }

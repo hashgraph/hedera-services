@@ -49,7 +49,7 @@ class FixedFeeAssessorTest {
 
     @Test
     void delegatesToHbarWhenDenomIsNull() {
-        final var hbarFee = FcCustomFee.fixedFee(1, null, otherCollector);
+        final var hbarFee = FcCustomFee.fixedFee(1, null, otherCollector, false);
 
         given(hbarFeeAssessor.assess(payer, hbarFee, changeManager, mockAccum)).willReturn(OK);
 
@@ -62,7 +62,7 @@ class FixedFeeAssessorTest {
 
     @Test
     void delegatesToHtsWhenDenomIsNonNull() {
-        FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, otherCollector);
+        FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, otherCollector, false);
 
         given(htsFeeAssessor.assess(payer, chargingToken, htsFee, changeManager, mockAccum))
                 .willReturn(OK);

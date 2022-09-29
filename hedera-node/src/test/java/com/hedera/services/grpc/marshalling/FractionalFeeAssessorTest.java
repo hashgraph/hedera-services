@@ -127,7 +127,8 @@ class FractionalFeeAssessorTest {
                         FcCustomFee.fixedFee(
                                 netFee,
                                 tokenWithFractionalFee.asEntityId(),
-                                netOfTransfersFeeCollector),
+                                netOfTransfersFeeCollector,
+                                false),
                         changeManager,
                         accumulator);
     }
@@ -331,7 +332,8 @@ class FractionalFeeAssessorTest {
     private final EntityId secondFractionalFeeCollector = new EntityId(5, 6, 7);
     private final EntityId netOfTransfersFeeCollector = new EntityId(6, 7, 8);
     private final FcCustomFee skippedFixedFee =
-            FcCustomFee.fixedFee(100L, EntityId.MISSING_ENTITY_ID, EntityId.MISSING_ENTITY_ID);
+            FcCustomFee.fixedFee(
+                    100L, EntityId.MISSING_ENTITY_ID, EntityId.MISSING_ENTITY_ID, false);
     private final FcCustomFee fractionalFeeNetOfTransfers =
             FcCustomFee.fractionalFee(
                     netOfTransfersNumerator,
@@ -339,7 +341,8 @@ class FractionalFeeAssessorTest {
                     netOfTransfersMinAmountOfFractionalFee,
                     netOfTransfersMaxAmountOfFractionalFee,
                     !notNetOfTransfers,
-                    netOfTransfersFeeCollector);
+                    netOfTransfersFeeCollector,
+                    false);
     private final FcCustomFee firstFractionalFee =
             FcCustomFee.fractionalFee(
                     firstNumerator,
@@ -347,7 +350,8 @@ class FractionalFeeAssessorTest {
                     firstMinAmountOfFractionalFee,
                     firstMaxAmountOfFractionalFee,
                     notNetOfTransfers,
-                    firstFractionalFeeCollector);
+                    firstFractionalFeeCollector,
+                    false);
     private final FcCustomFee secondFractionalFee =
             FcCustomFee.fractionalFee(
                     secondNumerator,
@@ -355,7 +359,8 @@ class FractionalFeeAssessorTest {
                     secondMinAmountOfFractionalFee,
                     secondMaxAmountOfFractionalFee,
                     notNetOfTransfers,
-                    secondFractionalFeeCollector);
+                    secondFractionalFeeCollector,
+                    false);
     private final FcCustomFee exemptFractionalFee =
             FcCustomFee.fractionalFee(
                     firstNumerator,
@@ -363,7 +368,8 @@ class FractionalFeeAssessorTest {
                     firstMinAmountOfFractionalFee,
                     secondMaxAmountOfFractionalFee,
                     notNetOfTransfers,
-                    payer.asEntityId());
+                    payer.asEntityId(),
+                    false);
     private final FcCustomFee nonsenseFee =
             FcCustomFee.fractionalFee(
                     nonsenseNumerator,
@@ -371,7 +377,8 @@ class FractionalFeeAssessorTest {
                     1,
                     1,
                     notNetOfTransfers,
-                    secondFractionalFeeCollector);
+                    secondFractionalFeeCollector,
+                    false);
     private final BalanceChange vanillaTrigger =
             BalanceChange.tokenAdjust(payer, tokenWithFractionalFee, -vanillaTriggerAmount);
     private final BalanceChange firstVanillaReclaim =
