@@ -15,6 +15,8 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.services.contracts.ContractsV_0_31Module.EVM_VERSION_0_31;
 import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
@@ -135,34 +137,34 @@ class CallEvmTxProcessorTest {
         var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
-        when(globalDynamicProperties.evmVersion()).thenReturn("v0.30");
+        when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
         var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
-                        "v0.30",
+                        EVM_VERSION_0_30,
                         () -> {
-                            mcpVersion = "v0.30";
+                            mcpVersion = EVM_VERSION_0_30;
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         },
-                        "v0.31",
+                        EVM_VERSION_0_31,
                         () -> {
-                            mcpVersion = "v0.31";
+                            mcpVersion = EVM_VERSION_0_31;
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         });
         Map<String, Provider<ContractCreationProcessor>> ccps =
                 Map.of(
-                        "v0.30",
+                        EVM_VERSION_0_30,
                         () -> {
-                            ccpVersion = "v0.30";
+                            ccpVersion = EVM_VERSION_0_30;
 
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         },
-                        "v0.31",
+                        EVM_VERSION_0_31,
                         () -> {
-                            ccpVersion = "v0.31";
+                            ccpVersion = EVM_VERSION_0_31;
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         });
@@ -1154,7 +1156,7 @@ class CallEvmTxProcessorTest {
 
     @Test
     void testEvmVersionLoading() {
-        given(globalDynamicProperties.evmVersion()).willReturn("v0.31", "vDoesn'tExist");
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_31, "vDoesn'tExist");
         given(globalDynamicProperties.dynamicEvmVersion()).willReturn(false, false, true, true);
 
         givenValidMock();
@@ -1166,20 +1168,20 @@ class CallEvmTxProcessorTest {
         // uses default setup
         callEvmTxProcessor.execute(
                 sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
-        assertEquals("v0.30", mcpVersion);
-        assertEquals("v0.30", ccpVersion);
+        assertEquals(EVM_VERSION_0_30, mcpVersion);
+        assertEquals(EVM_VERSION_0_30, ccpVersion);
 
         // version changes, but dynamic not set
         callEvmTxProcessor.execute(
                 sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
-        assertEquals("v0.30", mcpVersion);
-        assertEquals("v0.30", ccpVersion);
+        assertEquals(EVM_VERSION_0_30, mcpVersion);
+        assertEquals(EVM_VERSION_0_30, ccpVersion);
 
         // version changes, dynamic set
         callEvmTxProcessor.execute(
                 sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
-        assertEquals("v0.31", mcpVersion);
-        assertEquals("v0.31", ccpVersion);
+        assertEquals(EVM_VERSION_0_31, mcpVersion);
+        assertEquals(EVM_VERSION_0_31, ccpVersion);
 
         // bad version
         assertThrows(

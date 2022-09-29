@@ -15,6 +15,8 @@
  */
 package com.hedera.services.contracts;
 
+import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.services.contracts.ContractsV_0_31Module.EVM_VERSION_0_31;
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
@@ -67,12 +69,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-@Module(
-        includes = {
-            StoresModule.class,
-            ContractsV_0_30Operations.class,
-            ContractsV_0_31Operations.class
-        })
+@Module(includes = {StoresModule.class, ContractsV_0_30Module.class, ContractsV_0_31Module.class})
 public interface ContractsModule {
 
     @Qualifier
@@ -160,7 +157,7 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey("v0.30")
+    @StringKey(EVM_VERSION_0_30)
     static MessageCallProcessor provideV_0_30MessageCallProcessor(
             final @V_0_30 EVM evm,
             final @V_0_30 PrecompileContractRegistry precompiles,
@@ -171,7 +168,7 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey("v0.30")
+    @StringKey(EVM_VERSION_0_30)
     static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
             final GasCalculator gasCalculator,
             final @V_0_30 EVM evm,
@@ -183,7 +180,7 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey("v0.31")
+    @StringKey(EVM_VERSION_0_31)
     static MessageCallProcessor provideV_0_31MessageCallProcessor(
             final @V_0_31 EVM evm,
             final @V_0_31 PrecompileContractRegistry precompiles,
@@ -194,7 +191,7 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey("v0.31")
+    @StringKey(EVM_VERSION_0_31)
     static ContractCreationProcessor provideV_0_31ContractCreateProcessor(
             final GasCalculator gasCalculator,
             final @V_0_31 EVM evm,

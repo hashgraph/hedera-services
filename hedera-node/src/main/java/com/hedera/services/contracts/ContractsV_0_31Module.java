@@ -56,7 +56,9 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Module
-public interface ContractsV_0_31Operations {
+public interface ContractsV_0_31Module {
+
+    String EVM_VERSION_0_31 = "v0.31";
 
     @Provides
     @Singleton

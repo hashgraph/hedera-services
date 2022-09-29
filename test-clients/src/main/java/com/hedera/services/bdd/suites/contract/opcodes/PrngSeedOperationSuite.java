@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -52,6 +53,8 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
 
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
+
+    public static final String EVM_VERSION_0_31 = "v0.31";
 
     public static void main(String... args) {
         new PrngSeedOperationSuite().runSuiteSync();
@@ -87,8 +90,8 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
                 .given(
                         uploadInitCode(prng),
                         contractCreate(prng),
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, "true"),
-                        overriding(CONTRACTS_EVM_VERSION, "v0.31"))
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE.toString()),
+                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -137,8 +140,8 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
                 .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, "true"),
-                        overriding(CONTRACTS_EVM_VERSION, "v0.31"),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE.toString()),
+                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))
@@ -171,8 +174,8 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileDisabledInV_0_30")
                 .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, "true"),
-                        overriding(CONTRACTS_EVM_VERSION, "v0.30"),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE.toString()),
+                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))

@@ -15,6 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,7 +81,6 @@ class CreateEvmTxProcessorTest {
     @Mock private Set<Operation> operations;
     @Mock private Transaction transaction;
     @Mock private HederaWorldState.Updater updater;
-    @Mock private Map<String, PrecompiledContract> precompiledContractMap;
     @Mock private InHandleBlockMetaSource blockMetaSource;
     @Mock private HederaBlockValues hederaBlockValues;
 
@@ -101,15 +101,15 @@ class CreateEvmTxProcessorTest {
         var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
-        when(globalDynamicProperties.evmVersion()).thenReturn("v0.30");
+        when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
         var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
-                        "v0.30",
+                        EVM_VERSION_0_30,
                         () -> new MessageCallProcessor(evm30, new PrecompileContractRegistry()));
         Map<String, Provider<ContractCreationProcessor>> ccps =
                 Map.of(
-                        "v0.30",
+                        EVM_VERSION_0_30,
                         () ->
                                 new ContractCreationProcessor(
                                         gasCalculator, evm30, true, List.of(), 1));

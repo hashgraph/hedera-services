@@ -49,14 +49,21 @@ set.
 It is expected that there will be a new version for each major Ethereum Mainnet hard fork. A table will be kept here to
 document which major hardfork corresponds to each internal version.
 
-|  Hedera Version | Ethereum Fork | Comments                                                                              |
-|----------------:|:--------------|:--------------------------------------------------------------------------------------|
-|         `v0.30` | `London`      |                                                                                       |
-|         `v0.31` | `Paris`       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses   |
-|               ? | `Shanghai`    | Expected Q2 2023 or later                                                             |
+|  Hedera Version | Ethereum Fork                                                                                                     | Comments                                                                              |
+|----------------:|:------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------|
+|         `v0.30` | [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md)     |                                                                                       |
+|         `v0.31` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses   |
+|               ? | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Expected Q2 2023 or later                                                             |
 
 ## Open Questions
 
 The exact timing of versions that correspond to Ethereum Mainnet forks is out of scope of this document
 
 ## Acceptance Tests
+
+Acceptance tests use the Paris re-definition of `DIFFICULTY` as the test for activation
+* Test that when dynamic is set to false that changing the version has no effect
+* Test when dynamic is set to true the evm version can change at each transaction
+* verify 0.30 still returns zeros for difficulty
+* verify 0.31 returns prng values
+* verify that prng behaviors are reflected in the opcode (use same tests as PRNG contract)
