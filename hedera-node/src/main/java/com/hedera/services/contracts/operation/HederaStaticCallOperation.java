@@ -40,7 +40,6 @@ package com.hedera.services.contracts.operation;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import java.util.Map;
 import java.util.function.BiPredicate;
-import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -60,7 +59,6 @@ public class HederaStaticCallOperation extends StaticCallOperation {
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Map<String, PrecompiledContract> precompiledContractMap;
 
-    @Inject
     public HederaStaticCallOperation(
             final GasCalculator gasCalculator,
             final EvmSigsVerifier sigsVerifier,
