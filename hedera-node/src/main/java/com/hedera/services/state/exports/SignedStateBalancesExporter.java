@@ -214,6 +214,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
     private boolean exportBalancesProtoFile(
             AllAccountBalances.Builder allAccountsBuilder, String protoLoc) {
+        accountBalanceDigest.reset();
         try (final var outputStream =
                         dynamicProperties.shouldCompressAccountBalanceFilesOnCreation()
                                 ? new GZIPOutputStream(new FileOutputStream(protoLoc))
