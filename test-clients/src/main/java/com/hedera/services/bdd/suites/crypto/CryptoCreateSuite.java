@@ -55,11 +55,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class CryptoCreateSuite extends HapiApiSuite {
+
     private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
 
     private static final String associationsLimitProperty = "entities.limitTokenAssociations";
     private static final String defaultAssociationsLimit =
             HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
+    public static final String ACCOUNT = "account";
+    public static final String AUTO_CREATED_ACCOUNT = "auto-created account";
 
     public static void main(String... args) {
         new CryptoCreateSuite().runSuiteSync();
@@ -86,7 +89,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
                 //                usdFeeAsExpected(),
                 //                createAnAccountWithStakingFields()
                 accountCreationWithECDSAAlias(),
-            accountCreationWithEVMAddressAlias());
+                accountCreationWithEVMAddressAlias(),
+                accountCreationWithED25519Alias());
     }
 
     private HapiApiSpec createAnAccountWithStakingFields() {
@@ -465,21 +469,36 @@ public class CryptoCreateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec accountCreationWithECDSAAlias() {
+        final var ed25519SourceKey = "ed25519Alias";
+        final var ed25519Shape = KeyShape.ED25519;
         return defaultHapiSpec("AccountCreationWithECDSAAlias")
-                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ed25519SourceKey).shape(ed25519Shape))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var ecdsaKey =
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var op =
-                                            cryptoCreate("account")
+                                            cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op);
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(ecdsaKey)
+                                                                    .alias(SECP_256K1_SOURCE_KEY)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(AUTO_CREATED_ACCOUNT));
+                                    allRunFor(spec, hapiGetAccountInfo);
                                 }))
-                .then(getAccountInfo("account").logged());
+                .then();
     }
 
     private HapiApiSpec accountCreationWithEVMAddressAlias() {
@@ -495,13 +514,54 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     assert addressBytes != null;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
-                                            cryptoCreate("account")
+                                            cryptoCreate(ACCOUNT)
                                                     .withAlias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op);
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .evmAddressAlias(
+                                                                            evmAddressBytes)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(AUTO_CREATED_ACCOUNT));
+                                    allRunFor(spec, hapiGetAccountInfo);
                                 }))
-                .then(getAccountInfo("account").logged());
+                .then();
+    }
+
+    private HapiApiSpec accountCreationWithED25519Alias() {
+        final var ed25519SourceKey = "ed25519Alias";
+        final var ed25519Shape = KeyShape.ED25519;
+        return defaultHapiSpec("AccountCreationWithED25519Alias")
+                .given(newKeyNamed(ed25519SourceKey).shape(ed25519Shape))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    var ed25519Key = spec.registry().getKey(ed25519SourceKey);
+                                    final var op =
+                                            cryptoCreate(ACCOUNT)
+                                                    .withAlias(ed25519Key.toByteString())
+                                                    .balance(1000 * ONE_HBAR);
+
+                                    allRunFor(spec, op);
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(ed25519Key)
+                                                                    .alias(ed25519SourceKey)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(AUTO_CREATED_ACCOUNT));
+                                    allRunFor(spec, hapiGetAccountInfo);
+                                }))
+                .then();
     }
 
     @Override
