@@ -15,4 +15,14 @@
  */
 package com.hedera.services.utils.forensics;
 
+import com.hederahashgraph.api.proto.java.Transaction;
+
+/**
+ * Wraps two record stream entries that <i>should</i> share the same {@link Transaction} and
+ * consensus time, but have different {@link com.hederahashgraph.api.proto.java.TransactionRecord}s.
+ * Will generally be used to represent a single divergence between two nodes' record streams.
+ *
+ * @param firstEntry the first entry sharing the same transaction and consensus time
+ * @param secondEntry the second entry sharing the transaction and consensus time
+ */
 public record DifferingEntries(RecordStreamEntry firstEntry, RecordStreamEntry secondEntry) {}

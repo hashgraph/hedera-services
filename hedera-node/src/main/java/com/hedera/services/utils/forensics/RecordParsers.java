@@ -27,6 +27,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Provides a helper to parse the <i>.rcd.gz</i> files in a directory into a list of {@link
+ * RecordStreamEntry} objects.
+ *
+ * <p><b>NOTE:</b> This class is only for offline analysis and debugging; it is not used at node
+ * runtime.
+ */
 public class RecordParsers {
     private static final String V6_FILE_EXT = ".rcd.gz";
 
@@ -34,6 +41,15 @@ public class RecordParsers {
         throw new UnsupportedOperationException("Utility Class");
     }
 
+    /**
+     * Given a directory of compressed V6 record files, returns a list of all the {@code
+     * (Transaction, TransactionRecord)} entries contained in those files, in order of ascending
+     * consensus time.
+     *
+     * @param streamDir a directory with compressed V6 record files
+     * @return all the contained stream entries
+     * @throws IOException if the files cannot be read or parsed
+     */
     @SuppressWarnings("java:S3655")
     public static List<RecordStreamEntry> parseV6RecordStreamEntriesIn(final String streamDir)
             throws IOException {

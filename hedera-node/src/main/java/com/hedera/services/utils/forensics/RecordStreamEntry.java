@@ -17,11 +17,25 @@ package com.hedera.services.utils.forensics;
 
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
 
+/**
+ * Represents a single {@code (Transaction, TransactionRecord)} entry from a record stream,
+ * including the consensus time as a {@link Instant} for convenience.
+ *
+ * @param accessor the transaction as an accessor for convenience
+ * @param txnRecord the resolved record the transaction
+ * @param consensusTime the consensus time
+ */
 public record RecordStreamEntry(
         TxnAccessor accessor, TransactionRecord txnRecord, Instant consensusTime) {
+
+    public Transaction submittedTransaction() {
+        return accessor.getSignedTxnWrapper();
+    }
+
     public ResponseCodeEnum finalStatus() {
         return txnRecord.getReceipt().getStatus();
     }

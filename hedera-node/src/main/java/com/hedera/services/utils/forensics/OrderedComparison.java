@@ -25,11 +25,25 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+/** Provides helpers to compare and analyze record streams. */
 public class OrderedComparison {
     private OrderedComparison() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
+    /**
+     * Given two directories, each containing the <b>same set</b> of compressed V6 record stream
+     * files, returns a "stream diff". Each entry in the diff is a {@link DifferingEntries} object
+     * that captures a single record divergence---that is, two records that had the same consensus
+     * time and same source transaction in both streams, but differed in some way (e.g., their
+     * receipt status).
+     *
+     * @param firstStreamDir the first record stream
+     * @param secondStreamDir the second record stream
+     * @return the stream diff
+     * @throws IOException if any of the record stream files cannot be read or parsed
+     * @throws AssertionError if the directories contain different record streams
+     */
     public static List<DifferingEntries> findDifferencesBetweenV6(
             final String firstStreamDir, final String secondStreamDir) throws IOException {
         final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir);
@@ -40,10 +54,7 @@ public class OrderedComparison {
             final var firstEntry = firstEntries.get(i);
             final var secondEntry = secondEntries.get(i);
             assert firstEntry.consensusTime().equals(secondEntry.consensusTime());
-            assert firstEntry
-                    .accessor()
-                    .getSignedTxnWrapper()
-                    .equals(secondEntry.accessor().getSignedTxnWrapper());
+            assert firstEntry.submittedTransaction().equals(secondEntry.submittedTransaction());
             if (!firstEntry.txnRecord().equals(secondEntry.txnRecord())) {
                 diffs.add(new DifferingEntries(firstEntry, secondEntry));
             }
@@ -51,6 +62,14 @@ public class OrderedComparison {
         return diffs;
     }
 
+    /**
+     * Given a list of record stream entries, returns a map that, for each {@link
+     * HederaFunctionality} value, includes the counts of all {@link ResponseCodeEnum} values that
+     * appeared in the record stream.
+     *
+     * @param entries record stream entries
+     * @return a "histogram" of resolved statuses
+     */
     public static Map<HederaFunctionality, Map<ResponseCodeEnum, Integer>> statusHistograms(
             final List<RecordStreamEntry> entries) {
         final Map<HederaFunctionality, Map<ResponseCodeEnum, Integer>> counts =
