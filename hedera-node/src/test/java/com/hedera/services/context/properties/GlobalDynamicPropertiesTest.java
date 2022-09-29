@@ -71,6 +71,7 @@ class GlobalDynamicPropertiesTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void constructsFlagsAsExpected() {
         givenPropsWithSeed(1);
 
@@ -217,6 +218,7 @@ class GlobalDynamicPropertiesTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void reloadsFlagsAsExpected() {
         givenPropsWithSeed(2);
 
@@ -261,6 +263,7 @@ class GlobalDynamicPropertiesTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void reloadsIntsAsExpected() {
         givenPropsWithSeed(2);
 
