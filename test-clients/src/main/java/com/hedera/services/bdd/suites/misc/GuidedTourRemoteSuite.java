@@ -95,7 +95,10 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
         final var newKey3 = "k3";
         final var replacementKey = "updated";
         final var newShape =
-                threshOf(1, PREDEFINED_SHAPE, threshOf(2, PREDEFINED_SHAPE, PREDEFINED_SHAPE, PREDEFINED_SHAPE));
+                threshOf(
+                        1,
+                        PREDEFINED_SHAPE,
+                        threshOf(2, PREDEFINED_SHAPE, PREDEFINED_SHAPE, PREDEFINED_SHAPE));
 
         return customHapiSpec("RekeyAccountWith2Of3Choice")
                 .withProperties(

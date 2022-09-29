@@ -17,7 +17,6 @@ package com.hedera.services.utils.forensics;
 
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.time.Instant;
 
 /**

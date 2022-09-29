@@ -16,17 +16,19 @@
 package com.hedera.services.utils.forensics;
 
 import static com.hedera.services.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
+import static com.hedera.services.utils.forensics.OrderedComparison.statusHistograms;
 import static com.hedera.services.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class OrderedComparisonTest {
@@ -48,13 +50,17 @@ class OrderedComparisonTest {
         final var consensusResolvedStatus = consensusEntry.finalStatus();
         assertEquals(INVALID_ACCOUNT_ID, issResolvedStatus);
         assertEquals(WRONG_NONCE, consensusResolvedStatus);
-
     }
 
     @Test
     void auxInvestigationMethodsWork() throws IOException {
         final var issStreamLoc = STREAMS_DIR + File.separator + "node5";
         final var entries = parseV6RecordStreamEntriesIn(issStreamLoc);
+
+        final var histograms = statusHistograms(entries);
+        final var expectedEthTxHist = Map.of(INVALID_ACCOUNT_ID, 1);
+        assertEquals(expectedEthTxHist, histograms.get(HederaFunctionality.EthereumTransaction));
+
         final var fileAppends = OrderedComparison.filterByFunction(entries, FileAppend);
         assertEquals(3, fileAppends.size());
     }
