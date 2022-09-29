@@ -16,9 +16,8 @@
 package com.hedera.services.utils.forensics;
 
 import com.hedera.services.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.*;
+
 import java.time.Instant;
 
 /**
@@ -36,7 +35,15 @@ public record RecordStreamEntry(
         return accessor.getSignedTxnWrapper();
     }
 
+    public TransactionBody body() {
+        return accessor.getTxn();
+    }
+
     public ResponseCodeEnum finalStatus() {
         return txnRecord.getReceipt().getStatus();
+    }
+
+    public HederaFunctionality function() {
+        return accessor.getFunction();
     }
 }

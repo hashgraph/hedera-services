@@ -28,7 +28,7 @@ public class KeyShape extends SigControl {
     public static final KeyShape ED25519 = new KeyShape(Nature.SIG_ON, KeyAlgo.ED25519);
     public static final KeyShape SECP256K1 = new KeyShape(Nature.SIG_ON, KeyAlgo.SECP256K1);
     public static final KeyShape CONTRACT = new KeyShape(CONTRACT_ID);
-    public static final KeyShape PREDEFINED = new KeyShape(Nature.PREDEFINED);
+    public static final KeyShape PREDEFINED_SHAPE = new KeyShape(Nature.PREDEFINED);
     public static final KeyShape DELEGATE_CONTRACT = new KeyShape(Nature.DELEGATABLE_CONTRACT_ID);
 
     protected KeyShape(SigControl.Nature nature) {
@@ -142,7 +142,7 @@ public class KeyShape extends SigControl {
                             ? SigControl.SECP256K1_ON
                             : SigControl.SECP256K1_OFF;
             }
-        } else if (this == CONTRACT || this == DELEGATE_CONTRACT || this == PREDEFINED) {
+        } else if (this == CONTRACT || this == DELEGATE_CONTRACT || this == PREDEFINED_SHAPE) {
             if (control instanceof String id) {
                 return new SigControl(this.getNature(), id);
             } else {

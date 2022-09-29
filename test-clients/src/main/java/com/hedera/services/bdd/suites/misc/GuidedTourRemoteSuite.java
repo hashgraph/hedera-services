@@ -47,7 +47,7 @@ import org.apache.logging.log4j.Logger;
 public class GuidedTourRemoteSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(GuidedTourRemoteSuite.class);
     public static final String TODO = "<TODO>";
-    public static final String HOST = "34.74.191.8";
+    public static final String HOST = "<DESIRED-HOST>";
     public static final String TARGET_ACCOUNT = "targetAccount";
     public static final String TARGET = "target";
     public static final String OLD_KEY = "oldKey";
@@ -95,7 +95,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
         final var newKey3 = "k3";
         final var replacementKey = "updated";
         final var newShape =
-                threshOf(1, PREDEFINED, threshOf(2, PREDEFINED, PREDEFINED, PREDEFINED));
+                threshOf(1, PREDEFINED_SHAPE, threshOf(2, PREDEFINED_SHAPE, PREDEFINED_SHAPE, PREDEFINED_SHAPE));
 
         return customHapiSpec("RekeyAccountWith2Of3Choice")
                 .withProperties(

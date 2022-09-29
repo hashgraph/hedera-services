@@ -82,4 +82,9 @@ public class OrderedComparison {
         }
         return counts;
     }
+
+    public static List<RecordStreamEntry> filterByFunction(
+            final List<RecordStreamEntry> entries, final HederaFunctionality function) {
+        return entries.stream().filter(entry -> entry.function() == function).toList();
+    }
 }
