@@ -15,25 +15,21 @@
  */
 package com.hedera.services.bdd.spec.queries.crypto;
 
-import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.*;
+import com.swirlds.common.utility.CommonUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.Assertions;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -41,14 +37,21 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
+
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
     private String account;
+    @Nullable
+    private String protoSaveLoc = null;
+    private boolean loggingHexedCryptoKeys = false;
     private String aliasKeySource = null;
     private Optional<String> registryEntry = Optional.empty();
     private List<String> absentRelationships = new ArrayList<>();
@@ -154,6 +157,16 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         return this;
     }
 
+    public HapiGetAccountInfo loggingHexedKeys() {
+        this.loggingHexedCryptoKeys = true;
+        return this;
+    }
+
+    public HapiGetAccountInfo savingProtoTo(final String loc) {
+        this.protoSaveLoc = loc;
+        return this;
+    }
+
     @Override
     protected HapiGetAccountInfo self() {
         return this;
@@ -215,6 +228,21 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         response =
                 spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
         final var infoResponse = response.getCryptoGetInfo();
+        if (loggingHexedCryptoKeys) {
+            log.info("Constituent crypto keys are:");
+            visitSimpleKeys(infoResponse.getAccountInfo().getKey(), simpleKey -> {
+                if (!simpleKey.getEd25519().isEmpty()) {
+                    log.info("  {}", CommonUtils.hex(simpleKey.getEd25519().toByteArray()));
+                } else if (!simpleKey.getECDSASecp256K1().isEmpty()) {
+                    log.info("  {}", CommonUtils.hex(simpleKey.getECDSASecp256K1().toByteArray()));
+                }
+            });
+        }
+        if (protoSaveLoc != null) {
+            final var info = infoResponse.getAccountInfo();
+            System.out.println(info);
+            Files.write(Paths.get(protoSaveLoc), info.toByteArray());
+        }
         if (infoResponse.getHeader().getNodeTransactionPrecheckCode() == OK) {
             exposingExpiryTo.ifPresent(
                     cb ->
@@ -281,6 +309,16 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             return account;
         } else {
             return "KeyAlias(" + aliasKeySource + ")";
+        }
+    }
+
+    private static void visitSimpleKeys(final Key key, final Consumer<Key> observer) {
+        if (key.hasKeyList()) {
+            key.getKeyList().getKeysList().forEach(subKey -> visitSimpleKeys(subKey, observer));
+        } else if (key.hasThresholdKey()) {
+            key.getThresholdKey().getKeys().getKeysList().forEach(subKey -> visitSimpleKeys(subKey, observer));
+        } else {
+            observer.accept(key);
         }
     }
 }

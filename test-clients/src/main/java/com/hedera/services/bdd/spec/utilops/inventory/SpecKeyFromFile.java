@@ -15,26 +15,25 @@
  */
 package com.hedera.services.bdd.spec.utilops.inventory;
 
-import static com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey.exportWithPass;
-import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkFromMnemonic;
-import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem.incorporatePem;
-import static com.hedera.services.yahcli.config.ConfigManager.isValid;
-import static com.hedera.services.yahcli.config.ConfigUtils.keyFileAt;
-import static com.hedera.services.yahcli.config.ConfigUtils.passFileFor;
-import static com.hedera.services.yahcli.config.ConfigUtils.promptForPassphrase;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Optional;
+
+import static com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey.exportWithPass;
+import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkFromMnemonic;
+import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem.incorporatePem;
+import static com.hedera.services.yahcli.config.ConfigManager.isValid;
+import static com.hedera.services.yahcli.config.ConfigUtils.*;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SpecKeyFromFile extends UtilOp {
     private static final Logger log = LogManager.getLogger(SpecKeyFromFile.class);
@@ -100,7 +99,7 @@ public class SpecKeyFromFile extends UtilOp {
             incorporatePem(
                     spec,
                     SigControl.ON,
-                    loc,
+                    keyFile.get().getAbsolutePath(),
                     finalPassphrase.orElseThrow(),
                     name,
                     linkedId,

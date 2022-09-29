@@ -15,11 +15,6 @@
  */
 package com.hedera.services.bdd.spec;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
-import static java.util.Collections.EMPTY_LIST;
-import static java.util.stream.Collectors.toList;
-
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
@@ -36,36 +31,24 @@ import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.Random;
-import java.util.UUID;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
+import static java.util.Collections.EMPTY_LIST;
+import static java.util.stream.Collectors.toList;
 
 public abstract class HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
