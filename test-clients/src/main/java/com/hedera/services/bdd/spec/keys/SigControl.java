@@ -15,18 +15,17 @@
  */
 package com.hedera.services.bdd.spec.keys;
 
+import static com.hedera.services.bdd.spec.keys.SigControl.KeyAlgo.UNSPECIFIED;
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.*;
+
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import org.junit.jupiter.api.Assertions;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import static com.hedera.services.bdd.spec.keys.SigControl.KeyAlgo.UNSPECIFIED;
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.*;
+import org.junit.jupiter.api.Assertions;
 
 public class SigControl implements Serializable {
     private static final long serialVersionUID = 1L;

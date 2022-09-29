@@ -15,32 +15,19 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
-import static com.hedera.services.bdd.spec.keys.KeyShape.*;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
@@ -50,14 +37,42 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.*;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy
@@ -116,25 +131,24 @@ public class FileUpdateSuite extends HapiApiSuite {
     @SuppressWarnings("java:S3878")
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[]{
-//                    vanillaUpdateSucceeds(),
-//                    updateFeesCompatibleWithCreates(),
-//                    apiPermissionsChangeDynamically(),
-//                    cannotUpdateExpirationPastMaxLifetime(),
-//                    optimisticSpecialFileUpdate(),
-//                    associateHasExpectedSemantics(),
-//                    notTooManyFeeScheduleCanBeCreated(),
-//                    allUnusedGasIsRefundedIfSoConfigured(),
-//                    maxRefundIsEnforced(),
-//                    gasLimitOverMaxGasLimitFailsPrecheck(),
-//                    autoCreationIsDynamic(),
-//                    kvLimitsEnforced(),
-//                    serviceFeeRefundedIfConsGasExhausted(),
-//                    chainIdChangesDynamically(),
-//                    entitiesNotCreatableAfterUsageLimitsReached(),
-//                    rentItemizedAsExpectedWithOverridePriceTiers(),
-//                    messageSubmissionSizeChange(),
-                        rekeyAccountWith2Of3Choice()
+                new HapiApiSpec[] {
+                    vanillaUpdateSucceeds(),
+                    updateFeesCompatibleWithCreates(),
+                    apiPermissionsChangeDynamically(),
+                    cannotUpdateExpirationPastMaxLifetime(),
+                    optimisticSpecialFileUpdate(),
+                    associateHasExpectedSemantics(),
+                    notTooManyFeeScheduleCanBeCreated(),
+                    allUnusedGasIsRefundedIfSoConfigured(),
+                    maxRefundIsEnforced(),
+                    gasLimitOverMaxGasLimitFailsPrecheck(),
+                    autoCreationIsDynamic(),
+                    kvLimitsEnforced(),
+                    serviceFeeRefundedIfConsGasExhausted(),
+                    chainIdChangesDynamically(),
+                    entitiesNotCreatableAfterUsageLimitsReached(),
+                    rentItemizedAsExpectedWithOverridePriceTiers(),
+                    messageSubmissionSizeChange()
                 });
     }
 
@@ -169,14 +183,14 @@ public class FileUpdateSuite extends HapiApiSuite {
                         getAccountInfo("misc")
                                 .hasToken(
                                         relationshipWith(
-                                                TokenAssociationSpecs
-                                                        .FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                                                        TokenAssociationSpecs
+                                                                .FREEZABLE_TOKEN_ON_BY_DEFAULT)
                                                 .kyc(KycNotApplicable)
                                                 .freeze(Frozen))
                                 .hasToken(
                                         relationshipWith(
-                                                TokenAssociationSpecs
-                                                        .FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                                                        TokenAssociationSpecs
+                                                                .FREEZABLE_TOKEN_OFF_BY_DEFAULT)
                                                 .kyc(KycNotApplicable)
                                                 .freeze(Unfrozen))
                                 .hasToken(
@@ -487,10 +501,10 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 .hasAnyStatusAtAll()
                                 .deferStatusResolution(),
                         uncheckedSubmit(
-                                contractCall(contract, INSERT_ABI, 3, 4)
-                                        .signedBy(civilian)
-                                        .gas(gasToOffer)
-                                        .txnId(refundedTxn))
+                                        contractCall(contract, INSERT_ABI, 3, 4)
+                                                .signedBy(civilian)
+                                                .gas(gasToOffer)
+                                                .txnId(refundedTxn))
                                 .payingWith(GENESIS))
                 .then(
                         sleepFor(2_000L),
@@ -594,8 +608,8 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 .contents("NOPE")
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
                         scheduleCreate(
-                                notToBe,
-                                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1)))
+                                        notToBe,
+                                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1)))
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
                         tokenCreate(notToBe)
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
@@ -684,15 +698,15 @@ public class FileUpdateSuite extends HapiApiSuite {
                                     allRunFor(spec, expiryLookup, callTimeLookup);
                                     final var lifetime =
                                             expiryLookup
-                                                    .getResponse()
-                                                    .getContractGetInfo()
-                                                    .getContractInfo()
-                                                    .getExpirationTime()
-                                                    .getSeconds()
+                                                            .getResponse()
+                                                            .getContractGetInfo()
+                                                            .getContractInfo()
+                                                            .getExpirationTime()
+                                                            .getSeconds()
                                                     - callTimeLookup
-                                                    .getResponseRecord()
-                                                    .getConsensusTimestamp()
-                                                    .getSeconds();
+                                                            .getResponseRecord()
+                                                            .getConsensusTimestamp()
+                                                            .getSeconds();
                                     final var tcFeePerSlot =
                                             10 * TINY_PARTS_PER_WHOLE * lifetime / 31536000L;
                                     final var tbFeePerSlot =
@@ -717,52 +731,6 @@ public class FileUpdateSuite extends HapiApiSuite {
                         overridingTwo(
                                 "staking.fees.nodeRewardPercentage", "10",
                                 "staking.fees.stakingRewardPercentage", "10"));
-    }
-
-    private HapiApiSpec rekeyAccountWith2Of3Choice() {
-        final var target = "0.0.50";
-        final var targetKeyLoc = "yahcli/stabletestnet/keys/account50.pem";
-        final var oneOfThreeKeysLoc = "yahcli/stabletestnet/keys/oneOfThree.pem";
-        final var twoOfThreeKeysLoc = "yahcli/stabletestnet/keys/twoOfThree.pem";
-        final var threeOfThreeKeysLoc = "yahcli/stabletestnet/keys/threeOfThree.pem";
-        final var extantKey = "original";
-        final var newKey1 = "k1";
-        final var newKey2 = "k2";
-        final var newKey3 = "k3";
-        final var replacementKey = "updated";
-        final var newShape = threshOf(1, PREDEFINED, threshOf(2, PREDEFINED, PREDEFINED, PREDEFINED));
-
-        return customHapiSpec("RekeyAccountWith2Of3Choice").withProperties(Map.of(
-                "nodes", "34.94.106.61",
-                "default.payer", "0.0.2",
-                "default.payer.pemKeyLoc", "stabletestnet-account2.pem",
-                "default.payer.pemKeyPassphrase", "YjhiOWY0YTMtYmMA"))
-                .given(
-                        keyFromFile(extantKey, targetKeyLoc),
-                        keyFromFile(newKey1, oneOfThreeKeysLoc),
-                        keyFromFile(newKey2, twoOfThreeKeysLoc),
-                        keyFromFile(newKey3, threeOfThreeKeysLoc),
-                        withOpContext((spec, opLog) -> {
-                            final var keys = spec.keys();
-                            keys.exportSimpleKey("subKey1.pem", newKey1, "KbhO358JFbejUS4Omsp2");
-                            keys.exportSimpleKey("subKey2.pem", newKey2, "KbhO358JFbejUS4Omsp2");
-                            keys.exportSimpleKey("subKey3.pem", newKey3, "KbhO358JFbejUS4Omsp2");
-                        }),
-                        newKeyNamed(replacementKey)
-                                .shape(newShape.signedWith(sigs(extantKey, sigs(newKey1, newKey2, newKey3)))),
-                        getAccountInfo(target).logged().loggingHexedKeys().savingProtoTo("account50Info.bin")
-                )
-                .when(
-//                        cryptoUpdate(target)
-//                                .key(replacementKey)
-//                                .signedBy(DEFAULT_PAYER, extantKey)
-                                )
-                .then(
-//                        getAccountInfo(target).loggingHexedKeys(),
-                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(
-                                target, FUNDING, 1)
-                        ).signedBy(DEFAULT_PAYER, extantKey)
-                );
     }
 
     private HapiApiSpec messageSubmissionSizeChange() {

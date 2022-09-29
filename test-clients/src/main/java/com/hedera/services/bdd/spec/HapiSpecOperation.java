@@ -15,6 +15,11 @@
  */
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
+import static java.util.Collections.EMPTY_LIST;
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
@@ -36,19 +41,13 @@ import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
-import static java.util.Collections.EMPTY_LIST;
-import static java.util.stream.Collectors.toList;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);

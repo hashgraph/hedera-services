@@ -15,13 +15,13 @@
  */
 package com.hedera.services.bdd.spec.keys;
 
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.CONTRACT_ID;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.CONTRACT_ID;
 
 public class KeyShape extends SigControl {
     public static final KeyShape SIMPLE = new KeyShape(Nature.SIG_ON);
@@ -147,7 +147,11 @@ public class KeyShape extends SigControl {
                 return new SigControl(this.getNature(), id);
             } else {
                 throw new IllegalArgumentException(
-                        "Shape is " + this.getNature() + " but " + control + " not a contract ref or key name");
+                        "Shape is "
+                                + this.getNature()
+                                + " but "
+                                + control
+                                + " not a contract ref or key name");
             }
         } else {
             KeyShape[] childShapes = (KeyShape[]) getChildControls();

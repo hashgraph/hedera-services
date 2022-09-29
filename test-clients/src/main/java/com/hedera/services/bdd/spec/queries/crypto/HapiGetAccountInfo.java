@@ -15,6 +15,13 @@
  */
 package com.hedera.services.bdd.spec.queries.crypto;
 
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
@@ -23,11 +30,6 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Assertions;
-
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -37,20 +39,16 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-
-import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.Assertions;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
     private String account;
-    @Nullable
-    private String protoSaveLoc = null;
+    @Nullable private String protoSaveLoc = null;
     private boolean loggingHexedCryptoKeys = false;
     private String aliasKeySource = null;
     private Optional<String> registryEntry = Optional.empty();
@@ -230,13 +228,17 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         final var infoResponse = response.getCryptoGetInfo();
         if (loggingHexedCryptoKeys) {
             log.info("Constituent crypto keys are:");
-            visitSimpleKeys(infoResponse.getAccountInfo().getKey(), simpleKey -> {
-                if (!simpleKey.getEd25519().isEmpty()) {
-                    log.info("  {}", CommonUtils.hex(simpleKey.getEd25519().toByteArray()));
-                } else if (!simpleKey.getECDSASecp256K1().isEmpty()) {
-                    log.info("  {}", CommonUtils.hex(simpleKey.getECDSASecp256K1().toByteArray()));
-                }
-            });
+            visitSimpleKeys(
+                    infoResponse.getAccountInfo().getKey(),
+                    simpleKey -> {
+                        if (!simpleKey.getEd25519().isEmpty()) {
+                            log.info("  {}", CommonUtils.hex(simpleKey.getEd25519().toByteArray()));
+                        } else if (!simpleKey.getECDSASecp256K1().isEmpty()) {
+                            log.info(
+                                    "  {}",
+                                    CommonUtils.hex(simpleKey.getECDSASecp256K1().toByteArray()));
+                        }
+                    });
         }
         if (protoSaveLoc != null) {
             final var info = infoResponse.getAccountInfo();
@@ -316,7 +318,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         if (key.hasKeyList()) {
             key.getKeyList().getKeysList().forEach(subKey -> visitSimpleKeys(subKey, observer));
         } else if (key.hasThresholdKey()) {
-            key.getThresholdKey().getKeys().getKeysList().forEach(subKey -> visitSimpleKeys(subKey, observer));
+            key.getThresholdKey()
+                    .getKeys()
+                    .getKeysList()
+                    .forEach(subKey -> visitSimpleKeys(subKey, observer));
         } else {
             observer.accept(key);
         }

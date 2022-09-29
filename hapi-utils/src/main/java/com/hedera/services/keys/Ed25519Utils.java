@@ -15,6 +15,8 @@
  */
 package com.hedera.services.keys;
 
+import java.io.*;
+import java.security.*;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -29,9 +31,6 @@ import org.bouncycastle.openssl.jcajce.*;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
-
-import java.io.*;
-import java.security.*;
 
 /** Minimal utility to read/write a single Ed25519 key from/to an encrypted PEM file. */
 public final class Ed25519Utils {

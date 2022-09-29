@@ -15,6 +15,14 @@
  */
 package com.hedera.services.bdd.spec.keys;
 
+import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE_PREFIXES;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.mnemonicToEd25519Key;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
+import static java.util.Map.Entry;
+import static java.util.stream.Collectors.toList;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -22,14 +30,6 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.keys.Ed25519Utils;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hederahashgraph.api.proto.java.*;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
-import org.junit.jupiter.api.Assertions;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
@@ -42,14 +42,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE_PREFIXES;
-import static com.hedera.services.bdd.spec.persistence.SpecKey.mnemonicToEd25519Key;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
-import static java.util.Map.Entry;
-import static java.util.stream.Collectors.toList;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.junit.jupiter.api.Assertions;
 
 public class KeyFactory implements Serializable {
     public static String PEM_PASSPHRASE = "swirlds";
