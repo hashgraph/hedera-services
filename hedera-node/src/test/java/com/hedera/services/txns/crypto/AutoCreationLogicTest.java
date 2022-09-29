@@ -20,6 +20,7 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -84,6 +86,7 @@ class AutoCreationLogicTest {
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     @Mock private RecordsHistorian recordsHistorian;
+    @Mock private GlobalDynamicProperties properties;
 
     private AutoCreationLogic subject;
     private final HashMap<ByteString, Integer> tokenAliasMap = new HashMap<>();
@@ -99,10 +102,23 @@ class AutoCreationLogicTest {
                         aliasManager,
                         sigImpactHistorian,
                         () -> currentView,
-                        txnCtx);
+                        txnCtx,
+                        properties);
 
         subject.setFeeCalculator(feeCalculator);
         tokenAliasMap.put(alias, 1);
+    }
+
+    @Test
+    void doesntAutoCreateWhenTokenTransferToAliasFeatureDisabled() {
+        given(usageLimits.areCreatableAccounts(anyInt())).willReturn(true);
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(false);
+
+        final var input = wellKnownTokenChange();
+        final var changes = List.of(input);
+
+        final var result = subject.create(input, accountsLedger, changes);
+        assertEquals(NOT_SUPPORTED, result.getLeft());
     }
 
     @Test
@@ -167,6 +183,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithFungibleTokenChangeWorks() {
         givenCollaborators();
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
 
@@ -207,6 +224,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithNonFungibleTokenChangeWorks() {
         givenCollaborators();
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
 
@@ -252,6 +270,7 @@ class AutoCreationLogicTest {
     @Test
     void analyzesTokenTransfersInChangesForAutoCreation() {
         givenCollaborators();
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 2))
                 .willReturn(mockSyntheticCreation);
 

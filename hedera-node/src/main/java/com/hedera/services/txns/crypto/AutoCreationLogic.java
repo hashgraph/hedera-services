@@ -19,6 +19,7 @@ import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -27,6 +28,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -84,6 +86,8 @@ public class AutoCreationLogic {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
     private final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
+
+    private final GlobalDynamicProperties properties;
     private FeeCalculator feeCalculator;
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
@@ -98,7 +102,8 @@ public class AutoCreationLogic {
             final AliasManager aliasManager,
             final SigImpactHistorian sigImpactHistorian,
             final Supplier<StateView> currentView,
-            final TransactionContext txnCtx) {
+            final TransactionContext txnCtx,
+            final GlobalDynamicProperties properties) {
         this.ids = ids;
         this.txnCtx = txnCtx;
         this.creator = creator;
@@ -107,6 +112,7 @@ public class AutoCreationLogic {
         this.sigImpactHistorian = sigImpactHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.aliasManager = aliasManager;
+        this.properties = properties;
     }
 
     public void setFeeCalculator(final FeeCalculator feeCalculator) {
@@ -178,6 +184,10 @@ public class AutoCreationLogic {
             final List<BalanceChange> changes) {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
+        }
+
+        if (change.isForToken() && !properties.areTokenAutoCreationsEnabled()) {
+            return Pair.of(NOT_SUPPORTED, 0L);
         }
 
         final var alias = change.getNonEmptyAliasIfPresent();

@@ -97,6 +97,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.requireMinStakeToReward());
         assertTrue(subject.isTraceabilityMigrationEnabled());
         assertFalse(subject.shouldCompressRecordFilesOnCreation());
+        assertTrue(subject.areTokenAutoCreationsEnabled());
     }
 
     @Test
@@ -245,6 +246,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isTraceabilityMigrationEnabled());
         assertTrue(subject.shouldItemizeStorageFees());
         assertTrue(subject.shouldCompressRecordFilesOnCreation());
+        assertFalse(subject.areTokenAutoCreationsEnabled());
     }
 
     @Test
@@ -498,6 +500,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn("0til100M,2000til450M");
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION))
                 .willReturn((i + 82) % 2 == 0);
+        given(properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED))
+                .willReturn((i + 83) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {
