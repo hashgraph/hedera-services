@@ -15,13 +15,6 @@
  */
 package com.hedera.services.bdd.spec.queries.crypto;
 
-import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
@@ -30,6 +23,11 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.Assertions;
+
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -39,10 +37,13 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Assertions;
+
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
@@ -242,7 +243,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         }
         if (protoSaveLoc != null) {
             final var info = infoResponse.getAccountInfo();
-            System.out.println(info);
             Files.write(Paths.get(protoSaveLoc), info.toByteArray());
         }
         if (infoResponse.getHeader().getNodeTransactionPrecheckCode() == OK) {
