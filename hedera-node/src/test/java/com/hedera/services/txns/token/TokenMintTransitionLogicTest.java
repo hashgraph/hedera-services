@@ -121,11 +121,11 @@ class TokenMintTransitionLogicTest {
     }
 
     @Test
-    void rejectsInvalidZeroAmount() {
-        givenInvalidZeroAmount();
+    void allowsZeroAmount() {
+        givenZeroAmount();
 
         // expect:
-        assertEquals(INVALID_TOKEN_MINT_AMOUNT, subject.semanticCheck().apply(tokenMintTxn));
+        assertEquals(OK, subject.semanticCheck().apply(tokenMintTxn));
     }
 
     @Test
@@ -144,13 +144,13 @@ class TokenMintTransitionLogicTest {
     }
 
     @Test
-    void rejectsInvalidTxnBodyWithNoProps() {
+    void allowsTxnBodyWithNoProps() {
         tokenMintTxn =
                 TransactionBody.newBuilder()
                         .setTokenMint(TokenMintTransactionBody.newBuilder().setToken(grpcId))
                         .build();
 
-        assertEquals(INVALID_TOKEN_MINT_AMOUNT, subject.semanticCheck().apply(tokenMintTxn));
+        assertEquals(OK, subject.semanticCheck().apply(tokenMintTxn));
     }
 
     @Test
@@ -250,7 +250,7 @@ class TokenMintTransitionLogicTest {
                         .build();
     }
 
-    private void givenInvalidZeroAmount() {
+    private void givenZeroAmount() {
         tokenMintTxn =
                 TransactionBody.newBuilder()
                         .setTokenMint(

@@ -206,9 +206,6 @@ public class PureTransferSemanticChecks {
             if (!adjust.hasAccountID()) {
                 return INVALID_ACCOUNT_ID;
             }
-            if (adjust.getAmount() == 0) {
-                return INVALID_ACCOUNT_AMOUNTS;
-            }
         }
         if (hasRepeatedAccount(adjusts)) {
             return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
