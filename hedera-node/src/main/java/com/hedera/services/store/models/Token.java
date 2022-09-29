@@ -168,7 +168,7 @@ public class Token {
     public void mint(
             final TokenRelationship treasuryRel, final long amount, boolean ignoreSupplyKey) {
         validateTrue(
-                amount > 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
+                amount >= 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
         validateTrue(
                 type == TokenType.FUNGIBLE_COMMON,
                 FAIL_INVALID,
@@ -221,7 +221,7 @@ public class Token {
 
     public void burn(final TokenRelationship treasuryRel, final long amount) {
         validateTrue(
-                amount > 0, INVALID_TOKEN_BURN_AMOUNT, errorMessage("burn", amount, treasuryRel));
+                amount >= 0, INVALID_TOKEN_BURN_AMOUNT, errorMessage("burn", amount, treasuryRel));
         changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT, false);
     }
 
@@ -296,7 +296,7 @@ public class Token {
             TokenRelationship accountRel,
             List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
-        validateFalse(serialNumbers.isEmpty(), FAIL_INVALID);
+        validateFalse(serialNumbers.isEmpty(), INVALID_WIPING_AMOUNT);
 
         baseWipeValidations(accountRel);
         for (var serialNum : serialNumbers) {
@@ -418,7 +418,7 @@ public class Token {
     }
 
     private void amountWipeValidations(final TokenRelationship accountRel, final long amount) {
-        validateTrue(amount > 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
+        validateTrue(amount >= 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
 
         final var newTotalSupply = totalSupply - amount;
         validateTrue(

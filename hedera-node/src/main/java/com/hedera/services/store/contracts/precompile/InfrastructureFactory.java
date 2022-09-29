@@ -18,11 +18,14 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -81,6 +84,9 @@ public class InfrastructureFactory {
     private final SigImpactHistorian sigImpactHistorian;
     private final DissociationFactory dissociationFactory;
     private final GlobalDynamicProperties dynamicProperties;
+    private final TransactionContext txnCtx;
+    private final AliasManager aliasManager;
+    private final FeeDistribution feeDistribution;
 
     @Inject
     public InfrastructureFactory(
@@ -91,7 +97,10 @@ public class InfrastructureFactory {
             final RecordsHistorian recordsHistorian,
             final SigImpactHistorian sigImpactHistorian,
             final DissociationFactory dissociationFactory,
-            final GlobalDynamicProperties dynamicProperties) {
+            final GlobalDynamicProperties dynamicProperties,
+            final TransactionContext txnCtx,
+            final AliasManager aliasManager,
+            final FeeDistribution feeDistribution) {
         this.ids = ids;
         this.encoder = encoder;
         this.validator = validator;
@@ -100,6 +109,9 @@ public class InfrastructureFactory {
         this.dynamicProperties = dynamicProperties;
         this.sigImpactHistorian = sigImpactHistorian;
         this.dissociationFactory = dissociationFactory;
+        this.txnCtx = txnCtx;
+        this.aliasManager = aliasManager;
+        this.feeDistribution = feeDistribution;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -189,10 +201,12 @@ public class InfrastructureFactory {
                 tokenRelsLedger,
                 tokenStore,
                 sideEffects,
-                dynamicProperties,
                 validator,
                 null,
-                recordsHistorian);
+                recordsHistorian,
+                txnCtx,
+                aliasManager,
+                feeDistribution);
     }
 
     public RedirectViewExecutor newRedirectExecutor(

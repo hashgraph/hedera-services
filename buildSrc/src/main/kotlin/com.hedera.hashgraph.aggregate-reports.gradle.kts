@@ -53,6 +53,7 @@ sonarqube {
 }
 
 tasks.create("githubVersionSummary") {
+    group = "github"
     doLast {
         val ghStepSummaryPath: String? = System.getenv("GITHUB_STEP_SUMMARY")
         if (ghStepSummaryPath == null) {
@@ -65,12 +66,14 @@ tasks.create("githubVersionSummary") {
 }
 
 tasks.create("showVersion") {
+    group = "versioning"
     doLast {
         println(project.version)
     }
 }
 
 tasks.create("versionAsPrefixedCommit") {
+    group = "versioning"
     doLast {
         gitData.lastCommitHash?.let {
             val prefix = findProperty("commitPrefix")?.toString() ?: "adhoc"
@@ -87,6 +90,7 @@ tasks.create("versionAsPrefixedCommit") {
 }
 
 tasks.create("versionAsSnapshot") {
+    group = "versioning"
     doLast {
         val currVer = SemVer.parse(rootProject.version.toString())
         val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
@@ -96,6 +100,7 @@ tasks.create("versionAsSnapshot") {
 }
 
 tasks.create("versionAsSpecified") {
+    group = "versioning"
     doLast {
         val verStr = findProperty("newVersion")?.toString()
 

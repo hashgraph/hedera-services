@@ -55,6 +55,10 @@ public class TxnId implements SelfSerializable {
         this.nonce = nonce;
     }
 
+    public TxnId unscheduledWithNonce(final int nonce) {
+        return new TxnId(payerAccount, validStart, false, nonce);
+    }
+
     public TxnId withNonce(final int nonce) {
         return new TxnId(payerAccount, validStart, scheduled, nonce);
     }

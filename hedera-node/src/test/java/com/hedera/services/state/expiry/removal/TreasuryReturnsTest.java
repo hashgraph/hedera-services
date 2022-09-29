@@ -178,6 +178,22 @@ class TreasuryReturnsTest {
     }
 
     @Test
+    void ignoresPositiveNftsOwnedIfHeadKeyIsMissing() {
+        given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
+        given(expiryThrottle.allow(any())).willReturn(true);
+        accountWithNfts.setHeadNftId(0L);
+        accountWithNfts.setHeadNftSerialNum(0L);
+
+        final var expected = NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
+
+        final var actual = subject.returnNftsFrom(accountWithNfts);
+
+        assertEquals(expected, actual);
+        assertEquals(0, accountWithNfts.getNftsOwned());
+        assertTrue(accountWithNfts.isDeleted());
+    }
+
+    @Test
     void returnsOnlyNftsGivenTokenCheckCapacity() {
         givenStandardNftsSetup(false, false);
         given(expiryThrottle.allow(ROOT_META_UPDATE_WORK)).willReturn(true);

@@ -25,11 +25,14 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.charging.FeeDistribution;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -67,13 +70,15 @@ public class TransferLogic {
     private final AutoCreationLogic autoCreationLogic;
     private final SideEffectsTracker sideEffectsTracker;
     private final RecordsHistorian recordsHistorian;
-    private final GlobalDynamicProperties dynamicProperties;
     private final MerkleAccountScopedCheck scopedCheck;
     private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private final TransactionalLedger<
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
+    private final TransactionContext txnCtx;
+    private final AliasManager aliasManager;
+    private final FeeDistribution feeDistribution;
 
     @Inject
     public TransferLogic(
@@ -84,18 +89,22 @@ public class TransferLogic {
                     tokenRelsLedger,
             final TokenStore tokenStore,
             final SideEffectsTracker sideEffectsTracker,
-            final GlobalDynamicProperties dynamicProperties,
             final OptionValidator validator,
             final @Nullable AutoCreationLogic autoCreationLogic,
-            final RecordsHistorian recordsHistorian) {
+            final RecordsHistorian recordsHistorian,
+            final TransactionContext txnCtx,
+            final AliasManager aliasManager,
+            final FeeDistribution feeDistribution) {
         this.tokenStore = tokenStore;
         this.nftsLedger = nftsLedger;
         this.accountsLedger = accountsLedger;
         this.tokenRelsLedger = tokenRelsLedger;
         this.recordsHistorian = recordsHistorian;
         this.autoCreationLogic = autoCreationLogic;
-        this.dynamicProperties = dynamicProperties;
         this.sideEffectsTracker = sideEffectsTracker;
+        this.txnCtx = txnCtx;
+        this.aliasManager = aliasManager;
+        this.feeDistribution = feeDistribution;
 
         scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
     }
@@ -103,23 +112,30 @@ public class TransferLogic {
     public void doZeroSum(final List<BalanceChange> changes) {
         var validity = OK;
         var autoCreationFee = 0L;
+
         for (var change : changes) {
-            if (change.isForHbar()) {
-                if (change.hasNonEmptyAlias()) {
-                    if (autoCreationLogic == null) {
-                        throw new IllegalStateException(
-                                "Cannot auto-create account from "
-                                        + change
-                                        + " with null autoCreationLogic");
-                    }
-                    final var result = autoCreationLogic.create(change, accountsLedger);
-                    validity = result.getKey();
-                    autoCreationFee += result.getValue();
-                } else {
-                    validity =
-                            accountsLedger.validate(
-                                    change.accountId(), scopedCheck.setBalanceChange(change));
+            // If the change consists of any repeated aliases, replace the alias with the account
+            // number
+            replaceAliasWithIdIfExisting(change);
+
+            // create a new account for alias when the no account is already created using the alias
+            if (change.hasAlias()) {
+                if (autoCreationLogic == null) {
+                    throw new IllegalStateException(
+                            "Cannot auto-create account from "
+                                    + change
+                                    + " with null autoCreationLogic");
                 }
+                final var result = autoCreationLogic.create(change, accountsLedger, changes);
+                validity = result.getKey();
+                autoCreationFee += result.getValue();
+                if (validity == OK && (change.isForToken())) {
+                    validity = tokenStore.tryTokenChange(change);
+                }
+            } else if (change.isForHbar()) {
+                validity =
+                        accountsLedger.validate(
+                                change.accountId(), scopedCheck.setBalanceChange(change));
             } else {
                 validity =
                         accountsLedger.validate(
@@ -134,10 +150,16 @@ public class TransferLogic {
             }
         }
 
+        if (validity == OK
+                && (autoCreationFee > 0)
+                && (autoCreationFee > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE))) {
+            validity = INSUFFICIENT_PAYER_BALANCE;
+        }
+
         if (validity == OK) {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
-                payFunding(autoCreationFee);
+                payAutoCreationFee(autoCreationFee);
                 autoCreationLogic.submitRecordsTo(recordsHistorian);
             }
         } else {
@@ -149,11 +171,13 @@ public class TransferLogic {
         }
     }
 
-    private void payFunding(final long autoCreationFee) {
-        final var funding = dynamicProperties.fundingAccount();
-        final var fundingBalance = (long) accountsLedger.get(funding, BALANCE);
-        final var newFundingBalance = fundingBalance + autoCreationFee;
-        accountsLedger.set(funding, BALANCE, newFundingBalance);
+    private void payAutoCreationFee(final long autoCreationFee) {
+        feeDistribution.distributeChargedFee(autoCreationFee, accountsLedger);
+
+        // deduct the auto creation fee from payer of the transaction
+        final var payerBalance = (long) accountsLedger.get(txnCtx.activePayer(), BALANCE);
+        accountsLedger.set(txnCtx.activePayer(), BALANCE, payerBalance - autoCreationFee);
+        txnCtx.addFeeChargedToPayer(autoCreationFee);
     }
 
     private void adjustBalancesAndAllowances(final List<BalanceChange> changes) {
@@ -225,5 +249,22 @@ public class TransferLogic {
             fungibleAllowances.put(allowanceId, newAllowance);
         }
         accountsLedger.set(ownerID, FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
+    }
+
+    /**
+     * Checks if the alias is a known alias i.e, if the alias is already used in any cryptoTransfer
+     * transaction that has led to account creation
+     *
+     * @param change change that contains alias
+     */
+    private void replaceAliasWithIdIfExisting(final BalanceChange change) {
+        final var alias = change.getNonEmptyAliasIfPresent();
+
+        if (alias != null) {
+            final var aliasNum = aliasManager.lookupIdBy(alias);
+            if (aliasNum != EntityNum.MISSING_NUM) {
+                change.replaceNonEmptyAliasWith(aliasNum);
+            }
+        }
     }
 }

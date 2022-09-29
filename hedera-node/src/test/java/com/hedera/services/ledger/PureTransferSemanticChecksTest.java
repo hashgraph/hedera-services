@@ -509,22 +509,10 @@ class PureTransferSemanticChecksTest {
     }
 
     @Test
-    void rejectsZeroAccountAmount() {
+    void acceptsZeroAccountAmount() {
         // expect:
         assertEquals(
-                INVALID_ACCOUNT_AMOUNTS,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(a)
-                                                        .setAmount(0)
-                                                        .build())
-                                        .build())));
-        assertEquals(
-                INVALID_ACCOUNT_AMOUNTS,
+                OK,
                 subject.validateTokenTransferSemantics(
                         List.of(
                                 TokenTransferList.newBuilder()

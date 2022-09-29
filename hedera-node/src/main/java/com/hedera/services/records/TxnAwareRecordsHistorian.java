@@ -15,11 +15,9 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
-import static com.hedera.services.utils.MiscUtils.synthFromBody;
+import static com.hedera.services.utils.MiscUtils.synthWithRecordTxnId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -29,6 +27,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.MiscUtils;
@@ -90,6 +89,21 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         }
 
         return txnCtx.consensusTime().plusNanos(1L + followingChildRecords.size());
+    }
+
+    @Override
+    public TxnId computeNextSystemTransactionId() {
+        if (topLevelStreamObj == null) {
+            throw new IllegalStateException(
+                    "Top-level record is missing, cannot compute a system transaction id");
+        }
+        final var parentId = topLevelStreamObj.getExpirableTransactionRecord().getTxnId();
+        return parentId.unscheduledWithNonce(nextNonce++);
+    }
+
+    @Override
+    public boolean nextSystemTransactionIdIsUnknown() {
+        return topLevelStreamObj == null;
     }
 
     @Override
@@ -211,6 +225,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         followingChildRecords.clear();
         followingChildStreamObjs.clear();
 
+        topLevelStreamObj = null;
         nextNonce = USER_TRANSACTION_NONCE + 1;
         nextSourceId = 1;
     }
@@ -267,11 +282,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
                 child.setParentConsensusTime(consensusNow);
             }
 
-            final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
-            final var synthHash =
-                    noThrowSha384HashOf(
-                            unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
-            child.setTxnHash(synthHash);
+            final var synthTxn = synthWithRecordTxnId(inProgress.syntheticBody(), child);
             final var sidecars = inProgress.sidecars();
             timestampSidecars(sidecars, childConsTime);
             if (sigNum > 0) {
@@ -284,11 +295,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
                 recordObjs.add(0, new RecordStreamObject(child.build(), synthTxn, childConsTime));
             }
         }
-    }
-
-    private Transaction synthFrom(
-            final TransactionBody.Builder txnBody, final ExpirableTxnRecord.Builder inProgress) {
-        return synthFromBody(txnBody.setTransactionID(inProgress.getTxnId().toGrpc()).build());
     }
 
     private void save(

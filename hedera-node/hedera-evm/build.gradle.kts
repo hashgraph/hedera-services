@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 plugins {
-    id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.conventions")
 }
 
+group = "com.hedera.evm"
 description = "Hedera EVM - Implementation"
 
 dependencies {

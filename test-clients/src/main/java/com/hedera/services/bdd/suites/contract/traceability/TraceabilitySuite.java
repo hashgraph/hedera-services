@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesT
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -94,6 +95,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -129,6 +131,8 @@ public class TraceabilitySuite extends HapiApiSuite {
     private static final String AUTO_ACCOUNT_TXN = "autoAccount";
     private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
     private static final String RUNTIME_CODE = "runtimeBytecode";
+    private static final String SIDECARS_PROP = "contracts.sidecars";
+    private static final String COMPRESSION_PROP = "hedera.recordStream.compressFilesOnCreation";
 
     public static void main(String... args) {
         new TraceabilitySuite().runSuiteSync();
@@ -152,31 +156,46 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                             "Watch service couldn't be"
                                                                     + " initialized."))));
         }
-        return List.of(
-                traceabilityE2EScenario1(),
-                traceabilityE2EScenario2(),
-                traceabilityE2EScenario3(),
-                traceabilityE2EScenario4(),
-                traceabilityE2EScenario5(),
-                traceabilityE2EScenario6(),
-                traceabilityE2EScenario7(),
-                traceabilityE2EScenario8(),
-                traceabilityE2EScenario9(),
-                traceabilityE2EScenario10(),
-                traceabilityE2EScenario11(),
-                traceabilityE2EScenario12(),
-                traceabilityE2EScenario13(),
-                traceabilityE2EScenario14(),
-                traceabilityE2EScenario15(),
-                traceabilityE2EScenario16(),
-                traceabilityE2EScenario17(),
-                traceabilityE2EScenario18(),
-                traceabilityE2EScenario19(),
-                traceabilityE2EScenario20(),
-                traceabilityE2EScenario21(),
-                vanillaBytecodeSidecar(),
-                vanillaBytecodeSidecar2(),
-                assertSidecars());
+        return Stream.concat(
+                        Stream.of(setNeededProps()),
+                        Stream.of(
+                                traceabilityE2EScenario1(),
+                                traceabilityE2EScenario2(),
+                                traceabilityE2EScenario3(),
+                                traceabilityE2EScenario4(),
+                                traceabilityE2EScenario5(),
+                                traceabilityE2EScenario6(),
+                                traceabilityE2EScenario7(),
+                                traceabilityE2EScenario8(),
+                                traceabilityE2EScenario9(),
+                                traceabilityE2EScenario10(),
+                                traceabilityE2EScenario11(),
+                                traceabilityE2EScenario12(),
+                                traceabilityE2EScenario13(),
+                                traceabilityE2EScenario14(),
+                                traceabilityE2EScenario15(),
+                                traceabilityE2EScenario16(),
+                                traceabilityE2EScenario17(),
+                                traceabilityE2EScenario18(),
+                                traceabilityE2EScenario19(),
+                                traceabilityE2EScenario20(),
+                                traceabilityE2EScenario21(),
+                                vanillaBytecodeSidecar(),
+                                vanillaBytecodeSidecar2(),
+                                assertSidecars()))
+                .toList();
+    }
+
+    HapiApiSpec setNeededProps() {
+        return defaultHapiSpec("setNeededProps")
+                .given()
+                .when()
+                .then(
+                        overridingTwo(
+                                SIDECARS_PROP,
+                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE",
+                                COMPRESSION_PROP,
+                                "true"));
     }
 
     private HapiApiSpec traceabilityE2EScenario1() {
@@ -6698,7 +6717,8 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("assertSidecars")
                 .given(
                         // send a dummy transaction to trigger externalization of last sidecars
-                        cryptoCreate("externalizeFinalSidecars").delayBy(2000))
+                        cryptoCreate("externalizeFinalSidecars").delayBy(2000),
+                        resetToDefault(COMPRESSION_PROP, SIDECARS_PROP))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {

@@ -213,7 +213,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 scheduledUniqueBurnFailsWithInvalidBatchSize(),
                                 scheduledUniqueBurnFailsWithInvalidNftId(),
                                 scheduledBurnForUniqueFailsWithInvalidAmount(),
-                                scheduledBurnForUniqueFailsWithExistingAmount(),
+                                scheduledBurnForUniqueSucceedsWithExistingAmount(),
                                 scheduledBurnFailsWithInvalidTxBody(),
                                 scheduledFreezeWorksAsExpected(),
                                 scheduledFreezeWithUnauthorizedPayerFails(isLongTermEnabled),
@@ -459,9 +459,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .hasPriority(recordWith().status(INVALID_NFT_ID)));
     }
 
-    private HapiApiSpec scheduledBurnForUniqueFailsWithExistingAmount() {
-        String failingTxn = "failingTxn";
-        return defaultHapiSpec("ScheduledBurnForUniqueFailsWithExistingAmount")
+    private HapiApiSpec scheduledBurnForUniqueSucceedsWithExistingAmount() {
+        return defaultHapiSpec("scheduledBurnForUniqueSucceedsWithExistingAmount")
                 .given(
                         cryptoCreate("treasury"),
                         cryptoCreate("schedulePayer"),
@@ -473,13 +472,13 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .initialSupply(0),
                         scheduleCreate(A_SCHEDULE, burnToken(A_TOKEN, 123L))
                                 .designatingPayer("schedulePayer")
-                                .via(failingTxn))
+                                .via(successTxn))
                 .when(
                         scheduleSign(A_SCHEDULE)
                                 .alsoSigningWith("supplyKey", "schedulePayer", "treasury")
                                 .hasKnownStatus(SUCCESS))
                 .then(
-                        getTxnRecord(failingTxn)
+                        getTxnRecord(successTxn)
                                 .scheduled()
                                 .hasPriority(recordWith().status(INVALID_TOKEN_BURN_METADATA)),
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
@@ -560,7 +559,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec scheduledMintFailsWithInvalidAmount() {
-        String failingTxn = "failingTxn";
+        final var zeroAmountTxn = "zeroAmountTxn";
         return defaultHapiSpec("ScheduledMintFailsWithInvalidAmount")
                 .given(
                         cryptoCreate("treasury"),
@@ -571,6 +570,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .treasury("treasury")
                                 .initialSupply(101),
                         scheduleCreate(A_SCHEDULE, mintToken(A_TOKEN, 0))
+                                .designatingPayer("schedulePayer")
+                                .via(zeroAmountTxn),
+                        scheduleCreate(A_SCHEDULE, mintToken(A_TOKEN, -1))
                                 .designatingPayer("schedulePayer")
                                 .via(failingTxn))
                 .when(

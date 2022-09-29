@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.token;
 
+import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -44,8 +46,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
@@ -91,12 +96,71 @@ public class TokenManagementSpecs extends HapiApiSuite {
                     fungibleCommonMaxSupplyReachWork(),
                     mintingMaxLongValueWorks(),
                     nftMintProvidesMintedNftsAndNewTotalSupply(),
+                    zeroUnitTokenOperationsWorkAsExpected()
                 });
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    private HapiApiSpec zeroUnitTokenOperationsWorkAsExpected() {
+        final var civilian = "civilian";
+        final var adminKey = "adminKey";
+        final var fungible = "fungible";
+        final var nft = "non-fungible";
+        return defaultHapiSpec("zeroUnitTokenOperationsWorkAsExpected")
+                .given(
+                        newKeyNamed(adminKey),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(civilian).balance(0L))
+                .when(
+                        tokenCreate(fungible)
+                                .supplyKey(adminKey)
+                                .adminKey(adminKey)
+                                .wipeKey(adminKey)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .maxSupply(100)
+                                .initialSupply(10)
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(nft)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .supplyKey(adminKey)
+                                .adminKey(adminKey)
+                                .wipeKey(adminKey)
+                                .maxSupply(10)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(civilian, fungible, nft),
+                        mintToken(nft, List.of(copyFromUtf8("Please mind the vase."))),
+                        cryptoTransfer(moving(2, fungible).between(TOKEN_TREASURY, civilian))
+                                .logged(),
+                        cryptoTransfer(movingUnique(nft, 1L).between(TOKEN_TREASURY, civilian))
+                                .logged(),
+                        getAccountInfo(civilian)
+                                .hasToken(relationshipWith(fungible).balance(2))
+                                .hasOwnedNfts(1)
+                                .logged())
+                .then(
+                        cryptoTransfer(moving(0, fungible).between(TOKEN_TREASURY, civilian))
+                                .logged(),
+                        mintToken(fungible, 0),
+                        mintToken(nft, List.of()).hasKnownStatus(INVALID_TOKEN_MINT_METADATA),
+                        burnToken(fungible, 0),
+                        burnToken(nft, List.of()).hasKnownStatus(INVALID_TOKEN_BURN_METADATA),
+                        wipeTokenAccount(fungible, civilian, 0),
+                        wipeTokenAccount(nft, civilian, List.of())
+                                .hasKnownStatus(INVALID_WIPING_AMOUNT),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasToken(relationshipWith(fungible).balance(8))
+                                .hasOwnedNfts(0)
+                                .logged(),
+                        getAccountInfo(civilian)
+                                .hasToken(relationshipWith(fungible).balance(2))
+                                .hasOwnedNfts(1)
+                                .logged());
     }
 
     private HapiApiSpec frozenTreasuryCannotBeMintedOrBurned() {
@@ -196,6 +260,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
                         getAccountInfo("misc").logged(),
                         wipeTokenAccount(wipeableToken, "misc", 500).via("wipeTxn"),
+                        getAccountInfo("misc").logged(),
+                        wipeTokenAccount(wipeableToken, "misc", 0).via("wipeWithZeroAmount"),
                         getAccountInfo("misc").logged())
                 .then(
                         getAccountBalance("misc").hasTokenBalance(wipeableToken, 0),
@@ -251,8 +317,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
                         wipeTokenAccount(anotherWipeableToken, "misc", 501)
                                 .hasKnownStatus(INVALID_WIPING_AMOUNT),
                         wipeTokenAccount(anotherWipeableToken, "misc", -1)
-                                .hasPrecheck(INVALID_WIPING_AMOUNT),
-                        wipeTokenAccount(anotherWipeableToken, "misc", 0)
                                 .hasPrecheck(INVALID_WIPING_AMOUNT));
     }
 
@@ -452,9 +516,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
                                 .hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
                         mintToken("supple", Long.MAX_VALUE)
                                 .hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
-                        mintToken("supple", 0).hasPrecheck(INVALID_TOKEN_MINT_AMOUNT),
+                        mintToken("supple", 0).hasPrecheck(OK),
+                        mintToken("supple", -1).hasPrecheck(INVALID_TOKEN_MINT_AMOUNT),
                         burnToken("supple", 2).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
-                        burnToken("supple", 0).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
+                        burnToken("supple", 0).hasPrecheck(OK),
+                        burnToken("supple", -1).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
     }
 
     @Override
