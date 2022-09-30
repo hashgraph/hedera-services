@@ -16,7 +16,6 @@
 package com.hedera.services.grpc;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.CollectorExemptions;
 import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.fees.StandardCustomExemptions;
 import com.hedera.services.grpc.controllers.ConsensusController;
