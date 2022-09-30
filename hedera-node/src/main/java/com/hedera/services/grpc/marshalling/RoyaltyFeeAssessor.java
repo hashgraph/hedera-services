@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.fees.CustomFeeExemptions;
+import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -34,15 +34,15 @@ import java.util.List;
 public class RoyaltyFeeAssessor {
     private final FixedFeeAssessor fixedFeeAssessor;
     private final FungibleAdjuster fungibleAdjuster;
-    private final CustomFeeExemptions customFeeExemptions;
+    private final CustomFeePayerExemptions customFeePayerExemptions;
 
     public RoyaltyFeeAssessor(
             final FixedFeeAssessor fixedFeeAssessor,
             final FungibleAdjuster fungibleAdjuster,
-            final CustomFeeExemptions customFeeExemptions) {
+            final CustomFeePayerExemptions customFeePayerExemptions) {
         this.fixedFeeAssessor = fixedFeeAssessor;
         this.fungibleAdjuster = fungibleAdjuster;
-        this.customFeeExemptions = customFeeExemptions;
+        this.customFeePayerExemptions = customFeePayerExemptions;
     }
 
     public ResponseCodeEnum assessAllRoyalties(
@@ -89,13 +89,10 @@ public class RoyaltyFeeAssessor {
                                     fallback.getTokenDenomination(),
                                     collector.asEntityId(),
                                     fee.getAllCollectorsAreExempt());
-                    /* Since a fallback fee for a charging non-fungible token can never be
-                    denominated in the units of its charging token (by definition), just
-                    use MISSING_ID for the charging token here. */
                     fixedFeeAssessor.assess(
                             receiver, customFeeMeta, fallbackFee, changeManager, accumulator);
                 }
-            } else {
+            } else if (!customFeePayerExemptions.isPayerExempt(customFeeMeta, fee, payer)) {
                 final var fractionalValidity =
                         chargeRoyalty(
                                 collector,

@@ -20,11 +20,14 @@ import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
-import com.hedera.services.fees.CustomFeeExemptions;
+import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FractionalFeeSpec;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
+import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -32,15 +35,16 @@ import javax.inject.Singleton;
 @Singleton
 public class FractionalFeeAssessor {
     private final FixedFeeAssessor fixedFeeAssessor;
-    private final CustomFeeExemptions customFeeExemptions;
+    private final CustomFeePayerExemptions customFeePayerExemptions;
 
     @Inject
     public FractionalFeeAssessor(
-            FixedFeeAssessor fixedFeeAssessor, CustomFeeExemptions customFeeExemptions) {
+            FixedFeeAssessor fixedFeeAssessor, CustomFeePayerExemptions customFeePayerExemptions) {
         this.fixedFeeAssessor = fixedFeeAssessor;
-        this.customFeeExemptions = customFeeExemptions;
+        this.customFeePayerExemptions = customFeePayerExemptions;
     }
 
+    @SuppressWarnings({"java:S135", "java:S3776"})
     public ResponseCodeEnum assessAllFractional(
             BalanceChange change,
             CustomFeeMeta feeMeta,
@@ -63,7 +67,14 @@ public class FractionalFeeAssessor {
         final var effPayerAccountNums = effPayerAccountNumsOf(creditsToReclaimFrom);
         for (var fee : feeMeta.customFees()) {
             final var collector = fee.getFeeCollectorAsId();
+            // If the collector 0.0.C for a fractional fee is trying to send X units to
+            // a receiver 0.0.R, then we want to let all X units go to 0.0.R, instead of
+            // reclaiming some fraction of them
             if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
+                continue;
+            }
+            final var filteredCredits = filteredByExemptions(creditsToReclaimFrom, feeMeta, fee);
+            if (filteredCredits.isEmpty()) {
                 continue;
             }
 
@@ -76,30 +87,34 @@ public class FractionalFeeAssessor {
             }
 
             if (spec.isNetOfTransfers()) {
-//                if (customFeeExemptions.isPayerExempt(feeMeta, fee, payer)) {
-//                    continue;
-//                }
-
                 final var addedFee =
-                        fixedFee(assessedAmount, denom.asEntityId(), fee.getFeeCollector(), false);
+                        fixedFee(
+                                assessedAmount,
+                                denom.asEntityId(),
+                                fee.getFeeCollector(),
+                                fee.getAllCollectorsAreExempt());
                 fixedFeeAssessor.assess(payer, feeMeta, addedFee, changeManager, accumulator);
             } else {
+                long exemptAmount;
+                try {
+                    exemptAmount = reclaim(assessedAmount, filteredCredits);
+                } catch (ArithmeticException ignore) {
+                    return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+                }
+                assessedAmount -= exemptAmount;
                 unitsLeft -= assessedAmount;
                 if (unitsLeft < 0) {
                     return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
                 }
-                try {
-                    reclaim(assessedAmount, creditsToReclaimFrom);
-                } catch (ArithmeticException ignore) {
-                    return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-                }
                 adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
+                final var finalEffPayerNums = (filteredCredits == creditsToReclaimFrom)
+                        ? effPayerAccountNums : effPayerAccountNumsOf(filteredCredits);
                 final var assessed =
                         new FcAssessedCustomFee(
                                 collector.asEntityId(),
                                 denom.asEntityId(),
                                 assessedAmount,
-                                effPayerAccountNums);
+                                finalEffPayerNums);
                 accumulator.add(assessed);
             }
         }
@@ -115,7 +130,9 @@ public class FractionalFeeAssessor {
         return nums;
     }
 
-    void reclaim(long amount, List<BalanceChange> credits) {
+    long reclaim(
+            final long amount,
+            final List<BalanceChange> credits) {
         var availableToReclaim = 0L;
         for (var credit : credits) {
             availableToReclaim += credit.getAggregatedUnits();
@@ -138,12 +155,34 @@ public class FractionalFeeAssessor {
             for (var credit : credits) {
                 final var toReclaimHere = Math.min(credit.getAggregatedUnits(), leftToReclaim);
                 credit.aggregateUnits(-toReclaimHere);
+                amountReclaimed += toReclaimHere;
                 leftToReclaim -= toReclaimHere;
                 if (leftToReclaim == 0) {
                     break;
                 }
             }
         }
+        return amount - amountReclaimed;
+    }
+
+    private List<BalanceChange> filteredByExemptions(
+            final List<BalanceChange> credits,
+            final CustomFeeMeta feeMeta,
+            final FcCustomFee fee) {
+        List<BalanceChange> filteredCredits = null;
+        for (int i = 0, n = credits.size(); i < n; i++) {
+            final var credit = credits.get(i);
+            if (customFeePayerExemptions.isPayerExempt(feeMeta, fee, credit.getAccount()))  {
+               if (filteredCredits == null)  {
+                   filteredCredits = new ArrayList<>(credits.subList(0, i));
+               }
+            } else {
+                if (filteredCredits != null) {
+                    filteredCredits.add(credit);
+                }
+            }
+        }
+        return filteredCredits != null ? filteredCredits : credits;
     }
 
     long amountOwedGiven(long initialUnits, FractionalFeeSpec spec) {

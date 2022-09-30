@@ -10,7 +10,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class StandardCustomExemptionsTest {
-    private StandardCustomExemptions subject = new StandardCustomExemptions();
+    private StandardCustomPayerExemptions subject = new StandardCustomPayerExemptions();
 
     @Test
     void treasuriesAreExemptFromAllFees() {

@@ -8,7 +8,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Our policy for exemptions is the following:
+ * Our policy for payer exemptions is the following:
  * <ul>
  *     <li>A token's treasury is exempt from all its custom fees.</li>
  *     <li>A fee collection account is exempt from any fee for which it would be the collector.</li>
@@ -16,9 +16,9 @@ import javax.inject.Singleton;
  * </ul>
  */
 @Singleton
-public class StandardCustomExemptions implements CustomFeeExemptions {
+public class StandardCustomPayerExemptions implements CustomFeePayerExemptions {
     @Inject
-    public StandardCustomExemptions() {
+    public StandardCustomPayerExemptions() {
         // For Dagger2
     }
 

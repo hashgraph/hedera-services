@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.fees.CustomFeeExemptions;
+import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -52,13 +52,13 @@ class RoyaltyFeeAssessorTest {
     @Mock private FixedFeeAssessor fixedFeeAssessor;
     @Mock private FungibleAdjuster fungibleAdjuster;
     @Mock private BalanceChangeManager changeManager;
-    @Mock private CustomFeeExemptions customFeeExemptions;
+    @Mock private CustomFeePayerExemptions customFeePayerExemptions;
 
     private RoyaltyFeeAssessor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster, customFeeExemptions);
+        subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster, customFeePayerExemptions);
     }
 
     @Test
@@ -232,6 +232,32 @@ class RoyaltyFeeAssessorTest {
         assertEquals(2, accumulator.size());
         assertEquals(hbarAssessed, accumulator.get(0));
         assertEquals(htsAssessed, accumulator.get(1));
+    }
+
+    @Test
+    void doesntCollectRoyaltyIfOriginalPayerIsExempt() {
+        // setup:
+        final CustomFeeMeta feeMeta =
+                newRoyaltyCustomFeeMeta(
+                        List.of(
+                                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
+        // and:
+        final var reclaimable = changesNoLongerWithOriginalUnits();
+
+        given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
+        final var royaltyFee = feeMeta.customFees().get(1);
+        given(customFeePayerExemptions.isPayerExempt(feeMeta, royaltyFee, trigger.getAccount())).willReturn(true);
+
+        // when:
+        final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
+
+        // then:
+        assertEquals(OK, result);
+        verifyNoInteractions(fungibleAdjuster);
+        verify(changeManager).isRoyaltyPaid(nonFungibleTokenId, payer);
+        verify(changeManager).markRoyaltyPaid(nonFungibleTokenId, payer);
+        assertEquals(0, accumulator.size());
     }
 
     @Test

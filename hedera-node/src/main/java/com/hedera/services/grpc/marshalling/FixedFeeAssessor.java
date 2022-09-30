@@ -15,7 +15,7 @@
  */
 package com.hedera.services.grpc.marshalling;
 
-import com.hedera.services.fees.CustomFeeExemptions;
+import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
@@ -30,25 +30,25 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class FixedFeeAssessor {
     private final HtsFeeAssessor htsFeeAssessor;
     private final HbarFeeAssessor hbarFeeAssessor;
-    private final CustomFeeExemptions customFeeExemptions;
+    private final CustomFeePayerExemptions customFeePayerExemptions;
 
     @Inject
     public FixedFeeAssessor(
             HtsFeeAssessor htsFeeAssessor,
             HbarFeeAssessor hbarFeeAssessor,
-            CustomFeeExemptions customFeeExemptions) {
+            CustomFeePayerExemptions customFeePayerExemptions) {
         this.htsFeeAssessor = htsFeeAssessor;
         this.hbarFeeAssessor = hbarFeeAssessor;
-        this.customFeeExemptions = customFeeExemptions;
+        this.customFeePayerExemptions = customFeePayerExemptions;
     }
 
     public ResponseCodeEnum assess(
             Id payer,
-            CustomFeeMeta chargingTokenMeta,
+            CustomFeeMeta feeMeta,
             FcCustomFee fee,
             BalanceChangeManager changeManager,
             List<FcAssessedCustomFee> accumulator) {
-        if (customFeeExemptions.isPayerExempt(chargingTokenMeta, fee, payer)) {
+        if (customFeePayerExemptions.isPayerExempt(feeMeta, fee, payer)) {
             return OK;
         }
 
@@ -56,7 +56,7 @@ public class FixedFeeAssessor {
         if (fixedSpec.getTokenDenomination() == null) {
             return hbarFeeAssessor.assess(payer, fee, changeManager, accumulator);
         } else {
-            return htsFeeAssessor.assess(payer, chargingTokenMeta, fee, changeManager, accumulator);
+            return htsFeeAssessor.assess(payer, feeMeta, fee, changeManager, accumulator);
         }
     }
 }

@@ -18,9 +18,18 @@ package com.hedera.services.fees;
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
-import javax.inject.Singleton;
 
-/** Defines a type that determines if a custom fee's payer is exempt from a given custom fee */
-public interface CustomFeeExemptions {
+/** Defines a type that determines if a custom fee's payer is exempt from a given custom fee.
+ * Please note that there are two other cases in which we exempt a custom fee:
+ * <ol>
+ *     <li>When a fractional fee collector sends units of its collected token, we do not
+ *     immediately reclaim any of these from the receiving account (which would be the
+ *     effective payer).</li>
+ *     <li>When a token treasury sends NFTs with a fallback to an account without any value
+ *     exchanged, we do not apply the fallback fee to the receiving account (which would be
+ *     the effective payer).</li>
+ * </ol>
+ * */
+public interface CustomFeePayerExemptions {
     boolean isPayerExempt(CustomFeeMeta feeMeta, FcCustomFee fee, Id payer);
 }

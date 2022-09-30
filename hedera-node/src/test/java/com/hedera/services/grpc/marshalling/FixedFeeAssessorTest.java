@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.fees.CustomFeeExemptions;
+import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -41,20 +41,20 @@ class FixedFeeAssessorTest {
     @Mock private BalanceChangeManager changeManager;
     @Mock private HtsFeeAssessor htsFeeAssessor;
     @Mock private HbarFeeAssessor hbarFeeAssessor;
-    @Mock private CustomFeeExemptions customFeeExemptions;
+    @Mock private CustomFeePayerExemptions customFeePayerExemptions;
 
     private FixedFeeAssessor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FixedFeeAssessor(htsFeeAssessor, hbarFeeAssessor, customFeeExemptions);
+        subject = new FixedFeeAssessor(htsFeeAssessor, hbarFeeAssessor, customFeePayerExemptions);
     }
 
     @Test
     void delegatesToHbarWhenDenomIsNull() {
         final var hbarFee = FcCustomFee.fixedFee(1, null, otherCollector, false);
 
-        given(customFeeExemptions.isPayerExempt(any(), any(), any()))
+        given(customFeePayerExemptions.isPayerExempt(any(), any(), any()))
                 .willReturn(false);
         given(hbarFeeAssessor.assess(payer, hbarFee, changeManager, mockAccum)).willReturn(OK);
 
@@ -70,7 +70,7 @@ class FixedFeeAssessorTest {
     void delegatesToHtsWhenDenomIsNonNull() {
         FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, otherCollector, false);
 
-        given(customFeeExemptions.isPayerExempt(any(), any(), any()))
+        given(customFeePayerExemptions.isPayerExempt(any(), any(), any()))
                 .willReturn(false);
         given(htsFeeAssessor.assess(payer, chargingMeta, htsFee, changeManager, mockAccum))
                 .willReturn(OK);
@@ -87,7 +87,7 @@ class FixedFeeAssessorTest {
     void fixedCustomFeeExemptIsOk() {
         FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, chargingToken.asEntityId(), true);
 
-        given(customFeeExemptions.isPayerExempt(chargingMeta, htsFee, chargingToken))
+        given(customFeePayerExemptions.isPayerExempt(chargingMeta, htsFee, chargingToken))
                 .willReturn(true);
 
         // when:
