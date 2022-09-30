@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -33,11 +34,15 @@ import java.util.List;
 public class RoyaltyFeeAssessor {
     private final FixedFeeAssessor fixedFeeAssessor;
     private final FungibleAdjuster fungibleAdjuster;
+    private final CustomFeeExemptions customFeeExemptions;
 
     public RoyaltyFeeAssessor(
-            final FixedFeeAssessor fixedFeeAssessor, final FungibleAdjuster fungibleAdjuster) {
+            final FixedFeeAssessor fixedFeeAssessor,
+            final FungibleAdjuster fungibleAdjuster,
+            final CustomFeeExemptions customFeeExemptions) {
         this.fixedFeeAssessor = fixedFeeAssessor;
         this.fungibleAdjuster = fungibleAdjuster;
+        this.customFeeExemptions = customFeeExemptions;
     }
 
     public ResponseCodeEnum assessAllRoyalties(

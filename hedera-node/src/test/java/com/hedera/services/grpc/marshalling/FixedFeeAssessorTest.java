@@ -19,6 +19,7 @@ import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -39,12 +40,13 @@ class FixedFeeAssessorTest {
     @Mock private BalanceChangeManager changeManager;
     @Mock private HtsFeeAssessor htsFeeAssessor;
     @Mock private HbarFeeAssessor hbarFeeAssessor;
+    @Mock private CustomFeeExemptions customFeeExemptions;
 
     private FixedFeeAssessor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FixedFeeAssessor(htsFeeAssessor, hbarFeeAssessor);
+        subject = new FixedFeeAssessor(htsFeeAssessor, hbarFeeAssessor, customFeeExemptions);
     }
 
     @Test

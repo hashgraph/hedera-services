@@ -15,6 +15,7 @@
  */
 package com.hedera.services.grpc.marshalling;
 
+import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
@@ -27,11 +28,16 @@ import javax.inject.Singleton;
 public class FixedFeeAssessor {
     private final HtsFeeAssessor htsFeeAssessor;
     private final HbarFeeAssessor hbarFeeAssessor;
+    private final CustomFeeExemptions customFeeExemptions;
 
     @Inject
-    public FixedFeeAssessor(HtsFeeAssessor htsFeeAssessor, HbarFeeAssessor hbarFeeAssessor) {
+    public FixedFeeAssessor(
+            HtsFeeAssessor htsFeeAssessor,
+            HbarFeeAssessor hbarFeeAssessor,
+            CustomFeeExemptions customFeeExemptions) {
         this.htsFeeAssessor = htsFeeAssessor;
         this.hbarFeeAssessor = hbarFeeAssessor;
+        this.customFeeExemptions = customFeeExemptions;
     }
 
     public ResponseCodeEnum assess(

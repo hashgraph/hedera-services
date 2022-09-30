@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FractionalFeeSpec;
@@ -33,10 +34,13 @@ import javax.inject.Singleton;
 @Singleton
 public class FractionalFeeAssessor {
     private final FixedFeeAssessor fixedFeeAssessor;
+    private final CustomFeeExemptions customFeeExemptions;
 
     @Inject
-    public FractionalFeeAssessor(FixedFeeAssessor fixedFeeAssessor) {
+    public FractionalFeeAssessor(
+            FixedFeeAssessor fixedFeeAssessor, CustomFeeExemptions customFeeExemptions) {
         this.fixedFeeAssessor = fixedFeeAssessor;
+        this.customFeeExemptions = customFeeExemptions;
     }
 
     public ResponseCodeEnum assessAllFractional(

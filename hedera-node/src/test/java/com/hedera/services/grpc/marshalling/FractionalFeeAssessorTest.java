@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -43,12 +44,13 @@ class FractionalFeeAssessorTest {
 
     @Mock private BalanceChangeManager changeManager;
     @Mock private FixedFeeAssessor fixedFeeAssessor;
+    @Mock private CustomFeeExemptions customFeeExemptions;
 
     private FractionalFeeAssessor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FractionalFeeAssessor(fixedFeeAssessor);
+        subject = new FractionalFeeAssessor(fixedFeeAssessor, customFeeExemptions);
     }
 
     @Test

@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -51,12 +52,13 @@ class RoyaltyFeeAssessorTest {
     @Mock private FixedFeeAssessor fixedFeeAssessor;
     @Mock private FungibleAdjuster fungibleAdjuster;
     @Mock private BalanceChangeManager changeManager;
+    @Mock private CustomFeeExemptions customFeeExemptions;
 
     private RoyaltyFeeAssessor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster);
+        subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster, customFeeExemptions);
     }
 
     @Test
