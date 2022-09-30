@@ -15,6 +15,8 @@
  */
 package com.hedera.services.grpc.marshalling;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -46,6 +48,11 @@ public class FixedFeeAssessor {
             FcCustomFee fee,
             BalanceChangeManager changeManager,
             List<FcAssessedCustomFee> accumulator) {
+        var fixedFeeMeta = new CustomFeeMeta(chargingToken, null, List.of(fee));
+        if (customFeeExemptions.isPayerExempt(fixedFeeMeta, fee, account)) {
+            return OK;
+        }
+
         final var fixedSpec = fee.getFixedFeeSpec();
         if (fixedSpec.getTokenDenomination() == null) {
             return hbarFeeAssessor.assess(account, fee, changeManager, accumulator);

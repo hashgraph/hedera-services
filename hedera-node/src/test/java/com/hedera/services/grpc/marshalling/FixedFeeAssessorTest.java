@@ -17,6 +17,8 @@ package com.hedera.services.grpc.marshalling;
 
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.fees.CustomFeeExemptions;
@@ -26,7 +28,6 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import java.util.Collections;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +60,7 @@ class FixedFeeAssessorTest {
         final var result = subject.assess(payer, MISSING_ID, hbarFee, changeManager, mockAccum);
 
         // then:
-        Assertions.assertEquals(OK, result);
+        assertEquals(OK, result);
     }
 
     @Test
@@ -73,7 +74,22 @@ class FixedFeeAssessorTest {
         final var result = subject.assess(payer, chargingToken, htsFee, changeManager, mockAccum);
 
         // then:
-        Assertions.assertEquals(OK, result);
+        assertEquals(OK, result);
+    }
+
+    @Test
+    void fixedCustomFeeExemptIsOk() {
+        FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, chargingToken.asEntityId(), true);
+
+        given(customFeeExemptions.isPayerExempt(notNull(), eq(htsFee), eq(chargingToken)))
+                .willReturn(true);
+
+        // when:
+        final var result =
+                subject.assess(chargingToken, chargingToken, htsFee, changeManager, mockAccum);
+
+        // then:
+        assertEquals(OK, result);
     }
 
     private final EntityId feeDenom = new EntityId(6, 6, 6);
