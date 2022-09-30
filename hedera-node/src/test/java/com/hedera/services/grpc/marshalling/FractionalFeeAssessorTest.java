@@ -140,7 +140,12 @@ class FractionalFeeAssessorTest {
     }
 
     @Test
-    void onlyAppliesNonExemptCustomFees() {
+    void nonNetOfTransfersOnlyAppliesNonExemptCustomFees() {
+        // TODO
+    }
+
+    @Test
+    void netOfTransfersOnlyAppliesNonExemptCustomFees() {
         // setup:
         final var feeMeta =
                 newCustomFeeMeta(
@@ -363,7 +368,7 @@ class FractionalFeeAssessorTest {
     }
 
     private CustomFeeMeta newCustomFeeMeta(Id tokenId, List<FcCustomFee> customFees) {
-        return new CustomFeeMeta(tokenId, null, customFees);
+        return new CustomFeeMeta(tokenId, treasury, customFees);
     }
 
     private final Id payer = new Id(0, 1, 2);
@@ -395,7 +400,6 @@ class FractionalFeeAssessorTest {
     private final EntityId firstFractionalFeeCollector = new EntityId(4, 5, 6);
     private final EntityId secondFractionalFeeCollector = new EntityId(5, 6, 7);
     private final EntityId netOfTransfersFeeCollector = new EntityId(6, 7, 8);
-    private final CustomFeeMeta tokenWithFractionalMeta = new CustomFeeMeta(tokenWithFractionalFee, treasury, List.of());
     private final FcCustomFee skippedFixedFee =
             FcCustomFee.fixedFee(
                     100L, EntityId.MISSING_ENTITY_ID, EntityId.MISSING_ENTITY_ID, false);
@@ -453,6 +457,11 @@ class FractionalFeeAssessorTest {
                     true,
                     secondFractionalFeeCollector,
                     true);
+    private final CustomFeeMeta tokenWithFractionalMeta = new CustomFeeMeta(tokenWithFractionalFee, treasury, List.of(firstFractionalFee,
+            secondFractionalFee,
+            exemptFractionalFee,
+            skippedFixedFee,
+            fractionalFeeNetOfTransfers));
     private final BalanceChange vanillaTrigger =
             BalanceChange.tokenAdjust(payer, tokenWithFractionalFee, -vanillaTriggerAmount);
     private final BalanceChange firstVanillaReclaim =
