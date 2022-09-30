@@ -97,6 +97,8 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
+
+    @SuppressWarnings("java:S1181")
     public TransactionRecordAsserts assessedCustomFeeCount(final int n) {
         this.<List<AssessedCustomFee>>registerTypedProvider(
                 "assessedCustomFeesList",
