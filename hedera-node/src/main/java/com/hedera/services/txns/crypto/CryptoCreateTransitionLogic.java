@@ -197,7 +197,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         } else {
             /* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
             if (!op.getKey().getECDSASecp256K1().isEmpty()) {
-                if (!aliasManager.lookupIdBy(op.getAlias()).equals(MISSING_NUM)) {
+                if (!aliasManager.lookupIdBy(op.getKey().getECDSASecp256K1()).equals(MISSING_NUM)) {
                     throw new InvalidTransactionException(INVALID_ALIAS_KEY);
                 }
 
