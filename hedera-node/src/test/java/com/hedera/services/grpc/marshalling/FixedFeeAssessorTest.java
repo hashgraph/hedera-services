@@ -30,6 +30,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -53,6 +54,8 @@ class FixedFeeAssessorTest {
     void delegatesToHbarWhenDenomIsNull() {
         final var hbarFee = FcCustomFee.fixedFee(1, null, otherCollector, false);
 
+        given(customFeeExemptions.isPayerExempt(any(), any(), any()))
+                .willReturn(false);
         given(hbarFeeAssessor.assess(payer, hbarFee, changeManager, mockAccum)).willReturn(OK);
 
         // when:
@@ -60,12 +63,15 @@ class FixedFeeAssessorTest {
 
         // then:
         assertEquals(OK, result);
+        BDDMockito.verify(hbarFeeAssessor).assess(payer, hbarFee, changeManager, mockAccum);
     }
 
     @Test
     void delegatesToHtsWhenDenomIsNonNull() {
         FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, otherCollector, false);
 
+        given(customFeeExemptions.isPayerExempt(any(), any(), any()))
+                .willReturn(false);
         given(htsFeeAssessor.assess(payer, chargingMeta, htsFee, changeManager, mockAccum))
                 .willReturn(OK);
 
@@ -74,6 +80,7 @@ class FixedFeeAssessorTest {
 
         // then:
         assertEquals(OK, result);
+        BDDMockito.verify(htsFeeAssessor).assess(payer, chargingMeta, htsFee, changeManager, mockAccum);
     }
 
     @Test
