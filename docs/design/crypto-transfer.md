@@ -59,11 +59,12 @@ This creates a breaking change in the  `cryptoTransfer`  function hash since the
 `cryptoTransfer(TransferList, TokenTransferList[])`
 
 ### Hedera Services Changes
-Currently, the `TransferPrecompile` class decodes and operates on a list of `TokenTransferWrapper` instances.  In order to additionally support transfers of hbars with minimal disruption, create new wrapper classes TransferWrapper and `CryptoTransferWrapper` as shown.
+Currently, the `TransferPrecompile` class decodes and operates on a list of `TokenTransferWrapper` instances.  In order to additionally support transfers of hbars with minimal disruption, create new wrapper classes `TransferWrapper` and `CryptoTransferWrapper` as shown.
 
 ![Crypto Transfer Wrappers](images/crypto_wrappers.png)
 
-Fees and change operations will be modified to use the data in the CryptoTransferWrapper.
+
+Fees and change operations will be modified to be derived from the data in the CryptoTransferWrapper.
 
 ## Acceptance Tests
 
