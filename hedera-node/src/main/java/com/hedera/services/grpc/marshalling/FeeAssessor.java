@@ -27,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
@@ -72,7 +71,12 @@ public class FeeAssessor {
         final var maxBalanceChanges = props.maxXferBalanceChanges();
         final var fixedFeeResult =
                 assessFixedFees(
-                        chargingToken, fees, payer, changeManager, accumulator, maxBalanceChanges);
+                        chargingToken,
+                        feeMeta,
+                        payer,
+                        changeManager,
+                        accumulator,
+                        maxBalanceChanges);
         if (fixedFeeResult == ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED) {
             return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
         }
@@ -83,13 +87,14 @@ public class FeeAssessor {
         if (fixedFeeResult == FRACTIONAL_FEE_ASSESSMENT_PENDING) {
             final var fractionalValidity =
                     fractionalFeeAssessor.assessAllFractional(
-                            change, fees, changeManager, accumulator);
+                            change, feeMeta, changeManager, accumulator);
             if (fractionalValidity != OK) {
                 return fractionalValidity;
             }
         } else if (fixedFeeResult == ROYALTY_FEE_ASSESSMENT_PENDING) {
             final var royaltyValidity =
-                    royaltyFeeAssessor.assessAllRoyalties(change, fees, changeManager, accumulator);
+                    royaltyFeeAssessor.assessAllRoyalties(
+                            change, feeMeta, changeManager, accumulator);
             if (royaltyValidity != OK) {
                 return royaltyValidity;
             }
@@ -102,13 +107,13 @@ public class FeeAssessor {
 
     private FixedFeeResult assessFixedFees(
             Id chargingToken,
-            List<FcCustomFee> fees,
+            CustomFeeMeta feeMeta,
             Id payer,
             BalanceChangeManager balanceChangeManager,
             List<FcAssessedCustomFee> accumulator,
             int maxBalanceChanges) {
         var result = ASSESSMENT_FINISHED;
-        for (var fee : fees) {
+        for (var fee : feeMeta.customFees()) {
             final var collector = fee.getFeeCollectorAsId();
             if (payer.equals(collector)) {
                 continue;

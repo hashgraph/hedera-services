@@ -42,7 +42,7 @@ public class RoyaltyFeeAssessor {
 
     public ResponseCodeEnum assessAllRoyalties(
             final BalanceChange change,
-            final List<FcCustomFee> feesWithRoyalties,
+            final CustomFeeMeta customFeeMeta,
             final BalanceChangeManager changeManager,
             final List<FcAssessedCustomFee> accumulator) {
         if (!change.isForNft()) {
@@ -61,7 +61,7 @@ public class RoyaltyFeeAssessor {
         }
 
         final var exchangedValue = changeManager.fungibleCreditsInCurrentLevel(payer);
-        for (var fee : feesWithRoyalties) {
+        for (var fee : customFeeMeta.customFees()) {
             final var collector = fee.getFeeCollectorAsId();
             if (fee.getFeeType() != ROYALTY_FEE) {
                 continue;

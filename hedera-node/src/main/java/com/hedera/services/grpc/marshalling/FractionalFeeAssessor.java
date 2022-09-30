@@ -24,7 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FractionalFeeSpec;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
@@ -42,7 +41,7 @@ public class FractionalFeeAssessor {
 
     public ResponseCodeEnum assessAllFractional(
             BalanceChange change,
-            List<FcCustomFee> feesWithFractional,
+            CustomFeeMeta feeMeta,
             BalanceChangeManager changeManager,
             List<FcAssessedCustomFee> accumulator) {
         final var initialUnits = -change.getAggregatedUnits();
@@ -57,7 +56,7 @@ public class FractionalFeeAssessor {
         /* These accounts receiving the reclaimed credits are the
         effective payers unless the net-of-transfers flag is set. */
         final var effPayerAccountNums = effPayerAccountNumsOf(creditsToReclaimFrom);
-        for (var fee : feesWithFractional) {
+        for (var fee : feeMeta.customFees()) {
             final var collector = fee.getFeeCollectorAsId();
             if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
                 continue;

@@ -54,13 +54,15 @@ class FractionalFeeAssessorTest {
     @Test
     void appliesFeesAsExpected() {
         // setup:
-        final var fees =
-                List.of(
-                        firstFractionalFee,
-                        secondFractionalFee,
-                        exemptFractionalFee,
-                        skippedFixedFee,
-                        fractionalFeeNetOfTransfers);
+        final var feeMeta =
+                newCustomFeeMeta(
+                        tokenWithFractionalFee,
+                        List.of(
+                                firstFractionalFee,
+                                secondFractionalFee,
+                                exemptFractionalFee,
+                                skippedFixedFee,
+                                fractionalFeeNetOfTransfers));
         final var firstCollectorChange =
                 BalanceChange.tokenAdjust(
                         firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
@@ -101,7 +103,7 @@ class FractionalFeeAssessorTest {
 
         // when:
         final var result =
-                subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator);
+                subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -136,7 +138,9 @@ class FractionalFeeAssessorTest {
     @Test
     void abortsOnCreditOverflow() {
         // setup:
-        final var fees = List.of(firstFractionalFee, secondFractionalFee);
+        final var feeMeta =
+                newCustomFeeMeta(
+                        tokenWithFractionalFee, List.of(firstFractionalFee, secondFractionalFee));
         final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
         // and:
         firstVanillaReclaim.aggregateUnits(Long.MAX_VALUE / 2);
@@ -146,7 +150,7 @@ class FractionalFeeAssessorTest {
 
         // when:
         final var result =
-                subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator);
+                subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -155,11 +159,12 @@ class FractionalFeeAssessorTest {
     @Test
     void cannotOverflowWithCrazyFraction() {
         // setup:
-        final var fees = List.of(nonsenseFee, secondFractionalFee);
+        final var feeMeta =
+                newCustomFeeMeta(tokenWithFractionalFee, List.of(nonsenseFee, secondFractionalFee));
 
         // when:
         final var result =
-                subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator);
+                subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -168,12 +173,14 @@ class FractionalFeeAssessorTest {
     @Test
     void failsWithInsufficientBalanceWhenAppropos() {
         // setup:
-        final var fees = List.of(firstFractionalFee, secondFractionalFee);
+        final var feeMeta =
+                newCustomFeeMeta(
+                        tokenWithFractionalFee, List.of(firstFractionalFee, secondFractionalFee));
 
         // when:
         final var result =
                 subject.assessAllFractional(
-                        wildlyInsufficientChange, fees, changeManager, accumulator);
+                        wildlyInsufficientChange, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
@@ -183,14 +190,14 @@ class FractionalFeeAssessorTest {
     void failsFastOnPositiveAdjustment() {
         // given:
         vanillaTrigger.aggregateUnits(Long.MAX_VALUE);
-        final List<FcCustomFee> list = List.of();
+        final CustomFeeMeta feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of());
 
         // expect:
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         subject.assessAllFractional(
-                                vanillaTrigger, list, changeManager, accumulator));
+                                vanillaTrigger, feeMeta, changeManager, accumulator));
     }
 
     @Test
@@ -301,6 +308,10 @@ class FractionalFeeAssessorTest {
         assertEquals(
                 perturbedSecondCreditAmount - expFromSecond,
                 secondVanillaReclaim.getAggregatedUnits());
+    }
+
+    private CustomFeeMeta newCustomFeeMeta(Id tokenId, List<FcCustomFee> customFees) {
+        return new CustomFeeMeta(tokenId, null, customFees);
     }
 
     private final Id payer = new Id(0, 1, 2);
