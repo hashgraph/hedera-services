@@ -196,14 +196,13 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             }
         } else {
             /* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
-            final var primitiveKey = asPrimitiveKeyUnchecked(op.getAlias());
-            if (!primitiveKey.getECDSASecp256K1().isEmpty()) {
+            if (!op.getKey().getECDSASecp256K1().isEmpty()) {
                 if (!aliasManager.lookupIdBy(op.getAlias()).equals(MISSING_NUM)) {
                     throw new InvalidTransactionException(INVALID_ALIAS_KEY);
                 }
 
                 final var recoveredEvmAddressFromPrimitiveKey =
-                        recoverAddressFromPubKey(primitiveKey.getECDSASecp256K1().toByteArray());
+                        recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
                 assert recoveredEvmAddressFromPrimitiveKey != null;
 
                 if (!aliasManager
