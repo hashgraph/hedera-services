@@ -15,9 +15,7 @@
  */
 package com.hedera.services.grpc.marshalling;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -30,6 +28,8 @@ import com.hedera.services.store.models.Id;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -190,6 +190,20 @@ class FractionalFeeAssessorTest {
                 () ->
                         subject.assessAllFractional(
                                 vanillaTrigger, list, changeManager, accumulator));
+    }
+
+    @Test
+    void failsFastOnNonFungibleChange() {
+        // setup:
+        final var fees = List.of(firstFractionalFee, secondFractionalFee);
+
+        // when:
+        final var result =
+                subject.assessAllFractional(
+                        nonFungibleChange, fees, changeManager, accumulator);
+
+        // then:
+        assertEquals(INVALID_TOKEN_ID, result);
     }
 
     @Test
@@ -382,4 +396,18 @@ class FractionalFeeAssessorTest {
                     secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount);
     private final BalanceChange wildlyInsufficientChange =
             BalanceChange.tokenAdjust(payer, tokenWithFractionalFee, -1);
+
+    private final NftTransfer ownershipChange =
+            NftTransfer.newBuilder()
+                    .setSenderAccountID(payer.asGrpcAccount())
+                    .setReceiverAccountID(firstReclaimedAcount.asGrpcAccount())
+                    .setSerialNumber(666)
+                    .build();
+
+    private final BalanceChange nonFungibleChange =
+            BalanceChange.changingNftOwnership(
+                    tokenWithFractionalFee,
+                    tokenWithFractionalFee.asGrpcToken(),
+                    ownershipChange,
+                    payer.asGrpcAccount());
 }

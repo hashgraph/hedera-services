@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.assertions;
 import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldBe;
 import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldNotBe;
 import static java.util.Collections.EMPTY_LIST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
@@ -25,13 +26,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenAssociation;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.*;
+
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
@@ -94,6 +90,23 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                             try {
                                 Assertions.assertNotNull(prngBytes, "Null prngBytes!");
                                 Assertions.assertEquals(32, prngBytes.size(), "Wrong prngBytes!");
+                            } catch (Throwable t) {
+                                return List.of(t);
+                            }
+                            return EMPTY_LIST;
+                        });
+        return this;
+    }
+
+    public TransactionRecordAsserts assessedCustomFeeCount(final int n) {
+        this.<List<AssessedCustomFee>>registerTypedProvider(
+                "assessedCustomFeesList",
+                spec ->
+                        assessedCustomFees -> {
+                            try {
+                                assertEquals(n, assessedCustomFees.size(),
+                                        "Wrong # of custom fees: "
+                                                + assessedCustomFees);
                             } catch (Throwable t) {
                                 return List.of(t);
                             }

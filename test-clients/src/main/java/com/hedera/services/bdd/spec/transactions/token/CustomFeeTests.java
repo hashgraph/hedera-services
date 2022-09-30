@@ -33,7 +33,7 @@ public class CustomFeeTests {
     public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHbarFeeInSchedule(
             long amount, String collector) {
         return (spec, actual) -> {
-            final var expected = CustomFeeSpecs.builtFixedHbar(amount, collector, spec);
+            final var expected = CustomFeeSpecs.builtFixedHbar(amount, collector, false, spec);
             failUnlessPresent("fixed ℏ", actual, expected);
         };
     }
@@ -41,7 +41,7 @@ public class CustomFeeTests {
     public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHtsFeeInSchedule(
             long amount, String denom, String collector) {
         return (spec, actual) -> {
-            final var expected = builtFixedHts(amount, denom, collector, spec);
+            final var expected = builtFixedHts(amount, denom, collector, false, spec);
             failUnlessPresent("fixed HTS", actual, expected);
         };
     }
@@ -56,7 +56,7 @@ public class CustomFeeTests {
         return (spec, actual) -> {
             final var expected =
                     builtFractional(
-                            numerator, denominator, min, max, netOfTransfers, collector, spec);
+                            numerator, denominator, min, max, netOfTransfers, collector, false, spec);
             failUnlessPresent("fractional", actual, expected);
         };
     }
@@ -64,7 +64,7 @@ public class CustomFeeTests {
     public static BiConsumer<HapiApiSpec, List<CustomFee>> royaltyFeeWithoutFallbackInSchedule(
             long numerator, long denominator, String collector) {
         return (spec, actual) -> {
-            final var expected = builtRoyaltyNoFallback(numerator, denominator, collector, spec);
+            final var expected = builtRoyaltyNoFallback(numerator, denominator, collector, false, spec);
             failUnlessPresent("royalty", actual, expected);
         };
     }
@@ -77,6 +77,7 @@ public class CustomFeeTests {
                             numerator,
                             denominator,
                             collector,
+                            false,
                             fixedHbarFeeInheritingRoyaltyCollector(fallbackAmount),
                             spec);
             failUnlessPresent("royalty", actual, expected);
@@ -95,6 +96,7 @@ public class CustomFeeTests {
                             numerator,
                             denominator,
                             collector,
+                            false,
                             fixedHtsFeeInheritingRoyaltyCollector(fallbackAmount, fallbackDenom),
                             spec);
             failUnlessPresent("royalty", actual, expected);
