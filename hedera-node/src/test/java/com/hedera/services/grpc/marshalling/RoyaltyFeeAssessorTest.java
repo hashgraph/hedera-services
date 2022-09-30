@@ -99,7 +99,7 @@ class RoyaltyFeeAssessorTest {
         verify(fixedFeeAssessor)
                 .assess(
                         funding,
-                        MISSING_ID,
+                        feeMeta,
                         FcCustomFee.fixedFee(33, null, targetCollector, false),
                         changeManager,
                         accumulator);
@@ -138,7 +138,7 @@ class RoyaltyFeeAssessorTest {
         verify(fixedFeeAssessor)
                 .assess(
                         funding,
-                        MISSING_ID,
+                        feeMeta,
                         FcCustomFee.fixedFee(33, denom, targetCollector, false),
                         changeManager,
                         accumulator);

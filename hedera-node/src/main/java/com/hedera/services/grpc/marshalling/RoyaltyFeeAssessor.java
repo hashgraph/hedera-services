@@ -88,12 +88,12 @@ public class RoyaltyFeeAssessor {
                                     fallback.getUnitsToCollect(),
                                     fallback.getTokenDenomination(),
                                     collector.asEntityId(),
-                                    false);
+                                    fee.getAllCollectorsAreExempt());
                     /* Since a fallback fee for a charging non-fungible token can never be
                     denominated in the units of its charging token (by definition), just
                     use MISSING_ID for the charging token here. */
                     fixedFeeAssessor.assess(
-                            receiver, MISSING_ID, fallbackFee, changeManager, accumulator);
+                            receiver, customFeeMeta, fallbackFee, changeManager, accumulator);
                 }
             } else {
                 final var fractionalValidity =

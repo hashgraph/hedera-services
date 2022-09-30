@@ -15,7 +15,6 @@
  */
 package com.hedera.services.grpc.marshalling;
 
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
@@ -57,7 +56,7 @@ class FixedFeeAssessorTest {
         given(hbarFeeAssessor.assess(payer, hbarFee, changeManager, mockAccum)).willReturn(OK);
 
         // when:
-        final var result = subject.assess(payer, MISSING_ID, hbarFee, changeManager, mockAccum);
+        final var result = subject.assess(payer, chargingMeta, hbarFee, changeManager, mockAccum);
 
         // then:
         assertEquals(OK, result);
@@ -67,11 +66,11 @@ class FixedFeeAssessorTest {
     void delegatesToHtsWhenDenomIsNonNull() {
         FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, otherCollector, false);
 
-        given(htsFeeAssessor.assess(payer, chargingToken, htsFee, changeManager, mockAccum))
+        given(htsFeeAssessor.assess(payer, chargingMeta, htsFee, changeManager, mockAccum))
                 .willReturn(OK);
 
         // when:
-        final var result = subject.assess(payer, chargingToken, htsFee, changeManager, mockAccum);
+        final var result = subject.assess(payer, chargingMeta, htsFee, changeManager, mockAccum);
 
         // then:
         assertEquals(OK, result);
@@ -81,12 +80,12 @@ class FixedFeeAssessorTest {
     void fixedCustomFeeExemptIsOk() {
         FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, chargingToken.asEntityId(), true);
 
-        given(customFeeExemptions.isPayerExempt(notNull(), eq(htsFee), eq(chargingToken)))
+        given(customFeeExemptions.isPayerExempt(chargingMeta, htsFee, chargingToken))
                 .willReturn(true);
 
         // when:
         final var result =
-                subject.assess(chargingToken, chargingToken, htsFee, changeManager, mockAccum);
+                subject.assess(chargingToken, chargingMeta, htsFee, changeManager, mockAccum);
 
         // then:
         assertEquals(OK, result);
@@ -95,5 +94,7 @@ class FixedFeeAssessorTest {
     private final EntityId feeDenom = new EntityId(6, 6, 6);
     private final Id payer = new Id(0, 1, 2);
     private final EntityId otherCollector = new EntityId(10, 9, 8);
+    private final Id treasury = new Id(0, 0, 7777);
     private final Id chargingToken = new Id(0, 1, 2222);
+    private final CustomFeeMeta chargingMeta = new CustomFeeMeta(chargingToken, treasury, List.of());
 }

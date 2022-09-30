@@ -129,7 +129,7 @@ class FractionalFeeAssessorTest {
         BDDMockito.verify(fixedFeeAssessor)
                 .assess(
                         payer,
-                        tokenWithFractionalFee,
+                        tokenWithFractionalMeta,
                         FcCustomFee.fixedFee(
                                 netFee,
                                 tokenWithFractionalFee.asEntityId(),
@@ -241,11 +241,12 @@ class FractionalFeeAssessorTest {
     @Test
     void failsFastOnNonFungibleChange() {
         // setup:
-        final var fees = List.of(firstFractionalFee, secondFractionalFee);
+        final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee,
+                List.of(firstFractionalFee, secondFractionalFee));
 
         // when:
         final var result =
-                subject.assessAllFractional(nonFungibleChange, fees, changeManager, accumulator);
+                subject.assessAllFractional(nonFungibleChange, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(INVALID_TOKEN_ID, result);
@@ -390,9 +391,11 @@ class FractionalFeeAssessorTest {
     private final long nonsenseDenominator = 1L;
     private final boolean notNetOfTransfers = false;
     private final Id tokenWithFractionalFee = new Id(1, 2, 3);
+    private final Id treasury = new Id(5, 6, 7777);
     private final EntityId firstFractionalFeeCollector = new EntityId(4, 5, 6);
     private final EntityId secondFractionalFeeCollector = new EntityId(5, 6, 7);
     private final EntityId netOfTransfersFeeCollector = new EntityId(6, 7, 8);
+    private final CustomFeeMeta tokenWithFractionalMeta = new CustomFeeMeta(tokenWithFractionalFee, treasury, List.of());
     private final FcCustomFee skippedFixedFee =
             FcCustomFee.fixedFee(
                     100L, EntityId.MISSING_ENTITY_ID, EntityId.MISSING_ENTITY_ID, false);

@@ -15,8 +15,6 @@
  */
 package com.hedera.services.grpc.marshalling;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -25,6 +23,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class FixedFeeAssessor {
@@ -43,21 +43,20 @@ public class FixedFeeAssessor {
     }
 
     public ResponseCodeEnum assess(
-            Id account,
-            Id chargingToken,
+            Id payer,
+            CustomFeeMeta chargingTokenMeta,
             FcCustomFee fee,
             BalanceChangeManager changeManager,
             List<FcAssessedCustomFee> accumulator) {
-        var fixedFeeMeta = new CustomFeeMeta(chargingToken, null, List.of(fee));
-        if (customFeeExemptions.isPayerExempt(fixedFeeMeta, fee, account)) {
+        if (customFeeExemptions.isPayerExempt(chargingTokenMeta, fee, payer)) {
             return OK;
         }
 
         final var fixedSpec = fee.getFixedFeeSpec();
         if (fixedSpec.getTokenDenomination() == null) {
-            return hbarFeeAssessor.assess(account, fee, changeManager, accumulator);
+            return hbarFeeAssessor.assess(payer, fee, changeManager, accumulator);
         } else {
-            return htsFeeAssessor.assess(account, chargingToken, fee, changeManager, accumulator);
+            return htsFeeAssessor.assess(payer, chargingTokenMeta, fee, changeManager, accumulator);
         }
     }
 }

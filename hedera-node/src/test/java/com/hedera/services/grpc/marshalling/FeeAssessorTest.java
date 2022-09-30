@@ -150,9 +150,9 @@ class FeeAssessorTest {
 
         // then:
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
         verify(fixedFeeAssessor, times(2))
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
@@ -177,9 +177,9 @@ class FeeAssessorTest {
 
         // then:
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
+                .assess(payer, feeMeta, hbarFee, balanceChangeManager, accumulator);
         verify(fixedFeeAssessor, times(2))
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+                .assess(payer, feeMeta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor)
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(OK, result);
@@ -200,7 +200,7 @@ class FeeAssessorTest {
 
         // then:
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
@@ -315,7 +315,7 @@ class FeeAssessorTest {
 
         // then:
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
@@ -337,9 +337,9 @@ class FeeAssessorTest {
 
         // then:
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor, never())
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
@@ -366,9 +366,9 @@ class FeeAssessorTest {
 
         // then:
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor)
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -396,16 +396,18 @@ class FeeAssessorTest {
 
         // then:
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
         verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor)
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
     }
 
+    private CustomFeeMeta meta;
+
     private void givenFees(EntityId token, List<FcCustomFee> customFees) {
-        final var meta = new CustomFeeMeta(token.asId(), treasury, customFees);
+        meta = new CustomFeeMeta(token.asId(), treasury, customFees);
         given(customSchedulesManager.managedSchedulesFor(token.asId())).willReturn(meta);
     }
 

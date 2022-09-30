@@ -21,7 +21,6 @@ import com.hedera.services.store.models.Id;
 import javax.inject.Singleton;
 
 /** Defines a type that determines if a custom fee's payer is exempt from a given custom fee */
-@Singleton
 public interface CustomFeeExemptions {
     boolean isPayerExempt(CustomFeeMeta feeMeta, FcCustomFee fee, Id payer);
 }
