@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -170,6 +171,19 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                         .alias(op.getAlias());
             } else {
                 final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
+                if (!keyFromAlias.getECDSASecp256K1().isEmpty()) {
+                    final var recoveredEvmAddress =
+                            recoverAddressFromPubKey(
+                                    keyFromAlias.getECDSASecp256K1().toByteArray());
+                    assert recoveredEvmAddress != null;
+
+                    if (!aliasManager
+                            .lookupIdBy(ByteString.copyFrom(recoveredEvmAddress))
+                            .equals(MISSING_NUM)) {
+                        throw new InvalidTransactionException(INVALID_ALIAS_KEY);
+                    }
+                }
+
                 final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
                 customizer
                         .key(jKeyFromAlias)
@@ -182,6 +196,24 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             }
         } else {
             /* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
+            final var primitiveKey = asPrimitiveKeyUnchecked(op.getAlias());
+            if (!primitiveKey.getECDSASecp256K1().isEmpty()) {
+                if (!aliasManager.lookupIdBy(op.getAlias()).equals(MISSING_NUM)) {
+                    throw new InvalidTransactionException(INVALID_ALIAS_KEY);
+                }
+
+                final var recoveredEvmAddressFromPrimitiveKey =
+                        recoverAddressFromPubKey(primitiveKey.getECDSASecp256K1().toByteArray());
+                assert recoveredEvmAddressFromPrimitiveKey != null;
+
+                if (!aliasManager
+                        .lookupIdBy(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
+                        .equals(MISSING_NUM)) {
+                    throw new InvalidTransactionException(INVALID_ALIAS_KEY);
+                }
+                customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
+            }
+
             final JKey key = asFcKeyUnchecked(op.getKey());
             customizer
                     .key(key)
