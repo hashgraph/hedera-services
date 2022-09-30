@@ -15,6 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -35,23 +37,30 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
+import java.math.BigInteger;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,7 +82,6 @@ class CallLocalEvmTxProcessorTest {
     @Mock private Transaction transaction;
     @Mock private HederaWorldState.Updater updater;
     @Mock private HederaStackedWorldStateUpdater stackedUpdater;
-    @Mock private Map<String, PrecompiledContract> precompiledContractMap;
     @Mock private AliasManager aliasManager;
     @Mock private BlockMetaSource blockMetaSource;
     @Mock private HederaBlockValues hederaBlockValues;
@@ -81,7 +89,6 @@ class CallLocalEvmTxProcessorTest {
     private final Account sender = new Account(new Id(0, 0, 1002));
     private final Account receiver = new Account(new Id(0, 0, 1006));
     private final Address receiverAddress = receiver.getId().asEvmAddress();
-    private final Instant consensusTime = Instant.now();
 
     private CallLocalEvmTxProcessor callLocalEvmTxProcessor;
 
@@ -89,14 +96,30 @@ class CallLocalEvmTxProcessorTest {
     void setup() {
         CommonProcessorSetup.setup(gasCalculator);
 
+        var operationRegistry = new OperationRegistry();
+        MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        operations.forEach(operationRegistry::put);
+        when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
+        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        Map<String, Provider<MessageCallProcessor>> mcps =
+                Map.of(
+                        EVM_VERSION_0_30,
+                        () -> new MessageCallProcessor(evm30, new PrecompileContractRegistry()));
+        Map<String, Provider<ContractCreationProcessor>> ccps =
+                Map.of(
+                        EVM_VERSION_0_30,
+                        () ->
+                                new ContractCreationProcessor(
+                                        gasCalculator, evm30, true, List.of(), 1));
+
         callLocalEvmTxProcessor =
                 new CallLocalEvmTxProcessor(
                         codeCache,
                         livePricesSource,
                         globalDynamicProperties,
                         gasCalculator,
-                        operations,
-                        precompiledContractMap,
+                        mcps,
+                        ccps,
                         aliasManager);
 
         callLocalEvmTxProcessor.setWorldState(worldState);
@@ -104,12 +127,11 @@ class CallLocalEvmTxProcessorTest {
     }
 
     @Test
-    void assertSuccessExecutе() {
+    void assertSuccessExecute() {
         givenValidMock();
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
         final var receiverAddress = receiver.getId().asEvmAddress();
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         var result =
                 callLocalEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY);
@@ -141,7 +163,6 @@ class CallLocalEvmTxProcessorTest {
         given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
         given(updater.getOrCreate(any())).willReturn(evmAccount);
         given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         assertFailsWith(
                 () ->

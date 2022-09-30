@@ -18,9 +18,7 @@ package com.hedera.services.grpc.marshalling;
 import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedFractionalChange;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.fees.CustomFeeExemptions;
 import com.hedera.services.ledger.BalanceChange;
@@ -48,6 +46,9 @@ public class FractionalFeeAssessor {
             CustomFeeMeta feeMeta,
             BalanceChangeManager changeManager,
             List<FcAssessedCustomFee> accumulator) {
+        if (change.isForNft()) {
+            return INVALID_TOKEN_ID;
+        }
         final var initialUnits = -change.getAggregatedUnits();
         if (initialUnits < 0) {
             throw new IllegalArgumentException("Cannot assess fees to a credit");

@@ -17,6 +17,7 @@ package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.PropertyNames.*;
 import static com.hedera.services.context.properties.PropertyNames.TOPICS_MAX_NUM;
+import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
@@ -102,6 +103,8 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_ALLOW_CREATE2, true),
                     entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
                     entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
+                    entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
+                    entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
                     entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
                     entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
                     entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, 500_000_000L),
@@ -282,7 +285,6 @@ class BootstrapPropertiesTest {
                     entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
                     entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
                     entry(TOKENS_AUTO_CREATIONS_ENABLED, true));
-    ;
 
     @Test
     void containsProperty() {

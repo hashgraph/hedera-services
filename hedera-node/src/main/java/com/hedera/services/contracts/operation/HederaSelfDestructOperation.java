@@ -45,7 +45,6 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -72,7 +71,6 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
 
-    @Inject
     public HederaSelfDestructOperation(
             final GasCalculator gasCalculator,
             final TransactionContext txnCtx,

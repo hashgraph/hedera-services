@@ -47,6 +47,8 @@ class GlobalDynamicPropertiesTest {
     private static final String[] upgradeArtifactLocs =
             new String[] {"/opt/hgcapp/HapiApp2.0/data/upgrade", "data/upgrade"};
 
+    private static final String[] evmVersions = new String[] {"vEven", "vOdd"};
+
     private static final String literalBlockValues =
             "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
     private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
@@ -98,6 +100,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.isTraceabilityMigrationEnabled());
         assertFalse(subject.shouldCompressRecordFilesOnCreation());
         assertTrue(subject.areTokenAutoCreationsEnabled());
+        assertFalse(subject.dynamicEvmVersion());
     }
 
     @Test
@@ -213,6 +216,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(
                 ContractStoragePriceTiers.from("0til100M,2000til450M", 88, 53L, 87L),
                 subject.storagePriceTiers());
+        assertEquals(evmVersions[1], subject.evmVersion());
     }
 
     @Test
@@ -247,6 +251,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.shouldItemizeStorageFees());
         assertTrue(subject.shouldCompressRecordFilesOnCreation());
         assertFalse(subject.areTokenAutoCreationsEnabled());
+        assertTrue(subject.dynamicEvmVersion());
     }
 
     @Test
@@ -352,6 +357,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(blockValues, subject.knownBlockValues());
         assertEquals(66L, subject.exchangeRateGasReq());
         assertEquals(Set.of(SidecarType.CONTRACT_BYTECODE), subject.enabledSidecars());
+        assertEquals(evmVersions[0], subject.evmVersion());
     }
 
     private void givenPropsWithSeed(int i) {
@@ -502,6 +508,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 82) % 2 == 0);
         given(properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED))
                 .willReturn((i + 83) % 2 == 0);
+        given(properties.getBooleanProperty(CONTRACTS_DYNAMIC_EVM_VERSION)).willReturn(i % 2 == 0);
+        given(properties.getStringProperty(CONTRACTS_EVM_VERSION)).willReturn(evmVersions[i % 2]);
     }
 
     private Set<EntityType> typesFor(final int i) {
