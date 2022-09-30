@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -303,7 +304,11 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                 Assertions.assertNotNull(expected);
                 Assertions.assertNotNull(actual);
                 if (expected instanceof byte[]) {
-                    Assertions.assertEquals(((byte[]) expected).length, ((byte[]) actual).length);
+                    int expectedLength = ((byte[]) expected).length;
+                    Assertions.assertEquals(expectedLength, ((byte[]) actual).length);
+                    // reject all zero result as not random
+                    Assertions.assertFalse(
+                            Arrays.equals(new byte[expectedLength], (byte[]) actual));
                 } else if (expected instanceof Integer) {
                     Assertions.assertTrue(
                             ((BigInteger) actual).intValue() >= 0

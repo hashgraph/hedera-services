@@ -40,7 +40,6 @@ package com.hedera.services.contracts.operation;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import java.util.function.BiPredicate;
-import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -58,7 +57,6 @@ public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
 
-    @Inject
     public HederaExtCodeCopyOperation(
             GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
         super(gasCalculator);

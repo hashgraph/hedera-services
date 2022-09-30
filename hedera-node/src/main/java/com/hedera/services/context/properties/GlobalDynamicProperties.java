@@ -73,6 +73,8 @@ public class GlobalDynamicProperties {
     private byte[] chainIdBytes;
     private Bytes32 chainIdBytes32;
     private long defaultContractLifetime;
+    private String evmVersion;
+    private boolean dynamicEvmVersion;
     private int feesTokenTransferUsageMultiplier;
     private boolean atLeastOneAutoRenewTargetType;
     private boolean expireAccounts;
@@ -196,6 +198,8 @@ public class GlobalDynamicProperties {
         chainIdBytes = Integers.toBytes(chainId);
         chainIdBytes32 = Bytes32.leftPad(Bytes.of(chainIdBytes));
         defaultContractLifetime = properties.getLongProperty(CONTRACTS_DEFAULT_LIFETIME);
+        dynamicEvmVersion = properties.getBooleanProperty(CONTRACTS_DYNAMIC_EVM_VERSION);
+        evmVersion = properties.getStringProperty(CONTRACTS_EVM_VERSION);
         feesTokenTransferUsageMultiplier =
                 properties.getIntProperty(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER);
         autoRenewNumberOfEntitiesToScan =
@@ -424,6 +428,14 @@ public class GlobalDynamicProperties {
 
     public long defaultContractLifetime() {
         return defaultContractLifetime;
+    }
+
+    public String evmVersion() {
+        return evmVersion;
+    }
+
+    public boolean dynamicEvmVersion() {
+        return dynamicEvmVersion;
     }
 
     public int feesTokenTransferUsageMultiplier() {
