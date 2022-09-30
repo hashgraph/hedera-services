@@ -44,7 +44,12 @@ public class HtsFeeAssessor {
         final var amount = fixedSpec.getUnitsToCollect();
         final var denominatingToken = fixedSpec.getTokenDenomination().asId();
         adjustForAssessed(
-                payer, chargingTokenMeta.tokenId(), collector, denominatingToken, amount, changeManager);
+                payer,
+                chargingTokenMeta.tokenId(),
+                collector,
+                denominatingToken,
+                amount,
+                changeManager);
 
         final var effPayerAccountNums = new long[] {payer.num()};
         final var assessed =

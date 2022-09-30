@@ -19,7 +19,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.fees.CustomFeePayerExemptions;
@@ -140,10 +139,7 @@ class FractionalFeeAssessorTest {
     @Test
     void nonNetOfTransfersRespectExemptions() {
         // setup:
-        final var feeMeta =
-                newCustomFeeMeta(
-                        tokenWithFractionalFee,
-                        List.of(firstFractionalFee));
+        final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(firstFractionalFee));
         final var collectorChange =
                 BalanceChange.tokenAdjust(
                         firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
@@ -158,10 +154,14 @@ class FractionalFeeAssessorTest {
                         tokenWithFractionalFee.asEntityId(),
                         expectedReclaimed,
                         // The first candidate payer is going to be exempt
-                        new long[] { secondVanillaReclaim.getAccount().num() });
-        given(customFeePayerExemptions.isPayerExempt(feeMeta, firstFractionalFee, firstVanillaReclaim.getAccount()))
+                        new long[] {secondVanillaReclaim.getAccount().num()});
+        given(
+                        customFeePayerExemptions.isPayerExempt(
+                                feeMeta, firstFractionalFee, firstVanillaReclaim.getAccount()))
                 .willReturn(true);
-        given(customFeePayerExemptions.isPayerExempt(feeMeta, firstFractionalFee, secondVanillaReclaim.getAccount()))
+        given(
+                        customFeePayerExemptions.isPayerExempt(
+                                feeMeta, firstFractionalFee, secondVanillaReclaim.getAccount()))
                 .willReturn(false);
 
         given(changeManager.changeFor(firstFractionalFeeCollector.asId(), tokenWithFractionalFee))
@@ -175,12 +175,9 @@ class FractionalFeeAssessorTest {
         // then:
         assertEquals(OK, result);
         // and:
+        assertEquals(firstCreditAmount, firstVanillaReclaim.getAggregatedUnits());
         assertEquals(
-                firstCreditAmount,
-                firstVanillaReclaim.getAggregatedUnits());
-        assertEquals(
-                secondCreditAmount - expectedReclaimed,
-                secondVanillaReclaim.getAggregatedUnits());
+                secondCreditAmount - expectedReclaimed, secondVanillaReclaim.getAggregatedUnits());
         // and:
         assertEquals(expectedReclaimed, collectorChange.getAggregatedUnits());
         // and:
@@ -191,17 +188,18 @@ class FractionalFeeAssessorTest {
     @Test
     void ifNonNetOfTransfersFindsAllExemptThenNoFeesAssessed() {
         // setup:
-        final var feeMeta =
-                newCustomFeeMeta(
-                        tokenWithFractionalFee,
-                        List.of(firstFractionalFee));
+        final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(firstFractionalFee));
         final var collectorChange =
                 BalanceChange.tokenAdjust(
                         firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
         final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
-        given(customFeePayerExemptions.isPayerExempt(feeMeta, firstFractionalFee, firstVanillaReclaim.getAccount()))
+        given(
+                        customFeePayerExemptions.isPayerExempt(
+                                feeMeta, firstFractionalFee, firstVanillaReclaim.getAccount()))
                 .willReturn(true);
-        given(customFeePayerExemptions.isPayerExempt(feeMeta, firstFractionalFee, secondVanillaReclaim.getAccount()))
+        given(
+                        customFeePayerExemptions.isPayerExempt(
+                                feeMeta, firstFractionalFee, secondVanillaReclaim.getAccount()))
                 .willReturn(true);
 
         given(changeManager.creditsInCurrentLevel(tokenWithFractionalFee)).willReturn(credits);
@@ -287,8 +285,9 @@ class FractionalFeeAssessorTest {
     @Test
     void failsFastOnNonFungibleChange() {
         // setup:
-        final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee,
-                List.of(firstFractionalFee, secondFractionalFee));
+        final var feeMeta =
+                newCustomFeeMeta(
+                        tokenWithFractionalFee, List.of(firstFractionalFee, secondFractionalFee));
 
         // when:
         final var result =
@@ -498,12 +497,16 @@ class FractionalFeeAssessorTest {
                     true,
                     secondFractionalFeeCollector,
                     true);
-    private final CustomFeeMeta tokenWithFractionalMeta = new CustomFeeMeta(tokenWithFractionalFee, treasury,
-            List.of(firstFractionalFee,
-            secondFractionalFee,
-            exemptFractionalFee,
-            skippedFixedFee,
-            fractionalFeeNetOfTransfers));
+    private final CustomFeeMeta tokenWithFractionalMeta =
+            new CustomFeeMeta(
+                    tokenWithFractionalFee,
+                    treasury,
+                    List.of(
+                            firstFractionalFee,
+                            secondFractionalFee,
+                            exemptFractionalFee,
+                            skippedFixedFee,
+                            fractionalFeeNetOfTransfers));
     private final BalanceChange vanillaTrigger =
             BalanceChange.tokenAdjust(payer, tokenWithFractionalFee, -vanillaTriggerAmount);
     private final BalanceChange firstVanillaReclaim =
@@ -515,8 +518,7 @@ class FractionalFeeAssessorTest {
     private final BalanceChange wildlyInsufficientChange =
             BalanceChange.tokenAdjust(payer, tokenWithFractionalFee, -1);
     private final BalanceChange someCredit =
-            BalanceChange.tokenAdjust(
-                    firstReclaimedAcount, tokenWithFractionalFee, +1);
+            BalanceChange.tokenAdjust(firstReclaimedAcount, tokenWithFractionalFee, +1);
 
     private final NftTransfer ownershipChange =
             NftTransfer.newBuilder()

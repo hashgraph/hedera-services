@@ -149,8 +149,7 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
         verify(fixedFeeAssessor, times(2))
                 .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         assertEquals(OK, result);
@@ -176,8 +175,7 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, feeMeta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, feeMeta, hbarFee, balanceChangeManager, accumulator);
         verify(fixedFeeAssessor, times(2))
                 .assess(payer, feeMeta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor)
@@ -199,8 +197,7 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
@@ -314,8 +311,7 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
@@ -336,10 +332,8 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
-        verify(fixedFeeAssessor)
-                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor, never())
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
@@ -365,10 +359,8 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
-        verify(fixedFeeAssessor)
-                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor)
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -395,10 +387,8 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
-        verify(fixedFeeAssessor)
-                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor)
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);

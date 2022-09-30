@@ -54,8 +54,7 @@ class HtsFeeAssessorTest {
         given(balanceChangeManager.changeFor(feeCollector, denom)).willReturn(collectorChange);
 
         // when:
-        subject.assess(
-                payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator);
+        subject.assess(payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator);
 
         // then:
         verify(collectorChange).aggregateUnits(+amountOfHtsFee);
@@ -77,8 +76,7 @@ class HtsFeeAssessorTest {
                 INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
-        subject.assess(
-                payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator);
+        subject.assess(payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator);
 
         // then:
         verify(balanceChangeManager).includeChange(expectedPayerChange);
@@ -124,6 +122,7 @@ class HtsFeeAssessorTest {
     private final FcCustomFee htsFee =
             FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector, false);
     private final CustomFeeMeta denomFeeMeta = new CustomFeeMeta(denom, treasury, List.of());
-    private final CustomFeeMeta nonDenomFeeMeta = new CustomFeeMeta(nonSelfDenominatedChargingToken, treasury, List.of());
+    private final CustomFeeMeta nonDenomFeeMeta =
+            new CustomFeeMeta(nonSelfDenominatedChargingToken, treasury, List.of());
     private final long[] effPayerNums = new long[] {2L};
 }

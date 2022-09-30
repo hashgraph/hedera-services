@@ -54,8 +54,7 @@ class FixedFeeAssessorTest {
     void delegatesToHbarWhenDenomIsNull() {
         final var hbarFee = FcCustomFee.fixedFee(1, null, otherCollector, false);
 
-        given(customFeePayerExemptions.isPayerExempt(any(), any(), any()))
-                .willReturn(false);
+        given(customFeePayerExemptions.isPayerExempt(any(), any(), any())).willReturn(false);
         given(hbarFeeAssessor.assess(payer, hbarFee, changeManager, mockAccum)).willReturn(OK);
 
         // when:
@@ -70,8 +69,7 @@ class FixedFeeAssessorTest {
     void delegatesToHtsWhenDenomIsNonNull() {
         FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, otherCollector, false);
 
-        given(customFeePayerExemptions.isPayerExempt(any(), any(), any()))
-                .willReturn(false);
+        given(customFeePayerExemptions.isPayerExempt(any(), any(), any())).willReturn(false);
         given(htsFeeAssessor.assess(payer, chargingMeta, htsFee, changeManager, mockAccum))
                 .willReturn(OK);
 
@@ -80,7 +78,8 @@ class FixedFeeAssessorTest {
 
         // then:
         assertEquals(OK, result);
-        BDDMockito.verify(htsFeeAssessor).assess(payer, chargingMeta, htsFee, changeManager, mockAccum);
+        BDDMockito.verify(htsFeeAssessor)
+                .assess(payer, chargingMeta, htsFee, changeManager, mockAccum);
     }
 
     @Test
@@ -103,5 +102,6 @@ class FixedFeeAssessorTest {
     private final EntityId otherCollector = new EntityId(10, 9, 8);
     private final Id treasury = new Id(0, 0, 7777);
     private final Id chargingToken = new Id(0, 1, 2222);
-    private final CustomFeeMeta chargingMeta = new CustomFeeMeta(chargingToken, treasury, List.of());
+    private final CustomFeeMeta chargingMeta =
+            new CustomFeeMeta(chargingToken, treasury, List.of());
 }

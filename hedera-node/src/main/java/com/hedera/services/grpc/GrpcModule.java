@@ -85,7 +85,8 @@ public interface GrpcModule {
 
     @Binds
     @Singleton
-    CustomFeePayerExemptions bindCustomFeeExemptions(StandardCustomPayerExemptions standardCustomExemptions);
+    CustomFeePayerExemptions bindCustomFeeExemptions(
+            StandardCustomPayerExemptions standardCustomExemptions);
 
     @Provides
     @Singleton

@@ -26,7 +26,6 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FractionalFeeSpec;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -107,8 +106,10 @@ public class FractionalFeeAssessor {
                     return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
                 }
                 adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
-                final var finalEffPayerNums = (filteredCredits == creditsToReclaimFrom)
-                        ? effPayerAccountNums : effPayerAccountNumsOf(filteredCredits);
+                final var finalEffPayerNums =
+                        (filteredCredits == creditsToReclaimFrom)
+                                ? effPayerAccountNums
+                                : effPayerAccountNumsOf(filteredCredits);
                 final var assessed =
                         new FcAssessedCustomFee(
                                 collector.asEntityId(),
@@ -130,9 +131,7 @@ public class FractionalFeeAssessor {
         return nums;
     }
 
-    long reclaim(
-            final long amount,
-            final List<BalanceChange> credits) {
+    long reclaim(final long amount, final List<BalanceChange> credits) {
         var availableToReclaim = 0L;
         for (var credit : credits) {
             availableToReclaim += credit.getAggregatedUnits();
@@ -166,16 +165,14 @@ public class FractionalFeeAssessor {
     }
 
     private List<BalanceChange> filteredByExemptions(
-            final List<BalanceChange> credits,
-            final CustomFeeMeta feeMeta,
-            final FcCustomFee fee) {
+            final List<BalanceChange> credits, final CustomFeeMeta feeMeta, final FcCustomFee fee) {
         List<BalanceChange> filteredCredits = null;
         for (int i = 0, n = credits.size(); i < n; i++) {
             final var credit = credits.get(i);
-            if (customFeePayerExemptions.isPayerExempt(feeMeta, fee, credit.getAccount()))  {
-               if (filteredCredits == null)  {
-                   filteredCredits = new ArrayList<>(credits.subList(0, i));
-               }
+            if (customFeePayerExemptions.isPayerExempt(feeMeta, fee, credit.getAccount())) {
+                if (filteredCredits == null) {
+                    filteredCredits = new ArrayList<>(credits.subList(0, i));
+                }
             } else {
                 if (filteredCredits != null) {
                     filteredCredits.add(credit);

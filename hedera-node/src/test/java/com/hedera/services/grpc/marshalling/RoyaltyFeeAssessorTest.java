@@ -58,7 +58,9 @@ class RoyaltyFeeAssessorTest {
 
     @BeforeEach
     void setUp() {
-        subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster, customFeePayerExemptions);
+        subject =
+                new RoyaltyFeeAssessor(
+                        fixedFeeAssessor, fungibleAdjuster, customFeePayerExemptions);
     }
 
     @Test
@@ -247,7 +249,8 @@ class RoyaltyFeeAssessorTest {
 
         given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
         final var royaltyFee = feeMeta.customFees().get(1);
-        given(customFeePayerExemptions.isPayerExempt(feeMeta, royaltyFee, trigger.getAccount())).willReturn(true);
+        given(customFeePayerExemptions.isPayerExempt(feeMeta, royaltyFee, trigger.getAccount()))
+                .willReturn(true);
 
         // when:
         final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);

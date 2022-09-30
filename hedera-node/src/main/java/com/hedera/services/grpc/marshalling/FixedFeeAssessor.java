@@ -15,6 +15,8 @@
  */
 package com.hedera.services.grpc.marshalling;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -23,8 +25,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class FixedFeeAssessor {

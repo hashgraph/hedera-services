@@ -70,12 +70,7 @@ public class FeeAssessor {
 
         final var maxBalanceChanges = props.maxXferBalanceChanges();
         final var fixedFeeResult =
-                assessFixedFees(
-                        feeMeta,
-                        payer,
-                        changeManager,
-                        accumulator,
-                        maxBalanceChanges);
+                assessFixedFees(feeMeta, payer, changeManager, accumulator, maxBalanceChanges);
         if (fixedFeeResult == ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED) {
             return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
         }
@@ -117,8 +112,7 @@ public class FeeAssessor {
                 continue;
             }
             if (fee.getFeeType() == FIXED_FEE) {
-                fixedFeeAssessor.assess(
-                        payer, feeMeta, fee, balanceChangeManager, accumulator);
+                fixedFeeAssessor.assess(payer, feeMeta, fee, balanceChangeManager, accumulator);
                 if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
                     return ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
                 }

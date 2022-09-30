@@ -185,11 +185,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
                     royaltyAndFractionalTogetherCaseStudy(),
                     respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
                     // HIP-573 charging case studies---all will fail at this time!
-                                            collectorIsChargedFixedFeeUnlessExempt(),
-                                            collectorIsChargedFractionalFeeUnlessExempt(),
-                     collectorIsChargedNetOfTransferFractionalFeeUnlessExempt(),
-                                            collectorIsChargedRoyaltyFeeUnlessExempt(),
-                                            collectorIsChargedRoyaltyFallbackFeeUnlessExempt(),
+                    collectorIsChargedFixedFeeUnlessExempt(),
+                    collectorIsChargedFractionalFeeUnlessExempt(),
+                    collectorIsChargedNetOfTransferFractionalFeeUnlessExempt(),
+                    collectorIsChargedRoyaltyFeeUnlessExempt(),
+                    collectorIsChargedRoyaltyFallbackFeeUnlessExempt(),
                     // HIP-23
                     happyPathAutoAssociationsWorkForBothTokenTypes(),
                     failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
