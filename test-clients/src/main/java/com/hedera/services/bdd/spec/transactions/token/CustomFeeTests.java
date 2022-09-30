@@ -56,7 +56,14 @@ public class CustomFeeTests {
         return (spec, actual) -> {
             final var expected =
                     builtFractional(
-                            numerator, denominator, min, max, netOfTransfers, collector, false, spec);
+                            numerator,
+                            denominator,
+                            min,
+                            max,
+                            netOfTransfers,
+                            collector,
+                            false,
+                            spec);
             failUnlessPresent("fractional", actual, expected);
         };
     }
@@ -64,7 +71,8 @@ public class CustomFeeTests {
     public static BiConsumer<HapiApiSpec, List<CustomFee>> royaltyFeeWithoutFallbackInSchedule(
             long numerator, long denominator, String collector) {
         return (spec, actual) -> {
-            final var expected = builtRoyaltyNoFallback(numerator, denominator, collector, false, spec);
+            final var expected =
+                    builtRoyaltyNoFallback(numerator, denominator, collector, false, spec);
             failUnlessPresent("royalty", actual, expected);
         };
     }

@@ -25,11 +25,10 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.hederahashgraph.api.proto.java.NftTransfer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -199,8 +198,7 @@ class FractionalFeeAssessorTest {
 
         // when:
         final var result =
-                subject.assessAllFractional(
-                        nonFungibleChange, fees, changeManager, accumulator);
+                subject.assessAllFractional(nonFungibleChange, fees, changeManager, accumulator);
 
         // then:
         assertEquals(INVALID_TOKEN_ID, result);

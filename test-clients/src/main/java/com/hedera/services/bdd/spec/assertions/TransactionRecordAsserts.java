@@ -27,7 +27,6 @@ import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
@@ -104,9 +103,10 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 spec ->
                         assessedCustomFees -> {
                             try {
-                                assertEquals(n, assessedCustomFees.size(),
-                                        "Wrong # of custom fees: "
-                                                + assessedCustomFees);
+                                assertEquals(
+                                        n,
+                                        assessedCustomFees.size(),
+                                        "Wrong # of custom fees: " + assessedCustomFees);
                             } catch (Throwable t) {
                                 return List.of(t);
                             }
