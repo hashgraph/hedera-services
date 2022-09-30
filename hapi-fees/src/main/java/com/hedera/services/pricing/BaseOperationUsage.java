@@ -595,6 +595,7 @@ public class BaseOperationUsage {
                                         .addCustomFees(
                                                 CustomFee.newBuilder()
                                                         .setFeeCollectorAccountId(AN_ACCOUNT)
+                                                        .setAllCollectorsAreExempt(false)
                                                         .setFixedFee(
                                                                 FixedFee.newBuilder()
                                                                         .setAmount(100_000_000)

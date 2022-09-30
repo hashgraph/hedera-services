@@ -16,6 +16,8 @@
 package com.hedera.services.grpc;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.CustomFeePayerExemptions;
+import com.hedera.services.fees.StandardCustomPayerExemptions;
 import com.hedera.services.grpc.controllers.ConsensusController;
 import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.CryptoController;
@@ -81,10 +83,17 @@ public interface GrpcModule {
         return Runtime.getRuntime()::addShutdownHook;
     }
 
+    @Binds
+    @Singleton
+    CustomFeePayerExemptions bindCustomFeeExemptions(
+            StandardCustomPayerExemptions standardCustomExemptions);
+
     @Provides
     @Singleton
-    static RoyaltyFeeAssessor provideRoyaltyFeeAssessor(FixedFeeAssessor fixedFeeAssessor) {
-        return new RoyaltyFeeAssessor(fixedFeeAssessor, AdjustmentUtils::adjustedChange);
+    static RoyaltyFeeAssessor provideRoyaltyFeeAssessor(
+            FixedFeeAssessor fixedFeeAssessor, CustomFeePayerExemptions customFeePayerExemptions) {
+        return new RoyaltyFeeAssessor(
+                fixedFeeAssessor, AdjustmentUtils::adjustedChange, customFeePayerExemptions);
     }
 
     @Provides

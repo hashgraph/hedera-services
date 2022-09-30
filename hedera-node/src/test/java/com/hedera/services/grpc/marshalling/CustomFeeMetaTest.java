@@ -58,10 +58,11 @@ class CustomFeeMetaTest {
                 "CustomFeeMeta[tokenId=1.1.1, treasuryId=9.9.9,"
                         + " customFees=[FcCustomFee{feeType=FIXED_FEE,"
                         + " fixedFee=FixedFeeSpec{unitsToCollect=100000, tokenDenomination=ℏ},"
-                        + " feeCollector=EntityId{shard=2, realm=3, num=4}},"
-                        + " FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=10,"
-                        + " tokenDenomination=6.6.6}, feeCollector=EntityId{shard=3, realm=4,"
-                        + " num=5}}]]";
+                        + " feeCollector=EntityId{shard=2, realm=3, num=4},"
+                        + " allCollectorsAreExempt=false}, FcCustomFee{feeType=FIXED_FEE,"
+                        + " fixedFee=FixedFeeSpec{unitsToCollect=10, tokenDenomination=6.6.6},"
+                        + " feeCollector=EntityId{shard=3, realm=4, num=5},"
+                        + " allCollectorsAreExempt=false}]]";
 
         // expect:
         assertEquals(desired, subject.toString());
@@ -77,8 +78,8 @@ class CustomFeeMetaTest {
     private final Id hbarFeeCollector = new Id(2, 3, 4);
     private final Id htsFeeCollector = new Id(3, 4, 5);
     private final FcCustomFee hbarFee =
-            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector.asEntityId());
+            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector.asEntityId(), false);
     private final FcCustomFee htsFee =
             FcCustomFee.fixedFee(
-                    amountOfHtsFee, feeDenom.asEntityId(), htsFeeCollector.asEntityId());
+                    amountOfHtsFee, feeDenom.asEntityId(), htsFeeCollector.asEntityId(), false);
 }

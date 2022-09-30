@@ -28,4 +28,15 @@ public class FcCustomFeeSerdeTest extends SelfSerializableDataTest<FcCustomFee> 
     protected FcCustomFee getExpectedObject(final SeededPropertySource propertySource) {
         return propertySource.nextCustomFee();
     }
+
+    @Override
+    protected FcCustomFee getExpectedObject(int version, int testCaseNo) {
+        final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
+        final var nextFee = propertySource.nextCustomFee();
+        if (version < FcCustomFee.RELEASE_0310_VERSION) {
+            nextFee.setAllCollectorsAreExempt(false);
+        }
+
+        return nextFee;
+    }
 }

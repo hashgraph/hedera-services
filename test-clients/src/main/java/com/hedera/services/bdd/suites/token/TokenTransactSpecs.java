@@ -185,12 +185,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
                     royaltyAndFractionalTogetherCaseStudy(),
                     respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
                     // HIP-573 charging case studies---all will fail at this time!
-                    //                        collectorIsChargedFixedFeeUnlessExempt(),
-                    //                        collectorIsChargedFractionalFeeUnlessExempt(),
-                    //
-                    // collectorIsChargedNetOfTransferFractionalFeeUnlessExempt(),
-                    //                        collectorIsChargedRoyaltyFeeUnlessExempt(),
-                    //                        collectorIsChargedRoyaltyFallbackFeeUnlessExempt(),
+                    collectorIsChargedFixedFeeUnlessExempt(),
+                    collectorIsChargedFractionalFeeUnlessExempt(),
+                    collectorIsChargedNetOfTransferFractionalFeeUnlessExempt(),
+                    collectorIsChargedRoyaltyFeeUnlessExempt(),
+                    collectorIsChargedRoyaltyFallbackFeeUnlessExempt(),
                     // HIP-23
                     happyPathAutoAssociationsWorkForBothTokenTypes(),
                     failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
@@ -2193,6 +2192,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                                 firstCollectorForTopLevel,
                                                 secondCollectorForTopLevel)))
                 .when(
+                        getTokenInfo(topLevelToken).logged(),
                         cryptoTransfer(
                                         moving(1_000L, topLevelToken)
                                                 .between(firstCollectorForTopLevel, edgar))
@@ -2211,7 +2211,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                         HBAR_TOKEN_SENTINEL,
                                         secondCollectorForTopLevel,
                                         2 * ONE_HBAR)
-                                .hasHbarAmount(secondCollectorForTopLevel, 2 * ONE_HBAR),
+                                .hasHbarAmount(secondCollectorForTopLevel, 2 * ONE_HBAR)
+                                .logged(),
                         getAccountBalance(firstCollectorForTopLevel)
                                 .hasTokenBalance(topLevelToken, 0L),
                         getAccountBalance(secondCollectorForTopLevel)

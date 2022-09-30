@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -70,11 +71,13 @@ public class FcCustomFee implements SelfSerializable {
 
     static final int RELEASE_016X_VERSION = 1;
     static final int RELEASE_017X_VERSION = 2;
-    static final int CURRENT_VERSION = RELEASE_017X_VERSION;
+    static final int RELEASE_0310_VERSION = 3;
+    static final int CURRENT_VERSION = RELEASE_0310_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xf65baa433940f137L;
 
     private FeeType feeType;
     private EntityId feeCollector;
+    private boolean allCollectorsAreExempt;
     private FixedFeeSpec fixedFeeSpec;
     private FractionalFeeSpec fractionalFeeSpec;
     private RoyaltyFeeSpec royaltyFeeSpec;
@@ -96,12 +99,14 @@ public class FcCustomFee implements SelfSerializable {
             EntityId feeCollector,
             FixedFeeSpec fixedFeeSpec,
             FractionalFeeSpec fractionalFeeSpec,
-            RoyaltyFeeSpec royaltyFeeSpec) {
+            RoyaltyFeeSpec royaltyFeeSpec,
+            boolean allCollectorsAreExempt) {
         this.feeType = feeType;
         this.feeCollector = feeCollector;
         this.fixedFeeSpec = fixedFeeSpec;
         this.royaltyFeeSpec = royaltyFeeSpec;
         this.fractionalFeeSpec = fractionalFeeSpec;
+        this.allCollectorsAreExempt = allCollectorsAreExempt;
     }
 
     public boolean requiresCollectorAutoAssociation() {
@@ -130,6 +135,11 @@ public class FcCustomFee implements SelfSerializable {
             final AccountStore accountStore,
             final TypedTokenStore tokenStore) {
         validate(owningToken, false, accountStore, tokenStore);
+    }
+
+    @VisibleForTesting
+    public void setAllCollectorsAreExempt(boolean allCollectorsAreExempt) {
+        this.allCollectorsAreExempt = allCollectorsAreExempt;
     }
 
     private void validate(
@@ -173,10 +183,15 @@ public class FcCustomFee implements SelfSerializable {
     }
 
     public static FcCustomFee royaltyFee(
-            long numerator, long denominator, FixedFeeSpec fallbackFee, EntityId feeCollector) {
+            long numerator,
+            long denominator,
+            FixedFeeSpec fallbackFee,
+            EntityId feeCollector,
+            boolean allCollectorsAreExempt) {
         Objects.requireNonNull(feeCollector);
         final var spec = new RoyaltyFeeSpec(numerator, denominator, fallbackFee);
-        return new FcCustomFee(FeeType.ROYALTY_FEE, feeCollector, null, null, spec);
+        return new FcCustomFee(
+                FeeType.ROYALTY_FEE, feeCollector, null, null, spec, allCollectorsAreExempt);
     }
 
     public static FcCustomFee fractionalFee(
@@ -185,7 +200,8 @@ public class FcCustomFee implements SelfSerializable {
             long minimumUnitsToCollect,
             long maximumUnitsToCollect,
             boolean netOfTransfers,
-            EntityId feeCollector) {
+            EntityId feeCollector,
+            boolean allCollectorsAreExempt) {
         Objects.requireNonNull(feeCollector);
         final var spec =
                 new FractionalFeeSpec(
@@ -194,14 +210,18 @@ public class FcCustomFee implements SelfSerializable {
                         minimumUnitsToCollect,
                         maximumUnitsToCollect,
                         netOfTransfers);
-        return new FcCustomFee(FeeType.FRACTIONAL_FEE, feeCollector, null, spec, null);
+        return new FcCustomFee(
+                FeeType.FRACTIONAL_FEE, feeCollector, null, spec, null, allCollectorsAreExempt);
     }
 
     public static FcCustomFee fixedFee(
-            long unitsToCollect, EntityId tokenDenomination, EntityId feeCollector) {
+            long unitsToCollect,
+            EntityId tokenDenomination,
+            EntityId feeCollector,
+            boolean allCollectorsAreExempt) {
         Objects.requireNonNull(feeCollector);
         final var spec = new FixedFeeSpec(unitsToCollect, tokenDenomination);
-        return new FcCustomFee(FIXED_FEE, feeCollector, spec, null, null);
+        return new FcCustomFee(FIXED_FEE, feeCollector, spec, null, null, allCollectorsAreExempt);
     }
 
     public static FcCustomFee fromGrpc(CustomFee source) {
@@ -210,13 +230,14 @@ public class FcCustomFee implements SelfSerializable {
         validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);
 
         final var feeCollector = EntityId.fromGrpcAccountId(source.getFeeCollectorAccountId());
+        final var allCollectorsAreExempt = source.getAllCollectorsAreExempt();
         if (source.hasFixedFee()) {
             EntityId denom = null;
             final var fixedSource = source.getFixedFee();
             if (fixedSource.hasDenominatingTokenId()) {
                 denom = EntityId.fromGrpcTokenId(fixedSource.getDenominatingTokenId());
             }
-            return fixedFee(fixedSource.getAmount(), denom, feeCollector);
+            return fixedFee(fixedSource.getAmount(), denom, feeCollector, allCollectorsAreExempt);
         } else if (source.hasFractionalFee()) {
             final var fractionalSource = source.getFractionalFee();
             final var fraction = fractionalSource.getFractionalAmount();
@@ -228,7 +249,8 @@ public class FcCustomFee implements SelfSerializable {
                     fractionalSource.getMinimumAmount(),
                     effectiveMax,
                     fractionalSource.getNetOfTransfers(),
-                    feeCollector);
+                    feeCollector,
+                    allCollectorsAreExempt);
         } else {
             final var royaltySource = source.getRoyaltyFee();
             final var fraction = royaltySource.getExchangeValueFraction();
@@ -238,13 +260,16 @@ public class FcCustomFee implements SelfSerializable {
                     royaltySource.hasFallbackFee()
                             ? FixedFeeSpec.fromGrpc(royaltySource.getFallbackFee())
                             : null,
-                    feeCollector);
+                    feeCollector,
+                    allCollectorsAreExempt);
         }
     }
 
     public CustomFee asGrpc() {
         final var builder =
-                CustomFee.newBuilder().setFeeCollectorAccountId(feeCollector.toGrpcAccountId());
+                CustomFee.newBuilder()
+                        .setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
+                        .setAllCollectorsAreExempt(allCollectorsAreExempt);
         if (feeType == FIXED_FEE) {
             final var spec = fixedFeeSpec;
             builder.setFixedFee(spec.asGrpc());
@@ -311,6 +336,10 @@ public class FcCustomFee implements SelfSerializable {
         return royaltyFeeSpec;
     }
 
+    public boolean getAllCollectorsAreExempt() {
+        return allCollectorsAreExempt;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -325,7 +354,8 @@ public class FcCustomFee implements SelfSerializable {
                 && Objects.equals(this.feeCollector, that.feeCollector)
                 && Objects.equals(this.fixedFeeSpec, that.fixedFeeSpec)
                 && Objects.equals(this.fractionalFeeSpec, that.fractionalFeeSpec)
-                && Objects.equals(this.royaltyFeeSpec, that.royaltyFeeSpec);
+                && Objects.equals(this.royaltyFeeSpec, that.royaltyFeeSpec)
+                && Objects.equals(this.allCollectorsAreExempt, that.allCollectorsAreExempt);
     }
 
     @Override
@@ -342,6 +372,7 @@ public class FcCustomFee implements SelfSerializable {
                 .add("fractionalFee", fractionalFeeSpec)
                 .add("royaltyFee", royaltyFeeSpec)
                 .add("feeCollector", feeCollector)
+                .add("allCollectorsAreExempt", allCollectorsAreExempt)
                 .toString();
     }
 
@@ -383,6 +414,7 @@ public class FcCustomFee implements SelfSerializable {
         }
 
         feeCollector = din.readSerializable(true, EntityId::new);
+        allCollectorsAreExempt = version >= RELEASE_0310_VERSION && din.readBoolean();
     }
 
     @Override
@@ -409,6 +441,7 @@ public class FcCustomFee implements SelfSerializable {
             }
         }
         dos.writeSerializable(feeCollector, true);
+        dos.writeBoolean(allCollectorsAreExempt);
     }
 
     @Override

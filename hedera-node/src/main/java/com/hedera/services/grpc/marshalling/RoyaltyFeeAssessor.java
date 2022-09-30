@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -33,16 +34,20 @@ import java.util.List;
 public class RoyaltyFeeAssessor {
     private final FixedFeeAssessor fixedFeeAssessor;
     private final FungibleAdjuster fungibleAdjuster;
+    private final CustomFeePayerExemptions customFeePayerExemptions;
 
     public RoyaltyFeeAssessor(
-            final FixedFeeAssessor fixedFeeAssessor, final FungibleAdjuster fungibleAdjuster) {
+            final FixedFeeAssessor fixedFeeAssessor,
+            final FungibleAdjuster fungibleAdjuster,
+            final CustomFeePayerExemptions customFeePayerExemptions) {
         this.fixedFeeAssessor = fixedFeeAssessor;
         this.fungibleAdjuster = fungibleAdjuster;
+        this.customFeePayerExemptions = customFeePayerExemptions;
     }
 
     public ResponseCodeEnum assessAllRoyalties(
             final BalanceChange change,
-            final List<FcCustomFee> feesWithRoyalties,
+            final CustomFeeMeta customFeeMeta,
             final BalanceChangeManager changeManager,
             final List<FcAssessedCustomFee> accumulator) {
         if (!change.isForNft()) {
@@ -61,7 +66,7 @@ public class RoyaltyFeeAssessor {
         }
 
         final var exchangedValue = changeManager.fungibleCreditsInCurrentLevel(payer);
-        for (var fee : feesWithRoyalties) {
+        for (var fee : customFeeMeta.customFees()) {
             final var collector = fee.getFeeCollectorAsId();
             if (fee.getFeeType() != ROYALTY_FEE) {
                 continue;
@@ -82,14 +87,12 @@ public class RoyaltyFeeAssessor {
                             FcCustomFee.fixedFee(
                                     fallback.getUnitsToCollect(),
                                     fallback.getTokenDenomination(),
-                                    collector.asEntityId());
-                    /* Since a fallback fee for a charging non-fungible token can never be
-                    denominated in the units of its charging token (by definition), just
-                    use MISSING_ID for the charging token here. */
+                                    collector.asEntityId(),
+                                    fee.getAllCollectorsAreExempt());
                     fixedFeeAssessor.assess(
-                            receiver, MISSING_ID, fallbackFee, changeManager, accumulator);
+                            receiver, customFeeMeta, fallbackFee, changeManager, accumulator);
                 }
-            } else {
+            } else if (!customFeePayerExemptions.isPayerExempt(customFeeMeta, fee, payer)) {
                 final var fractionalValidity =
                         chargeRoyalty(
                                 collector,
