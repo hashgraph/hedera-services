@@ -298,6 +298,19 @@ class FractionalFeeAssessorTest {
     }
 
     @Test
+    void failsFastOnNonFungibleChange() {
+        // setup:
+        final var fees = List.of(firstFractionalFee, secondFractionalFee);
+
+        // when:
+        final var result =
+                subject.assessAllFractional(nonFungibleChange, fees, changeManager, accumulator);
+
+        // then:
+        assertEquals(INVALID_TOKEN_ID, result);
+    }
+
+    @Test
     void handlesEasyCase() {
         // given:
         long reasonable = 1_234_567L;
