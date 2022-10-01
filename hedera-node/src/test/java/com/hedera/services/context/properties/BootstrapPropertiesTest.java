@@ -99,6 +99,7 @@ class BootstrapPropertiesTest {
                     entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
                     entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
                     entry(ACCOUNTS_TREASURY, 2L),
+                    entry(AUTO_RENEW_GRANT_FREE_RENEWALS, true),
                     entry(CONTRACTS_ALLOW_CREATE2, true),
                     entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
                     entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
@@ -278,7 +279,7 @@ class BootstrapPropertiesTest {
                     entry(UTIL_PRNG_IS_ENABLED, true),
                     entry(CONTRACTS_SIDECARS, EnumSet.noneOf(SidecarType.class)),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
-                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
+                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, false),
                     entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
                     entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true));
     ;

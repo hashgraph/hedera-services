@@ -95,7 +95,6 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.isStakingEnabled());
         assertFalse(subject.isUtilPrngEnabled());
         assertTrue(subject.requireMinStakeToReward());
-        assertTrue(subject.isTraceabilityMigrationEnabled());
         assertFalse(subject.shouldCompressRecordFilesOnCreation());
     }
 
@@ -242,7 +241,6 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.areContractAutoAssociationsEnabled());
         assertFalse(subject.isStakingEnabled());
         assertTrue(subject.isUtilPrngEnabled());
-        assertFalse(subject.isTraceabilityMigrationEnabled());
         assertTrue(subject.shouldItemizeStorageFees());
         assertTrue(subject.shouldCompressRecordFilesOnCreation());
     }

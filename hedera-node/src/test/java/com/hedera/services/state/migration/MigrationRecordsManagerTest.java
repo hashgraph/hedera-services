@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.migration;
 
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
@@ -23,11 +24,8 @@ import static com.hedera.services.state.initialization.TreasuryClonerTest.accoun
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -38,9 +36,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -79,7 +79,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -126,8 +125,9 @@ class MigrationRecordsManagerTest {
     private final List<MerkleAccount> treasuryClones = new ArrayList<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final AtomicInteger nextTracker = new AtomicInteger();
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    private final SyntheticTxnFactory factory = new SyntheticTxnFactory(dynamicProperties);
+    @Mock private BootstrapProperties bootstrapProperties;
+    private final SyntheticTxnFactory factory =
+            new SyntheticTxnFactory(new MockGlobalDynamicProps());
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
@@ -164,9 +164,9 @@ class MigrationRecordsManagerTest {
                         factory,
                         accountNumbers,
                         transactionContext,
-                        dynamicProperties,
                         () -> contractStorage,
-                        entityAccess);
+                        entityAccess,
+                        bootstrapProperties);
 
         subject.setSideEffectsFactory(
                 () ->
@@ -176,6 +176,7 @@ class MigrationRecordsManagerTest {
                             case 2 -> tracker200;
                             default -> tracker201;
                         });
+        MigrationRecordsManager.setTraceabilityKillSwitch(false);
     }
 
     @Test
@@ -235,7 +236,6 @@ class MigrationRecordsManagerTest {
         assertEquals(rewardSynthBody, bodies.get(1).build());
         assertEquals(cloneSynthBody, bodies.get(2).build());
         assertEquals(cloneSynthBody, bodies.get(3).build());
-        assertTrue(subject.areTraceabilityRecordsStreamed());
     }
 
     @Test
@@ -245,11 +245,10 @@ class MigrationRecordsManagerTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCall);
         given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        givenTraceabilityOnly();
 
         subject.publishMigrationRecords(now);
 
-        assertFalse(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never()).addSidecarRecord(any());
     }
 
@@ -260,11 +259,10 @@ class MigrationRecordsManagerTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.EthereumTransaction);
         given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        givenTraceabilityOnly();
 
         subject.publishMigrationRecords(now);
 
-        assertFalse(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never()).addSidecarRecord(any());
     }
 
@@ -275,11 +273,10 @@ class MigrationRecordsManagerTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
         given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        givenTraceabilityOnly();
 
         subject.publishMigrationRecords(now);
 
-        assertFalse(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never()).addSidecarRecord(any());
     }
 
@@ -292,7 +289,7 @@ class MigrationRecordsManagerTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        givenTraceabilityOnly();
         accounts.clear();
         // mock contract with 4 slots
         final var contract1 = mock(MerkleAccount.class);
@@ -357,7 +354,6 @@ class MigrationRecordsManagerTest {
         subject.publishMigrationRecords(now);
 
         // then
-        assertTrue(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, times(4)).addSidecarRecord(sidecarCaptor.capture());
         final var sidecarRecords = sidecarCaptor.getAllValues();
         assertEquals(
@@ -451,7 +447,7 @@ class MigrationRecordsManagerTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        givenTraceabilityOnly();
         accounts.clear();
         // mock contract with 1 slot but numKvPairs = 2
         final var contract1 = mock(MerkleAccount.class);
@@ -476,8 +472,6 @@ class MigrationRecordsManagerTest {
         subject.publishMigrationRecords(now);
 
         // then
-        assertTrue(subject.areTraceabilityRecordsStreamed());
-        // then:
         assertThat(
                 logCaptor.warnLogs(),
                 contains(
@@ -525,25 +519,11 @@ class MigrationRecordsManagerTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        givenTraceabilityOnly();
 
         subject.publishMigrationRecords(now);
 
-        assertTrue(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never()).addSidecarRecord(any());
-    }
-
-    @Test
-    void traceabilityMigrationIsNotExecutedWhenMarkedAsDone() {
-        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-
-        subject.markTraceabilityMigrationAsDone();
-        subject.publishMigrationRecords(now);
-
-        verify(transactionContext, never()).accessor();
-        assertTrue(subject.areTraceabilityRecordsStreamed());
     }
 
     @Test
@@ -555,7 +535,7 @@ class MigrationRecordsManagerTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        givenTraceabilityOnly();
         accounts.clear();
         final var contract = mock(MerkleAccount.class);
         given(contract.isSmartContract()).willReturn(true);
@@ -568,7 +548,6 @@ class MigrationRecordsManagerTest {
 
         subject.publishMigrationRecords(now);
 
-        assertTrue(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext).addSidecarRecord(sidecarCaptor.capture());
         final var sidecarRecords = sidecarCaptor.getValue();
         assertEquals(
@@ -586,7 +565,7 @@ class MigrationRecordsManagerTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
         given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        givenTraceabilityOnly();
         accounts.clear();
         final var contract = mock(MerkleAccount.class);
         given(contract.isSmartContract()).willReturn(true);
@@ -598,7 +577,6 @@ class MigrationRecordsManagerTest {
 
         subject.publishMigrationRecords(now);
 
-        assertTrue(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never())
                 .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
         assertThat(
@@ -609,31 +587,6 @@ class MigrationRecordsManagerTest {
                                         + contractNum
                                         + " has no bytecode in state - no migration"
                                         + " sidecar records will be published.")));
-    }
-
-    @Test
-    void doesNotPerformOtherMigrationOnSubsequentCallsIfOnlyTraceabilityNeedsFinishing() {
-        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false).willReturn(true);
-        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        given(txnAccessor.getFunction())
-                .willReturn(HederaFunctionality.ContractCreate)
-                .willReturn(HederaFunctionality.CryptoTransfer);
-        given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-        given(merkleAccount.isSmartContract()).willReturn(true).willReturn(false);
-
-        subject.publishMigrationRecords(now);
-        assertFalse(subject.areTraceabilityRecordsStreamed());
-        verify(transactionContext, never()).addSidecarRecord(any());
-        verify(networkCtx).markMigrationRecordsStreamed();
-
-        subject.publishMigrationRecords(now);
-        assertTrue(subject.areTraceabilityRecordsStreamed());
-        verify(treasuryCloner, times(1)).getClonesCreated();
-        verify(recordsHistorian, times(1))
-                .trackPrecedingChildRecord(
-                        anyInt(), any(Builder.class), any(ExpirableTxnRecord.Builder.class));
     }
 
     @Test
@@ -661,9 +614,7 @@ class MigrationRecordsManagerTest {
 
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
-        given(transactionContext.accessor()).willReturn(txnAccessor);
+        givenFreeRenewalsOnly();
 
         subject.publishMigrationRecords(now);
 
@@ -740,15 +691,6 @@ class MigrationRecordsManagerTest {
         verifyNoInteractions(recordsHistorian);
     }
 
-    @Test
-    void traceabilityRecordsFlagWorksAsExpected() {
-        assertFalse(subject.areTraceabilityRecordsStreamed());
-
-        subject.markTraceabilityMigrationAsDone();
-
-        assertTrue(subject.areTraceabilityRecordsStreamed());
-    }
-
     private TransactionBody expectedSyntheticRewardAccount() {
         final var txnBody =
                 CryptoCreateTransactionBody.newBuilder()
@@ -784,6 +726,24 @@ class MigrationRecordsManagerTest {
         treasuryClones.get(0).setKey(EntityNum.fromLong(200L));
         treasuryClones.get(1).setKey(EntityNum.fromLong(201L));
         given(treasuryCloner.getClonesCreated()).willReturn(treasuryClones);
+    }
+
+    private void givenTraceabilityOnly() {
+        given(
+                        bootstrapProperties.getBooleanProperty(
+                                HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
+                .willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS))
+                .willReturn(false);
+    }
+
+    private void givenFreeRenewalsOnly() {
+        given(
+                        bootstrapProperties.getBooleanProperty(
+                                HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS))
+                .willReturn(true);
     }
 
     private void registerConstructables() {
