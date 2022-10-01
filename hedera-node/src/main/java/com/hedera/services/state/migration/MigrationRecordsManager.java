@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.migration;
 
+import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
@@ -27,7 +29,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -86,6 +88,9 @@ public class MigrationRecordsManager {
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
+
+    // Ensure we don't accidentally perform traceability exports at this time
+    private static boolean traceabilityKillSwitch = true;
     private final EntityCreator creator;
     private final TreasuryCloner treasuryCloner;
     private final SigImpactHistorian sigImpactHistorian;
@@ -96,14 +101,10 @@ public class MigrationRecordsManager {
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private final AccountNumbers accountNumbers;
     private final TransactionContext transactionContext;
-    private final GlobalDynamicProperties globalDynamicProperties;
     private final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
     private final EntityAccess entityAccess;
+    private final BootstrapProperties bootstrapProperties;
     private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
-    // helper flag in the highly unlikely case when the traceability migration
-    // cannot be executed alongside the rest of the migrations (ContractCall/Create/Eth as first
-    // txn after upgrade)
-    private boolean areTraceabilityRecordsStreamed = false;
 
     @Inject
     public MigrationRecordsManager(
@@ -117,9 +118,9 @@ public class MigrationRecordsManager {
             final SyntheticTxnFactory syntheticTxnFactory,
             final AccountNumbers accountNumbers,
             final TransactionContext transactionContext,
-            final GlobalDynamicProperties globalDynamicProperties,
             final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage,
-            final EntityAccess entityAccess) {
+            final EntityAccess entityAccess,
+            final BootstrapProperties bootstrapProperties) {
         this.treasuryCloner = treasuryCloner;
         this.sigImpactHistorian = sigImpactHistorian;
         this.recordsHistorian = recordsHistorian;
@@ -130,9 +131,9 @@ public class MigrationRecordsManager {
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.accountNumbers = accountNumbers;
         this.transactionContext = transactionContext;
-        this.globalDynamicProperties = globalDynamicProperties;
         this.contractStorage = contractStorage;
         this.entityAccess = entityAccess;
+        this.bootstrapProperties = bootstrapProperties;
     }
 
     /**
@@ -142,15 +143,7 @@ public class MigrationRecordsManager {
      * state).
      */
     public void publishMigrationRecords(final Instant now) {
-        // with 0.30.0 upgrade we are performing traceability migration
-        // which is independent of context.areMigrationRecordsStreamed flag
-        // NOTE this call needs to be removed on the next upgrade
-        if (!areTraceabilityRecordsStreamed) {
-            attemptToPublishTraceabilityMigrationRecords();
-        }
-
         final var curNetworkCtx = networkCtx.get();
-
         if (!consensusTimeTracker.unlimitedPreceding()
                 || curNetworkCtx.areMigrationRecordsStreamed()) {
             return;
@@ -166,9 +159,11 @@ public class MigrationRecordsManager {
             stakingFundAccounts.forEach(
                     num -> publishSyntheticCreationForStakingFund(num, implicitAutoRenewPeriod));
         } else {
-            // Publish free auto-renewal migration records if traceability is enabled
-            if (globalDynamicProperties.isTraceabilityMigrationEnabled()) {
+            if (grantingFreeAutoRenewals()) {
                 publishContractFreeAutoRenewalRecords();
+            }
+            if (exportingTraceabilityInfo()) {
+                attemptToPublishTraceabilityMigrationRecords();
             }
         }
 
@@ -189,6 +184,16 @@ public class MigrationRecordsManager {
 
         curNetworkCtx.markMigrationRecordsStreamed();
         treasuryCloner.forgetScannedSystemAccounts();
+    }
+
+    private boolean grantingFreeAutoRenewals() {
+        return bootstrapProperties.getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS);
+    }
+
+    private boolean exportingTraceabilityInfo() {
+        return !traceabilityKillSwitch
+                && bootstrapProperties.getBooleanProperty(
+                        HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
     }
 
     private void publishSyntheticCreationForStakingFund(
@@ -278,11 +283,8 @@ public class MigrationRecordsManager {
     }
 
     private void attemptToPublishTraceabilityMigrationRecords() {
-        if (!globalDynamicProperties.isTraceabilityMigrationEnabled()) {
-            areTraceabilityRecordsStreamed = true;
-        } else if (!isSidecarGeneratingFunction(transactionContext.accessor().getFunction())) {
+        if (!isSidecarGeneratingFunction(transactionContext.accessor().getFunction())) {
             publishTraceabilityMigrationRecords();
-            areTraceabilityRecordsStreamed = true;
         }
     }
 
@@ -290,14 +292,6 @@ public class MigrationRecordsManager {
         return function == HederaFunctionality.ContractCall
                 || function == HederaFunctionality.ContractCreate
                 || function == HederaFunctionality.EthereumTransaction;
-    }
-
-    public void markTraceabilityMigrationAsDone() {
-        areTraceabilityRecordsStreamed = true;
-    }
-
-    public boolean areTraceabilityRecordsStreamed() {
-        return areTraceabilityRecordsStreamed;
     }
 
     private void publishTraceabilityMigrationRecords() {
@@ -420,5 +414,10 @@ public class MigrationRecordsManager {
     @VisibleForTesting
     void setSideEffectsFactory(Supplier<SideEffectsTracker> sideEffectsFactory) {
         this.sideEffectsFactory = sideEffectsFactory;
+    }
+
+    @VisibleForTesting
+    static void setTraceabilityKillSwitch(final boolean traceabilityKillSwitch) {
+        MigrationRecordsManager.traceabilityKillSwitch = traceabilityKillSwitch;
     }
 }

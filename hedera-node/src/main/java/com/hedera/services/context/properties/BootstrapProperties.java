@@ -187,6 +187,8 @@ public final class BootstrapProperties implements PropertySource {
                     ACCOUNTS_SYSTEM_DELETE_ADMIN,
                     ACCOUNTS_SYSTEM_UNDELETE_ADMIN,
                     ACCOUNTS_TREASURY,
+                    AUTO_RENEW_GRANT_FREE_RENEWALS,
+                    HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION,
                     ENTITIES_MAX_LIFETIME,
                     ENTITIES_SYSTEM_DELETABLE,
                     FILES_ADDRESS_BOOK,
@@ -315,7 +317,6 @@ public final class BootstrapProperties implements PropertySource {
                     HEDERA_ALLOWANCES_IS_ENABLED,
                     ENTITIES_LIMIT_TOKEN_ASSOCIATIONS,
                     UTIL_PRNG_IS_ENABLED,
-                    HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION,
                     TOKENS_AUTO_CREATIONS_ENABLED);
 
     static final Set<String> NODE_PROPS =
@@ -434,6 +435,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, AS_INT),
                     entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, AS_INT),
                     entry(AUTO_RENEW_GRACE_PERIOD, AS_LONG),
+                    entry(AUTO_RENEW_GRANT_FREE_RENEWALS, AS_BOOLEAN),
                     entry(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, AS_LONG),
                     entry(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, AS_LONG),
                     entry(NETTY_MODE, AS_PROFILE),

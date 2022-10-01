@@ -143,7 +143,6 @@ public class GlobalDynamicProperties {
     private boolean requireMinStakeToReward;
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private int sidecarMaxSizeMb;
-    private boolean enableTraceabilityMigration;
     private boolean itemizeStorageFees;
     private ContractStoragePriceTiers storagePriceTiers;
     private boolean compressRecordFilesOnCreation;
@@ -289,8 +288,6 @@ public class GlobalDynamicProperties {
         nodeMaxMinStakeRatios =
                 properties.getNodeStakeRatiosProperty(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS);
         sidecarMaxSizeMb = properties.getIntProperty(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB);
-        enableTraceabilityMigration =
-                properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
         storagePriceTiers =
                 ContractStoragePriceTiers.from(
                         properties.getStringProperty(CONTRACTS_STORAGE_SLOT_PRICE_TIERS),
@@ -705,10 +702,6 @@ public class GlobalDynamicProperties {
 
     public int getSidecarMaxSizeMb() {
         return sidecarMaxSizeMb;
-    }
-
-    public boolean isTraceabilityMigrationEnabled() {
-        return enableTraceabilityMigration;
     }
 
     public ContractStoragePriceTiers storagePriceTiers() {
