@@ -16,6 +16,7 @@
 package com.hedera.services;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_FIRST_USER_ENTITY;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
@@ -589,7 +590,9 @@ public class ServicesState extends PartialNaryMerkleInternal
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
         }
         if (FIRST_030X_VERSION.isAfter(deserializedVersion)) {
-            autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+            if (getBootstrapProperties().getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS)) {
+                autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+            }
             nftLinksRepair.rebuildOwnershipLists(accounts(), uniqueTokens());
         }
 
