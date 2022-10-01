@@ -15,10 +15,10 @@
  */
 package com.hedera.services.state.submerkle;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -138,7 +138,7 @@ public class CurrencyAdjustments implements SelfSerializable {
     private AccountAmount adjustAt(final int i) {
         return AccountAmount.newBuilder()
                 .setAmount(hbars[i])
-                .setAccountID(EntityNum.fromLong(accountNums[i]).toGrpcAccountId())
+                .setAccountID(STATIC_PROPERTIES.scopedAccountWith(accountNums[i]))
                 .build();
     }
 

@@ -46,8 +46,6 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class RenewalHelper implements RenewalWork {
-    private static final Logger log = LogManager.getLogger(RenewalHelper.class);
-
     static final List<MapAccessType> SELF_RENEWAL_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
     static final List<MapAccessType> SUPPORTED_RENEWAL_WORK =
             List.of(ACCOUNTS_GET_FOR_MODIFY, ACCOUNTS_GET_FOR_MODIFY);
@@ -121,7 +119,9 @@ public class RenewalHelper implements RenewalWork {
         final var newExpiry = now.getEpochSecond() + renewalPeriod;
         renewWith(renewalFee, newExpiry);
         recordsHelper.streamCryptoRenewal(account, renewalFee, newExpiry, isContract);
-        expiryStats.countRenewedContract();
+        if (isContract) {
+            expiryStats.countRenewedContract();
+        }
 
         return DONE;
     }
@@ -149,8 +149,6 @@ public class RenewalHelper implements RenewalWork {
                 INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES);
 
         accountsLedger.commit();
-
-        log.debug("Renewed {} at a price of {}tb", classifier.getLastClassifiedNum(), fee);
     }
 
     private void assertHasLastClassifiedAccount() {

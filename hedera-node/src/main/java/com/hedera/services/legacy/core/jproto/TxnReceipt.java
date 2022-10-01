@@ -292,6 +292,10 @@ public class TxnReceipt implements SelfSerializable {
         this.accountId = accountId;
     }
 
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public TransactionReceipt toGrpc() {
         return convert(this);
     }

@@ -520,7 +520,6 @@ class ServicesStateTest {
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
         APPS.save(selfId.getId(), app);
@@ -665,7 +664,6 @@ class ServicesStateTest {
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
         APPS.save(selfId.getId(), app);
@@ -761,23 +759,6 @@ class ServicesStateTest {
         assertSame(addressBook, copy.addressBook());
         assertSame(networkContext, copy.networkCtx());
         assertSame(specialFiles, copy.specialFiles());
-    }
-
-    @Test
-    void reconnectMarksTraceabilityRecordsAsStreamed() {
-        given(app.hashLogger()).willReturn(hashLogger);
-        given(app.initializationFlow()).willReturn(initFlow);
-        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
-        given(platform.getSelfId()).willReturn(selfId);
-        // and:
-        APPS.save(selfId.getId(), app);
-
-        // when:
-        subject.init(platform, addressBook, dualState, RECONNECT, currentVersion);
-
-        // then:
-        verify(migrationRecordsManager).markTraceabilityMigrationAsDone();
     }
 
     @Test

@@ -89,7 +89,7 @@ class RenewalHelperTest {
     }
 
     @Test
-    void renewsLastClassifiedAsRequested() {
+    void renewsLastClassifiedAccountAsRequested() {
         // setup:
         var key = EntityNum.fromLong(fundedExpiredAccountNum);
 
@@ -120,10 +120,49 @@ class RenewalHelperTest {
         verify(accountsLedger, times(1)).get(key.toGrpcAccountId(), BALANCE);
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
         verify(sideEffectsTracker).reset();
-        verify(expiryStats).countRenewedContract();
+        verify(expiryStats, never()).countRenewedContract();
         final var expectedNewExpiry = now.getEpochSecond() + 3600L;
         verify(recordsHelper)
                 .streamCryptoRenewal(targetNum, nonZeroBalance, expectedNewExpiry, false);
+        assertEquals(key, classificationWork.getPayerNumForLastClassified());
+    }
+
+    @Test
+    void renewsLastClassifiedContractAsRequested() {
+        // setup:
+        var key = EntityNum.fromLong(fundedExpiredAccountNum);
+
+        givenPresent(fundedExpiredAccountNum, expiredContractNonZeroBalance);
+        givenPresent(98, fundingAccount);
+        given(expiryThrottle.allow(any())).willReturn(true);
+        given(
+                        accountsLedger.get(
+                                EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
+                                BALANCE))
+                .willReturn(1234567L);
+        // when:
+        classificationWork.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
+        given(
+                        fees.assessCryptoAutoRenewal(
+                                expiredContractNonZeroBalance,
+                                0L,
+                                now,
+                                expiredContractNonZeroBalance))
+                .willReturn(new RenewAssessment(nonZeroBalance, 3600L));
+
+        // and:
+        final var targetNum = EntityNum.fromLong(fundedExpiredAccountNum);
+        expiredContractNonZeroBalance.setKey(targetNum);
+        subject.tryToRenewContract(targetNum, now);
+
+        // then:
+        verify(accountsLedger, times(1)).get(key.toGrpcAccountId(), BALANCE);
+        verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
+        verify(sideEffectsTracker).reset();
+        verify(expiryStats).countRenewedContract();
+        final var expectedNewExpiry = now.getEpochSecond() + 3600L;
+        verify(recordsHelper)
+                .streamCryptoRenewal(targetNum, nonZeroBalance, expectedNewExpiry, true);
         assertEquals(key, classificationWork.getPayerNumForLastClassified());
     }
 
@@ -205,6 +244,12 @@ class RenewalHelperTest {
                     .get();
     private final MerkleAccount expiredAccountNonZeroBalance =
             MerkleAccountFactory.newAccount()
+                    .balance(nonZeroBalance)
+                    .expirationTime(now.getEpochSecond() - 1)
+                    .alias(ByteString.copyFromUtf8("dddd"))
+                    .get();
+    private final MerkleAccount expiredContractNonZeroBalance =
+            MerkleAccountFactory.newContract()
                     .balance(nonZeroBalance)
                     .expirationTime(now.getEpochSecond() - 1)
                     .alias(ByteString.copyFromUtf8("dddd"))
