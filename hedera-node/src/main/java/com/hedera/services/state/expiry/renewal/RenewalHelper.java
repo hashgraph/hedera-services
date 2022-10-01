@@ -41,8 +41,6 @@ import java.time.Instant;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class RenewalHelper implements RenewalWork {
