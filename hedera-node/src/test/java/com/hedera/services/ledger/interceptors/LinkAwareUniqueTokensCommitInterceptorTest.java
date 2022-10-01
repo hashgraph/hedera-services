@@ -305,7 +305,6 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
         final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
         final var owner = EntityNum.fromLong(ownerNum);
         final var nftKey = NftId.withDefaultShardRealm(tokenNum, serialNum);
-        final var mintedNft = UniqueTokenAdapter.newEmptyMerkleToken();
 
         given(changes.size()).willReturn(1);
         given(changes.id(0)).willReturn(nftKey);
