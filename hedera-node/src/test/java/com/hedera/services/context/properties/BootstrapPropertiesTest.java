@@ -100,6 +100,7 @@ class BootstrapPropertiesTest {
                     entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
                     entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
                     entry(ACCOUNTS_TREASURY, 2L),
+                    entry(AUTO_RENEW_GRANT_FREE_RENEWALS, true),
                     entry(CONTRACTS_ALLOW_CREATE2, true),
                     entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
                     entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),

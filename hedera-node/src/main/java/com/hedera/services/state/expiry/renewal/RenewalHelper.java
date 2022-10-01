@@ -121,7 +121,9 @@ public class RenewalHelper implements RenewalWork {
         final var newExpiry = now.getEpochSecond() + renewalPeriod;
         renewWith(renewalFee, newExpiry);
         recordsHelper.streamCryptoRenewal(account, renewalFee, newExpiry, isContract);
-        expiryStats.countRenewedContract();
+        if (isContract) {
+            expiryStats.countRenewedContract();
+        }
 
         return DONE;
     }
@@ -149,8 +151,6 @@ public class RenewalHelper implements RenewalWork {
                 INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES);
 
         accountsLedger.commit();
-
-        log.debug("Renewed {} at a price of {}tb", classifier.getLastClassifiedNum(), fee);
     }
 
     private void assertHasLastClassifiedAccount() {

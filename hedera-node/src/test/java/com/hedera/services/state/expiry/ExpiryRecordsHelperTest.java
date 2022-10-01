@@ -21,6 +21,7 @@ import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.f
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.*;
 import static com.hedera.test.utils.TxnUtils.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -293,7 +294,11 @@ class ExpiryRecordsHelperTest {
             final AccountID accountRemoved,
             final Instant removedAt,
             final List<TokenTransferList> displacements) {
-        final var receipt = TransactionReceipt.newBuilder().setAccountID(accountRemoved).build();
+        final var receipt =
+                TransactionReceipt.newBuilder()
+                        .setStatus(SUCCESS)
+                        .setAccountID(accountRemoved)
+                        .build();
 
         return TransactionRecord.newBuilder()
                 .setReceipt(receipt)
@@ -320,7 +325,11 @@ class ExpiryRecordsHelperTest {
             final long newExpirationTime,
             final AccountID feeCollector,
             final boolean isContract) {
-        final var receipt = TransactionReceipt.newBuilder().setAccountID(accountRenewed).build();
+        final var receipt =
+                TransactionReceipt.newBuilder()
+                        .setStatus(SUCCESS)
+                        .setAccountID(accountRenewed)
+                        .build();
         final var memo =
                 String.format(
                         "%s %s was automatically renewed. New expiration time: %d.",

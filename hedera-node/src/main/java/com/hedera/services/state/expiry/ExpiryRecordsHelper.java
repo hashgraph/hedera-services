@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
+import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.utils.MiscUtils.synthWithRecordTxnId;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -125,6 +126,7 @@ public class ExpiryRecordsHelper {
         final var at = RichInstant.fromJava(consensusTime);
         final var receipt = new TxnReceipt();
         receipt.setAccountId(expiryNum.toEntityId());
+        receipt.setStatus(SUCCESS_LITERAL);
         return ExpirableTxnRecord.newBuilder()
                 .setTxnId(txnId)
                 .setReceipt(receipt)

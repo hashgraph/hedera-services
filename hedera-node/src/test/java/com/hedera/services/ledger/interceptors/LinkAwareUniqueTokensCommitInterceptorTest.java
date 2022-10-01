@@ -16,8 +16,10 @@
 package com.hedera.services.ledger.interceptors;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -144,6 +146,36 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void failedLinkManagementOnNonTreasuryExitDoesntPropagate() {
+        final var changes =
+                (EntityChangeSet<NftId, UniqueTokenAdapter, NftProperty>)
+                        mock(EntityChangeSet.class);
+        final var nft = mock(UniqueTokenAdapter.class);
+        final var change = (HashMap<NftProperty, Object>) mock(HashMap.class);
+        final long ownerNum = 1111L;
+        final long newOwnerNum = 1234L;
+        final long tokenNum = 2222L;
+        final long serialNum = 2L;
+        EntityNum owner = EntityNum.fromLong(ownerNum);
+        EntityNum newOwner = EntityNum.fromLong(newOwnerNum);
+        NftId nftKey = NftId.withDefaultShardRealm(tokenNum, serialNum);
+
+        given(changes.size()).willReturn(1);
+        given(changes.entity(0)).willReturn(nft);
+        given(changes.changes(0)).willReturn(change);
+        given(changes.id(0)).willReturn(nftKey);
+        given(change.containsKey(NftProperty.OWNER)).willReturn(true);
+        given(change.get(NftProperty.OWNER)).willReturn(newOwner.toEntityId());
+        given(nft.getOwner()).willReturn(owner.toEntityId());
+        willThrow(NullPointerException.class)
+                .given(uniqueTokensLinkManager)
+                .updateLinks(owner, newOwner, nftKey);
+
+        assertDoesNotThrow(() -> subject.preview(changes));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void treasuryBurnDoesNotUpdateLinks() {
         final var changes =
                 (EntityChangeSet<NftId, UniqueTokenAdapter, NftProperty>)
@@ -180,6 +212,31 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
         subject.preview(changes);
 
         verifyNoInteractions(uniqueTokensLinkManager);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void failedLinkManagementOnWipeDoesntPropagate() {
+        final var changes =
+                (EntityChangeSet<NftId, UniqueTokenAdapter, NftProperty>)
+                        mock(EntityChangeSet.class);
+        final var nft = mock(UniqueTokenAdapter.class);
+        final long ownerNum = 1111L;
+        final long tokenNum = 2222L;
+        final long serialNum = 2L;
+        final var owner = EntityNum.fromLong(ownerNum);
+        final var nftKey = NftId.withDefaultShardRealm(tokenNum, serialNum);
+
+        given(changes.size()).willReturn(1);
+        given(changes.id(0)).willReturn(nftKey);
+        given(changes.entity(0)).willReturn(nft);
+        given(changes.changes(0)).willReturn(null);
+        given(nft.getOwner()).willReturn(owner.toEntityId());
+        willThrow(NullPointerException.class)
+                .given(uniqueTokensLinkManager)
+                .updateLinks(owner, null, nftKey);
+
+        assertDoesNotThrow(() -> subject.preview(changes));
     }
 
     @Test
@@ -234,6 +291,32 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
                 ArgumentCaptor.forClass(UniqueTokenAdapter.class);
         verify(changes).cacheEntity(eq(0), argumentCaptor.capture());
         assertThat(argumentCaptor.getValue()).isEqualTo(mintedNft);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void failedLinkManagementOnMultiStageMintAndTransferDoesntPropagate() {
+        final var changes =
+                (EntityChangeSet<NftId, UniqueTokenAdapter, NftProperty>)
+                        mock(EntityChangeSet.class);
+        final long ownerNum = 1111L;
+        final long tokenNum = 2222L;
+        final long serialNum = 2L;
+        final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
+        final var owner = EntityNum.fromLong(ownerNum);
+        final var nftKey = NftId.withDefaultShardRealm(tokenNum, serialNum);
+        final var mintedNft = UniqueTokenAdapter.newEmptyMerkleToken();
+
+        given(changes.size()).willReturn(1);
+        given(changes.id(0)).willReturn(nftKey);
+        given(changes.entity(0)).willReturn(null);
+        given(changes.changes(0)).willReturn(scopedChanges);
+        scopedChanges.put(NftProperty.OWNER, owner.toEntityId());
+        willThrow(NullPointerException.class)
+                .given(uniqueTokensLinkManager)
+                .updateLinks(null, owner, nftKey);
+
+        assertDoesNotThrow(() -> subject.preview(changes));
     }
 
     @Test
