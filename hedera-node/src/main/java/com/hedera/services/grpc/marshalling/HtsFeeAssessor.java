@@ -35,7 +35,7 @@ public class HtsFeeAssessor {
 
     public ResponseCodeEnum assess(
             Id payer,
-            Id chargingToken,
+            CustomFeeMeta chargingTokenMeta,
             FcCustomFee htsFee,
             BalanceChangeManager changeManager,
             List<FcAssessedCustomFee> accumulator) {
@@ -44,7 +44,12 @@ public class HtsFeeAssessor {
         final var amount = fixedSpec.getUnitsToCollect();
         final var denominatingToken = fixedSpec.getTokenDenomination().asId();
         adjustForAssessed(
-                payer, chargingToken, collector, denominatingToken, amount, changeManager);
+                payer,
+                chargingTokenMeta.tokenId(),
+                collector,
+                denominatingToken,
+                amount,
+                changeManager);
 
         final var effPayerAccountNums = new long[] {payer.num()};
         final var assessed =

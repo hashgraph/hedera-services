@@ -122,7 +122,8 @@ class SpanMapManagerTest {
                                     FcCustomFee.fixedFee(
                                             10L,
                                             customFeeToken.asEntityId(),
-                                            customFeeCollector.asEntityId()))));
+                                            customFeeCollector.asEntityId(),
+                                            false))));
     private final long[] effPayerNum = new long[] {123L};
     private final List<FcAssessedCustomFee> assessedCustomFees =
             List.of(

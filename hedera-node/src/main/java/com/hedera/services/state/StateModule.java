@@ -22,6 +22,7 @@ import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
@@ -89,6 +90,7 @@ import dagger.Provides;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -127,9 +129,21 @@ public interface StateModule {
     @Singleton
     EntityCreator bindEntityCreator(ExpiringCreations creator);
 
-    @Binds
+    @Provides
     @Singleton
-    BalancesExporter bindBalancesExporter(SignedStateBalancesExporter signedStateBalancesExporter);
+    static BalancesExporter bindBalancesExporter(
+            final SystemExits systemExits,
+            final @CompositeProps PropertySource properties,
+            final Function<byte[], Signature> signer,
+            final GlobalDynamicProperties dynamicProperties) {
+        try {
+            return new SignedStateBalancesExporter(
+                    systemExits, properties, signer, dynamicProperties);
+        } catch (NoSuchAlgorithmException fatal) {
+            throw new IllegalStateException(
+                    "Could not construct signed state balances exporter", fatal);
+        }
+    }
 
     @Binds
     @Singleton

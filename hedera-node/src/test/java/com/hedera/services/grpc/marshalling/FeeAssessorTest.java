@@ -114,11 +114,11 @@ class FeeAssessorTest {
     @Test
     void exemptsSelfPayments() {
         // setup:
-        final var fees = List.of(htsFee, fractionalFee);
-        givenFees(fungibleTokenId.asEntityId(), fees);
+        final var feeMeta = newCustomMetaFee(List.of(htsFee, fractionalFee));
+        givenFees(fungibleTokenId.asEntityId(), feeMeta.customFees());
         given(
                         fractionalFeeAssessor.assessAllFractional(
-                                collectorTrigger, fees, balanceChangeManager, accumulator))
+                                collectorTrigger, feeMeta, balanceChangeManager, accumulator))
                 .willReturn(OK);
 
         // when:
@@ -149,21 +149,20 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
         verify(fixedFeeAssessor, times(2))
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
     @Test
     void shouldProcessAllFixedFees() {
         // setup:
-        final var fees = List.of(hbarFee, htsFee, fractionalFee, htsFee);
-        givenFees(fungibleTokenId.asEntityId(), fees);
+        final var feeMeta = newCustomMetaFee(List.of(hbarFee, htsFee, fractionalFee, htsFee));
+        givenFees(fungibleTokenId.asEntityId(), feeMeta.customFees());
         given(
                         fractionalFeeAssessor.assessAllFractional(
-                                fungibleTrigger, fees, balanceChangeManager, accumulator))
+                                fungibleTrigger, feeMeta, balanceChangeManager, accumulator))
                 .willReturn(OK);
 
         // when:
@@ -176,12 +175,11 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, feeMeta, hbarFee, balanceChangeManager, accumulator);
         verify(fixedFeeAssessor, times(2))
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+                .assess(payer, feeMeta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor)
-                .assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+                .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
@@ -199,19 +197,18 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
     @Test
     void useFractionalAccessorAppropriately() {
         // setup:
-        final var fees = List.of(fractionalFee);
-        givenFees(fungibleTokenId.asEntityId(), fees);
+        final var feeMeta = newCustomMetaFee(List.of(fractionalFee));
+        givenFees(fungibleTokenId.asEntityId(), feeMeta.customFees());
         given(
                         fractionalFeeAssessor.assessAllFractional(
-                                fungibleTrigger, fees, balanceChangeManager, accumulator))
+                                fungibleTrigger, feeMeta, balanceChangeManager, accumulator))
                 .willReturn(OK);
 
         // when:
@@ -225,15 +222,15 @@ class FeeAssessorTest {
 
         // then:
         verify(fractionalFeeAssessor)
-                .assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+                .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
     @Test
     void usesRoyaltyAssessorAppropriately() {
         // setup:
-        final var fees = List.of(royaltyFee);
-        givenFees(uniqueTokenId.asEntityId(), fees);
+        final var fees = newCustomMetaFee(uniqueTokenId.asEntityId().asId(), List.of(royaltyFee));
+        givenFees(uniqueTokenId.asEntityId(), fees.customFees());
         given(
                         royaltyFeeAssessor.assessAllRoyalties(
                                 royaltyTrigger, fees, balanceChangeManager, accumulator))
@@ -257,8 +254,8 @@ class FeeAssessorTest {
     @Test
     void usesRoyaltyAssessorAppropriatelyWhenOk() {
         // setup:
-        final var fees = List.of(royaltyFee);
-        givenFees(uniqueTokenId.asEntityId(), fees);
+        final var fees = newCustomMetaFee(uniqueTokenId.asEntityId().asId(), List.of(royaltyFee));
+        givenFees(uniqueTokenId.asEntityId(), fees.customFees());
         given(
                         royaltyFeeAssessor.assessAllRoyalties(
                                 royaltyTrigger, fees, balanceChangeManager, accumulator))
@@ -282,8 +279,8 @@ class FeeAssessorTest {
     @Test
     void doesntUseFractionalAccessorIfAllFeesAreFixed() {
         // setup:
-        final var fees = List.of(hbarFee, htsFee);
-        givenFees(fungibleTokenId.asEntityId(), fees);
+        final var feeMeta = newCustomMetaFee(List.of(hbarFee, htsFee));
+        givenFees(fungibleTokenId.asEntityId(), feeMeta.customFees());
 
         // when:
         final var result =
@@ -296,7 +293,7 @@ class FeeAssessorTest {
 
         // then:
         verify(fractionalFeeAssessor, never())
-                .assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+                .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
@@ -314,16 +311,15 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         assertEquals(OK, result);
     }
 
     @Test
     void abortsOnExcessiveNonFractionalChanges() {
         // setup:
-        final var fees = List.of(hbarFee, htsFee, fractionalFee);
-        givenFees(fungibleTokenId.asEntityId(), fees);
+        final var feeMeta = newCustomMetaFee(List.of(hbarFee, htsFee, fractionalFee));
+        givenFees(fungibleTokenId.asEntityId(), feeMeta.customFees());
         given(balanceChangeManager.numChangesSoFar()).willReturn(20).willReturn(21);
 
         // when:
@@ -336,23 +332,21 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor, never())
-                .assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+                .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
     }
 
     @Test
     void propagatesFailedFractionalChanges() {
         // setup:
-        final var fees = List.of(hbarFee, htsFee, fractionalFee);
-        givenFees(fungibleTokenId.asEntityId(), fees);
+        final var feeMeta = newCustomMetaFee(List.of(hbarFee, htsFee, fractionalFee));
+        givenFees(fungibleTokenId.asEntityId(), feeMeta.customFees());
         given(
                         fractionalFeeAssessor.assessAllFractional(
-                                fungibleTrigger, fees, balanceChangeManager, accumulator))
+                                fungibleTrigger, feeMeta, balanceChangeManager, accumulator))
                 .willReturn(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
 
         // when:
@@ -365,24 +359,22 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor)
-                .assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+                .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
     }
 
     @Test
     void abortsOnExcessiveFractionalChanges() {
         // setup:
-        final var fees = List.of(hbarFee, htsFee, fractionalFee);
-        givenFees(fungibleTokenId.asEntityId(), fees);
+        final var feeMeta = newCustomMetaFee(List.of(hbarFee, htsFee, fractionalFee));
+        givenFees(fungibleTokenId.asEntityId(), feeMeta.customFees());
         given(balanceChangeManager.numChangesSoFar()).willReturn(19).willReturn(20).willReturn(21);
         given(
                         fractionalFeeAssessor.assessAllFractional(
-                                fungibleTrigger, fees, balanceChangeManager, accumulator))
+                                fungibleTrigger, feeMeta, balanceChangeManager, accumulator))
                 .willReturn(OK);
 
         // when:
@@ -395,18 +387,26 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, hbarFee, balanceChangeManager, accumulator);
-        verify(fixedFeeAssessor)
-                .assess(payer, fungibleTokenId, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
         verify(fractionalFeeAssessor)
-                .assessAllFractional(fungibleTrigger, fees, balanceChangeManager, accumulator);
+                .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
     }
 
+    private CustomFeeMeta meta;
+
     private void givenFees(EntityId token, List<FcCustomFee> customFees) {
-        final var meta = new CustomFeeMeta(token.asId(), treasury, customFees);
+        meta = new CustomFeeMeta(token.asId(), treasury, customFees);
         given(customSchedulesManager.managedSchedulesFor(token.asId())).willReturn(meta);
+    }
+
+    private CustomFeeMeta newCustomMetaFee(List<FcCustomFee> fees) {
+        return newCustomMetaFee(fungibleTokenId, fees);
+    }
+
+    private CustomFeeMeta newCustomMetaFee(Id id, List<FcCustomFee> fees) {
+        return new CustomFeeMeta(id, treasury, fees);
     }
 
     private final long amountOfFungibleDebit = 1_000L;
@@ -469,9 +469,9 @@ class FeeAssessorTest {
                             .build(),
                     payer.asGrpcAccount());
     private final FcCustomFee hbarFee =
-            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector);
+            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector, false);
     private final FcCustomFee htsFee =
-            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector);
+            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector, false);
     private final FcCustomFee fractionalFee =
             FcCustomFee.fractionalFee(
                     numerator,
@@ -479,6 +479,8 @@ class FeeAssessorTest {
                     minAmountOfFractionalFee,
                     maxAmountOfFractionalFee,
                     false,
-                    fractionalFeeCollector);
-    private final FcCustomFee royaltyFee = FcCustomFee.royaltyFee(1, 2, null, royaltyFeeCollector);
+                    fractionalFeeCollector,
+                    false);
+    private final FcCustomFee royaltyFee =
+            FcCustomFee.royaltyFee(1, 2, null, royaltyFeeCollector, false);
 }

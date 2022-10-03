@@ -91,13 +91,13 @@ class CustomSchedulesManagerTest {
     private final Id hbarFeeCollectorId = new Id(1, 2, 3);
     private final EntityId hbarFeeCollector = hbarFeeCollectorId.asEntityId();
     private final FcCustomFee hbarFee =
-            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector);
+            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector, false);
     private final long amountOfHtsFee = 100_000L;
     private final Id htsFeeCollectorId = new Id(1, 2, 3);
     private final EntityId feeDenom = new EntityId(6, 6, 6);
     private final EntityId htsFeeCollector = htsFeeCollectorId.asEntityId();
     private final FcCustomFee htsFee =
-            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector);
+            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector, false);
     final Id a = new Id(1, 2, 3);
     final Id aTreasury = new Id(2, 2, 3);
     final Id b = new Id(2, 3, 4);

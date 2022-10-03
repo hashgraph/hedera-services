@@ -23,8 +23,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
@@ -115,29 +113,6 @@ class ServicesTxnManagerTest {
         inOrder.verify(processLogic).run();
         inOrder.verify(ledger).commit();
         inOrder.verify(recordStreaming).streamUserTxnRecords();
-    }
-
-    @Test
-    void onlyCallsMigrationRecordsManagerOnceIfAllMigrationsAreExecutedTogether() {
-        given(migrationRecordsManager.areTraceabilityRecordsStreamed()).willReturn(true);
-
-        subject.process(accessor, consensusTime, submittingMember);
-        subject.process(accessor, consensusTime, submittingMember);
-
-        verify(migrationRecordsManager, times(1)).publishMigrationRecords(consensusTime);
-    }
-
-    @Test
-    void callsMigrationManagerUntilTraceabilityMigrationIsComplete() {
-        given(migrationRecordsManager.areTraceabilityRecordsStreamed())
-                .willReturn(false)
-                .willReturn(true);
-
-        subject.process(accessor, consensusTime, submittingMember);
-        subject.process(accessor, consensusTime, submittingMember);
-        subject.process(accessor, consensusTime, submittingMember);
-
-        verify(migrationRecordsManager, times(2)).publishMigrationRecords(consensusTime);
     }
 
     @Test

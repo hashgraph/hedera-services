@@ -36,6 +36,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private boolean exportBalances = true;
     private CongestionMultipliers currentMultipliers = defaultMultipliers;
     private boolean throttleByGas;
+    private boolean shouldCompressAccountFiles;
 
     public MockGlobalDynamicProps() {
         super(null, null);
@@ -269,5 +270,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     public void enableSchedulingLongTerm() {
         schedulingLongTermEnabled = true;
+    }
+
+    @Override
+    public boolean shouldCompressAccountBalanceFilesOnCreation() {
+        return shouldCompressAccountFiles;
+    }
+
+    public void setAccountBalanceCompression(final boolean isEnabled) {
+        this.shouldCompressAccountFiles = isEnabled;
     }
 }

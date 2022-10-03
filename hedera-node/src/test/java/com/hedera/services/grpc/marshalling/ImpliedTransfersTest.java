@@ -190,7 +190,7 @@ class ImpliedTransfersTest {
             new CustomFeeMeta(
                     someId,
                     someTreasuryId,
-                    List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector)));
+                    List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector, false)));
     private final List<FcAssessedCustomFee> assessedCustomFees =
             List.of(
                     new FcAssessedCustomFee(

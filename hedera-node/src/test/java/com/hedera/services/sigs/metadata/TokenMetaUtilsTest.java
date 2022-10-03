@@ -39,7 +39,7 @@ class TokenMetaUtilsTest {
         royaltyFeeWithFallbackToken.setFeeSchedule(
                 List.of(
                         FcCustomFee.royaltyFee(
-                                1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5))));
+                                1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
 
         // given:
         final var meta = TokenMetaUtils.signingMetaFrom(royaltyFeeWithFallbackToken);
@@ -58,7 +58,7 @@ class TokenMetaUtilsTest {
                         Long.MAX_VALUE, 100, 1, "ZPHYR", "West Wind Art", false, true, treasury);
         royaltyFeeNoFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
         royaltyFeeNoFallbackToken.setFeeSchedule(
-                List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5))));
+                List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
 
         // given:
         final var meta = TokenMetaUtils.signingMetaFrom(royaltyFeeNoFallbackToken);

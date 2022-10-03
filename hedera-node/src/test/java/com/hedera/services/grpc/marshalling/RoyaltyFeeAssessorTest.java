@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -51,24 +52,28 @@ class RoyaltyFeeAssessorTest {
     @Mock private FixedFeeAssessor fixedFeeAssessor;
     @Mock private FungibleAdjuster fungibleAdjuster;
     @Mock private BalanceChangeManager changeManager;
+    @Mock private CustomFeePayerExemptions customFeePayerExemptions;
 
     private RoyaltyFeeAssessor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster);
+        subject =
+                new RoyaltyFeeAssessor(
+                        fixedFeeAssessor, fungibleAdjuster, customFeePayerExemptions);
     }
 
     @Test
     void doesNothingIfNoValueExchangedAndNoFallback() {
         // setup:
-        final List<FcCustomFee> fees =
-                List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector));
+        final CustomFeeMeta feeMeta =
+                newRoyaltyCustomFeeMeta(
+                        List.of(
+                                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
 
         // when:
-        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+        final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -81,13 +86,14 @@ class RoyaltyFeeAssessorTest {
     void chargesHbarFallbackAsExpected() {
         // setup:
         final var fallback = new FixedFeeSpec(33, null);
-        final List<FcCustomFee> fees =
-                List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+        final CustomFeeMeta feeMeta =
+                newRoyaltyCustomFeeMeta(
+                        List.of(
+                                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
 
         // when:
-        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+        final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -95,8 +101,8 @@ class RoyaltyFeeAssessorTest {
         verify(fixedFeeAssessor)
                 .assess(
                         funding,
-                        MISSING_ID,
-                        FcCustomFee.fixedFee(33, null, targetCollector),
+                        feeMeta,
+                        FcCustomFee.fixedFee(33, null, targetCollector, false),
                         changeManager,
                         accumulator);
     }
@@ -104,11 +110,12 @@ class RoyaltyFeeAssessorTest {
     @Test
     void abortsWithNecessaryResponseCodeIfNoCounterpartyId() {
         final var fallback = new FixedFeeSpec(33, null);
-        final List<FcCustomFee> fees =
-                List.of(FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+        final CustomFeeMeta feeMeta =
+                newRoyaltyCustomFeeMeta(
+                        List.of(FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
 
         final var result =
-                subject.assessAllRoyalties(htsPayerPlusChange, fees, changeManager, accumulator);
+                subject.assessAllRoyalties(htsPayerPlusChange, feeMeta, changeManager, accumulator);
 
         assertEquals(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, result);
     }
@@ -118,13 +125,14 @@ class RoyaltyFeeAssessorTest {
         // setup:
         final var denom = new EntityId(1, 2, 3);
         final var fallback = new FixedFeeSpec(33, denom);
-        final List<FcCustomFee> fees =
-                List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+        final CustomFeeMeta feeMeta =
+                newRoyaltyCustomFeeMeta(
+                        List.of(
+                                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
 
         // when:
-        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+        final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -132,8 +140,8 @@ class RoyaltyFeeAssessorTest {
         verify(fixedFeeAssessor)
                 .assess(
                         funding,
-                        MISSING_ID,
-                        FcCustomFee.fixedFee(33, denom, targetCollector),
+                        feeMeta,
+                        FcCustomFee.fixedFee(33, denom, targetCollector, false),
                         changeManager,
                         accumulator);
     }
@@ -143,10 +151,11 @@ class RoyaltyFeeAssessorTest {
         // setup:
         final var denom = new EntityId(1, 2, 3);
         final var fallback = new FixedFeeSpec(33, denom);
-        final List<FcCustomFee> fees =
-                List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, fallback, targetCollector));
+        final CustomFeeMeta fees =
+                newRoyaltyCustomFeeMeta(
+                        List.of(
+                                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
 
         // when:
         final var result =
@@ -160,17 +169,18 @@ class RoyaltyFeeAssessorTest {
     @Test
     void skipsIfRoyaltyAlreadyPaid() {
         // setup:
-        final List<FcCustomFee> fees =
-                List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector));
+        final CustomFeeMeta feeMeta =
+                newRoyaltyCustomFeeMeta(
+                        List.of(
+                                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 
         given(changeManager.isRoyaltyPaid(nonFungibleTokenId, payer)).willReturn(true);
 
         // when:
-        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+        final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -185,17 +195,18 @@ class RoyaltyFeeAssessorTest {
     @Test
     void reclaimsFromOriginalCreditsWhenAvailable() {
         // setup:
-        final List<FcCustomFee> fees =
-                List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector));
+        final CustomFeeMeta feeMeta =
+                newRoyaltyCustomFeeMeta(
+                        List.of(
+                                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 
         given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
 
         // when:
-        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+        final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -226,20 +237,48 @@ class RoyaltyFeeAssessorTest {
     }
 
     @Test
+    void doesntCollectRoyaltyIfOriginalPayerIsExempt() {
+        // setup:
+        final CustomFeeMeta feeMeta =
+                newRoyaltyCustomFeeMeta(
+                        List.of(
+                                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
+        // and:
+        final var reclaimable = changesNoLongerWithOriginalUnits();
+
+        given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
+        final var royaltyFee = feeMeta.customFees().get(1);
+        given(customFeePayerExemptions.isPayerExempt(feeMeta, royaltyFee, trigger.getAccount()))
+                .willReturn(true);
+
+        // when:
+        final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
+
+        // then:
+        assertEquals(OK, result);
+        verifyNoInteractions(fungibleAdjuster);
+        verify(changeManager).isRoyaltyPaid(nonFungibleTokenId, payer);
+        verify(changeManager).markRoyaltyPaid(nonFungibleTokenId, payer);
+        assertEquals(0, accumulator.size());
+    }
+
+    @Test
     void abortsWhenCreditsNotAvailable() {
         // setup:
-        final List<FcCustomFee> fees =
-                List.of(
-                        FcCustomFee.fixedFee(1, null, otherCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector),
-                        FcCustomFee.royaltyFee(1, 2, null, targetCollector));
+        final CustomFeeMeta feeMeta =
+                newRoyaltyCustomFeeMeta(
+                        List.of(
+                                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false),
+                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 
         given(changeManager.fungibleCreditsInCurrentLevel(payer)).willReturn(reclaimable);
 
         // when:
-        final var result = subject.assessAllRoyalties(trigger, fees, changeManager, accumulator);
+        final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
@@ -251,12 +290,17 @@ class RoyaltyFeeAssessorTest {
         return List.of(hbarPayerPlusChange, htsPayerPlusChange);
     }
 
+    private CustomFeeMeta newRoyaltyCustomFeeMeta(List<FcCustomFee> customFees) {
+        return new CustomFeeMeta(firstFungibleTokenId, minter, customFees);
+    }
+
     private final long originalUnits = 100;
     private final Id payer = new Id(0, 1, 2);
     private final EntityId otherCollector = new EntityId(10, 9, 8);
     private final EntityId targetCollector = new EntityId(9, 8, 7);
     private final Id funding = new Id(0, 0, 98);
     private final Id firstFungibleTokenId = new Id(1, 2, 3);
+    private final Id minter = new Id(4, 5, 6);
     private final AccountID alias =
             asAliasAccount(ByteString.copyFromUtf8("01234567890123456789012345678901"));
     private final AccountAmount payerCredit =

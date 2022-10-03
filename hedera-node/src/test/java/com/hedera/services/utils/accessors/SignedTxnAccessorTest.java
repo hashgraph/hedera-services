@@ -1032,12 +1032,12 @@ class SignedTxnAccessorTest {
         final var bDenom = new EntityId(3, 4, 5);
 
         return List.of(
-                        fixedFee(1, null, collector),
-                        fixedFee(2, aDenom, collector),
-                        fixedFee(2, bDenom, collector),
-                        fractionalFee(1, 2, 1, 2, false, collector),
-                        fractionalFee(1, 3, 1, 2, false, collector),
-                        fractionalFee(1, 4, 1, 2, false, collector))
+                        fixedFee(1, null, collector, false),
+                        fixedFee(2, aDenom, collector, false),
+                        fixedFee(2, bDenom, collector, false),
+                        fractionalFee(1, 2, 1, 2, false, collector, false),
+                        fractionalFee(1, 3, 1, 2, false, collector, false),
+                        fractionalFee(1, 4, 1, 2, false, collector, false))
                 .stream()
                 .map(FcCustomFee::asGrpc)
                 .collect(toList());
