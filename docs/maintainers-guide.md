@@ -96,6 +96,14 @@ projects, with 0.30 milestone on it.
     <img src="./assets/labels-on-issue.png"/>
 </p>
 
+### Release Engineering Responsibilities
+
+The release engineering team will handle the following:
+- Create a release branch from `develop` branch at the end of first sprint in the release cycle
+- Will merge the release branch for current deploying release into `main` 
+- Will provide automated release processes and coordinate release schedules
+- Will handle production releases
+
 ### User Stories
 
 #### As a developer, I would like to create a branch to work on the feature for the upcoming release
@@ -127,16 +135,6 @@ NOTE:
    to format your code to avoid failing checks in CI pipeline.
 3. The linked issues should be automatically closed when a PR is merged or closed manually.
 
-#### As a release engineer, I would like to create a release branch
-
-Release branch should be created from `develop` branch at the end of first sprint in the release cycle. This adheres to
-completing all the development targeted for the upcoming release in the first sprint of release cycle.
-
-Once a release branch is created there _should not_ be any feature developments merged into `release` branch targeted
-for that release.
-
-The initial `alpha` tags will be tagged from the release branch created.
-
 #### As a developer, I would like to merge a bugfix/hotfix after release branch is created
 
 Once the release branch is created, only bugfixes or hotfixes should be merged into release branch. To do that, create
@@ -149,11 +147,6 @@ be cherry-picked into the `develop` branch.
 To fix a bug from one of the previous releases(production code), create a hotfix branch from `main`. Once the fix is in
 the branch, create a PR targeting to `main`. Once bugfix is merged into `main`and it should be cherry-picked
 back into the current `release` branch(if the release branch is still open), and also into `develop`.
-
-#### As a release engineer, I would like to tag the main release at the end of release cycle
-
-At the end of release cycle, release engineering will merge the release branch for current release into `main`and tag
-release from the `main` branch.
 
 ### DCO Sign Off
 The sign-off is a simple line at the end of a commit message. All commits need to be signed.
