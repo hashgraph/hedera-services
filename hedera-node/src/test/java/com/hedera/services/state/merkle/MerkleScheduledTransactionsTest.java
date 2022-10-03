@@ -32,6 +32,7 @@ import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,21 +42,21 @@ class MerkleScheduledTransactionsTest {
 
     private MerkleScheduledTransactionsState state;
 
-    private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
+    private VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
     private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
-    private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
+    private VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
 
     private MerkleScheduledTransactions subject;
 
     @BeforeEach
     void setup() {
-        byEquality = mock(MerkleMap.class);
+        byEquality = mock(VirtualMap.class);
         given(byEquality.copy()).willReturn(byEquality);
 
         byExpirationSecond = mock(MerkleMap.class);
         given(byExpirationSecond.copy()).willReturn(byExpirationSecond);
 
-        byId = mock(MerkleMap.class);
+        byId = mock(VirtualMap.class);
         given(byId.copy()).willReturn(byId);
 
         state = mock(MerkleScheduledTransactionsState.class);
@@ -70,7 +71,7 @@ class MerkleScheduledTransactionsTest {
 
     @Test
     void equalsIncorporatesRecords() {
-        final var otherByExpirationSecond = mock(MerkleMap.class);
+        final var otherByExpirationSecond = mock(VirtualMap.class);
 
         final var otherSubject =
                 new MerkleScheduledTransactions(
@@ -195,7 +196,7 @@ class MerkleScheduledTransactionsTest {
 
         assertEquals(5L, subject.getNumSchedules());
 
-        given(byId.size()).willReturn(4);
+        given(byId.size()).willReturn(4L);
 
         assertEquals(4L, subject.getNumSchedules());
     }

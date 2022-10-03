@@ -66,7 +66,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -120,9 +120,9 @@ class HederaScheduleStoreTest {
 
     private EntityIdSource ids;
     private MerkleScheduledTransactions schedules;
-    private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
-    private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
-    private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
+    private VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
+    private VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
+    private VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
     private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     private HederaLedger hederaLedger;
     private GlobalDynamicProperties globalDynamicProperties;
@@ -165,9 +165,9 @@ class HederaScheduleStoreTest {
         given(accountsLedger.get(schedulingAccount, IS_DELETED)).willReturn(false);
 
         schedules = mock(MerkleScheduledTransactions.class);
-        byId = mock(MerkleMap.class);
-        byExpirationSecond = mock(MerkleMap.class);
-        byEquality = mock(MerkleMap.class);
+        byId = mock(VirtualMap.class);
+        byExpirationSecond = mock(VirtualMap.class);
+        byEquality = mock(VirtualMap.class);
         given(schedules.byId()).willReturn(byId);
         given(schedules.byExpirationSecond()).willReturn(byExpirationSecond);
         given(schedules.byEquality()).willReturn(byEquality);

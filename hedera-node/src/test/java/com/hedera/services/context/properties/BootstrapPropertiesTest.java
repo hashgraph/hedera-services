@@ -209,7 +209,7 @@ class BootstrapPropertiesTest {
                     entry(CACHE_RECORDS_TTL, 180),
                     entry(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT, 25),
                     entry(RATES_MIDNIGHT_CHECK_INTERVAL, 1L),
-                    entry(SCHEDULING_LONG_TERM_ENABLED, false),
+                    entry(SCHEDULING_LONG_TERM_ENABLED, true),
                     entry(SCHEDULING_MAX_TXN_PER_SEC, 100L),
                     entry(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS, 5356800L),
                     entry(

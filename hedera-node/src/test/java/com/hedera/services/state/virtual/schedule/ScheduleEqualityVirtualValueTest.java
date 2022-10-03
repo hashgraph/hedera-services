@@ -53,7 +53,7 @@ class ScheduleEqualityVirtualValueTest {
 
     @BeforeEach
     void setup() {
-        subject = new ScheduleEqualityVirtualValue(ids, new ScheduleEqualityVirtualKey(3L));
+        subject = new ScheduleEqualityVirtualValue(ids);
     }
 
     @Test
@@ -67,11 +67,11 @@ class ScheduleEqualityVirtualValueTest {
         final var twoRef = two;
 
         assertNotEquals(two, one);
-        assertSubjectEquals(two, twoRef);
-        assertSubjectEquals(one, three);
-        assertSubjectEquals(three, four);
-        assertSubjectEquals(three, five);
-        assertSubjectEquals(three, six);
+        assertEquals(two, twoRef);
+        assertEquals(one, three);
+        assertEquals(three, four);
+        assertEquals(three, five);
+        assertEquals(three, six);
 
         assertNotEquals(one.hashCode(), two.hashCode());
         assertEquals(two.hashCode(), twoRef.hashCode());
@@ -103,9 +103,6 @@ class ScheduleEqualityVirtualValueTest {
         inOrder.verify(out).writeInt(5);
         inOrder.verify(out).write("truck".getBytes(StandardCharsets.UTF_8));
         inOrder.verify(out).writeLong(2L);
-        inOrder.verify(out).writeLong(3L);
-
-        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -139,7 +136,7 @@ class ScheduleEqualityVirtualValueTest {
 
         defaultSubject.deserialize(in, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-        assertSubjectEquals(subject, defaultSubject);
+        assertEquals(subject, defaultSubject);
     }
 
     @Test
@@ -157,9 +154,6 @@ class ScheduleEqualityVirtualValueTest {
         inOrder.verify(buffer).putInt(5);
         inOrder.verify(buffer).put("truck".getBytes(StandardCharsets.UTF_8));
         inOrder.verify(buffer).putLong(2L);
-        inOrder.verify(buffer).putLong(3L);
-
-        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -168,9 +162,7 @@ class ScheduleEqualityVirtualValueTest {
         final var defaultSubject = new ScheduleEqualityVirtualValue();
 
         given(buffer.getInt()).willReturn(2, 3, 5);
-
-        given(buffer.get()).willReturn((byte) 1);
-        given(buffer.getLong()).willReturn(1L, 2L, 3L);
+        given(buffer.getLong()).willReturn(1L, 2L);
 
         doAnswer(invocationOnMock -> null)
                 .when(buffer)
@@ -193,7 +185,7 @@ class ScheduleEqualityVirtualValueTest {
 
         defaultSubject.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-        assertSubjectEquals(subject, defaultSubject);
+        assertEquals(subject, defaultSubject);
     }
 
     @Test
@@ -210,7 +202,7 @@ class ScheduleEqualityVirtualValueTest {
                                     new ByteArrayInputStream(byteArr.toByteArray())),
                             ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+                    assertEquals(subject, copy);
 
                     return copy;
                 });
@@ -226,7 +218,7 @@ class ScheduleEqualityVirtualValueTest {
                     var copy = new ScheduleEqualityVirtualValue();
                     copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+                    assertEquals(subject, copy);
 
                     return copy;
                 });
@@ -245,7 +237,7 @@ class ScheduleEqualityVirtualValueTest {
                                     new ByteArrayInputStream(buffer.array())),
                             ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+                    assertEquals(subject, copy);
 
                     return copy;
                 });
@@ -263,7 +255,7 @@ class ScheduleEqualityVirtualValueTest {
                     var copy = new ScheduleEqualityVirtualValue();
                     copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+                    assertEquals(subject, copy);
 
                     return copy;
                 });
@@ -275,22 +267,12 @@ class ScheduleEqualityVirtualValueTest {
         check.call();
         subject = new ScheduleEqualityVirtualValue(otherIds);
         check.call();
-        subject = new ScheduleEqualityVirtualValue(otherIds, new ScheduleEqualityVirtualKey(3L));
-        check.call();
     }
 
     @Test
     void merkleMethodsWork() {
         assertEquals(ScheduleEqualityVirtualValue.CURRENT_VERSION, subject.getVersion());
         assertEquals(ScheduleEqualityVirtualValue.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-    }
-
-    @Test
-    void setKeyWorks() {
-        subject.setKey(null);
-        assertEquals(new ScheduleEqualityVirtualKey(-1L), subject.getKey());
-        subject.setKey(new ScheduleEqualityVirtualKey(4L));
-        assertEquals(new ScheduleEqualityVirtualKey(4L), subject.getKey());
     }
 
     @Test
@@ -350,11 +332,5 @@ class ScheduleEqualityVirtualValueTest {
     void toStringWorks() {
         assertEquals(
                 "ScheduleEqualityVirtualValue{ids={foo=1, truck=2}, number=3}", subject.toString());
-    }
-
-    private static void assertSubjectEquals(
-            ScheduleEqualityVirtualValue subject, ScheduleEqualityVirtualValue value) {
-        assertEquals(subject, value);
-        assertEquals(subject.getKey(), value.getKey());
     }
 }

@@ -31,7 +31,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -43,11 +42,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
+import java.beans.Transient;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -60,17 +57,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
-/**
- * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release. It
- * should be moved back to VirtualMap in 0.28.
- */
-public class ScheduleVirtualValue extends PartialMerkleLeaf
-        implements VirtualValue, Keyed<EntityNumVirtualKey>, MerkleLeaf {
+public class ScheduleVirtualValue implements VirtualValue {
 
     static final int CURRENT_VERSION = 1;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
-    @Nullable private long number;
+    private boolean immutable;
     @Nullable private Key grpcAdminKey = null;
     @Nullable private JKey adminKey = null;
     private String memo;
@@ -115,7 +107,6 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         this.scheduledTxn = toCopy.scheduledTxn;
         this.ordinaryScheduledTxn = toCopy.ordinaryScheduledTxn;
         this.resolutionTime = toCopy.resolutionTime;
-        this.number = toCopy.number;
 
         /* Signatories are mutable */
         for (byte[] signatory : toCopy.signatories) {
@@ -265,8 +256,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
                         .add("schedulingTXValidStart", schedulingTXValidStart)
                         .add("signatories", signatories.stream().map(CommonUtils::hex).toList())
                         .add("adminKey", describe(adminKey))
-                        .add("resolutionTime", resolutionTime)
-                        .add("number", number);
+                        .add("resolutionTime", resolutionTime);
         return helper.toString();
     }
 
@@ -299,7 +289,6 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             in.readFully(bytes);
             witnessValidSignature(bytes);
         }
-        number = in.readLong();
 
         initFromBodyBytes();
     }
@@ -330,7 +319,6 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             out.writeInt(k.length);
             out.write(k);
         }
-        out.writeLong(number);
     }
 
     @Override
@@ -358,8 +346,6 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             in.get(bytes);
             witnessValidSignature(bytes);
         }
-        number = in.getLong();
-
         initFromBodyBytes();
     }
 
@@ -389,7 +375,6 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             out.putInt(k.length);
             out.put(k);
         }
-        out.putLong(number);
     }
 
     @Override
@@ -616,13 +601,14 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         return hasher.hash();
     }
 
+    /** {@inheritDoc} */
     @Override
-    public EntityNumVirtualKey getKey() {
-        return new EntityNumVirtualKey(number);
+    public final boolean isImmutable() {
+        return immutable;
     }
 
-    @Override
-    public void setKey(final EntityNumVirtualKey key) {
-        this.number = key == null ? -1 : key.getKeyAsLong();
+    @Transient
+    public final void setImmutable(final boolean immutable) {
+        this.immutable = immutable;
     }
 }

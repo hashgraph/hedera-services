@@ -255,14 +255,6 @@ class ScheduleSecondVirtualValueTest {
     }
 
     @Test
-    void setKeyWorks() {
-        subject.setKey(null);
-        assertEquals(new SecondSinceEpocVirtualKey(-1L), subject.getKey());
-        subject.setKey(new SecondSinceEpocVirtualKey(4L));
-        assertEquals(new SecondSinceEpocVirtualKey(4L), subject.getKey());
-    }
-
-    @Test
     void getIdsWork() {
         assertEquals(subject.getIds(), ids);
 

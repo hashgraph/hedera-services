@@ -37,17 +37,11 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
-/**
- * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release. It
- * should be moved back to VirtualMap in 0.28.
- */
 public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
         implements VirtualValue, Keyed<SecondSinceEpocVirtualKey>, MerkleLeaf {
 
     static final int CURRENT_VERSION = 1;
-
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x1d2377926e3a85fcL;
-
     private long number;
 
     /**

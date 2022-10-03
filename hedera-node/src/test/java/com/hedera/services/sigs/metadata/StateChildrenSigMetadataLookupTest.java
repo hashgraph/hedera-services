@@ -92,7 +92,7 @@ class StateChildrenSigMetadataLookupTest {
     @Mock private Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private MerkleScheduledTransactions schedules;
-    @Mock private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
+    @Mock private VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
 

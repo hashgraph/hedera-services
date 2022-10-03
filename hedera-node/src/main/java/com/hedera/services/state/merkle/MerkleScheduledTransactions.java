@@ -17,6 +17,7 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
@@ -25,7 +26,8 @@ import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.jasperdb.JasperDbBuilder;
+import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,7 +41,9 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     static Runnable stackDump = Thread::dumpStack;
 
     public static final int RELEASE_0270_VERSION = 1;
-    static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+
+    public static final int RELEASE_0320_VERSION = 2;
+    static final int CURRENT_VERSION = RELEASE_0320_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x451acf2156692908L;
 
@@ -69,12 +73,13 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public MerkleScheduledTransactions() {
+        final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
         addDeserializedChildren(
                 List.of(
                         new MerkleScheduledTransactionsState(),
-                        new MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue>(),
-                        new MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>(),
-                        new MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>()),
+                        virtualMapFactory.newScheduleListStorage(),
+                        virtualMapFactory.newScheduleTemporalStorage(),
+                        virtualMapFactory.newScheduleEqualityStorage()),
                 CURRENT_VERSION);
     }
 
@@ -148,15 +153,15 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
         return getChild(ChildIndices.STATE);
     }
 
-    public MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
+    public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
         return getChild(ChildIndices.BY_ID);
     }
 
-    public MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
+    public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
         return getChild(ChildIndices.BY_EXPIRATION_SECOND);
     }
 
-    public MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
+    public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
         return getChild(ChildIndices.BY_EQUALITY);
     }
 
