@@ -1,4 +1,4 @@
-# Maintainers-Guide
+# Maintainers Guide
 This document outlines the process and keynotes for the core maintainers of this repository .
 
 ## IntelliJ set up
@@ -88,7 +88,7 @@ Any issue created should be added to [Services Sprint Tracking](https://github.c
 (if it is targeted to be addressed in the current sprint)and the associated project type in `Projects` tab. It should 
 also have the targeted milestone set on it.
 
-For eg: A Documentation issue that is targeted for the current sprint in 0.30.0 release should be associated to
+For example, a documentation change targeted for the current sprint in 0.30.0 release should be associated to
 [Services Sprint Tracking](https://github.com/orgs/hashgraph/projects/13) and [Documentation](https://github.com/hashgraph/hedera-services/projects/32#card-85521291)
 projects, with 0.30 milestone on it.
 
@@ -99,8 +99,8 @@ projects, with 0.30 milestone on it.
 ### User Stories
 
 #### As a developer, I would like to create a branch to work on the feature for the upcoming release
-As per the development model, every developer should create a feature branch from `develop` branch for working on an
-issue targeted for the current release. The created branch should follow [naming conventions](branch-naming-conventions.md).
+As per the development model, every developer should create a feature branch from `develop` branch for working on a
+change targeted for the current release. The created branch should follow [naming conventions](branch-naming-conventions.md).
 
 The `develop` branch should be up-to-date with all the features going into the next release.
 
