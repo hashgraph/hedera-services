@@ -73,6 +73,7 @@ class GlobalDynamicPropertiesTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void constructsFlagsAsExpected() {
         givenPropsWithSeed(1);
 
@@ -100,6 +101,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.shouldCompressRecordFilesOnCreation());
         assertTrue(subject.areTokenAutoCreationsEnabled());
         assertFalse(subject.dynamicEvmVersion());
+        assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
     }
 
     @Test
@@ -219,6 +221,7 @@ class GlobalDynamicPropertiesTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void reloadsFlagsAsExpected() {
         givenPropsWithSeed(2);
 
@@ -250,6 +253,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.shouldCompressRecordFilesOnCreation());
         assertFalse(subject.areTokenAutoCreationsEnabled());
         assertTrue(subject.dynamicEvmVersion());
+        assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
     }
 
     @Test
@@ -262,6 +266,7 @@ class GlobalDynamicPropertiesTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void reloadsIntsAsExpected() {
         givenPropsWithSeed(2);
 
@@ -508,6 +513,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 83) % 2 == 0);
         given(properties.getBooleanProperty(CONTRACTS_DYNAMIC_EVM_VERSION)).willReturn(i % 2 == 0);
         given(properties.getStringProperty(CONTRACTS_EVM_VERSION)).willReturn(evmVersions[i % 2]);
+        given(properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION))
+                .willReturn((i + 84) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

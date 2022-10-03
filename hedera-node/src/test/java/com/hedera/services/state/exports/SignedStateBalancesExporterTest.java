@@ -16,6 +16,8 @@
 package com.hedera.services.state.exports;
 
 import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
+import static com.hedera.services.exports.FileCompressionUtils.readUncompressedFileBytes;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
@@ -53,10 +55,12 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.system.NodeId;
@@ -66,8 +70,11 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -80,6 +87,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -133,7 +142,7 @@ class SignedStateBalancesExporterTest {
     @LoggingSubject private SignedStateBalancesExporter subject;
 
     @BeforeEach
-    void setUp() throws ConstructableRegistryException {
+    void setUp() throws ConstructableRegistryException, NoSuchAlgorithmException {
         ConstructableRegistry.registerConstructable(
                 new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
         final var secondNonNodeDelTokenAssociationKey =
@@ -227,7 +236,7 @@ class SignedStateBalancesExporterTest {
     }
 
     @Test
-    void logsOnIoException() {
+    void logsOnIoException() throws NoSuchAlgorithmException {
         final var otherDynamicProperties =
                 new MockGlobalDynamicProps() {
                     @Override
@@ -248,7 +257,8 @@ class SignedStateBalancesExporterTest {
     @Test
     void logsOnSigningFailure() {
         final var loc = expectedExportLoc();
-        given(hashReader.readHash(loc)).willThrow(IllegalStateException.class);
+        given(sigFileWriter.writeSigFile(any(), any(), any()))
+                .willThrow(UncheckedIOException.class);
 
         subject.exportBalancesFrom(state, now, nodeId);
 
@@ -259,20 +269,41 @@ class SignedStateBalancesExporterTest {
         new File(loc).delete();
     }
 
-    @Test
-    void testExportingTokenBalancesProto() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testExportingTokenBalancesProto(final boolean isCompressed)
+            throws NoSuchAlgorithmException {
+        // given
         final var captor = ArgumentCaptor.forClass(String.class);
-        final var loc = expectedExportLoc();
+        var loc = expectedExportLoc();
+        if (isCompressed) {
+            loc += COMPRESSION_ALGORITHM_EXTENSION;
+        }
+        dynamicProperties.setAccountBalanceCompression(isCompressed);
         final var desiredDebugMsg = "Created balance signature file " + "'" + loc + "_sig'.";
         given(hashReader.readHash(loc)).willReturn(fileHash);
         given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
+        final var expectedAccountBalances =
+                AllAccountBalances.newBuilder()
+                        .addAllAllAccounts((subject.summarized(state).orderedBalances()))
+                        .setConsensusTimestamp(
+                                Timestamp.newBuilder()
+                                        .setSeconds(now.getEpochSecond())
+                                        .setNanos(now.getNano())
+                                        .build());
+        final var messageDigest =
+                MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
+        final var expectedHash =
+                messageDigest.digest(expectedAccountBalances.build().toByteArray());
+        given(signer.apply(expectedHash)).willReturn(new Signature(SignatureType.RSA, sig));
 
+        // when
         subject.exportBalancesFrom(state, now, nodeId);
-        final var allAccountBalances = importBalanceProtoFile(loc).get();
 
+        // then
+        final var allAccountBalances = importBalanceProtoFile(loc).get();
         final var accounts = allAccountBalances.getAllAccountsList();
         assertEquals(4, accounts.size());
-
         for (var account : accounts) {
             if (account.getAccountID().getAccountNum() == firstNonNode.getAccountNum()) {
                 assertEquals(250, account.getHbarBalance());
@@ -289,14 +320,13 @@ class SignedStateBalancesExporterTest {
             }
         }
 
-        verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
+        verify(sigFileWriter).writeSigFile(loc, sig, expectedHash);
         assertThat(logCaptor.debugLogs(), contains(desiredDebugMsg));
-
         new File(loc).delete();
     }
 
     @Test
-    void protoWriteIoException() {
+    void protoWriteIoException() throws NoSuchAlgorithmException {
         final var otherDynamicProperties =
                 new MockGlobalDynamicProps() {
                     @Override
@@ -468,7 +498,7 @@ class SignedStateBalancesExporterTest {
     }
 
     @Test
-    void exportsWhenPeriodSecsHaveElapsed() {
+    void exportsWhenPeriodSecsHaveElapsed() throws NoSuchAlgorithmException {
         final int exportPeriodInSecs = dynamicProperties.balancesExportPeriodSecs();
         final var startTime = Instant.parse("2021-07-07T08:10:00.000Z");
         subject =
@@ -509,8 +539,14 @@ class SignedStateBalancesExporterTest {
 
     static Optional<AllAccountBalances> importBalanceProtoFile(final String protoLoc) {
         try {
-            final var fin = new FileInputStream(protoLoc);
-            final var allAccountBalances = AllAccountBalances.parseFrom(fin);
+            AllAccountBalances allAccountBalances;
+            if (protoLoc.endsWith(COMPRESSION_ALGORITHM_EXTENSION)) {
+                allAccountBalances =
+                        AllAccountBalances.parseFrom(readUncompressedFileBytes(protoLoc));
+            } else {
+                final var fin = new FileInputStream(protoLoc);
+                allAccountBalances = AllAccountBalances.parseFrom(fin);
+            }
             return Optional.ofNullable(allAccountBalances);
         } catch (IOException e) {
             return Optional.empty();

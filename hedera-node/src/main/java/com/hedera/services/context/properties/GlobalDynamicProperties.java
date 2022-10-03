@@ -147,6 +147,7 @@ public class GlobalDynamicProperties {
     private ContractStoragePriceTiers storagePriceTiers;
     private boolean compressRecordFilesOnCreation;
     private boolean tokenAutoCreationsEnabled;
+    private boolean compressAccountBalanceFilesOnCreation;
 
     @Inject
     public GlobalDynamicProperties(
@@ -298,6 +299,8 @@ public class GlobalDynamicProperties {
         compressRecordFilesOnCreation =
                 properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
         tokenAutoCreationsEnabled = properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED);
+        compressAccountBalanceFilesOnCreation =
+                properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
     }
 
     public int maxTokensPerAccount() {
@@ -718,5 +721,9 @@ public class GlobalDynamicProperties {
 
     public boolean areTokenAutoCreationsEnabled() {
         return tokenAutoCreationsEnabled;
+    }
+
+    public boolean shouldCompressAccountBalanceFilesOnCreation() {
+        return compressAccountBalanceFilesOnCreation;
     }
 }

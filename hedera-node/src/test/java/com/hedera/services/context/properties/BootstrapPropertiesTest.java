@@ -90,6 +90,7 @@ class BootstrapPropertiesTest {
                     entry(BALANCES_EXPORT_PERIOD_SECS, 900),
                     entry(BALANCES_EXPORT_TOKEN_BALANCES, true),
                     entry(BALANCES_NODE_BALANCE_WARN_THRESHOLD, 0L),
+                    entry(BALANCES_COMPRESS_ON_CREATION, true),
                     entry(ACCOUNTS_EXCHANGE_RATES_ADMIN, 57L),
                     entry(ACCOUNTS_FEE_SCHEDULE_ADMIN, 56L),
                     entry(ACCOUNTS_NODE_REWARD_ACCOUNT, 801L),
