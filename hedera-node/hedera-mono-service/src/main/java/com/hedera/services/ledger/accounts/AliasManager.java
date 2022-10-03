@@ -191,6 +191,10 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
                                 // any expected exception means no eth mapping
                             }
                         }
+
+                        if (alias.size() == EVM_ADDRESS_LEN) {
+                            numEOAliases.incrementAndGet();
+                        }
                     }
                 });
         log.info(
@@ -242,7 +246,26 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
      * @return EntityNum mapped to the given alias.
      */
     public EntityNum lookupIdBy(final ByteString alias) {
-        return curAliases().getOrDefault(alias, MISSING_NUM);
+        var entityNum = curAliases().getOrDefault(alias, MISSING_NUM);
+        if (alias.size() > EVM_ADDRESS_LEN && entityNum == MISSING_NUM) {
+            // if we don't find entity num for key alias we can try to derive EVM address from it
+            // and look it up
+            try {
+                final Key key = Key.parseFrom(alias);
+                final JKey jKey = JKey.mapKey(key);
+                final var evmAddress = tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
+                if (evmAddress != null) {
+                    entityNum =
+                            curAliases().getOrDefault(ByteString.copyFrom(evmAddress), MISSING_NUM);
+                }
+            } catch (InvalidProtocolBufferException
+                    | DecoderException
+                    | IllegalArgumentException ignore) {
+                // any expected exception means no eth mapping
+            }
+        }
+
+        return entityNum;
     }
 
     private Map<ByteString, EntityNum> curAliases() {

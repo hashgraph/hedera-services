@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
@@ -177,6 +178,16 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
+    public AccountInfoAsserts hasDefaultKey() {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                ((AccountInfo) o).getKey(),
+                                com.hederahashgraph.api.proto.java.Key.getDefaultInstance(),
+                                "Has non-default key!"));
+        return this;
+    }
+
     public AccountInfoAsserts key(String key) {
         registerProvider(
                 (spec, o) ->
@@ -265,13 +276,30 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
+    public AccountInfoAsserts alias(ByteString alias) {
+        registerProvider(
+                (spec, o) -> assertEquals(alias, ((AccountInfo) o).getAlias(), "Bad Alias!"));
+        return this;
+    }
+
     public AccountInfoAsserts alias(String alias) {
         registerProvider(
-                (spec, o) ->
+                (spec, o) -> {
+                    var expectedKey = spec.registry().getKey(alias);
+                    if (expectedKey.getEd25519().size() > 0) {
                         assertEquals(
-                                spec.registry().getKey(alias).toByteString(),
+                                expectedKey.toByteString(),
                                 ((AccountInfo) o).getAlias(),
-                                "Bad Alias!"));
+                                "Bad Ed25519 key alias!");
+                    }
+
+                    if (expectedKey.getECDSASecp256K1().size() > 0) {
+                        assertEquals(
+                                expectedKey.getECDSASecp256K1(),
+                                ((AccountInfo) o).getAlias(),
+                                "Bad ECDSA key alias!");
+                    }
+                });
         return this;
     }
 

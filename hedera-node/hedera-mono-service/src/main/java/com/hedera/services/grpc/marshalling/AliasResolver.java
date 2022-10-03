@@ -262,7 +262,7 @@ public class AliasResolver {
         } else if (repetitionsAreInvalid && result == Result.REPEATED_UNKNOWN_ALIAS) {
             perceivedInvalidCreations++;
         } else if (result == Result.UNKNOWN_EVM_ADDRESS) {
-            perceivedMissing++;
+            perceivedCreations++;
         }
     }
 

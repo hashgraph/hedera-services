@@ -76,6 +76,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -166,6 +167,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
                 canGetBalanceAndInfoViaAlias(),
                 noStakePeriodStartIfNotStakingToNode(),
+                hollowAccountCreationWithCryptoTransfer(),
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
                 multipleTokenTransfersSucceed(),
@@ -737,6 +739,52 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then(
                         getAccountInfo(user).has(accountWith().noStakePeriodStart()),
                         getContractInfo(contract).has(contractWith().noStakePeriodStart()));
+    }
+
+    private HapiApiSpec hollowAccountCreationWithCryptoTransfer() {
+        final var hollowAccountCreateSponsor = "hollowAccountCreateSponsor";
+        return defaultHapiSpec("HollowAccountCreationWithCryptoTransfer")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(hollowAccountCreateSponsor)
+                                .balance(INITIAL_BALANCE * ONE_HBAR)
+                                .key(SECP_256K1_SOURCE_KEY))
+                .when()
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(
+                                                    EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
+                                    final var op =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    hollowAccountCreateSponsor,
+                                                                    evmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+
+                                    final var op2 =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasDefaultKey()
+                                                                    .alias(evmAddress)
+                                                                    .expectedBalanceWithChargedUsd(
+                                                                            ONE_HUNDRED_HBARS, 0, 0)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(AUTO_MEMO));
+
+                                    allRunFor(spec, op, op2);
+                                }));
     }
 
     private HapiApiSpec canGetBalanceAndInfoViaAlias() {

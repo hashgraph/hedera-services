@@ -216,7 +216,7 @@ class AliasResolverTest {
 
         given(aliasManager.lookupIdBy(create2Alias)).willReturn(MISSING_NUM);
         subject.resolve(op, aliasManager);
-        assertEquals(1, subject.perceivedMissingAliases());
+        assertEquals(1, subject.perceivedAutoCreations());
     }
 
     @Test
