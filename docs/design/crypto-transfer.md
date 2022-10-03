@@ -72,4 +72,7 @@ Fees and change operations will be modified to be derived from the data in the C
 - Verify that empty TransferList and TokenTransList arrays are handled as expected without error.
 - Verify that the approval mechanism works as expected with transfers.
 - Verify exception cases when net hbars transfers do not total 0.
+- Verify explicit checks of non authorized accounts performing HBAR transfers
+- Verify insufficient balance failure
+- Verify insufficient approval allowance failure
   
