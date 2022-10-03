@@ -774,7 +774,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                     ONE_HUNDRED_HBARS))
                                                     .hasKnownStatus(SUCCESS)
                                                     .via(TRANSFER_TXN);
-
                                     final var op2 =
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
@@ -787,7 +786,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO));
-
                                     allRunFor(spec, op, op2);
                                     resetToDefault(LAZY_CREATE_FEATURE_FLAG);
                                 }));

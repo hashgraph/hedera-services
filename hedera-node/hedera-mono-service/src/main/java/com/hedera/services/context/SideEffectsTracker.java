@@ -82,6 +82,7 @@ public class SideEffectsTracker {
 
     private byte[] pseudorandomBytes = null;
     private int pseudorandomNumber = MISSING_NUMBER;
+    private AccountID hollowAccountId = null;
 
     @Inject
     public SideEffectsTracker() {
@@ -96,6 +97,10 @@ public class SideEffectsTracker {
     public void trackAutoCreation(final AccountID accountID, final ByteString alias) {
         this.newAccountId = accountID;
         this.newEntityAlias = alias;
+    }
+
+    public void trackHollowAccountUpdate(final AccountID accountID) {
+        this.hollowAccountId = accountID;
     }
 
     /**
@@ -210,12 +215,20 @@ public class SideEffectsTracker {
         return newAccountId != null;
     }
 
+    public boolean hasTrackedHollowAccountUpdate() {
+        return hollowAccountId != null;
+    }
+
     public ByteString getNewEntityAlias() {
         return newEntityAlias;
     }
 
     public AccountID getTrackedAutoCreatedAccountId() {
         return newAccountId;
+    }
+
+    public AccountID getTrackedHollowAccountId() {
+        return hollowAccountId;
     }
 
     public ContractID getTrackedNewContractId() {
@@ -469,6 +482,7 @@ public class SideEffectsTracker {
         newEntityAlias = ByteString.EMPTY;
         pseudorandomNumber = MISSING_NUMBER;
         pseudorandomBytes = null;
+        hollowAccountId = null;
     }
 
     /**

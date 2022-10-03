@@ -15,21 +15,27 @@
  */
 package com.hedera.services.utils;
 
+import static com.hedera.services.keys.HederaKeyActivation.COMPRESSED_SECP256K1_PUBLIC_KEY_LEN;
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.keys.HederaKeyActivation.VALID_IMPLICIT_SIG;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.MiscCryptoUtils;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Hash;
 
 /**
  * A simple wrapper around the three outputs of the {@code Rationalization#execute()} process.
@@ -59,18 +65,18 @@ public class RationalizedSigMeta {
     private static final RationalizedSigMeta NONE_AVAIL = new RationalizedSigMeta();
     private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR =
             new ExpandHandleSpanMapAccessor();
-
-    private final JKey payerReqSig;
     private final List<JKey> othersReqSigs;
     private final List<TransactionSignature> rationalizedSigs;
-
+    private JKey payerReqSig;
     private Function<byte[], TransactionSignature> pkToVerifiedSigFn;
+    private boolean replacedHollowKey;
 
     private RationalizedSigMeta() {
         payerReqSig = null;
         othersReqSigs = null;
         rationalizedSigs = null;
         pkToVerifiedSigFn = null;
+        replacedHollowKey = false;
     }
 
     private RationalizedSigMeta(
@@ -82,6 +88,7 @@ public class RationalizedSigMeta {
         this.othersReqSigs = othersReqSigs;
         this.rationalizedSigs = rationalizedSigs;
         this.pkToVerifiedSigFn = pkToVerifiedSigFn;
+        this.replacedHollowKey = false;
     }
 
     public static RationalizedSigMeta noneAvailable() {
@@ -137,6 +144,40 @@ public class RationalizedSigMeta {
                                 : wrappedFn.apply(publicKey);
     }
 
+    public void replacePayerHollowKeyIfNeeded(SignatureMap signatureMap) {
+        if (!payerReqSig.hasHollowKey() || rationalizedSigs == null) return;
+
+        final var targetEvmAddress = payerReqSig.getHollowKey().getEvmAddress();
+        for (final var sig : rationalizedSigs) {
+            // maybe do the hashing of the public key a better way... not coupling to Besu classes?
+            final var publicKeyHashed =
+                    Hash.hash(Bytes.of(sig.getExpandedPublicKey())).toArrayUnsafe();
+            if (Arrays.equals(
+                    targetEvmAddress,
+                    0,
+                    targetEvmAddress.length,
+                    publicKeyHashed,
+                    publicKeyHashed.length - 20,
+                    publicKeyHashed.length)) {
+
+                // use compressed public key
+                for (final var sigPair : signatureMap.getSigPairList()) {
+                    final var keyBytes = sigPair.getPubKeyPrefix().toByteArray();
+                    if (keyBytes.length != COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
+                        continue;
+                    }
+
+                    if (Arrays.equals(
+                            sig.getExpandedPublicKey(),
+                            MiscCryptoUtils.decompressSecp256k1(keyBytes))) {
+                        payerReqSig = new JECDSASecp256k1Key(keyBytes);
+                        replacedHollowKey = true;
+                    }
+                }
+            }
+        }
+    }
+
     public boolean couldRationalizePayer() {
         return payerReqSig != null;
     }
@@ -173,5 +214,9 @@ public class RationalizedSigMeta {
             throw new IllegalStateException("Verified signatures could not be rationalized");
         }
         return pkToVerifiedSigFn;
+    }
+
+    public boolean hasReplacedHollowKey() {
+        return replacedHollowKey;
     }
 }

@@ -258,6 +258,10 @@ public abstract class JKey {
         return false;
     }
 
+    public boolean hasHollowKey() {
+        return false;
+    }
+
     public boolean hasECDSA384Key() {
         return false;
     }
@@ -295,6 +299,10 @@ public abstract class JKey {
     }
 
     public JContractIDKey getContractIDKey() {
+        return null;
+    }
+
+    public JHollowKey getHollowKey() {
         return null;
     }
 

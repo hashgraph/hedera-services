@@ -19,12 +19,16 @@ import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
+import static com.hedera.services.sigs.sourcing.KeyType.ECDSA_SECP256K1;
 
+import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigsCreationResult;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.Arrays;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -63,6 +67,22 @@ public class PrecheckVerifier {
     public boolean hasNecessarySignatures(final SignedTxnAccessor accessor) throws Exception {
         try {
             final var reqKeys = precheckKeyReqs.getRequiredKeys(accessor.getTxn());
+            // first key in reqKeys is always the payer key
+            final var payerKey = reqKeys.get(0);
+            if (payerKey.hasHollowKey()) {
+                // can change this algorithm to use the accessor.getSigMap()
+                // and return immediately when we find the first match
+                accessor.getPkToSigsFn()
+                        .forEachUnusedSigWithFullPrefix(
+                                (type, pubKey, sig) -> {
+                                    if (type.equals(ECDSA_SECP256K1)
+                                            && Arrays.equals(
+                                                    payerKey.getHollowKey().getEvmAddress(),
+                                                    EthTxSigs.recoverAddressFromPubKey(pubKey))) {
+                                        reqKeys.set(0, new JECDSASecp256k1Key(pubKey));
+                                    }
+                                });
+            }
             final var availSigs = getAvailSigs(reqKeys, accessor);
             syncVerifier.verifySync(availSigs);
             final var sigsFn = pkToSigMapFrom(availSigs);

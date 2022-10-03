@@ -246,10 +246,11 @@ class StateChildrenSigMetadataLookupTest {
     }
 
     @Test
-    void recognizesImmutableAccountWithEmptyKey() {
+    void recognizesImmutableAccountWithEmptyKeyAndEmptyAlias() {
         given(stateChildren.accounts()).willReturn(accounts);
         given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
         given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
+        given(account.getAlias()).willReturn(ByteString.EMPTY);
 
         final var linkedRefs = new LinkedRefs();
         final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
@@ -259,9 +260,10 @@ class StateChildrenSigMetadataLookupTest {
     }
 
     @Test
-    void recognizesImmutableAccountWithUnexpectedNullKey() {
+    void recognizesImmutableAccountWithUnexpectedNullKeyAndEmptyAlias() {
         given(stateChildren.accounts()).willReturn(accounts);
         given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+        given(account.getAlias()).willReturn(ByteString.EMPTY);
 
         final var linkedRefs = new LinkedRefs();
         final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);

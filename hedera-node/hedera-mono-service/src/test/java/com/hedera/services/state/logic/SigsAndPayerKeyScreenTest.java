@@ -24,9 +24,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.sigs.Rationalization;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -34,6 +39,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +56,11 @@ class SigsAndPayerKeyScreenTest {
     @Mock private MiscSpeedometers speedometers;
     @Mock private BiPredicate<JKey, TransactionSignature> validityTest;
     @Mock private PlatformTxnAccessor accessor;
+    @Mock private Supplier<AccountStorageAdapter> accounts;
+    @Mock private EntityCreator creator;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock private RecordsHistorian recordsHistorian;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private SigsAndPayerKeyScreen subject;
@@ -58,7 +69,16 @@ class SigsAndPayerKeyScreenTest {
     void setUp() {
         subject =
                 new SigsAndPayerKeyScreen(
-                        rationalization, payerSigValidity, txnCtx, speedometers, validityTest);
+                        rationalization,
+                        payerSigValidity,
+                        txnCtx,
+                        speedometers,
+                        validityTest,
+                        accounts,
+                        creator,
+                        syntheticTxnFactory,
+                        sigImpactHistorian,
+                        recordsHistorian);
     }
 
     @Test

@@ -38,6 +38,7 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JHollowKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -220,7 +221,15 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         } else {
             final var key = account.getAccountKey();
             if (key == null || key.isEmpty()) {
-                return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
+                final var accountAlias = account.getAlias();
+                if (accountAlias.isEmpty()) {
+                    return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
+                } else {
+                    return new SafeLookupResult<>(
+                            new AccountSigningMetadata(
+                                    new JHollowKey(accountAlias.toByteArray()),
+                                    account.isReceiverSigRequired()));
+                }
             }
             return new SafeLookupResult<>(
                     new AccountSigningMetadata(

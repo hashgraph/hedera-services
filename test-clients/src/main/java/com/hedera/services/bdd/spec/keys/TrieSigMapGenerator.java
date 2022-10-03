@@ -133,6 +133,8 @@ public class TrieSigMapGenerator implements SigMapGenerator {
             for (final var innerKey : explicit.getThresholdKey().getKeys().getKeysList()) {
                 accumulateFullPrefixes(innerKey, fullPrefixSet);
             }
+        } else if (!explicit.getECDSASecp256K1().isEmpty()) {
+            fullPrefixSet.add(explicit.getECDSASecp256K1());
         }
     }
 
