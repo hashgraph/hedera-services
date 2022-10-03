@@ -59,7 +59,10 @@ import javax.annotation.Nullable;
 
 public class ScheduleVirtualValue implements VirtualValue {
 
-    static final int CURRENT_VERSION = 1;
+    static final int MERKLE_MAP_VERSION = 1;
+
+    static final int RELEASE_0320_VERSION = 2;
+    static final int CURRENT_VERSION = RELEASE_0320_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
     private boolean immutable;
@@ -288,6 +291,10 @@ public class ScheduleVirtualValue implements VirtualValue {
             byte[] bytes = new byte[n];
             in.readFully(bytes);
             witnessValidSignature(bytes);
+        }
+
+        if(version < RELEASE_0320_VERSION){
+            in.readLong();
         }
 
         initFromBodyBytes();

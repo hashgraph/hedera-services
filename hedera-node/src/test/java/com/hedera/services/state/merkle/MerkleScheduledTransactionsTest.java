@@ -43,7 +43,7 @@ class MerkleScheduledTransactionsTest {
     private MerkleScheduledTransactionsState state;
 
     private VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
-    private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
+    private VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
     private VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
 
     private MerkleScheduledTransactions subject;
@@ -53,7 +53,7 @@ class MerkleScheduledTransactionsTest {
         byEquality = mock(VirtualMap.class);
         given(byEquality.copy()).willReturn(byEquality);
 
-        byExpirationSecond = mock(MerkleMap.class);
+        byExpirationSecond = mock(VirtualMap.class);
         given(byExpirationSecond.copy()).willReturn(byExpirationSecond);
 
         byId = mock(VirtualMap.class);

@@ -334,6 +334,5 @@ class ScheduleSecondVirtualValueTest {
     private static void assertSubjectEquals(
             ScheduleSecondVirtualValue subject, ScheduleSecondVirtualValue value) {
         assertEquals(subject, value);
-        assertEquals(subject.getKey(), value.getKey());
     }
 }

@@ -32,7 +32,10 @@ import java.util.function.Supplier;
 
 public class ScheduleEqualityVirtualValue implements VirtualValue {
 
-    static final int CURRENT_VERSION = 1;
+    static final int MERKLE_MAP_VERSION = 1;
+
+    static final int RELEASE_0320_VERSION = 2;
+    static final int CURRENT_VERSION = RELEASE_0320_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
 
@@ -90,6 +93,9 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
             var k = new String(keyBytes, StandardCharsets.UTF_8);
             ids.put(k, in.readLong());
         }
+        if(version < RELEASE_0320_VERSION){
+            in.readLong();
+        }
     }
 
     @Override
@@ -101,6 +107,9 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
             in.get(keyBytes);
             var k = new String(keyBytes, StandardCharsets.UTF_8);
             ids.put(k, in.getLong());
+        }
+        if(version < RELEASE_0320_VERSION){
+            in.getLong();
         }
     }
 
