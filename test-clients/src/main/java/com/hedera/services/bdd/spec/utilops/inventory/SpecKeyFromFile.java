@@ -19,11 +19,8 @@ import static com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey.exportWi
 import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkFromMnemonic;
 import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem.incorporatePem;
 import static com.hedera.services.yahcli.config.ConfigManager.isValid;
-import static com.hedera.services.yahcli.config.ConfigUtils.keyFileAt;
-import static com.hedera.services.yahcli.config.ConfigUtils.passFileFor;
-import static com.hedera.services.yahcli.config.ConfigUtils.promptForPassphrase;
+import static com.hedera.services.yahcli.config.ConfigUtils.*;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -68,11 +65,13 @@ public class SpecKeyFromFile extends UtilOp {
     }
 
     @Override
-    @SuppressWarnings("java:S5960")
+    @SuppressWarnings({"java:S5960", "java:S3776"})
     protected boolean submitOp(HapiApiSpec spec) throws Throwable {
         final var flexLoc = loc.substring(0, loc.lastIndexOf('.'));
         final var keyFile = keyFileAt(flexLoc);
-        assertTrue(keyFile.isPresent(), "No key can be sourced from '" + loc + "'");
+        if (!keyFile.isPresent()) {
+            throw new IllegalArgumentException("No key can be sourced from '" + loc + "'");
+        }
         final var f = keyFile.orElseThrow();
         Optional<String> finalPassphrase = Optional.empty();
         if (f.getName().endsWith(".pem")) {
@@ -100,7 +99,7 @@ public class SpecKeyFromFile extends UtilOp {
             incorporatePem(
                     spec,
                     SigControl.ON,
-                    loc,
+                    keyFile.get().getAbsolutePath(),
                     finalPassphrase.orElseThrow(),
                     name,
                     linkedId,
