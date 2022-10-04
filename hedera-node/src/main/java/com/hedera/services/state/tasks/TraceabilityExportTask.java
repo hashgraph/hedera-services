@@ -17,7 +17,6 @@ package com.hedera.services.state.tasks;
 
 import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static com.hedera.services.throttling.MapAccessType.*;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
