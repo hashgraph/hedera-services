@@ -27,12 +27,12 @@ public interface TaskModule {
     @Binds
     @IntoMap
     @Singleton
-    @StringKey("ENTITY_EXPIRATION")
-    SystemTask bindEntityExpirationTask(ExpiryProcess expiryProcess);
+    @StringKey("0_TRACEABILITY_EXPORT")
+    SystemTask bindTraceabilityExportTask(TraceabilityExportTask traceabilityExportTask);
 
     @Binds
     @IntoMap
     @Singleton
-    @StringKey("TRACEABILITY_EXPORT")
-    SystemTask bindTraceabilityExportTask(TraceabilityExportTask traceabilityExportTask);
+    @StringKey("1_ENTITY_EXPIRATION")
+    SystemTask bindEntityExpirationTask(ExpiryProcess expiryProcess);
 }

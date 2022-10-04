@@ -25,8 +25,8 @@ public enum SystemTaskResult {
     /** Either the id did not refer to an existing entity; or there was no work to for the task. */
     NOTHING_TO_DO,
     /**
-     * The id referred to an entity with work to be done for this task, but the work cannot be
-     * completed in the context of the current user transaction.
+     * The id referred to an entity with work to be done for this task, but the work could not be
+     * completed in the current context.
      */
     NEEDS_DIFFERENT_CONTEXT,
     /** The id referred to an entity with work to be done for this task, and the work is done. */

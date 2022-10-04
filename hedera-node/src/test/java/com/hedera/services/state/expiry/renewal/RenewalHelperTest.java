@@ -95,7 +95,7 @@ class RenewalHelperTest {
 
         givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
         givenPresent(98, fundingAccount);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(
                         accountsLedger.get(
                                 EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
@@ -134,7 +134,7 @@ class RenewalHelperTest {
 
         givenPresent(fundedExpiredAccountNum, expiredContractNonZeroBalance);
         givenPresent(98, fundingAccount);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(
                         accountsLedger.get(
                                 EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
@@ -169,8 +169,8 @@ class RenewalHelperTest {
     @Test
     void doesNotRenewIfNoSelfCapacityAvailable() {
         givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
-        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
-        given(expiryThrottle.allow(SELF_RENEWAL_WORK)).willReturn(false);
+        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(SELF_RENEWAL_WORK)).willReturn(false);
 
         classificationWork.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
 
@@ -182,7 +182,7 @@ class RenewalHelperTest {
 
     @Test
     void doesNotRenewIfNoSupportedCapacityAvailable() {
-        given(expiryThrottle.allow(SUPPORTED_RENEWAL_WORK)).willReturn(false);
+        given(expiryThrottle.allowAll(SUPPORTED_RENEWAL_WORK)).willReturn(false);
         classificationWork = mock(ClassificationWork.class);
         given(classificationWork.getLastClassified()).willReturn(new MerkleAccount());
         given(classificationWork.getPayerForLastClassified()).willReturn(new MerkleAccount());
@@ -219,7 +219,7 @@ class RenewalHelperTest {
     @Test
     void rejectsAsIseIfFeeIsUnaffordable() {
         givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
-        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
 
         // when:
         classificationWork.classify(EntityNum.fromLong(brokeExpiredNum), now);

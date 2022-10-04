@@ -26,22 +26,11 @@ public interface SystemTask {
     /**
      * Whether this task is still active.
      *
+     * @param curNetworkCtx the current network context
      * @return if the task manager still needs to include this task in processing
      */
-    boolean isActive();
-
-    /**
-     * Attempts to do this task's work on the entity with the given id, if applicable and capacity
-     * and context permit.
-     *
-     * @param literalNum the id of the entity to process
-     * @param now the current consensus time
-     * @param curNetworkCtx the current network context, if useful
-     * @return the result of the task's work
-     */
-    default SystemTaskResult process(
-            long literalNum, Instant now, MerkleNetworkContext curNetworkCtx) {
-        return process(literalNum, now);
+    default boolean isActive(final MerkleNetworkContext curNetworkCtx) {
+        return true;
     }
 
     /**

@@ -83,11 +83,10 @@ class SystemTaskManagerTest {
     }
 
     @Test
-    void defaultTaskCanIgnoreContext() {
+    void defaultTaskIsActive() {
         final var someTask = mock(SystemTask.class);
-        doCallRealMethod().when(someTask).process(ENTITY_NUM, NOW, networkCtx);
-        someTask.process(ENTITY_NUM, NOW, networkCtx);
-        verify(someTask).process(ENTITY_NUM, NOW);
+        doCallRealMethod().when(someTask).isActive(networkCtx);
+        assertTrue(someTask.isActive(networkCtx));
     }
 
     @Test
@@ -145,7 +144,7 @@ class SystemTaskManagerTest {
 
     private void givenActive(final SystemTask... tasks) {
         for (final var task : tasks) {
-            given(task.isActive()).willReturn(true);
+            given(task.isActive(networkCtx)).willReturn(true);
         }
     }
 }

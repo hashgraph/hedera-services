@@ -18,7 +18,7 @@
       {
         "opsPerSec": 500,
         "operations": [
-          "STORAGE_GET"
+          "STORAGE_GET", "BLOBS_GET"
         ]
       },
       {

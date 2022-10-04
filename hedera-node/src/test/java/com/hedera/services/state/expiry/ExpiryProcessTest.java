@@ -143,11 +143,6 @@ class ExpiryProcessTest {
     }
 
     @Test
-    void alwaysActive() {
-        assertTrue(subject.isActive());
-    }
-
-    @Test
     void doesNothingOnNonExpiredAccount() {
         given(classifier.classify(EntityNum.fromLong(nonExpiredAccountNum), now)).willReturn(OTHER);
 
@@ -313,7 +308,7 @@ class ExpiryProcessTest {
 
         given(classifier.getPayerForLastClassified()).willReturn(mockAccount);
         given(classifier.getPayerNumForLastClassified()).willReturn(key);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
 
         given(
                         accountsLedger.get(
@@ -339,7 +334,7 @@ class ExpiryProcessTest {
         var key = EntityNum.fromLong(fundedExpiredContractNum);
         mockContract.setKey(key);
 
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(classifier.classify(EntityNum.fromLong(fundedExpiredContractNum), now))
                 .willReturn(EXPIRED_CONTRACT_READY_TO_RENEW);
         given(classifier.getLastClassified()).willReturn(mockContract);

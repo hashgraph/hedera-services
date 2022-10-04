@@ -105,7 +105,7 @@ public class TreasuryReturns {
         final var numRels = expired.getNumAssociations();
         if (numRels == 0) {
             return FINISHED_NOOP_FUNGIBLE_RETURNS;
-        } else if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
+        } else if (!expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)) {
             return UNFINISHED_NOOP_FUNGIBLE_RETURNS;
         } else {
             final var outcome = tryFungibleReturns(expiredNum, expired);
@@ -127,7 +127,7 @@ public class TreasuryReturns {
         final var numNfts = expired.getNftsOwned();
         if (numNfts == 0) {
             return FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
-        } else if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
+        } else if (!expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)) {
             return UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS;
         } else {
             final var outcome = tryNftReturns(expiredNum, expired);
@@ -162,7 +162,7 @@ public class TreasuryReturns {
                     i);
             nftKey = null;
         }
-        while (nftKey != null && expiryThrottle.allow(TOKEN_DELETION_CHECK) && i-- > 0) {
+        while (nftKey != null && expiryThrottle.allowAll(TOKEN_DELETION_CHECK) && i-- > 0) {
             final var tokenNum = nftKey.getHiOrderAsNum();
             var token = tokens.get().get(tokenNum);
             if (token == null) {
@@ -219,7 +219,7 @@ public class TreasuryReturns {
                     final var tokenBalance = rel.getBalance();
                     if (tokenBalance > 0) {
                         if (!token.isDeleted()
-                                && !expiryThrottle.allow(TREASURY_BALANCE_INCREMENT)) {
+                                && !expiryThrottle.allowAll(TREASURY_BALANCE_INCREMENT)) {
                             break;
                         }
                         tokenTypes.add(tokenNum.toEntityId());
@@ -250,11 +250,11 @@ public class TreasuryReturns {
     }
 
     private boolean hasCapacityForRelRemovalAt(final int n) {
-        return expiryThrottle.allow(n == 1 ? ONLY_REL_REMOVAL_WORK : NEXT_REL_REMOVAL_WORK);
+        return expiryThrottle.allowAll(n == 1 ? ONLY_REL_REMOVAL_WORK : NEXT_REL_REMOVAL_WORK);
     }
 
     private boolean hasCapacityForNftReturn(final boolean burn) {
-        return expiryThrottle.allow(burn ? NFT_BURN_WORK : NFT_RETURN_WORK);
+        return expiryThrottle.allowAll(burn ? NFT_BURN_WORK : NFT_RETURN_WORK);
     }
 
     @FunctionalInterface

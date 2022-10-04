@@ -20,6 +20,9 @@ import static com.hedera.services.state.tasks.SystemTaskResult.*;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Inject;
@@ -27,6 +30,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class SystemTaskManager {
+    private static final Logger log = LogManager.getLogger(SystemTaskManager.class);
     private final SystemTask[] tasks;
 
     @Inject
@@ -37,6 +41,7 @@ public class SystemTaskManager {
                         .sorted()
                         .map(namedTasks::get)
                         .toArray(SystemTask[]::new);
+        log.info("Discovered {} tasks ({})", tasks.length, namedTasks.keySet());
     }
 
     /**
@@ -65,7 +70,7 @@ public class SystemTaskManager {
             final long literalNum, final Instant now, final MerkleNetworkContext curNetworkCtx) {
         boolean didSomething = false;
         for (var i = curNetworkCtx.nextTaskTodo(); i < tasks.length; i++) {
-            if (!tasks[i].isActive()) {
+            if (!tasks[i].isActive(curNetworkCtx)) {
                 continue;
             }
             final var result = tasks[i].process(literalNum, now);
@@ -77,6 +82,7 @@ public class SystemTaskManager {
             }
         }
         curNetworkCtx.setNextTaskTodo(0);
+        // Only update the pre-existing scan status when we complete all tasks for an entity id
         updatePreExistingScanStatus(literalNum, curNetworkCtx);
         return didSomething ? DONE : NOTHING_TO_DO;
     }

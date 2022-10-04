@@ -20,6 +20,7 @@ import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.state.expiry.renewal.RenewalWork;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.utils.EntityNum;
@@ -39,13 +40,6 @@ public class ExpiryProcess implements SystemTask {
         this.renewalWork = renewalWork;
         this.removalWork = removalWork;
         this.classifier = classifier;
-    }
-
-    @Override
-    public boolean isActive() {
-        // Can refactor to return dynamicProperties.shouldAutoRenewSomeEntityType()
-        // when convenient (currently checked in EntityAutoExpiry)
-        return true;
     }
 
     @Override

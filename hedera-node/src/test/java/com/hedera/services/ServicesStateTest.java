@@ -238,7 +238,7 @@ class ServicesStateTest {
         inOrder.verify(iterableStorageMigrator)
                 .makeStorageIterable(eq(subject), any(), any(), eq(iterableStorage));
         inOrder.verify(scheduledTxnsMigrator).accept(subject);
-        inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
+        inOrder.verify(autoRenewalMigrator,never()).grantFreeAutoRenew(subject, consensusTime);
         inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
         inOrder.verify(networkContext).markPostUpgradeScanStatus();
 

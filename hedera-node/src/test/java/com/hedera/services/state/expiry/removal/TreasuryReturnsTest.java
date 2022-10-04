@@ -110,7 +110,7 @@ class TreasuryReturnsTest {
     @Test
     void returnsAllUnitsGivenCapacity() {
         givenStandardUnitsSetup(true, true);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
         final var expected = new FungibleTreasuryReturns(List.of(bTokenId), List.of(), true);
@@ -133,7 +133,7 @@ class TreasuryReturnsTest {
     @Test
     void recoversFromCorruptRelsLinks() {
         givenCorruptUnitsSetup();
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
         final var expected = new FungibleTreasuryReturns(List.of(), List.of(), true);
@@ -148,7 +148,7 @@ class TreasuryReturnsTest {
     @Test
     void returnsAllNftsGivenCapacity() {
         givenStandardNftsSetup(true, true);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
 
         final var expected = NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
@@ -163,7 +163,7 @@ class TreasuryReturnsTest {
     @Test
     void recoversFromBadFinish() {
         givenCorruptNfsSetup();
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
         given(returnHelper.burnOrReturnNft(true, bNftKey.asNftNumPair().nftId(), nfts))
                 .willThrow(NullPointerException.class);
@@ -180,7 +180,7 @@ class TreasuryReturnsTest {
     @Test
     void ignoresPositiveNftsOwnedIfHeadKeyIsMissing() {
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         accountWithNfts.setHeadNftId(0L);
         accountWithNfts.setHeadNftSerialNum(0L);
 
@@ -196,9 +196,9 @@ class TreasuryReturnsTest {
     @Test
     void returnsOnlyNftsGivenTokenCheckCapacity() {
         givenStandardNftsSetup(false, false);
-        given(expiryThrottle.allow(ROOT_META_UPDATE_WORK)).willReturn(true);
-        given(expiryThrottle.allow(TOKEN_DELETION_CHECK)).willReturn(true).willReturn(false);
-        given(expiryThrottle.allow(NFT_RETURN_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(ROOT_META_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(TOKEN_DELETION_CHECK)).willReturn(true).willReturn(false);
+        given(expiryThrottle.allowAll(NFT_RETURN_WORK)).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
 
         final var expected = NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS;
@@ -214,9 +214,9 @@ class TreasuryReturnsTest {
     void returnsOnlyNftsGivenWorkCapacity() {
         givenStandardNftsSetup(false, false);
         given(tokens.get(bNftKey.getHiOrderAsNum())).willReturn(deletedNfToken);
-        given(expiryThrottle.allow(ROOT_META_UPDATE_WORK)).willReturn(true);
-        given(expiryThrottle.allow(TOKEN_DELETION_CHECK)).willReturn(true);
-        given(expiryThrottle.allow(NFT_RETURN_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(ROOT_META_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(TOKEN_DELETION_CHECK)).willReturn(true);
+        given(expiryThrottle.allowAll(NFT_RETURN_WORK)).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
 
         final var expected = NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS;
@@ -232,7 +232,7 @@ class TreasuryReturnsTest {
     void worksAroundDisappearedToken() {
         givenStandardNftsSetup(true, true);
         given(tokens.get(bNftKey.getHiOrderAsNum())).willReturn(null);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithNfts);
 
         final var expected = NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
@@ -247,7 +247,7 @@ class TreasuryReturnsTest {
     void returnsAllGivenCapacityEvenIfDeleted() {
         givenStandardUnitsSetup(true, true);
         given(tokens.get(bRelKey.getLowOrderAsNum())).willReturn(deletedFungibleToken);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
         final var expected = new FungibleTreasuryReturns(List.of(bTokenId), List.of(), true);
@@ -263,7 +263,7 @@ class TreasuryReturnsTest {
                         eq(1L),
                         any(List.class),
                         eq(tokenRels));
-        verify(expiryThrottle, never()).allow(TREASURY_BALANCE_INCREMENT);
+        verify(expiryThrottle, never()).allowAll(TREASURY_BALANCE_INCREMENT);
         assertEquals(0, accountWithRels.getNumAssociations());
     }
 
@@ -271,7 +271,7 @@ class TreasuryReturnsTest {
     void doesntIncludeMissingTypes() {
         givenStandardUnitsSetup(false, false);
         given(tokens.get(bRelKey.getLowOrderAsNum())).willReturn(null);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
         final var expected = FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
@@ -287,7 +287,7 @@ class TreasuryReturnsTest {
     void doesntIncludeNonFungibleTypes() {
         givenStandardUnitsSetup(false, false);
         given(tokens.get(bRelKey.getLowOrderAsNum())).willReturn(nfToken);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allowAll(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
         final var expected = FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
@@ -302,10 +302,10 @@ class TreasuryReturnsTest {
     @Test
     void abortsWithoutCapacityForBalanceIncrement() {
         givenStandardUnitsSetup(true, false);
-        given(expiryThrottle.allow(ROOT_META_UPDATE_WORK)).willReturn(true);
-        given(expiryThrottle.allow(TREASURY_BALANCE_INCREMENT)).willReturn(false);
-        given(expiryThrottle.allow(NEXT_REL_REMOVAL_WORK)).willReturn(true);
-        given(expiryThrottle.allow(ONLY_REL_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(ROOT_META_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(TREASURY_BALANCE_INCREMENT)).willReturn(false);
+        given(expiryThrottle.allowAll(NEXT_REL_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(ONLY_REL_REMOVAL_WORK)).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
         final var expected = new FungibleTreasuryReturns(List.of(), List.of(), false);
@@ -320,9 +320,9 @@ class TreasuryReturnsTest {
     @Test
     void returnsOnlyFirstWithLimitedCapacity() {
         givenStandardUnitsSetup(false, false);
-        given(expiryThrottle.allow(ROOT_META_UPDATE_WORK)).willReturn(true);
-        given(expiryThrottle.allow(NEXT_REL_REMOVAL_WORK)).willReturn(true);
-        given(expiryThrottle.allow(ONLY_REL_REMOVAL_WORK)).willReturn(false);
+        given(expiryThrottle.allowAll(ROOT_META_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(NEXT_REL_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allowAll(ONLY_REL_REMOVAL_WORK)).willReturn(false);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
         final var expected = new FungibleTreasuryReturns(List.of(), List.of(), false);
