@@ -46,7 +46,6 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -87,9 +86,11 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
             THROUGHPUT_LIMITS_XFER_NETWORK_TPS / NETWORK_SIZE;
     private static final double EXPECTED_FUNGIBLE_MINT_TPS =
             THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS / NETWORK_SIZE;
+
     @SuppressWarnings("java:S1068")
     private static final double EXPECTED_PREVIEWNET_NON_FUNGIBLE_MINT_TPS =
             PREVIEWNET_THROUGHPUT_LIMITS_NON_FUNGIBLE_MINT_NETWORK_TPS / PREVIEWNET_NETWORK_SIZE;
+
     private static final double EXPECTED_CONTRACT_CALL_TPS =
             PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
     private static final double EXPECTED_CRYPTO_CREATE_TPS =
@@ -381,7 +382,6 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                     }
                 };
     }
-
 
     @SuppressWarnings("java:S1144")
     private Function<HapiApiSpec, OpProvider> nonFungibleMintOps() {
