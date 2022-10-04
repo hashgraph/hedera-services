@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 
 /** Represents a key for a unique token (NFT). */
