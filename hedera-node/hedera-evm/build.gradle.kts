@@ -21,5 +21,12 @@ group = "com.hedera.evm"
 description = "Hedera EVM - Implementation"
 
 dependencies {
+    api(libs.javax.inject)
+    api(libs.commons.lang3)
+    api(libs.protobuf.java)
+    api(libs.besu.evm)
+    api(libs.besu.datatypes)
+    api(project(":hapi-utils"))
     api(project(":hedera-node:hedera-evm-api"))
+    implementation(libs.hapi)
 }

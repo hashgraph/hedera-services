@@ -15,8 +15,16 @@
  */
 plugins {
     id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.maven-publish")
+//    id("com.hedera.hashgraph.maven-publish")
 }
 
 group = "com.hedera.evm"
 description = "Hedera EVM - API"
+
+dependencies {
+    api(libs.protobuf.java)
+    api(libs.commons.lang3)
+    api(libs.besu.evm)
+    api(libs.besu.datatypes)
+    implementation(libs.hapi)
+}

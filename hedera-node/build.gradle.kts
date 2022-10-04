@@ -23,6 +23,8 @@ description = "Hedera Services Node"
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
+    api(project(":hedera-node:hedera-evm-api"))
+    api(project(":hedera-node:hedera-evm"))
     implementation(project(":hapi-fees"))
     implementation(project(":hapi-utils"))
     implementation(libs.bundles.besu) {
