@@ -46,6 +46,8 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -85,6 +87,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
             THROUGHPUT_LIMITS_XFER_NETWORK_TPS / NETWORK_SIZE;
     private static final double EXPECTED_FUNGIBLE_MINT_TPS =
             THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS / NETWORK_SIZE;
+    @SuppressWarnings("java:S1068")
     private static final double EXPECTED_PREVIEWNET_NON_FUNGIBLE_MINT_TPS =
             PREVIEWNET_THROUGHPUT_LIMITS_NON_FUNGIBLE_MINT_NETWORK_TPS / PREVIEWNET_NETWORK_SIZE;
     private static final double EXPECTED_CONTRACT_CALL_TPS =
@@ -147,33 +150,9 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL));
     }
 
-    @SuppressWarnings("java:S5960")
     private HapiApiSpec checkTps(
             String txn, double expectedTps, Function<HapiApiSpec, OpProvider> provider) {
-        return defaultHapiSpec("Throttles" + txn + "AsExpected")
-                .given()
-                .when(
-                        runWithProvider(provider)
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var actualTps = 1.0 * spec.finalAdhoc() / duration.get();
-                                    var percentDeviation =
-                                            Math.abs(actualTps / expectedTps - 1.0) * 100.0;
-                                    opLog.info(
-                                            "Total ops accepted in {} {} = {} ==> {}tps vs {}tps"
-                                                    + " expected ({}% deviation)",
-                                            duration.get(),
-                                            unit.get(),
-                                            spec.finalAdhoc(),
-                                            String.format("%.3f", actualTps),
-                                            String.format("%.3f", expectedTps),
-                                            String.format("%.3f", percentDeviation));
-                                    Assertions.assertEquals(
-                                            0.0, percentDeviation, TOLERATED_PERCENT_DEVIATION);
-                                }));
+        return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
     }
 
     /**
@@ -189,6 +168,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
      *     "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
      * }</pre>
      */
+    @SuppressWarnings("java:S5960")
     private HapiApiSpec checkCustomNetworkTps(
             String txn,
             double expectedTps,
@@ -402,6 +382,8 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                 };
     }
 
+
+    @SuppressWarnings("java:S1144")
     private Function<HapiApiSpec, OpProvider> nonFungibleMintOps() {
         final var metadata =
                 "01234567890123456789012345678901234567890123456789"
