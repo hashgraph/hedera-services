@@ -20,7 +20,6 @@ import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -36,12 +35,11 @@ import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,16 +50,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("unchecked")
 class TraceabilityExportTaskTest {
     private static final long ENTITY_NUM = 1234L;
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567, 890);
     private static final MerkleAccount AN_ACCOUNT = MerkleAccountFactory.newAccount().get();
 
+    @Mock private TraceabilityRecordsHelper recordsHelper;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private EntityAccess entityAccess;
     @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private TransactionContext txnCtx;
-    @Mock private TxnAccessor accessor;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
@@ -74,8 +72,8 @@ class TraceabilityExportTaskTest {
                 new TraceabilityExportTask(
                         entityAccess,
                         expiryThrottle,
-                        txnCtx,
                         dynamicProperties,
+                        recordsHelper,
                         () -> accounts,
                         () -> contractStorage);
     }
@@ -100,26 +98,15 @@ class TraceabilityExportTaskTest {
     }
 
     @Test
-    void needsDifferentContextIfContractCall() {
-        givenCtxWith(HederaFunctionality.ContractCall);
+    void needsDifferentContextIfCannotExportRecords() {
         assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW));
-    }
 
-    @Test
-    void needsDifferentContextIfContractCreate() {
-        givenCtxWith(HederaFunctionality.ContractCreate);
-        assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW));
-    }
-
-    @Test
-    void needsDifferentContextIfEthTx() {
-        givenCtxWith(HederaFunctionality.EthereumTransaction);
-        assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW));
+        verifyNoInteractions(expiryThrottle);
     }
 
     @Test
     void nothingToDoIfNotAnAccount() {
-        givenCtxWith(HederaFunctionality.CryptoTransfer);
+        given(recordsHelper.canExportNow()).willReturn(true);
 
         assertEquals(SystemTaskResult.NOTHING_TO_DO, subject.process(ENTITY_NUM, NOW));
 
@@ -128,9 +115,9 @@ class TraceabilityExportTaskTest {
 
     @Test
     void nothingToDoIfNotAContract() {
-        givenCtxWith(HederaFunctionality.CryptoTransfer);
-        given(accounts.get(EntityNum.fromLong(ENTITY_NUM))).willReturn(AN_ACCOUNT);
+        given(recordsHelper.canExportNow()).willReturn(true);
 
+        given(accounts.get(EntityNum.fromLong(ENTITY_NUM))).willReturn(AN_ACCOUNT);
         assertEquals(SystemTaskResult.NOTHING_TO_DO, subject.process(ENTITY_NUM, NOW));
 
         verify(expiryThrottle).allowOne(MapAccessType.ACCOUNTS_GET);
@@ -138,9 +125,8 @@ class TraceabilityExportTaskTest {
 
     @Test
     void createsWellBehavedContractSideCars() {
-        final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
-                forClass(TransactionSidecarRecord.Builder.class);
-        givenCtxWith(HederaFunctionality.ConsensusCreateTopic);
+        given(recordsHelper.canExportNow()).willReturn(true);
+        final ArgumentCaptor<List<TransactionSidecarRecord.Builder>> captor = forClass(List.class);
 
         // Setup mock contract with 4 slots
         final var contract1 = mock(MerkleAccount.class);
@@ -186,8 +172,9 @@ class TraceabilityExportTaskTest {
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
-        verify(txnCtx, times(2)).addSidecarRecord(sidecarCaptor.capture());
-        final var sidecarRecords = sidecarCaptor.getAllValues();
+        verify(recordsHelper)
+                .exportSidecarsViaSynthUpdate(eq(entityNum1.longValue()), captor.capture());
+        final var sidecarRecords = captor.getValue();
         assertEquals(
                 SidecarUtils.createContractBytecodeSidecarFrom(
                                 entityNum1.toGrpcContractID(), runtimeBytes)
@@ -241,9 +228,8 @@ class TraceabilityExportTaskTest {
 
     @Test
     void createsPoisonPillContractSideCars() {
-        final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
-                forClass(TransactionSidecarRecord.Builder.class);
-        givenCtxWith(HederaFunctionality.ConsensusCreateTopic);
+        given(recordsHelper.canExportNow()).willReturn(true);
+        final ArgumentCaptor<List<TransactionSidecarRecord.Builder>> captor = forClass(List.class);
 
         // mock contract with 1 slot with loop
         final var contract2 = mock(MerkleAccount.class);
@@ -271,8 +257,9 @@ class TraceabilityExportTaskTest {
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
-        verify(txnCtx, times(2)).addSidecarRecord(sidecarCaptor.capture());
-        final var sidecarRecords = sidecarCaptor.getAllValues();
+        verify(recordsHelper)
+                .exportSidecarsViaSynthUpdate(eq(entityNum2.longValue()), captor.capture());
+        final var sidecarRecords = captor.getValue();
         assertEquals(
                 SidecarUtils.createContractBytecodeSidecarFrom(
                                 entityNum2.toGrpcContractID(), runtimeBytes2)
@@ -308,9 +295,8 @@ class TraceabilityExportTaskTest {
 
     @Test
     void createsMisSizedContractSideCars() {
-        final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
-                forClass(TransactionSidecarRecord.Builder.class);
-        givenCtxWith(HederaFunctionality.ConsensusCreateTopic);
+        given(recordsHelper.canExportNow()).willReturn(true);
+        final ArgumentCaptor<List<TransactionSidecarRecord.Builder>> captor = forClass(List.class);
 
         // mock contract with 1 slot but numKvPairs = 2
         final var contract1 = mock(MerkleAccount.class);
@@ -335,8 +321,9 @@ class TraceabilityExportTaskTest {
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
-        verify(txnCtx, times(2)).addSidecarRecord(sidecarCaptor.capture());
-        final var sidecarRecords = sidecarCaptor.getAllValues();
+        verify(recordsHelper)
+                .exportSidecarsViaSynthUpdate(eq(entityNum1.longValue()), captor.capture());
+        final var sidecarRecords = captor.getValue();
         assertEquals(
                 SidecarUtils.createContractBytecodeSidecarFrom(
                                 entityNum1.toGrpcContractID(), runtimeBytes)
@@ -370,9 +357,8 @@ class TraceabilityExportTaskTest {
 
     @Test
     void createsStorageLessContractSideCar() {
-        final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
-                forClass(TransactionSidecarRecord.Builder.class);
-        givenCtxWith(HederaFunctionality.ConsensusCreateTopic);
+        given(recordsHelper.canExportNow()).willReturn(true);
+        final ArgumentCaptor<List<TransactionSidecarRecord.Builder>> captor = forClass(List.class);
 
         // Mock contract no storage
         final var contract = mock(MerkleAccount.class);
@@ -389,20 +375,20 @@ class TraceabilityExportTaskTest {
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
-        verify(txnCtx, times(1)).addSidecarRecord(sidecarCaptor.capture());
-        final var sidecarRecords = sidecarCaptor.getValue();
+        verify(recordsHelper)
+                .exportSidecarsViaSynthUpdate(eq(entityNum.longValue()), captor.capture());
+        final var sidecarRecords = captor.getValue();
         assertEquals(
                 SidecarUtils.createContractBytecodeSidecarFrom(
                                 entityNum.toGrpcContractID(), runtimeBytes)
                         .setMigration(true)
                         .build(),
-                sidecarRecords.build());
+                sidecarRecords.get(0).build());
     }
 
     @Test
     void skipsBytecodeLessContractSideCars() {
-        givenCtxWith(HederaFunctionality.ConsensusCreateTopic);
-
+        given(recordsHelper.canExportNow()).willReturn(true);
         // Mock contract no storage
         final var contract = mock(MerkleAccount.class);
         given(contract.isSmartContract()).willReturn(true);
@@ -415,11 +401,6 @@ class TraceabilityExportTaskTest {
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
-        verify(txnCtx, never()).addSidecarRecord(any());
-    }
-
-    private void givenCtxWith(final HederaFunctionality functionality) {
-        given(accessor.getFunction()).willReturn(functionality);
-        given(txnCtx.accessor()).willReturn(accessor);
+        verify(recordsHelper, never()).exportSidecarsViaSynthUpdate(anyLong(), anyList());
     }
 }

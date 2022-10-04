@@ -30,8 +30,6 @@ import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.jetbrains.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;

@@ -19,7 +19,6 @@ import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static com.hedera.services.throttling.MapAccessType.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -36,22 +35,30 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A {@link SystemTask} added in release 0.31 that exports the bytecode and storage slots of all
+ * contracts from the 0.30.x saved state. After all pre-existing entities have been scanned, always
+ * returns false from {@code isActive()}.
+ */
+@Singleton
 public class TraceabilityExportTask implements SystemTask {
     private static final Logger log = LogManager.getLogger(TraceabilityExportTask.class);
 
     private final EntityAccess entityAccess;
     private final ExpiryThrottle expiryThrottle;
-    private final TransactionContext txnCtx;
     private final GlobalDynamicProperties dynamicProperties;
+    private final TraceabilityRecordsHelper recordsHelper;
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
 
@@ -59,15 +66,15 @@ public class TraceabilityExportTask implements SystemTask {
     public TraceabilityExportTask(
             final EntityAccess entityAccess,
             final ExpiryThrottle expiryThrottle,
-            final TransactionContext txnCtx,
             final GlobalDynamicProperties dynamicProperties,
+            final TraceabilityRecordsHelper recordsHelper,
             final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
             final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage) {
         this.entityAccess = entityAccess;
         this.expiryThrottle = expiryThrottle;
-        this.txnCtx = txnCtx;
         this.dynamicProperties = dynamicProperties;
         this.accounts = accounts;
+        this.recordsHelper = recordsHelper;
         this.contractStorage = contractStorage;
     }
 
@@ -81,7 +88,7 @@ public class TraceabilityExportTask implements SystemTask {
 
     @Override
     public SystemTaskResult process(final long literalNum, final Instant now) {
-        if (isSidecarGenerating(txnCtx.accessor().getFunction())) {
+        if (!recordsHelper.canExportNow()) {
             return NEEDS_DIFFERENT_CONTEXT;
         }
         // It would be a lot of work to split even a single sidecar's construction across
@@ -95,12 +102,20 @@ public class TraceabilityExportTask implements SystemTask {
             return NOTHING_TO_DO;
         }
         final var contractId = key.toGrpcContractID();
-        addBytecodeSidecar(contractId);
-        addStateChangesSideCar(contractId, account);
+        final List<TransactionSidecarRecord.Builder> sidecars = new ArrayList<>();
+        addBytecodeSidecar(contractId, sidecars);
+        // We ignore contracts that don't have bytecode
+        if (!sidecars.isEmpty()) {
+            addStateChangesSideCar(contractId, account, sidecars);
+            recordsHelper.exportSidecarsViaSynthUpdate(literalNum, sidecars);
+        }
         return DONE;
     }
 
-    private void addStateChangesSideCar(final ContractID contractId, final MerkleAccount contract) {
+    private void addStateChangesSideCar(
+            final ContractID contractId,
+            final MerkleAccount contract,
+            final List<TransactionSidecarRecord.Builder> sidecars) {
         var contractStorageKey = contract.getFirstContractStorageKey();
         if (contractStorageKey == null) {
             return;
@@ -108,10 +123,11 @@ public class TraceabilityExportTask implements SystemTask {
         final var stateChangesSidecar =
                 generateMigrationStateChangesSidecar(
                         contractId, contractStorageKey, contract.getNumContractKvPairs());
-        txnCtx.addSidecarRecord(stateChangesSidecar);
+        sidecars.add(stateChangesSidecar);
     }
 
-    private void addBytecodeSidecar(final ContractID contractId) {
+    private void addBytecodeSidecar(
+            final ContractID contractId, final List<TransactionSidecarRecord.Builder> sidecars) {
         final var bytecodeSidecar = generateMigrationBytecodeSidecarFor(contractId);
         if (bytecodeSidecar == null) {
             log.warn(
@@ -119,7 +135,7 @@ public class TraceabilityExportTask implements SystemTask {
                             + " sidecar records will be published.",
                     contractId.getContractNum());
         } else {
-            txnCtx.addSidecarRecord(bytecodeSidecar);
+            sidecars.add(bytecodeSidecar);
         }
     }
 
@@ -195,11 +211,5 @@ public class TraceabilityExportTask implements SystemTask {
             contractKeyBytes[j] = contractStorageKey.getUint256Byte(i);
         }
         return contractKeyBytes;
-    }
-
-    private boolean isSidecarGenerating(final HederaFunctionality function) {
-        return function == ContractCall
-                || function == ContractCreate
-                || function == EthereumTransaction;
     }
 }

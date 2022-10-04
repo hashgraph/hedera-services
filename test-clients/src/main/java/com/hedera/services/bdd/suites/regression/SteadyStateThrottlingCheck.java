@@ -49,7 +49,6 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -179,24 +178,28 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 
     /**
      * An example of how to use this in a spot check of previewnet NFT mint throttle is,
+     *
      * <pre>{@code
-     *   checkCustomNetworkTps(
-     *     "NonFungibleMints",
-     *     EXPECTED_PREVIEWNET_NON_FUNGIBLE_MINT_TPS,
-     *     nonFungibleMintOps(), Map.of(
-     *       "nodes", "35.231.208.148",
-     *       "default.payer.pemKeyLoc", "[SUPERUSER_PEM]",
-     *       "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
+     * checkCustomNetworkTps(
+     *   "NonFungibleMints",
+     *   EXPECTED_PREVIEWNET_NON_FUNGIBLE_MINT_TPS,
+     *   nonFungibleMintOps(), Map.of(
+     *     "nodes", "35.231.208.148",
+     *     "default.payer.pemKeyLoc", "[SUPERUSER_PEM]",
+     *     "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
      * }</pre>
      */
     private HapiApiSpec checkCustomNetworkTps(
-            String txn, double expectedTps, Function<HapiApiSpec, OpProvider> provider, Map<String, String> custom) {
+            String txn,
+            double expectedTps,
+            Function<HapiApiSpec, OpProvider> provider,
+            Map<String, String> custom) {
         final var name = "Throttles" + txn + "AsExpected";
-        final var baseSpec = custom.isEmpty()
-                ? defaultHapiSpec(name)
-                : customHapiSpec(name).withProperties(custom);
-        return baseSpec
-                .given()
+        final var baseSpec =
+                custom.isEmpty()
+                        ? defaultHapiSpec(name)
+                        : customHapiSpec(name).withProperties(custom);
+        return baseSpec.given()
                 .when(
                         runWithProvider(provider)
                                 .lasting(duration::get, unit::get)
@@ -400,16 +403,16 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
     }
 
     private Function<HapiApiSpec, OpProvider> nonFungibleMintOps() {
-        final var metadata = "01234567890123456789012345678901234567890123456789" +
-                "01234567890123456789012345678901234567890123456789";
+        final var metadata =
+                "01234567890123456789012345678901234567890123456789"
+                        + "01234567890123456789012345678901234567890123456789";
         return spec ->
                 new OpProvider() {
                     @Override
                     public List<HapiSpecOperation> suggestedInitializers() {
                         return List.of(
                                 newKeyNamed(SUPPLY),
-                                cryptoCreate(TOKEN_TREASURY)
-                                        .balance(ONE_MILLION_HBARS),
+                                cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
                                 tokenCreate(TOKEN)
                                         .initialSupply(0)
                                         .treasury(TOKEN_TREASURY)

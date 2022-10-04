@@ -97,7 +97,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -108,7 +107,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.apache.tuweni.bytes.Bytes;
 
 @Singleton
@@ -225,16 +223,19 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder synthContractAutoRenew(
             final EntityNum contractNum, final long newExpiry) {
-        final var op = baseSynthContractUpdate(contractNum)
-                .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
+        final var op =
+                baseSynthContractUpdate(contractNum)
+                        .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
         return TransactionBody.newBuilder().setContractUpdateInstance(op);
     }
 
     public TransactionBody.Builder synthNoopContractUpdate(final EntityNum contractNum) {
-        return TransactionBody.newBuilder().setContractUpdateInstance(baseSynthContractUpdate(contractNum));
+        return TransactionBody.newBuilder()
+                .setContractUpdateInstance(baseSynthContractUpdate(contractNum));
     }
 
-    private ContractUpdateTransactionBody.Builder baseSynthContractUpdate(final EntityNum contractNum) {
+    private ContractUpdateTransactionBody.Builder baseSynthContractUpdate(
+            final EntityNum contractNum) {
         return ContractUpdateTransactionBody.newBuilder()
                 .setContractID(contractNum.toGrpcContractID());
     }
@@ -804,7 +805,7 @@ public class SyntheticTxnFactory {
      * account id that appears in either list. NFT exchanges are "merged" by checking that each
      * exchange from either list appears at most once.
      *
-     * @param to   the builder to merge source exchanges into
+     * @param to the builder to merge source exchanges into
      * @param from a source of fungible exchanges and NFT exchanges
      * @return the consolidated target builder
      */

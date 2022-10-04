@@ -281,7 +281,11 @@ class BootstrapPropertiesTest {
                     entry(TOPICS_MAX_NUM, 1_000_000L),
                     entry(TOKENS_MAX_AGGREGATE_RELS, 10_000_000L),
                     entry(UTIL_PRNG_IS_ENABLED, true),
-                    entry(CONTRACTS_SIDECARS, EnumSet.noneOf(SidecarType.class)),
+                    entry(
+                            CONTRACTS_SIDECARS,
+                            EnumSet.of(
+                                    SidecarType.CONTRACT_STATE_CHANGE,
+                                    SidecarType.CONTRACT_BYTECODE)),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
                     entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
                     entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
