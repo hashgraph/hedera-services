@@ -72,9 +72,11 @@ public class TraceabilityExportTask implements SystemTask {
     }
 
     @Override
-    public boolean isActive(final MerkleNetworkContext curNetworkCtx) {
+    public boolean isActive(final long literalNum, final MerkleNetworkContext curNetworkCtx) {
         return dynamicProperties.shouldDoTraceabilityExport()
-                && !curNetworkCtx.areAllPreUpgradeEntitiesScanned();
+                && !curNetworkCtx.areAllPreUpgradeEntitiesScanned()
+                // No need to do traceability export for an 0.31.x contract
+                && literalNum < curNetworkCtx.seqNoPostUpgrade();
     }
 
     @Override

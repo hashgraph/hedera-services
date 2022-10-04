@@ -69,7 +69,7 @@ public class SystemTaskManager {
             final long literalNum, final Instant now, final MerkleNetworkContext curNetworkCtx) {
         boolean didSomething = false;
         for (var i = curNetworkCtx.nextTaskTodo(); i < tasks.length; i++) {
-            if (!tasks[i].isActive(curNetworkCtx)) {
+            if (!tasks[i].isActive(literalNum, curNetworkCtx)) {
                 continue;
             }
             final var result = tasks[i].process(literalNum, now);

@@ -85,8 +85,8 @@ class SystemTaskManagerTest {
     @Test
     void defaultTaskIsActive() {
         final var someTask = mock(SystemTask.class);
-        doCallRealMethod().when(someTask).isActive(networkCtx);
-        assertTrue(someTask.isActive(networkCtx));
+        doCallRealMethod().when(someTask).isActive(ENTITY_NUM, networkCtx);
+        assertTrue(someTask.isActive(ENTITY_NUM, networkCtx));
     }
 
     @Test
@@ -144,7 +144,7 @@ class SystemTaskManagerTest {
 
     private void givenActive(final SystemTask... tasks) {
         for (final var task : tasks) {
-            given(task.isActive(networkCtx)).willReturn(true);
+            given(task.isActive(ENTITY_NUM, networkCtx)).willReturn(true);
         }
     }
 }

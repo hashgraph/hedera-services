@@ -82,14 +82,21 @@ class TraceabilityExportTaskTest {
 
     @Test
     void notActiveIfDisabled() {
-        assertFalse(subject.isActive(networkCtx));
+        assertFalse(subject.isActive(ENTITY_NUM, networkCtx));
     }
 
     @Test
     void notActiveIfAllPreExistingEntitiesScanned() {
         given(dynamicProperties.shouldDoTraceabilityExport()).willReturn(true);
         given(networkCtx.areAllPreUpgradeEntitiesScanned()).willReturn(true);
-        assertFalse(subject.isActive(networkCtx));
+        assertFalse(subject.isActive(ENTITY_NUM, networkCtx));
+    }
+
+    @Test
+    void notActiveIfEntityWasNotPreExisting() {
+        given(dynamicProperties.shouldDoTraceabilityExport()).willReturn(true);
+        given(networkCtx.seqNoPostUpgrade()).willReturn(ENTITY_NUM);
+        assertFalse(subject.isActive(ENTITY_NUM, networkCtx));
     }
 
     @Test
