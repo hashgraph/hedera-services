@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSu
 
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.calculation.PricesAndFeesImplementation;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
@@ -45,6 +46,7 @@ import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.RecordedStorageFeeCharging;
 import com.hedera.services.fees.charging.StorageFeeCharging;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -94,6 +96,10 @@ public interface FeesModule {
     @Binds
     @Singleton
     HbarCentExchange bindHbarCentExchange(BasicHbarCentExchange basicHbarCentExchange);
+
+    @Binds
+    @Singleton
+    PricesAndFeesProvider bindPricesAndFeesProvider(PricesAndFeesImplementation pricesAndFeesImplementation);
 
     @Provides
     @ElementsIntoSet

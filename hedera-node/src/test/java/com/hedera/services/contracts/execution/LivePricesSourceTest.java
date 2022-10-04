@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.PricesAndFeesProvider;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -57,7 +58,8 @@ class LivePricesSourceTest {
     private static final long insaneMultiplier = Long.MAX_VALUE / 2;
 
     @Mock private HbarCentExchange exchange;
-    @Mock private UsagePricesProvider usagePrices;
+//    @Mock private UsagePricesProvider usagePrices;
+    @Mock private PricesAndFeesProvider pricess;
     @Mock private FeeMultiplierSource feeMultiplierSource;
     @Mock private TransactionContext txnCtx;
     @Mock private TxnAccessor accessor;
@@ -66,7 +68,8 @@ class LivePricesSourceTest {
 
     @BeforeEach
     void setUp() {
-        subject = new LivePricesSource(exchange, usagePrices, feeMultiplierSource, txnCtx);
+        subject = new LivePricesSource(exchange, pricess, feeMultiplierSource, txnCtx);
+//        subject = new LivePricesSource(exchange, usagePrices, feeMultiplierSource, txnCtx);
     }
 
     @Test
@@ -81,7 +84,8 @@ class LivePricesSourceTest {
 
     @Test
     void getsCurrentGasPriceInTinyCents() {
-        given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
+        given(pricess.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
+//        given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
 
         ToLongFunction<FeeComponents> resourcePriceFn = FeeComponents::getGas;
         final var expected = resourcePriceFn.applyAsLong(providerPrices.getServicedata()) / 1000;
@@ -108,7 +112,8 @@ class LivePricesSourceTest {
 
     private void givenCollabsWithMultiplier(final long multiplier) {
         given(exchange.rate(timeNow)).willReturn(activeRate);
-        given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
+        given(pricess.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
+//        given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
         given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
         given(txnCtx.accessor()).willReturn(accessor);
     }

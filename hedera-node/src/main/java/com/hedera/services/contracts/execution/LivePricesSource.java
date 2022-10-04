@@ -20,6 +20,7 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.PricesAndFeesProvider;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -32,20 +33,23 @@ import javax.inject.Singleton;
 @Singleton
 public class LivePricesSource {
     private final HbarCentExchange exchange;
-    private final UsagePricesProvider usagePrices;
+    private final PricesAndFeesProvider pricesAndFeesProvider;
+//    private final UsagePricesProvider usagePrices;
     private final FeeMultiplierSource feeMultiplierSource;
     private final TransactionContext txnCtx;
 
     @Inject
     public LivePricesSource(
             final HbarCentExchange exchange,
-            final UsagePricesProvider usagePrices,
+//            final UsagePricesProvider usagePrices,
+            final PricesAndFeesProvider pricesAndFeesProvider,
             final FeeMultiplierSource feeMultiplierSource,
             final TransactionContext txnCtx) {
         this.exchange = exchange;
-        this.usagePrices = usagePrices;
+//        this.usagePrices = usagePrices;
         this.feeMultiplierSource = feeMultiplierSource;
         this.txnCtx = txnCtx;
+        this.pricesAndFeesProvider = pricesAndFeesProvider;
     }
 
     public long currentGasPrice(final Instant now, final HederaFunctionality function) {
@@ -84,7 +88,7 @@ public class LivePricesSource {
             final HederaFunctionality function,
             final ToLongFunction<FeeComponents> resourcePriceFn) {
         final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
-        final var prices = usagePrices.defaultPricesGiven(function, timestamp);
+        final var prices = pricesAndFeesProvider.defaultPricesGiven(function, timestamp);
 
         /* Fee schedule prices are set in thousandths of a tinycent */
         return resourcePriceFn.applyAsLong(prices.getServicedata()) / 1000;
