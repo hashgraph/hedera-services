@@ -18,7 +18,8 @@ package com.hedera.services.state.tasks;
 /**
  * Represents the outcome of performing a system task an {@code 0.0.X} id.
  *
- * The canonical example is expiration-related work (either auto-renewal or auto-removal of an entity).
+ * <p>The canonical example is expiration-related work (either auto-renewal or auto-removal of an
+ * entity).
  */
 public enum SystemTaskResult {
     /** Either the id did not refer to an existing entity; or there was no work to for the task. */
@@ -28,9 +29,7 @@ public enum SystemTaskResult {
      * completed in the context of the current user transaction.
      */
     NEEDS_DIFFERENT_CONTEXT,
-    /**
-     * The id referred to an entity with work to be done for this task, and the work is done.
-     */
+    /** The id referred to an entity with work to be done for this task, and the work is done. */
     DONE,
     /** The system task throttle bucket is full, and no more work can be done at this time. */
     NO_CAPACITY_LEFT

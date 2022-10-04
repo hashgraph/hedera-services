@@ -245,7 +245,9 @@ class MerkleNetworkContextTest {
         assertEquals(subjectCopy.getTotalStakedStart(), subject.getTotalStakedStart());
         assertEquals(subjectCopy.lastScannedPostUpgrade(), subject.lastScannedPostUpgrade());
         assertEquals(subjectCopy.seqNoPostUpgrade(), subject.seqNoPostUpgrade());
-        assertEquals(subjectCopy.getPreExistingEntityScanStatus(), subject.getPreExistingEntityScanStatus());
+        assertEquals(
+                subjectCopy.getPreExistingEntityScanStatus(),
+                subject.getPreExistingEntityScanStatus());
         // and:
         assertTrue(subject.isImmutable());
         assertFalse(subjectCopy.isImmutable());
@@ -390,7 +392,8 @@ class MerkleNetworkContextTest {
         assertThrows(MutabilityException.class, () -> subject.setNextTaskTodo(123));
         assertThrows(MutabilityException.class, () -> subject.setLastScannedPostUpgrade(4321));
         assertThrows(MutabilityException.class, subject::markPostUpgradeScanStatus);
-        assertThrows(MutabilityException.class, () -> subject.setPreExistingEntityScanStatus((byte) 1));
+        assertThrows(
+                MutabilityException.class, () -> subject.setPreExistingEntityScanStatus((byte) 1));
         assertThrows(
                 MutabilityException.class,
                 () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));

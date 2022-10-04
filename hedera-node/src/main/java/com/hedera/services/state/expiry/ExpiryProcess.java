@@ -25,7 +25,6 @@ import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 public class ExpiryProcess implements SystemTask {
     private final RenewalWork renewalWork;

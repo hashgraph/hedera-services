@@ -18,9 +18,9 @@ package com.hedera.services.state.expiry.removal;
 import static com.hedera.services.state.tasks.SystemTaskResult.*;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;

@@ -47,8 +47,7 @@ class EntityAutoExpiryTest {
 
     private final long aNum = 1002L, bNum = 1003L, cNum = 1004L;
 
-    @Mock
-    private SystemTaskManager taskManager;
+    @Mock private SystemTaskManager taskManager;
     @Mock private SequenceNumber seqNo;
     @Mock private NetworkCtxManager networkCtxManager;
     @Mock private MerkleNetworkContext networkCtx;
@@ -163,7 +162,8 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(taskManager.process(anyLong(), eq(instantNow), eq(networkCtx))).willReturn(NOTHING_TO_DO);
+        given(taskManager.process(anyLong(), eq(instantNow), eq(networkCtx)))
+                .willReturn(NOTHING_TO_DO);
 
         // when:
         subject.execute(instantNow);
@@ -254,7 +254,8 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum + numToScan - 2);
-        given(taskManager.process(aNum + numToScan - 1, instantNow, networkCtx)).willReturn(NOTHING_TO_DO);
+        given(taskManager.process(aNum + numToScan - 1, instantNow, networkCtx))
+                .willReturn(NOTHING_TO_DO);
         given(taskManager.process(aNum - 1, instantNow, networkCtx)).willReturn(NOTHING_TO_DO);
         given(taskManager.process(aNum, instantNow, networkCtx)).willReturn(DONE);
         given(taskManager.process(bNum, instantNow, networkCtx)).willReturn(DONE);

@@ -27,11 +27,11 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.NonHapiFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
@@ -81,8 +81,7 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @Override
-    public SystemTaskResult tryToRenewContract(
-            final EntityNum contract, final Instant cycleTime) {
+    public SystemTaskResult tryToRenewContract(final EntityNum contract, final Instant cycleTime) {
         if (!dynamicProperties.shouldAutoRenewContracts()) {
             return NOTHING_TO_DO;
         }

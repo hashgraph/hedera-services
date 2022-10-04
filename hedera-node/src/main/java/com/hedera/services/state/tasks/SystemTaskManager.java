@@ -1,15 +1,29 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.tasks;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.time.Instant;
-import java.util.Map;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
 import static com.hedera.services.state.tasks.SystemTaskResult.*;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import java.time.Instant;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class SystemTaskManager {
@@ -18,34 +32,37 @@ public class SystemTaskManager {
     @Inject
     public SystemTaskManager(final Map<String, SystemTask> namedTasks) {
         // Only runs once per restart, so performance doesn't matter
-        tasks = namedTasks.keySet().stream().sorted().map(namedTasks::get).toArray(SystemTask[]::new);
+        tasks =
+                namedTasks.keySet().stream()
+                        .sorted()
+                        .map(namedTasks::get)
+                        .toArray(SystemTask[]::new);
     }
 
     /**
-     * Performs as many pending system tasks as possible for the given entity number and
-     * consensus time. These tasks will begin from {@link MerkleNetworkContext#nextTaskTodo()}
-     * and continue until either the manager receives {@link SystemTaskResult#NO_CAPACITY_LEFT}
-     * or {@link SystemTaskResult#NEEDS_DIFFERENT_CONTEXT}; or until the end of the {@code tasks}
-     * list is reached.
-     * <p>
-     * More precisely, this method will return:
+     * Performs as many pending system tasks as possible for the given entity number and consensus
+     * time. These tasks will begin from {@link MerkleNetworkContext#nextTaskTodo()} and continue
+     * until either the manager receives {@link SystemTaskResult#NO_CAPACITY_LEFT} or {@link
+     * SystemTaskResult#NEEDS_DIFFERENT_CONTEXT}; or until the end of the {@code tasks} list is
+     * reached.
+     *
+     * <p>More precisely, this method will return:
+     *
      * <ul>
-     *     <li>{@link SystemTaskResult#NOTHING_TO_DO} iff all tasks returned {@code NOTHING_TO_DO}.</li>
-     *     <li>{@link SystemTaskResult#DONE} iff at least one task returned {@code DONE} and all
-     *     other tasks returned {@code NOTHING_TO_DO}.</li>
-     *     <li>{@link SystemTaskResult#NO_CAPACITY_LEFT} immediately when any task reports it.</li>
-     *     <li>{@link SystemTaskResult#NEEDS_DIFFERENT_CONTEXT} immediately when any task reports it.</li>
+     *   <li>{@link SystemTaskResult#NOTHING_TO_DO} iff all tasks returned {@code NOTHING_TO_DO}.
+     *   <li>{@link SystemTaskResult#DONE} iff at least one task returned {@code DONE} and all other
+     *       tasks returned {@code NOTHING_TO_DO}.
+     *   <li>{@link SystemTaskResult#NO_CAPACITY_LEFT} immediately when any task reports it.
+     *   <li>{@link SystemTaskResult#NEEDS_DIFFERENT_CONTEXT} immediately when any task reports it.
      * </ul>
      *
-     * @param literalNum    the id to process
-     * @param now           the consensus time now
+     * @param literalNum the id to process
+     * @param now the consensus time now
      * @param curNetworkCtx the current network context
      * @return the cumulative result of attempting all pending tasks
      */
     public SystemTaskResult process(
-            final long literalNum,
-            final Instant now,
-            final MerkleNetworkContext curNetworkCtx) {
+            final long literalNum, final Instant now, final MerkleNetworkContext curNetworkCtx) {
         boolean didSomething = false;
         for (var i = curNetworkCtx.nextTaskTodo(); i < tasks.length; i++) {
             if (!tasks[i].isActive()) {
@@ -71,8 +88,8 @@ public class SystemTaskManager {
             if (n == curNetworkCtx.seqNoPostUpgrade() - 1) {
                 curNetworkCtx.setPreExistingEntityScanStatus(LAST_PRE_EXISTING_ENTITY_SCANNED);
             }
-        } else if (status == LAST_PRE_EXISTING_ENTITY_SCANNED &&
-                n == curNetworkCtx.lastScannedPostUpgrade()) {
+        } else if (status == LAST_PRE_EXISTING_ENTITY_SCANNED
+                && n == curNetworkCtx.lastScannedPostUpgrade()) {
             curNetworkCtx.setPreExistingEntityScanStatus(ALL_PRE_EXISTING_ENTITIES_SCANNED);
         }
     }

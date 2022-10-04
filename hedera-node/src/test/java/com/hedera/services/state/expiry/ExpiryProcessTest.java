@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;

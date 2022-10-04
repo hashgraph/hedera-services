@@ -1,14 +1,19 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.tasks;
-
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.Map;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
 import static com.hedera.services.state.tasks.SystemTaskResult.*;
@@ -16,32 +21,37 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import java.time.Instant;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class SystemTaskManagerTest {
     private static final long ENTITY_NUM = 1234L;
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567, 890);
 
-    @Mock
-    private SystemTask aTask;
-    @Mock
-    private SystemTask bTask;
-    @Mock
-    private SystemTask cTask;
-    @Mock
-    private MerkleNetworkContext networkCtx;
+    @Mock private SystemTask aTask;
+    @Mock private SystemTask bTask;
+    @Mock private SystemTask cTask;
+    @Mock private MerkleNetworkContext networkCtx;
 
     private SystemTaskManager subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SystemTaskManager(Map.of(
-                "C", cTask, "B", bTask, "A", aTask));
+        subject = new SystemTaskManager(Map.of("C", cTask, "B", bTask, "A", aTask));
     }
 
     @Test
     void scanUpdatesAllScannedIfLastIsScannedAndNumReachesPostUpgradeLastScanned() {
         final var lastScanned = 1234L;
-        given(networkCtx.getPreExistingEntityScanStatus()).willReturn(LAST_PRE_EXISTING_ENTITY_SCANNED);
+        given(networkCtx.getPreExistingEntityScanStatus())
+                .willReturn(LAST_PRE_EXISTING_ENTITY_SCANNED);
         given(networkCtx.lastScannedPostUpgrade()).willReturn(lastScanned);
 
         subject.updatePreExistingScanStatus(lastScanned, networkCtx);
@@ -52,7 +62,8 @@ class SystemTaskManagerTest {
     @Test
     void scanUpdatesLastScannedIfNumPrecedesPostUpgradeSeqNo() {
         final var seqNo = 1234L;
-        given(networkCtx.getPreExistingEntityScanStatus()).willReturn(LAST_PRE_EXISTING_ENTITY_NOT_SCANNED);
+        given(networkCtx.getPreExistingEntityScanStatus())
+                .willReturn(LAST_PRE_EXISTING_ENTITY_NOT_SCANNED);
         given(networkCtx.seqNoPostUpgrade()).willReturn(seqNo);
 
         subject.updatePreExistingScanStatus(seqNo - 1, networkCtx);
@@ -62,7 +73,8 @@ class SystemTaskManagerTest {
 
     @Test
     void scanUpdateNoopIfAlreadyComplete() {
-        given(networkCtx.getPreExistingEntityScanStatus()).willReturn(ALL_PRE_EXISTING_ENTITIES_SCANNED);
+        given(networkCtx.getPreExistingEntityScanStatus())
+                .willReturn(ALL_PRE_EXISTING_ENTITIES_SCANNED);
 
         subject.updatePreExistingScanStatus(ENTITY_NUM, networkCtx);
 
@@ -80,7 +92,7 @@ class SystemTaskManagerTest {
 
     @Test
     void ordersTasksAlphabetically() {
-        assertArrayEquals(new SystemTask[] { aTask, bTask, cTask }, subject.getTasks());
+        assertArrayEquals(new SystemTask[] {aTask, bTask, cTask}, subject.getTasks());
     }
 
     @Test

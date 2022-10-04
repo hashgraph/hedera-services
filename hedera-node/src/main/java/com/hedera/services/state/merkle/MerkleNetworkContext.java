@@ -544,7 +544,6 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return blockNo;
     }
 
-
     @SuppressWarnings("java:S125")
     public org.hyperledger.besu.datatypes.Hash getBlockHashByNumber(final long reqBlockNo) {
         if (reqBlockNo < 0) {
@@ -927,8 +926,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     /**
-     * Updates the consensus view in state of which zero-indexed task number to do next,
-     * given the total number of task types the {@link SystemTaskManager} is aware of.
+     * Updates the consensus view in state of which zero-indexed task number to do next, given the
+     * total number of task types the {@link SystemTaskManager} is aware of.
      *
      * @param i the zero-indexed task number
      */
