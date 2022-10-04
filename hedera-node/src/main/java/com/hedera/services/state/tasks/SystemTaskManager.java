@@ -20,13 +20,12 @@ import static com.hedera.services.state.tasks.SystemTaskResult.*;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class SystemTaskManager {
@@ -92,10 +91,12 @@ public class SystemTaskManager {
         final var status = curNetworkCtx.getPreExistingEntityScanStatus();
         if (status == LAST_PRE_EXISTING_ENTITY_NOT_SCANNED) {
             if (n == curNetworkCtx.seqNoPostUpgrade() - 1) {
+                log.info("Setting pre-existing entity scan status to LAST_PRE_EXISTING_ENTITY_SCANNED");
                 curNetworkCtx.setPreExistingEntityScanStatus(LAST_PRE_EXISTING_ENTITY_SCANNED);
             }
         } else if (status == LAST_PRE_EXISTING_ENTITY_SCANNED
                 && n == curNetworkCtx.lastScannedPostUpgrade()) {
+            log.info("Setting pre-existing entity scan status to ALL_PRE_EXISTING_ENTITIES_SCANNED");
             curNetworkCtx.setPreExistingEntityScanStatus(ALL_PRE_EXISTING_ENTITIES_SCANNED);
         }
     }

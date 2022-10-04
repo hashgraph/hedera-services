@@ -20,7 +20,6 @@ import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.state.expiry.renewal.RenewalWork;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.utils.EntityNum;

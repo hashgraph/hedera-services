@@ -15,6 +15,10 @@
  */
 package com.hedera.services.state.tasks;
 
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
+import static com.hedera.services.throttling.MapAccessType.*;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -28,7 +32,6 @@ import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.throttling.ExpiryThrottle;
-import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
@@ -36,23 +39,14 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.time.Instant;
+import java.util.function.Supplier;
+import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.function.Supplier;
-import javax.inject.Inject;
-
-import static com.hedera.services.state.tasks.SystemTaskResult.*;
-import static com.hedera.services.throttling.MapAccessType.*;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
-
 public class TraceabilityExportTask implements SystemTask {
     private static final Logger log = LogManager.getLogger(TraceabilityExportTask.class);
-    static final List<MapAccessType> CONTRACT_LOOKUP = List.of(ACCOUNTS_GET);
-    static final List<MapAccessType> BYTECODE_LOOKUP = List.of(BLOBS_GET);
-    static final List<MapAccessType> SLOT_LOOKUP = List.of(STORAGE_GET);
 
     private final EntityAccess entityAccess;
     private final ExpiryThrottle expiryThrottle;
@@ -79,8 +73,8 @@ public class TraceabilityExportTask implements SystemTask {
 
     @Override
     public boolean isActive(final MerkleNetworkContext curNetworkCtx) {
-        return dynamicProperties.shouldDoTraceabilityExport() &&
-                !curNetworkCtx.areAllPreUpgradeEntitiesScanned();
+        return dynamicProperties.shouldDoTraceabilityExport()
+                && !curNetworkCtx.areAllPreUpgradeEntitiesScanned();
     }
 
     @Override
@@ -88,9 +82,9 @@ public class TraceabilityExportTask implements SystemTask {
         if (isSidecarGenerating(txnCtx.accessor().getFunction())) {
             return NEEDS_DIFFERENT_CONTEXT;
         }
-        // It would be alot of work to split even a single sidecar's construction
-        // across multiple process() calls; so as we only do this once per pre-existing
-        // contract anyways, we just unconditionally register work in the throttle bucket
+        // It would be a lot of work to split even a single sidecar's construction across
+        // multiple process() calls, so we just unconditionally register work in the
+        // throttle bucket; will only happen once per pre-existing contract
         expiryThrottle.allow(ACCOUNTS_GET);
 
         final var key = EntityNum.fromLong(literalNum);
@@ -111,18 +105,12 @@ public class TraceabilityExportTask implements SystemTask {
         }
         final var stateChangesSidecar =
                 generateMigrationStateChangesSidecar(
-                        contractId,
-                        contractStorageKey,
-                        contract.getNumContractKvPairs());
+                        contractId, contractStorageKey, contract.getNumContractKvPairs());
         txnCtx.addSidecarRecord(stateChangesSidecar);
-        log.debug(
-                "Published migration state changes for contract 0.0.{}",
-                contractId.getContractNum());
     }
 
     private void addBytecodeSidecar(final ContractID contractId) {
-        final var bytecodeSidecar =
-                generateMigrationBytecodeSidecarFor(contractId);
+        final var bytecodeSidecar = generateMigrationBytecodeSidecarFor(contractId);
         if (bytecodeSidecar == null) {
             log.warn(
                     "Contract 0.0.{} has no bytecode in state - no migration"
@@ -178,8 +166,8 @@ public class TraceabilityExportTask implements SystemTask {
         if (maxNumberOfKvPairsToIterate != 0) {
             log.warn(
                     "After walking through all iterable storage of contract 0.0.{},"
-                            + " numContractKvPairs field indicates that there should have been {} more"
-                            + " k/v pair(s) left",
+                        + " numContractKvPairs field indicates that there should have been {} more"
+                        + " k/v pair(s) left",
                     contractId.getContractNum(),
                     maxNumberOfKvPairsToIterate);
         }

@@ -1,4 +1,24 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.tasks;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -21,7 +41,7 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import net.bytebuddy.implementation.MethodAccessorFactory;
+import java.time.Instant;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,43 +51,33 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentCaptor.forClass;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class TraceabilityExportTaskTest {
     private static final long ENTITY_NUM = 1234L;
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567, 890);
     private static final MerkleAccount AN_ACCOUNT = MerkleAccountFactory.newAccount().get();
 
-    @Mock
-    private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock
-    private EntityAccess entityAccess;
-    @Mock 
-    private ExpiryThrottle expiryThrottle;
-    @Mock
-    private TransactionContext txnCtx;
-    @Mock
-    private TxnAccessor accessor;
-    @Mock
-    private GlobalDynamicProperties dynamicProperties;
-    @Mock
-    private MerkleNetworkContext networkCtx;
-    @Mock
-    private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-    
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private EntityAccess entityAccess;
+    @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private TransactionContext txnCtx;
+    @Mock private TxnAccessor accessor;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private MerkleNetworkContext networkCtx;
+    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+
     private TraceabilityExportTask subject;
 
     @BeforeEach
     void setUp() {
-       subject = new TraceabilityExportTask(entityAccess, expiryThrottle, txnCtx, dynamicProperties, 
-               () -> accounts, () -> contractStorage);
+        subject =
+                new TraceabilityExportTask(
+                        entityAccess,
+                        expiryThrottle,
+                        txnCtx,
+                        dynamicProperties,
+                        () -> accounts,
+                        () -> contractStorage);
     }
 
     @Test
