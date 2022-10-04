@@ -16,10 +16,7 @@
 package com.hedera.services.bdd.spec.keys;
 
 import static com.hedera.services.bdd.spec.keys.SigControl.KeyAlgo.UNSPECIFIED;
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.CONTRACT_ID;
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.DELEGATABLE_CONTRACT_ID;
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_OFF;
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.*;
 
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -43,7 +40,8 @@ public class SigControl implements Serializable {
         LIST,
         THRESHOLD,
         CONTRACT_ID,
-        DELEGATABLE_CONTRACT_ID
+        DELEGATABLE_CONTRACT_ID,
+        PREDEFINED
     }
 
     public enum KeyAlgo {
@@ -55,6 +53,7 @@ public class SigControl implements Serializable {
     private final Nature nature;
     private int threshold = -1;
     private String contract;
+    private String predefined;
     private String delegatableContract;
     private SigControl[] childControls = new SigControl[0];
 
@@ -67,6 +66,10 @@ public class SigControl implements Serializable {
     public static final SigControl SECP256K1_ON = new SigControl(SIG_ON, KeyAlgo.SECP256K1);
     public static final SigControl SECP256K1_OFF = new SigControl(SIG_OFF, KeyAlgo.SECP256K1);
     public static final SigControl ANY = new SigControl(SIG_ON);
+
+    public String predefined() {
+        return predefined;
+    }
 
     public KeyAlgo keyAlgo() {
         return keyAlgo;
@@ -145,14 +148,18 @@ public class SigControl implements Serializable {
     }
 
     protected SigControl(final Nature nature, final String id) {
-        if (!isContract(nature)) {
-            throw new IllegalArgumentException("Contract " + id + " n/a to nature " + nature);
-        }
         this.nature = nature;
-        if (nature == CONTRACT_ID) {
-            this.contract = id;
+        if (nature == PREDEFINED) {
+            this.predefined = id;
         } else {
-            this.delegatableContract = id;
+            if (!isContract(nature)) {
+                throw new IllegalArgumentException("Contract " + id + " n/a to nature " + nature);
+            }
+            if (nature == CONTRACT_ID) {
+                this.contract = id;
+            } else {
+                this.delegatableContract = id;
+            }
         }
     }
 
