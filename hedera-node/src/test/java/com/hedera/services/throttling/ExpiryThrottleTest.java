@@ -129,7 +129,7 @@ class ExpiryThrottleTest {
     void warnsAndAllowsNoExpiryWorkIfFallbackResourceUnavailable() {
         subject.rebuildGiven(OTHER_RESOURCE_LOC, minReqUnitOfWork);
 
-        assertFalse(subject.allowAll(List.of(ACCOUNTS_GET)));
+        assertFalse(subject.allow(List.of(ACCOUNTS_GET)));
     }
 
     @Test
@@ -141,7 +141,7 @@ class ExpiryThrottleTest {
 
         final var impermissible = new MapAccessType[51];
         Arrays.fill(impermissible, STORAGE_PUT);
-        assertFalse(subject.allowAll(Arrays.asList(impermissible)));
+        assertFalse(subject.allow(Arrays.asList(impermissible)));
         final var throttle = subject.getThrottle();
         assertEquals(0L, throttle.used());
     }
@@ -155,22 +155,22 @@ class ExpiryThrottleTest {
 
         final var permissible = new MapAccessType[50];
         Arrays.fill(permissible, STORAGE_PUT);
-        assertTrue(subject.allowAll(Arrays.asList(permissible)));
+        assertTrue(subject.allow(Arrays.asList(permissible)));
         final var throttle = subject.getThrottle();
         assertEquals(EXPECTED_CAPACITY, throttle.used());
 
-        assertFalse(subject.allowAll(List.of(STORAGE_PUT)));
+        assertFalse(subject.allow(List.of(STORAGE_PUT)));
     }
 
     @Test
     void canAllowSingleOpAfterReubild() {
         given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC))
                 .willReturn(getTestResource(VALID_RESOURCE_LOC));
-        assertFalse(subject.allow(STORAGE_GET));
+        assertFalse(subject.allowOne(STORAGE_GET));
 
         subject.rebuildGiven(VALID_RESOURCE_LOC, minReqUnitOfWork);
 
-        assertTrue(subject.allow(STORAGE_PUT));
+        assertTrue(subject.allowOne(STORAGE_PUT));
         final var throttle = subject.getThrottle();
         assertEquals(EXPECTED_SINGLE_USE_CAPACITY, throttle.used());
     }
@@ -197,7 +197,7 @@ class ExpiryThrottleTest {
         assertDoesNotThrow(subject::reclaimLastAllowedUse);
         subject.rebuildGiven(VALID_RESOURCE_LOC, minReqUnitOfWork);
 
-        subject.allowAll(List.of(STORAGE_GET));
+        subject.allow(List.of(STORAGE_GET));
         subject.reclaimLastAllowedUse();
         final var used = Objects.requireNonNull(subject.getThrottleSnapshot()).used();
         assertEquals(0, used);

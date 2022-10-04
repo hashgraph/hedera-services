@@ -57,7 +57,7 @@ class AccountGCTest {
 
     @Test
     void happyPathWithEverythingFinishedAndAvailable() {
-        given(expiryThrottle.allowAll(AccountGC.ACCOUNT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(AccountGC.ACCOUNT_REMOVAL_WORK)).willReturn(true);
         given(treasuryReturns.returnNftsFrom(expiredAccount))
                 .willReturn(NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS);
         given(treasuryReturns.returnFungibleUnitsFrom(expiredAccount))

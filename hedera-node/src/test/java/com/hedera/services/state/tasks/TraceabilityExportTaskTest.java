@@ -116,7 +116,7 @@ class TraceabilityExportTaskTest {
 
         assertEquals(SystemTaskResult.NOTHING_TO_DO, subject.process(ENTITY_NUM, NOW));
 
-        verify(expiryThrottle).allow(MapAccessType.ACCOUNTS_GET);
+        verify(expiryThrottle).allowOne(MapAccessType.ACCOUNTS_GET);
     }
 
     @Test
@@ -126,7 +126,7 @@ class TraceabilityExportTaskTest {
 
         assertEquals(SystemTaskResult.NOTHING_TO_DO, subject.process(ENTITY_NUM, NOW));
 
-        verify(expiryThrottle).allow(MapAccessType.ACCOUNTS_GET);
+        verify(expiryThrottle).allowOne(MapAccessType.ACCOUNTS_GET);
     }
 
     @Test

@@ -72,7 +72,7 @@ public class ContractGC {
         final var numKvPairs = contract.getNumContractKvPairs();
         var isDeleted = contract.isDeleted();
         if (numKvPairs > 0) {
-            if (!expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)) {
+            if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
                 return false;
             }
             final var slotRemovals =
@@ -109,7 +109,7 @@ public class ContractGC {
         var i = maxKvPairs;
         var n = 0;
         var contractKey = rootKey;
-        while (contractKey != null && expiryThrottle.allowAll(workToRemoveFrom(i)) && i-- > 0) {
+        while (contractKey != null && expiryThrottle.allow(workToRemoveFrom(i)) && i-- > 0) {
             try {
                 contractKey = removalFacilitation.removeNext(contractKey, contractKey, listRemoval);
                 n++;
@@ -135,7 +135,7 @@ public class ContractGC {
     private boolean tryToRemoveBytecode(
             final EntityNum expiredContractNum, final boolean alreadyDeleted) {
         if (!alreadyDeleted) {
-            if (!expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)) {
+            if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
                 return false;
             } else {
                 final var mutableContract = contracts.get().getForModify(expiredContractNum);
@@ -143,7 +143,7 @@ public class ContractGC {
                 mutableContract.setDeleted(true);
             }
         }
-        if (!expiryThrottle.allowAll(BYTECODE_REMOVAL_WORK)) {
+        if (!expiryThrottle.allow(BYTECODE_REMOVAL_WORK)) {
             return false;
         }
         final var bytecodeKey =

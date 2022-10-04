@@ -18,9 +18,7 @@ package com.hedera.services.state.expiry;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
 import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -308,7 +306,7 @@ class ExpiryProcessTest {
 
         given(classifier.getPayerForLastClassified()).willReturn(mockAccount);
         given(classifier.getPayerNumForLastClassified()).willReturn(key);
-        given(expiryThrottle.allowAll(any())).willReturn(true);
+        given(expiryThrottle.allow(anyList())).willReturn(true);
 
         given(
                         accountsLedger.get(
@@ -334,7 +332,7 @@ class ExpiryProcessTest {
         var key = EntityNum.fromLong(fundedExpiredContractNum);
         mockContract.setKey(key);
 
-        given(expiryThrottle.allowAll(any())).willReturn(true);
+        given(expiryThrottle.allow(any())).willReturn(true);
         given(classifier.classify(EntityNum.fromLong(fundedExpiredContractNum), now))
                 .willReturn(EXPIRED_CONTRACT_READY_TO_RENEW);
         given(classifier.getLastClassified()).willReturn(mockContract);

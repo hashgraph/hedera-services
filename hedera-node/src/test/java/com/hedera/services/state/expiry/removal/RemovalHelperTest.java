@@ -95,7 +95,7 @@ class RemovalHelperTest {
 
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount))
                 .willReturn(finishedReturns);
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
 
         classifier.classify(expiredNum, now);
 
@@ -113,7 +113,7 @@ class RemovalHelperTest {
 
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount))
                 .willReturn(unfinishedReturns);
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
 
         classifier.classify(expiredNum, now);
 
@@ -131,7 +131,7 @@ class RemovalHelperTest {
         given(contractGC.expireBestEffort(expiredNum, expiredDeletedContract)).willReturn(true);
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedContract))
                 .willReturn(finishedReturns);
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         final var autoRenewId = EntityId.fromNum(12345);
         expiredDeletedContract.setAutoRenewAccount(autoRenewId);
 
@@ -149,7 +149,7 @@ class RemovalHelperTest {
         properties.enableAutoRenew();
         final var expiredNum = EntityNum.fromLong(expiredDeletedContractNum);
 
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
 
         classifier.classify(expiredNum, now);
 

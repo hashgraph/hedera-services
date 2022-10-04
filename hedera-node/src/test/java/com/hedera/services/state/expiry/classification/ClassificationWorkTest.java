@@ -52,7 +52,7 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesNonAccount() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         // expect:
         assertEquals(OTHER, subject.classify(EntityNum.fromLong(4L), now));
     }
@@ -64,7 +64,7 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesNonExpiredAccount() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(nonExpiredAccountNum, nonExpiredAccount);
 
         // expect:
@@ -73,8 +73,8 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesNonExpiredContract() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(nonExpiredAccountNum, contractAccount);
 
         // expect:
@@ -85,7 +85,7 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesDeletedAccountAfterExpiration() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredDeletedAccount);
 
         // expect:
@@ -96,7 +96,7 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesDeletedContractAfterExpiration() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredDeletedContract);
 
         assertEquals(
@@ -106,7 +106,7 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesDetachedAccountAfterGracePeriod() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
 
         // expect:
@@ -119,8 +119,8 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesDetachedContractAfterGracePeriod() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredContractZeroBalance);
 
         // expect:
@@ -133,8 +133,8 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesContractWithAutoRenewReadyForRenew() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredContractWithAutoRenew);
         givenPresent(autoRenewNum, solventAutoRenewAccount);
 
@@ -150,8 +150,8 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesContractWithInvalidAutoRenewReadyForRenew() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredContractWithAutoRenew);
         givenPresent(autoRenewNum, insolventAutoRenewAccount);
 
@@ -167,7 +167,7 @@ class ClassificationWorkTest {
 
     @Test
     void abandonsClassifyingContractIfNoCapacity() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true).willReturn(false);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true).willReturn(false);
         givenPresent(brokeExpiredNum, expiredContractZeroBalance);
 
         // expect:
@@ -180,7 +180,7 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesDetachedAccountAfterGracePeriodAsOtherIfTokenNotYetRemoved() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
         expiredAccountZeroBalance.setNumTreasuryTitles(1);
 
@@ -194,7 +194,7 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesDetachedAccount() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
 
         // expect:
@@ -203,8 +203,8 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesDetachedContract() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredContractZeroBalance);
 
         // expect:
@@ -213,7 +213,7 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesFundedExpiredAccount() {
-        given(expiryThrottle.allowAll(CLASSIFICATION_WORK)).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
 
         // expect:

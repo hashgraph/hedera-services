@@ -57,7 +57,7 @@ public class ClassificationWork {
     }
 
     public ClassificationResult classify(final EntityNum candidateNum, final Instant now) {
-        if (!expiryThrottle.allowAll(CLASSIFICATION_WORK)) {
+        if (!expiryThrottle.allow(CLASSIFICATION_WORK)) {
             return COME_BACK_LATER;
         }
 
@@ -83,7 +83,7 @@ public class ClassificationWork {
                         : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
             }
             if (isContract) {
-                if (!expiryThrottle.allowAll(CLASSIFICATION_WORK)) {
+                if (!expiryThrottle.allow(CLASSIFICATION_WORK)) {
                     return COME_BACK_LATER;
                 }
                 resolveClassifiedContractPayer();

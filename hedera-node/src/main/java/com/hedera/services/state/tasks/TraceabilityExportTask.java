@@ -85,7 +85,7 @@ public class TraceabilityExportTask implements SystemTask {
         // It would be a lot of work to split even a single sidecar's construction across
         // multiple process() calls, so we just unconditionally register work in the
         // throttle bucket; will only happen once per pre-existing contract
-        expiryThrottle.allow(ACCOUNTS_GET);
+        expiryThrottle.allowOne(ACCOUNTS_GET);
 
         final var key = EntityNum.fromLong(literalNum);
         final var account = accounts.get().get(key);
@@ -123,7 +123,7 @@ public class TraceabilityExportTask implements SystemTask {
 
     private TransactionSidecarRecord.Builder generateMigrationBytecodeSidecarFor(
             final ContractID contractId) {
-        expiryThrottle.allow(BLOBS_GET);
+        expiryThrottle.allowOne(BLOBS_GET);
         final var runtimeCode =
                 entityAccess.fetchCodeIfPresent(EntityIdUtils.asAccount(contractId));
         if (runtimeCode == null) {
@@ -146,7 +146,7 @@ public class TraceabilityExportTask implements SystemTask {
         IterableContractValue iterableValue;
         final var curStorage = contractStorage.get();
         while (maxNumberOfKvPairsToIterate > 0 && contractStorageKey != null) {
-            expiryThrottle.allow(STORAGE_GET);
+            expiryThrottle.allowOne(STORAGE_GET);
             iterableValue = curStorage.get(contractStorageKey);
             contractStateChangeBuilder.addStorageChanges(
                     StorageChange.newBuilder()

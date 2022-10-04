@@ -72,7 +72,7 @@ public class AccountGC {
         final var nftReturns = treasuryReturns.returnNftsFrom(expiredAccount);
         if (nftReturns.finished()) {
             final var unitReturns = treasuryReturns.returnFungibleUnitsFrom(expiredAccount);
-            if (unitReturns.finished() && expiryThrottle.allowAll(ACCOUNT_REMOVAL_WORK)) {
+            if (unitReturns.finished() && expiryThrottle.allow(ACCOUNT_REMOVAL_WORK)) {
                 completeRemoval(num, expiredAccount);
                 return new CryptoGcOutcome(unitReturns, nftReturns, true);
             } else {

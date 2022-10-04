@@ -67,7 +67,7 @@ class ContractGCTest {
 
     @Test
     void forUndeletedContractFirstMarksDeleted() {
-        given(expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
         given(contracts.getForModify(contractNum)).willReturn(contractNoKvPairs);
         assertFalse(subject.expireBestEffort(contractNum, contractNoKvPairs));
         verify(bytecode, never()).remove(bytecodeKey);
@@ -77,10 +77,10 @@ class ContractGCTest {
     @Test
     void doesntRemovesBytecodeIfNoCapacity() {
         given(contracts.getForModify(contractNum)).willReturn(contractSomeKvPairs);
-        given(expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(BYTECODE_REMOVAL_WORK)).willReturn(false);
-        given(expiryThrottle.allowAll(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(false);
+        given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
         given(
                         removalFacilitation.removeNext(
                                 eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
@@ -104,9 +104,9 @@ class ContractGCTest {
     @Test
     void nullsOutRootKeyOnUnexpectedFailure() {
         given(contracts.getForModify(contractNum)).willReturn(contractSomeKvPairs);
-        given(expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(BYTECODE_REMOVAL_WORK)).willReturn(false);
-        given(expiryThrottle.allowAll(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(false);
+        given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
         given(
                         removalFacilitation.removeNext(
                                 eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
@@ -126,10 +126,10 @@ class ContractGCTest {
     @Test
     void removesAllKvPairsAndBytecodeGivenCapacity() {
         given(contracts.getForModify(contractNum)).willReturn(contractSomeKvPairs);
-        given(expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(BYTECODE_REMOVAL_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
         given(
                         removalFacilitation.removeNext(
                                 eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
@@ -152,9 +152,9 @@ class ContractGCTest {
     @Test
     void onlyRemovesKvPairsWithCapacity() {
         given(contracts.getForModify(contractNum)).willReturn(contractSomeKvPairs);
-        given(expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
-        given(expiryThrottle.allowAll(ONLY_SLOT_REMOVAL_WORK)).willReturn(false);
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(false);
         given(
                         removalFacilitation.removeNext(
                                 eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
@@ -172,7 +172,7 @@ class ContractGCTest {
 
     @Test
     void reclaimsThrottleCapacityIfNoSlotsCanBeRemoved() {
-        given(expiryThrottle.allowAll(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
 
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
 

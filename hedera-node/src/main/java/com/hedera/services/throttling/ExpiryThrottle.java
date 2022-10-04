@@ -63,7 +63,7 @@ public class ExpiryThrottle {
         return config.throttle.capacityFree() < minFreeReq;
     }
 
-    public boolean allowAll(final List<MapAccessType> accessTypes) {
+    public boolean allow(final List<MapAccessType> accessTypes) {
         if (config != null) {
             config.throttle.resetLastAllowedUse();
             return config.throttle.allowInstantaneous(requiredOps(accessTypes));
@@ -71,7 +71,7 @@ public class ExpiryThrottle {
         return false;
     }
 
-    public boolean allow(final MapAccessType accessType) {
+    public boolean allowOne(final MapAccessType accessType) {
         if (config != null) {
             config.throttle.resetLastAllowedUse();
             return config.throttle.allowInstantaneous(config.accessReqs.get(accessType));
