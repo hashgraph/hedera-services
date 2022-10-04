@@ -42,13 +42,11 @@ public class ThrottlesJsonToGrpcBytes implements SysFileSerde<String> {
     public String fromRawFile(byte[] bytes) {
         try {
             var defs = ThrottleDefinitions.parseFrom(bytes);
-            System.out.println("Parsed " + defs);
             var pojo =
                     com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions.fromProto(
                             defs);
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(pojo);
         } catch (InvalidProtocolBufferException | JsonProcessingException e) {
-            e.printStackTrace();
             throw new IllegalArgumentException("Unusable raw throttle definitions!", e);
         }
     }

@@ -15,7 +15,6 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -50,8 +49,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
@@ -135,24 +132,23 @@ public class FileUpdateSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                        vanillaUpdateSucceeds(),
-                    //                        updateFeesCompatibleWithCreates(),
-                    //                        apiPermissionsChangeDynamically(),
-                    //                        cannotUpdateExpirationPastMaxLifetime(),
-                    //                        optimisticSpecialFileUpdate(),
-                    //                        associateHasExpectedSemantics(),
-                    //                        notTooManyFeeScheduleCanBeCreated(),
-                    //                        allUnusedGasIsRefundedIfSoConfigured(),
-                    //                        maxRefundIsEnforced(),
-                    //                        gasLimitOverMaxGasLimitFailsPrecheck(),
-                    //                        autoCreationIsDynamic(),
-                    //                        kvLimitsEnforced(),
-                    //                        serviceFeeRefundedIfConsGasExhausted(),
-                    //                        chainIdChangesDynamically(),
-                    //                        entitiesNotCreatableAfterUsageLimitsReached(),
-                    //                        rentItemizedAsExpectedWithOverridePriceTiers(),
-                    //                        messageSubmissionSizeChange(),
-                    getStableThrottles()
+                    vanillaUpdateSucceeds(),
+                    updateFeesCompatibleWithCreates(),
+                    apiPermissionsChangeDynamically(),
+                    cannotUpdateExpirationPastMaxLifetime(),
+                    optimisticSpecialFileUpdate(),
+                    associateHasExpectedSemantics(),
+                    notTooManyFeeScheduleCanBeCreated(),
+                    allUnusedGasIsRefundedIfSoConfigured(),
+                    maxRefundIsEnforced(),
+                    gasLimitOverMaxGasLimitFailsPrecheck(),
+                    autoCreationIsDynamic(),
+                    kvLimitsEnforced(),
+                    serviceFeeRefundedIfConsGasExhausted(),
+                    chainIdChangesDynamically(),
+                    entitiesNotCreatableAfterUsageLimitsReached(),
+                    rentItemizedAsExpectedWithOverridePriceTiers(),
+                    messageSubmissionSizeChange()
                 });
     }
 
@@ -768,25 +764,6 @@ public class FileUpdateSuite extends HapiApiSuite {
                                         Map.of(
                                                 "consensus.message.maxBytesAllowed",
                                                 String.valueOf(defaultMaxBytesAllowed))));
-    }
-
-    private HapiApiSpec getStableThrottles() {
-        return customHapiSpec("GetStableThrottles")
-                .withProperties(
-                        Map.of(
-                                "nodes", "34.94.106.61",
-                                "default.payer", "0.0.50",
-                                "default.payer.pemKeyLoc", "stabletestnet-account50.pem",
-                                "default.payer.pemKeyPassphrase", "KbhO358JFbejUS4Omsp2"))
-                .given()
-                .when()
-                .then(
-                        getFileContents("0.0.123")
-                                .alertingPre(COMMON_MESSAGES::downloadBeginning)
-                                .alertingPost(COMMON_MESSAGES::downloadEnding)
-                                .saveReadableTo(
-                                        SYS_FILE_SERDES.get(123L)::fromRawFile,
-                                        "testnet-throttles.json"));
     }
 
     @Override
