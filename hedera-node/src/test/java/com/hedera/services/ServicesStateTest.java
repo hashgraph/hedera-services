@@ -217,7 +217,6 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
         subject.setMetadata(metadata);
-        given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
 
         given(metadata.app()).willReturn(app);
         given(app.workingState()).willReturn(workingState);

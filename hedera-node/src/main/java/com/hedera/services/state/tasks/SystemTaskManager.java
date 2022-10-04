@@ -91,12 +91,15 @@ public class SystemTaskManager {
         final var status = curNetworkCtx.getPreExistingEntityScanStatus();
         if (status == LAST_PRE_EXISTING_ENTITY_NOT_SCANNED) {
             if (n == curNetworkCtx.seqNoPostUpgrade() - 1) {
-                log.info("Setting pre-existing entity scan status to LAST_PRE_EXISTING_ENTITY_SCANNED");
+                log.info(
+                        "Setting pre-existing entity scan status to"
+                                + " LAST_PRE_EXISTING_ENTITY_SCANNED");
                 curNetworkCtx.setPreExistingEntityScanStatus(LAST_PRE_EXISTING_ENTITY_SCANNED);
             }
         } else if (status == LAST_PRE_EXISTING_ENTITY_SCANNED
                 && n == curNetworkCtx.lastScannedPostUpgrade()) {
-            log.info("Setting pre-existing entity scan status to ALL_PRE_EXISTING_ENTITIES_SCANNED");
+            log.info(
+                    "Setting pre-existing entity scan status to ALL_PRE_EXISTING_ENTITIES_SCANNED");
             curNetworkCtx.setPreExistingEntityScanStatus(ALL_PRE_EXISTING_ENTITIES_SCANNED);
         }
     }
