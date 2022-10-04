@@ -573,7 +573,10 @@ public class ServicesState extends PartialNaryMerkleInternal
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
         }
 
-        scheduleTxs().doSchedulesMigrationIfNeeded();
+        if(FIRST_032X_VERSION.isAfter(deserializedVersion)){
+            scheduleTxs().doSchedulesMigrationIfNeeded();
+        }
+
 
         if (FIRST_030X_VERSION.isAfter(deserializedVersion)) {
             if (getBootstrapProperties().getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS)) {
