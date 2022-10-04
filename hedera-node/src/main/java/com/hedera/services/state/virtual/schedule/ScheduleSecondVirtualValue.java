@@ -20,9 +20,10 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.virtualmap.VirtualValue;
-
-import java.beans.Transient;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -36,13 +37,18 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
-public class ScheduleSecondVirtualValue implements VirtualValue {
+/**
+ * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release. It
+ * should be moved back to VirtualMap in 0.30. Eventually implementing MerkleLeaf should be removed.
+ */
+public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
+        implements VirtualValue, Keyed<SecondSinceEpocVirtualKey>, MerkleLeaf, WritableCopyable {
 
-    static final int MERKLE_MAP_VERSION = 1;
+    static final int CURRENT_VERSION = 1;
 
-    static final int RELEASE_0320_VERSION = 2;
-    static final int CURRENT_VERSION = RELEASE_0320_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x1d2377926e3a85fcL;
+
+    private long number;
 
     /**
      * The value must be a list because more than one schedule can be scheduled for the same
@@ -50,25 +56,26 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
      */
     private final NavigableMap<RichInstant, ImmutableLongList> ids;
 
-    private boolean immutable;
-
     public ScheduleSecondVirtualValue() {
-        this(TreeMap::new);
+        this(TreeMap::new, null);
     }
 
     public ScheduleSecondVirtualValue(Map<RichInstant, ? extends LongList> ids) {
-        this();
-        ids.forEach((k, v) -> this.ids.put(k, v.toImmutable()));
+        this(ids, null);
     }
 
     public ScheduleSecondVirtualValue(
             Map<RichInstant, ? extends LongList> ids, SecondSinceEpocVirtualKey key) {
         this();
+        this.number = key == null ? -1 : key.getKeyAsLong();
         ids.forEach((k, v) -> this.ids.put(k, v.toImmutable()));
     }
 
-    private ScheduleSecondVirtualValue(Supplier<NavigableMap<RichInstant, ImmutableLongList>> ids) {
+    private ScheduleSecondVirtualValue(
+            Supplier<NavigableMap<RichInstant, ImmutableLongList>> ids,
+            SecondSinceEpocVirtualKey key) {
         this.ids = ids.get();
+        this.number = key == null ? -1 : key.getKeyAsLong();
     }
 
     @Override
@@ -93,7 +100,8 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
     public String toString() {
         var helper =
                 MoreObjects.toStringHelper(ScheduleSecondVirtualValue.class)
-                        .add("ids", ids);
+                        .add("ids", ids)
+                        .add("number", number);
         return helper.toString();
     }
 
@@ -111,9 +119,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
                 ids.put(RichInstant.from(in), l.toImmutable());
             }
         }
-        if(version < RELEASE_0320_VERSION){
-            in.readLong();
-        }
+        number = in.readLong();
     }
 
     @Override
@@ -130,9 +136,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
                 ids.put(new RichInstant(in.getLong(), in.getInt()), l.toImmutable());
             }
         }
-        if(version < RELEASE_0320_VERSION){
-            in.getLong();
-        }
+        number = in.getLong();
     }
 
     @Override
@@ -145,6 +149,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
             }
             e.getKey().serialize(out);
         }
+        out.writeLong(number);
     }
 
     @Override
@@ -158,6 +163,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
             out.putLong(e.getKey().getSeconds());
             out.putInt(e.getKey().getNanos());
         }
+        out.putLong(number);
     }
 
     @Override
@@ -172,7 +178,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
 
     @Override
     public ScheduleSecondVirtualValue copy() {
-        var fc = new ScheduleSecondVirtualValue(ids);
+        var fc = new ScheduleSecondVirtualValue(ids, new SecondSinceEpocVirtualKey(number));
 
         this.setImmutable(true);
 
@@ -223,7 +229,7 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public ScheduleSecondVirtualValue asReadOnly() {
-        var c = new ScheduleSecondVirtualValue(this::getIds);
+        var c = new ScheduleSecondVirtualValue(this::getIds, new SecondSinceEpocVirtualKey(number));
         c.setImmutable(true);
         return c;
     }
@@ -234,16 +240,16 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
      * @return a copy of this without marking this as immutable
      */
     public ScheduleSecondVirtualValue asWritable() {
-        return new ScheduleSecondVirtualValue(this.ids);
+        return new ScheduleSecondVirtualValue(this.ids, new SecondSinceEpocVirtualKey(number));
     }
 
     @Override
-    public final boolean isImmutable() {
-        return immutable;
+    public SecondSinceEpocVirtualKey getKey() {
+        return new SecondSinceEpocVirtualKey(number);
     }
 
-    @Transient
-    protected final void setImmutable(final boolean immutable) {
-        this.immutable = immutable;
+    @Override
+    public void setKey(final SecondSinceEpocVirtualKey key) {
+        this.number = key == null ? -1 : key.getKeyAsLong();
     }
 }

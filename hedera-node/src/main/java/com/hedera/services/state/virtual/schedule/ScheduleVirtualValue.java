@@ -28,9 +28,9 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -42,9 +42,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
-import java.beans.Transient;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -57,15 +59,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
-public class ScheduleVirtualValue implements VirtualValue {
+/**
+ * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release. It
+ * should be moved back to VirtualMap in 0.30. Eventually implementing MerkleLeaf should be removed.
+ */
+public class ScheduleVirtualValue extends PartialMerkleLeaf
+        implements VirtualValue, Keyed<EntityNumVirtualKey>, MerkleLeaf, WritableCopyable {
 
-    static final int MERKLE_MAP_VERSION = 1;
-
-    static final int RELEASE_0320_VERSION = 2;
-    static final int CURRENT_VERSION = RELEASE_0320_VERSION;
+    static final int CURRENT_VERSION = 1;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
-    private boolean immutable;
+    @Nullable private long number;
     @Nullable private Key grpcAdminKey = null;
     @Nullable private JKey adminKey = null;
     private String memo;
@@ -110,24 +114,12 @@ public class ScheduleVirtualValue implements VirtualValue {
         this.scheduledTxn = toCopy.scheduledTxn;
         this.ordinaryScheduledTxn = toCopy.ordinaryScheduledTxn;
         this.resolutionTime = toCopy.resolutionTime;
+        this.number = toCopy.number;
 
         /* Signatories are mutable */
         for (byte[] signatory : toCopy.signatories) {
             this.witnessValidSignature(signatory);
         }
-    }
-
-    public ScheduleVirtualValue(MerkleSchedule toCopy) {
-        bodyBytes = toCopy.bodyBytes();
-        calculatedExpirationTime = new RichInstant(toCopy.expiry(), 0);
-        executed = toCopy.isExecuted();
-        deleted = toCopy.isDeleted();
-        resolutionTime = toCopy.getResolutionTime();
-        for (var sig : toCopy.signatories()) {
-            witnessValidSignature(sig);
-        }
-
-        initFromBodyBytes();
     }
 
     public static ScheduleVirtualValue from(byte[] bodyBytes, long consensusExpiry) {
@@ -173,7 +165,7 @@ public class ScheduleVirtualValue implements VirtualValue {
                 .build();
     }
 
-    public final TransactionID scheduledTransactionId() {
+    public TransactionID scheduledTransactionId() {
         if (schedulingAccount == null || schedulingTXValidStart == null) {
             throw new IllegalStateException(
                     "Cannot invoke scheduledTransactionId on a content-addressable view!");
@@ -259,7 +251,8 @@ public class ScheduleVirtualValue implements VirtualValue {
                         .add("schedulingTXValidStart", schedulingTXValidStart)
                         .add("signatories", signatories.stream().map(CommonUtils::hex).toList())
                         .add("adminKey", describe(adminKey))
-                        .add("resolutionTime", resolutionTime);
+                        .add("resolutionTime", resolutionTime)
+                        .add("number", number);
         return helper.toString();
     }
 
@@ -292,10 +285,7 @@ public class ScheduleVirtualValue implements VirtualValue {
             in.readFully(bytes);
             witnessValidSignature(bytes);
         }
-
-        if(version < RELEASE_0320_VERSION){
-            in.readLong();
-        }
+        number = in.readLong();
 
         initFromBodyBytes();
     }
@@ -326,6 +316,7 @@ public class ScheduleVirtualValue implements VirtualValue {
             out.writeInt(k.length);
             out.write(k);
         }
+        out.writeLong(number);
     }
 
     @Override
@@ -353,6 +344,8 @@ public class ScheduleVirtualValue implements VirtualValue {
             in.get(bytes);
             witnessValidSignature(bytes);
         }
+        number = in.getLong();
+
         initFromBodyBytes();
     }
 
@@ -382,6 +375,7 @@ public class ScheduleVirtualValue implements VirtualValue {
             out.putInt(k.length);
             out.put(k);
         }
+        out.putLong(number);
     }
 
     @Override
@@ -419,7 +413,7 @@ public class ScheduleVirtualValue implements VirtualValue {
     }
 
     @VisibleForTesting
-    public final void setAdminKey(JKey adminKey) {
+    public void setAdminKey(JKey adminKey) {
         throwIfImmutable("Cannot change this schedule's adminKey if it's immutable.");
         this.adminKey = adminKey;
     }
@@ -608,14 +602,13 @@ public class ScheduleVirtualValue implements VirtualValue {
         return hasher.hash();
     }
 
-    /** {@inheritDoc} */
     @Override
-    public final boolean isImmutable() {
-        return immutable;
+    public EntityNumVirtualKey getKey() {
+        return new EntityNumVirtualKey(number);
     }
 
-    @Transient
-    public final void setImmutable(final boolean immutable) {
-        this.immutable = immutable;
+    @Override
+    public void setKey(final EntityNumVirtualKey key) {
+        this.number = key == null ? -1 : key.getKeyAsLong();
     }
 }

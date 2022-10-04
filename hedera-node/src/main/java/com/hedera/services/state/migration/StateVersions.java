@@ -66,6 +66,8 @@ public final class StateVersions {
             forHapiAndHedera("0.28.0", "0.28.0");
     public static final SerializableSemVers FIRST_030X_VERSION =
             forHapiAndHedera("0.30.0", "0.30.0");
+    public static final SerializableSemVers FIRST_032X_VERSION =
+            forHapiAndHedera("0.32.0", "0.32.0");
 
     public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_025X_VERSION;
     public static final int CURRENT_VERSION = RELEASE_0300_VERSION;

@@ -81,7 +81,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -253,12 +252,6 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         // Immediately override the address book from the saved state
         setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
-        // Create a placeholder that just reports the # of schedules in the saved state
-        if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
-            migrationSchedules =
-                    new MerkleScheduledTransactions(
-                            ((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
-        }
         final var bootstrapProps = getBootstrapProperties();
         enabledVirtualNft =
                 bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
@@ -466,11 +459,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     public MerkleScheduledTransactions scheduleTxs() {
-        final MerkleNode scheduledTxns = getChild(StateChildIndices.SCHEDULE_TXS);
-        if (scheduledTxns instanceof MerkleMap) {
-            return migrationSchedules;
-        }
-        return (MerkleScheduledTransactions) scheduledTxns;
+        return getChild(StateChildIndices.SCHEDULE_TXS);
     }
 
     public MerkleNetworkContext networkCtx() {
@@ -562,8 +551,6 @@ public class ServicesState extends PartialNaryMerkleInternal
     private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory =
             VirtualMapFactory::new;
     private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
-    private static Consumer<ServicesState> scheduledTxnsMigrator =
-            LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
 
     @VisibleForTesting
     void migrateFrom(@NotNull final SoftwareVersion deserializedVersion) {
@@ -580,15 +567,14 @@ public class ServicesState extends PartialNaryMerkleInternal
                     StateChildIndices.STAKING_INFO,
                     stakingInfoBuilder.buildStakingInfoMap(addressBook(), bootstrapProps));
         }
-        // We know for a fact that we need to migrate scheduled transactions if they are a MerkleMap
-        if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
-            scheduledTxnsMigrator.accept(this);
-        }
         if (FIRST_028X_VERSION.isAfter(deserializedVersion)) {
             // These accounts were created with an (unnecessary) MerkleAccountTokens child
             accounts().get(EntityNum.fromLong(800L)).forgetThirdChildIfPlaceholder();
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
         }
+
+        scheduleTxs().doSchedulesMigrationIfNeeded();
+
         if (FIRST_030X_VERSION.isAfter(deserializedVersion)) {
             if (getBootstrapProperties().getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS)) {
                 autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
@@ -680,10 +666,5 @@ public class ServicesState extends PartialNaryMerkleInternal
     @VisibleForTesting
     static void setVmFactory(final Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory) {
         ServicesState.vmFactory = vmFactory;
-    }
-
-    static void setScheduledTransactionsMigrator(
-            final Consumer<ServicesState> scheduledTxnsMigrator) {
-        ServicesState.scheduledTxnsMigrator = scheduledTxnsMigrator;
     }
 }

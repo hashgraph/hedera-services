@@ -158,11 +158,10 @@ class ServicesStateTest {
     @Mock private ServicesState.IterableStorageMigrator iterableStorageMigrator;
     @Mock private ServicesState.ContractAutoRenewalMigrator autoRenewalMigrator;
     @Mock private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
-    @Mock private Consumer<ServicesState> scheduledTxnsMigrator;
     @Mock private BootstrapProperties bootstrapProperties;
     @Mock private SystemAccountsCreator accountsCreator;
     @Mock private SystemFilesManager systemFilesManager;
-    @Mock private MigrationRecordsManager migrationRecordsManager;
+    @Mock private MerkleScheduledTransactions scheduledTransactions;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private ServicesState subject;
@@ -206,15 +205,15 @@ class ServicesStateTest {
         final var inOrder =
                 inOrder(
                         autoRenewalMigrator,
-                        scheduledTxnsMigrator,
                         iterableStorageMigrator,
                         vmf,
-                        workingState);
+                        workingState,
+                        scheduledTransactions);
 
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
         subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
-        subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
+        subject.setChild(StateChildIndices.SCHEDULE_TXS, scheduledTransactions);
         subject.setMetadata(metadata);
         given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
 
@@ -222,21 +221,12 @@ class ServicesStateTest {
         given(app.workingState()).willReturn(workingState);
         given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
         given(vmf.apply(any())).willReturn(virtualMapFactory);
-        doAnswer(
-                        inv -> {
-                            subject.setChild(
-                                    StateChildIndices.SCHEDULE_TXS,
-                                    new MerkleScheduledTransactions(1));
-                            return null;
-                        })
-                .when(scheduledTxnsMigrator)
-                .accept(subject);
 
         subject.migrateFrom(some025xVersion);
 
         inOrder.verify(iterableStorageMigrator)
                 .makeStorageIterable(eq(subject), any(), any(), eq(iterableStorage));
-        inOrder.verify(scheduledTxnsMigrator).accept(subject);
+        inOrder.verify(scheduledTransactions).doSchedulesMigrationIfNeeded();
         inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
         inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
 
@@ -250,23 +240,14 @@ class ServicesStateTest {
         subject.setMetadata(metadata);
         given(metadata.app()).willReturn(app);
         given(app.workingState()).willReturn(workingState);
-        subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
-        doAnswer(
-                        inv -> {
-                            subject.setChild(
-                                    StateChildIndices.SCHEDULE_TXS,
-                                    new MerkleScheduledTransactions(1));
-                            return null;
-                        })
-                .when(scheduledTxnsMigrator)
-                .accept(subject);
+        subject.setChild(StateChildIndices.SCHEDULE_TXS, scheduledTransactions);
 
         subject.migrateFrom(futureVersion);
 
         verify(iterableStorageMigrator, never()).makeStorageIterable(any(), any(), any(), any());
         verify(autoRenewalMigrator, never()).grantFreeAutoRenew(any(), any());
 
-        verify(scheduledTxnsMigrator).accept(subject);
+        verify(scheduledTransactions).doSchedulesMigrationIfNeeded();
 
         unmockMigrators();
     }
@@ -714,38 +695,6 @@ class ServicesStateTest {
     }
 
     @Test
-    void initHandlesScheduledTxnMigration() {
-        subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleScheduledTransactions.class));
-        assertInstanceOf(MerkleScheduledTransactions.class, subject.scheduleTxs());
-
-        var mockLegacyScheduledTxns = mock(MerkleMap.class);
-        given(mockLegacyScheduledTxns.size()).willReturn(2);
-
-        subject.setChild(StateChildIndices.SCHEDULE_TXS, mockLegacyScheduledTxns);
-        assertNull(subject.scheduleTxs());
-
-        subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
-        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
-        subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-
-        given(app.hashLogger()).willReturn(hashLogger);
-        given(app.initializationFlow()).willReturn(initFlow);
-        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-        given(platform.getSelfId()).willReturn(selfId);
-        given(app.sysFilesManager()).willReturn(systemFilesManager);
-        // and:
-        APPS.save(selfId.getId(), app);
-
-        // when:
-        subject.init(platform, addressBook, dualState, RESTART, currentVersion);
-
-        var scheduledTxns = subject.scheduleTxs();
-
-        assertInstanceOf(MerkleScheduledTransactions.class, scheduledTxns);
-        assertEquals(2, scheduledTxns.getNumSchedules());
-    }
-
-    @Test
     void nonGenesisInitHandlesNftMigration() {
         subject = new ServicesState(bootstrapProperties);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
@@ -756,6 +705,7 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.STORAGE, vmap);
         subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
+        subject.setChild(StateChildIndices.SCHEDULE_TXS, scheduledTransactions);
 
         final var when = Instant.ofEpochSecond(1_234_567L, 890);
         given(dualState.getFreezeTime()).willReturn(when);
@@ -947,7 +897,6 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.UNIQUE_TOKENS, mockMm);
         subject.setChild(StateChildIndices.STORAGE, mockMm);
         subject.setChild(StateChildIndices.TOPICS, mockMm);
-        subject.setChild(StateChildIndices.SCHEDULE_TXS, mockMm);
         subject.setChild(StateChildIndices.STAKING_INFO, mockMm);
     }
 
@@ -982,7 +931,6 @@ class ServicesStateTest {
         ServicesState.setIterableStorageMigrator(iterableStorageMigrator);
         ServicesState.setOwnedNftsLinkMigrator(nftLinksRepair);
         ServicesState.setVmFactory(vmf);
-        ServicesState.setScheduledTransactionsMigrator(scheduledTxnsMigrator);
         ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
     }
 
@@ -991,8 +939,6 @@ class ServicesStateTest {
         ServicesState.setIterableStorageMigrator(ReleaseTwentySixMigration::makeStorageIterable);
         ServicesState.setOwnedNftsLinkMigrator(ReleaseThirtyMigration::rebuildNftOwners);
         ServicesState.setVmFactory(VirtualMapFactory::new);
-        ServicesState.setScheduledTransactionsMigrator(
-                LongTermScheduledTransactionsMigration::migrateScheduledTransactions);
         ServicesState.setStakingInfoBuilder(ReleaseTwentySevenMigration::buildStakingInfoMap);
     }
 

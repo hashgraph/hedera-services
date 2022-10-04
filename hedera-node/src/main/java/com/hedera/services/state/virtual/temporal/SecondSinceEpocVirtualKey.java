@@ -1,6 +1,9 @@
-/*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
- *
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,17 +15,25 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
+
 package com.hedera.services.state.virtual.temporal;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
-/** A {@link com.swirlds.virtualmap.VirtualKey} for a second since the unix epoc. */
+/**
+ * A {@link com.swirlds.virtualmap.VirtualKey} for a second since the unix epoc.
+ *
+ * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release.
+ * It should be moved back to VirtualMap in 0.30.
+ */
 public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
     static final long CLASS_ID = 0x1978f91b2f262595L;
     static final int BYTES_IN_SERIALIZED_FORM = 8;
@@ -42,53 +53,69 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
         this.value = value;
     }
 
+
     public static int sizeInBytes() {
         return BYTES_IN_SERIALIZED_FORM;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getKeyAsLong() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getClassId() {
         return CLASS_ID;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(value);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = in.readLong();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void serialize(final ByteBuffer buffer) throws IOException {
         buffer.putLong(value);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
         value = buffer.getLong();
     }
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -107,25 +134,34 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
     /**
      * Verifies if the content from {@code buffer} is equal to the content of this instance.
      *
-     * @param buffer The buffer with data to be compared with this class.
-     * @param version The version of the data inside the given {@code buffer}.
+     * @param buffer
+     * 		The buffer with data to be compared with this class.
+     * @param version
+     * 		The version of the data inside the given {@code buffer}.
      * @return {@code true} if the content from the buffer has the same data as this instance.
-     *     {@code false}, otherwise.
+     *        {@code false}, otherwise.
      * @throws IOException
      */
     public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
         return buffer.getLong() == this.value;
     }
 
-    /** {@inheritDoc} */
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
         return (int) MiscUtils.perm64(value);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
-        return "SecondSinceEpocVirtualKey{" + "value=" + value + '}';
+        return "SecondSinceEpocVirtualKey{" +
+                "value=" + value +
+                '}';
     }
 }

@@ -53,7 +53,7 @@ class ScheduleEqualityVirtualValueTest {
 
     @BeforeEach
     void setup() {
-        subject = new ScheduleEqualityVirtualValue(ids);
+        subject = new ScheduleEqualityVirtualValue(ids, new ScheduleEqualityVirtualKey(3L));
     }
 
     @Test

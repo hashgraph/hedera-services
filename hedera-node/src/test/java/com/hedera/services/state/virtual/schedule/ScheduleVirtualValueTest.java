@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -88,6 +89,7 @@ public class ScheduleVirtualValueTest {
         signatories.addAll(List.of(fpk, spk, tpk));
 
         subject = ScheduleVirtualValue.from(bodyBytes, expiry);
+        subject.setKey(new EntityNumVirtualKey(3L));
     }
 
     @Test
