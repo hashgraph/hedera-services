@@ -40,9 +40,7 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         implements VirtualValue, Keyed<ScheduleEqualityVirtualKey>, MerkleLeaf, WritableCopyable {
 
     static final int CURRENT_VERSION = 1;
-
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
-
     private long number;
 
     /**

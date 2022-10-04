@@ -26,7 +26,6 @@ public class ScheduleEqualityVirtualKeySerializer
         implements KeySerializer<ScheduleEqualityVirtualKey> {
     static final long CLASS_ID = 0xc7b4f042e2fe2417L;
     static final int CURRENT_VERSION = 1;
-
     static final long DATA_VERSION = 1;
 
     @Override

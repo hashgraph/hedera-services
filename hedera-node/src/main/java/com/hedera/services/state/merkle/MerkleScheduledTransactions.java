@@ -23,6 +23,7 @@ import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.services.state.virtual.schedule.WritableCopyable;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.swirlds.common.Copyable;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -34,7 +35,6 @@ import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.hedera.services.state.virtual.schedule.WritableCopyable;
 
 public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
         implements MerkleInternal {
@@ -144,19 +144,22 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
-        return maybeMigrateMap(ChildIndices.BY_ID,
-                () -> getVirtualMapFactory().newScheduleListStorage());
+        return maybeMigrateMap(
+                ChildIndices.BY_ID, () -> getVirtualMapFactory().newScheduleListStorage());
     }
 
     public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
-        return maybeMigrateMap(ChildIndices.BY_EXPIRATION_SECOND,
+        return maybeMigrateMap(
+                ChildIndices.BY_EXPIRATION_SECOND,
                 () -> getVirtualMapFactory().newScheduleTemporalStorage());
     }
 
     public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
-        return maybeMigrateMap(ChildIndices.BY_EQUALITY,
+        return maybeMigrateMap(
+                ChildIndices.BY_EQUALITY,
                 () -> getVirtualMapFactory().newScheduleEqualityStorage());
     }
+
     public long getNumSchedules() {
         return getChildSize(ChildIndices.BY_ID);
     }
@@ -173,9 +176,9 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public void doSchedulesMigrationIfNeeded() {
-        if ((getChild(ChildIndices.BY_ID) instanceof MerkleMap<?,?>) ||
-                (getChild(ChildIndices.BY_EXPIRATION_SECOND) instanceof MerkleMap<?,?>) ||
-                (getChild(ChildIndices.BY_EQUALITY) instanceof MerkleMap<?,?>)) {
+        if ((getChild(ChildIndices.BY_ID) instanceof MerkleMap<?, ?>)
+                || (getChild(ChildIndices.BY_EXPIRATION_SECOND) instanceof MerkleMap<?, ?>)
+                || (getChild(ChildIndices.BY_EQUALITY) instanceof MerkleMap<?, ?>)) {
             byId();
             byExpirationSecond();
             byEquality();
@@ -189,9 +192,9 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     private long getChildSize(int childIdx) {
         Object child = getChild(childIdx);
 
-        if (child instanceof MerkleMap<?,?>) {
+        if (child instanceof MerkleMap<?, ?>) {
             return ((MerkleMap<?, ?>) child).size();
-        } else if (child instanceof VirtualMap<?,?>) {
+        } else if (child instanceof VirtualMap<?, ?>) {
             return ((VirtualMap<?, ?>) child).size();
         }
 
@@ -202,20 +205,23 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
             int childIdx, Supplier<K> newChildSup) {
 
         Object child = getChild(childIdx);
-        if (child instanceof MerkleMap<?,?>) {
+        if (child instanceof MerkleMap<?, ?>) {
 
             if (isImmutable()) {
-                throw new IllegalStateException("Migration not complete for child "
-                        + childIdx + " and this object is immutable.");
+                throw new IllegalStateException(
+                        "Migration not complete for child "
+                                + childIdx
+                                + " and this object is immutable.");
             }
 
             MerkleMap<?, ?> merkle = uncheckedCast(child);
             var newChild = newChildSup.get();
             child = newChild;
-            merkle.forEach((k, v) -> {
-                WritableCopyable value = uncheckedCast(v);
-                newChild.put(uncheckedCast(k), value.asWritable());
-            });
+            merkle.forEach(
+                    (k, v) -> {
+                        WritableCopyable value = uncheckedCast(v);
+                        newChild.put(uncheckedCast(k), value.asWritable());
+                    });
             setChild(childIdx, newChild);
         }
 
