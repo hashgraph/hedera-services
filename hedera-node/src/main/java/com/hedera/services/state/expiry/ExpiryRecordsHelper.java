@@ -27,9 +27,14 @@ import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.*;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.jetbrains.annotations.Nullable;
+
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -83,7 +88,7 @@ public class ExpiryRecordsHelper {
         } else {
             synthBody = syntheticTxnFactory.synthTokenTransfer(cryptoGcOutcome);
         }
-        stream(expirableTxnRecord, synthBody, eventTime);
+        finalizeAndStream(expirableTxnRecord, synthBody, eventTime, recordStreaming);
     }
 
     public void streamCryptoRenewal(
@@ -108,19 +113,29 @@ public class ExpiryRecordsHelper {
                         .setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
                         .setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
                         .setFee(fee);
-        stream(expirableTxnRecord, synthBody, eventTime);
+        finalizeAndStream(expirableTxnRecord, synthBody, eventTime, recordStreaming);
     }
 
-    private void stream(
+    public static void finalizeAndStream(
             final ExpirableTxnRecord.Builder expiringRecord,
             final TransactionBody.Builder synthBody,
-            final Instant at) {
+            final Instant at,
+            final RecordStreaming recordStreaming) {
+        finalizeAndStream(expiringRecord, synthBody, at, recordStreaming, Collections.emptyList());
+    }
+
+    public static void finalizeAndStream(
+            final ExpirableTxnRecord.Builder expiringRecord,
+            final TransactionBody.Builder synthBody,
+            final Instant at,
+            final RecordStreaming recordStreaming,
+            final List<TransactionSidecarRecord.Builder> sidecars) {
         final var synthTxn = synthWithRecordTxnId(synthBody, expiringRecord);
-        final var rso = new RecordStreamObject(expiringRecord.build(), synthTxn, at);
+        final var rso = new RecordStreamObject(expiringRecord.build(), synthTxn, at, sidecars);
         recordStreaming.streamSystemRecord(rso);
     }
 
-    private ExpirableTxnRecord.Builder baseRecordWith(
+    public static ExpirableTxnRecord.Builder baseRecordWith(
             final Instant consensusTime, final TxnId txnId) {
         final var at = RichInstant.fromJava(consensusTime);
         final var receipt = new TxnReceipt();

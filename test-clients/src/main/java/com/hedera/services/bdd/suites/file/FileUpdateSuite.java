@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -49,6 +50,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
@@ -66,11 +69,13 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -131,24 +136,25 @@ public class FileUpdateSuite extends HapiApiSuite {
     @SuppressWarnings("java:S3878")
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    vanillaUpdateSucceeds(),
-                    updateFeesCompatibleWithCreates(),
-                    apiPermissionsChangeDynamically(),
-                    cannotUpdateExpirationPastMaxLifetime(),
-                    optimisticSpecialFileUpdate(),
-                    associateHasExpectedSemantics(),
-                    notTooManyFeeScheduleCanBeCreated(),
-                    allUnusedGasIsRefundedIfSoConfigured(),
-                    maxRefundIsEnforced(),
-                    gasLimitOverMaxGasLimitFailsPrecheck(),
-                    autoCreationIsDynamic(),
-                    kvLimitsEnforced(),
-                    serviceFeeRefundedIfConsGasExhausted(),
-                    chainIdChangesDynamically(),
-                    entitiesNotCreatableAfterUsageLimitsReached(),
-                    rentItemizedAsExpectedWithOverridePriceTiers(),
-                    messageSubmissionSizeChange()
+                new HapiApiSpec[]{
+//                        vanillaUpdateSucceeds(),
+//                        updateFeesCompatibleWithCreates(),
+//                        apiPermissionsChangeDynamically(),
+//                        cannotUpdateExpirationPastMaxLifetime(),
+//                        optimisticSpecialFileUpdate(),
+//                        associateHasExpectedSemantics(),
+//                        notTooManyFeeScheduleCanBeCreated(),
+//                        allUnusedGasIsRefundedIfSoConfigured(),
+//                        maxRefundIsEnforced(),
+//                        gasLimitOverMaxGasLimitFailsPrecheck(),
+//                        autoCreationIsDynamic(),
+//                        kvLimitsEnforced(),
+//                        serviceFeeRefundedIfConsGasExhausted(),
+//                        chainIdChangesDynamically(),
+//                        entitiesNotCreatableAfterUsageLimitsReached(),
+//                        rentItemizedAsExpectedWithOverridePriceTiers(),
+//                        messageSubmissionSizeChange(),
+                        getStableThrottles()
                 });
     }
 
@@ -183,14 +189,14 @@ public class FileUpdateSuite extends HapiApiSuite {
                         getAccountInfo("misc")
                                 .hasToken(
                                         relationshipWith(
-                                                        TokenAssociationSpecs
-                                                                .FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                                                TokenAssociationSpecs
+                                                        .FREEZABLE_TOKEN_ON_BY_DEFAULT)
                                                 .kyc(KycNotApplicable)
                                                 .freeze(Frozen))
                                 .hasToken(
                                         relationshipWith(
-                                                        TokenAssociationSpecs
-                                                                .FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                                                TokenAssociationSpecs
+                                                        .FREEZABLE_TOKEN_OFF_BY_DEFAULT)
                                                 .kyc(KycNotApplicable)
                                                 .freeze(Unfrozen))
                                 .hasToken(
@@ -501,10 +507,10 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 .hasAnyStatusAtAll()
                                 .deferStatusResolution(),
                         uncheckedSubmit(
-                                        contractCall(contract, INSERT_ABI, 3, 4)
-                                                .signedBy(civilian)
-                                                .gas(gasToOffer)
-                                                .txnId(refundedTxn))
+                                contractCall(contract, INSERT_ABI, 3, 4)
+                                        .signedBy(civilian)
+                                        .gas(gasToOffer)
+                                        .txnId(refundedTxn))
                                 .payingWith(GENESIS))
                 .then(
                         sleepFor(2_000L),
@@ -608,8 +614,8 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 .contents("NOPE")
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
                         scheduleCreate(
-                                        notToBe,
-                                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1)))
+                                notToBe,
+                                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1)))
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
                         tokenCreate(notToBe)
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
@@ -698,15 +704,15 @@ public class FileUpdateSuite extends HapiApiSuite {
                                     allRunFor(spec, expiryLookup, callTimeLookup);
                                     final var lifetime =
                                             expiryLookup
-                                                            .getResponse()
-                                                            .getContractGetInfo()
-                                                            .getContractInfo()
-                                                            .getExpirationTime()
-                                                            .getSeconds()
+                                                    .getResponse()
+                                                    .getContractGetInfo()
+                                                    .getContractInfo()
+                                                    .getExpirationTime()
+                                                    .getSeconds()
                                                     - callTimeLookup
-                                                            .getResponseRecord()
-                                                            .getConsensusTimestamp()
-                                                            .getSeconds();
+                                                    .getResponseRecord()
+                                                    .getConsensusTimestamp()
+                                                    .getSeconds();
                                     final var tcFeePerSlot =
                                             10 * TINY_PARTS_PER_WHOLE * lifetime / 31536000L;
                                     final var tbFeePerSlot =
@@ -764,6 +770,22 @@ public class FileUpdateSuite extends HapiApiSuite {
                                         Map.of(
                                                 "consensus.message.maxBytesAllowed",
                                                 String.valueOf(defaultMaxBytesAllowed))));
+    }
+
+    private HapiApiSpec getStableThrottles() {
+        return customHapiSpec("GetStableThrottles")
+                .withProperties(Map.of(
+                        "nodes", "34.94.106.61",
+                        "default.payer", "0.0.50",
+                        "default.payer.pemKeyLoc", "stabletestnet-account50.pem",
+                        "default.payer.pemKeyPassphrase", "KbhO358JFbejUS4Omsp2"
+                ))
+                .given().when().then(
+                        getFileContents("0.0.123")
+                                .alertingPre(COMMON_MESSAGES::downloadBeginning)
+                                .alertingPost(COMMON_MESSAGES::downloadEnding)
+                                .saveReadableTo(SYS_FILE_SERDES.get(123L)::fromRawFile, "testnet-throttles.json")
+                );
     }
 
     @Override

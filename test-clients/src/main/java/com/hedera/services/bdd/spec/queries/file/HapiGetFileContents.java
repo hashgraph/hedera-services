@@ -157,6 +157,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
         response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
         postQueryCb.ifPresent(cb -> cb.accept(response));
         byte[] bytes = response.getFileGetContents().getFileContents().getContents().toByteArray();
+        System.out.println("Got " + bytes.length + " bytes");
         if (verboseLoggingOn) {
             var len = response.getFileGetContents().getFileContents().getContents().size();
             log.info(String.format("%s contained %s bytes", fileName, len));
@@ -177,6 +178,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                 log.info(msg.toString());
             }
         }
+        System.out.println("BOOP");
         if (fileName.equals(spec.setup().appPropertiesFile()) && (props != IMMUTABLE_MAP)) {
             try {
                 var configList = ServicesConfigurationList.parseFrom(bytes);
@@ -225,6 +227,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                     }
                 }
                 if (readablePath.isPresent()) {
+                    System.out.println("Have " + bytes.length + " to write now");
                     String contents = parser.apply(bytes);
                     File readableFile = new File(readablePath.get());
                     CharSink charSink = Files.asCharSink(readableFile, Charset.forName("UTF-8"));
