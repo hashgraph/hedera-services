@@ -73,9 +73,7 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     public boolean equals(
             final ByteBuffer byteBuffer, final int dataVersion, final UniqueTokenKey uniqueTokenKey)
             throws IOException {
-        final var key = new UniqueTokenKey();
-        key.deserialize(byteBuffer, dataVersion);
-        return key.equals(uniqueTokenKey);
+        return uniqueTokenKey.equalsTo(byteBuffer);
     }
 
     @Override
