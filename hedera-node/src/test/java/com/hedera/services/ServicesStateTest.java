@@ -205,6 +205,7 @@ class ServicesStateTest {
         mockMigrators();
         final var inOrder =
                 inOrder(
+                        networkContext,
                         autoRenewalMigrator,
                         scheduledTxnsMigrator,
                         iterableStorageMigrator,
@@ -216,7 +217,6 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
         subject.setMetadata(metadata);
-        given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
 
         given(metadata.app()).willReturn(app);
         given(app.workingState()).willReturn(workingState);
@@ -237,8 +237,9 @@ class ServicesStateTest {
         inOrder.verify(iterableStorageMigrator)
                 .makeStorageIterable(eq(subject), any(), any(), eq(iterableStorage));
         inOrder.verify(scheduledTxnsMigrator).accept(subject);
-        inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
+        inOrder.verify(autoRenewalMigrator, never()).grantFreeAutoRenew(subject, consensusTime);
         inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
+        inOrder.verify(networkContext).markPostUpgradeScanStatus();
 
         unmockMigrators();
     }
@@ -801,7 +802,6 @@ class ServicesStateTest {
 
     @Test
     void copiesNonNullChildren() {
-        // setup:
         subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);

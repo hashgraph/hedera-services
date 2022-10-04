@@ -102,6 +102,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.areTokenAutoCreationsEnabled());
         assertFalse(subject.dynamicEvmVersion());
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
+        assertTrue(subject.shouldDoTraceabilityExport());
     }
 
     @Test
@@ -515,6 +516,8 @@ class GlobalDynamicPropertiesTest {
         given(properties.getStringProperty(CONTRACTS_EVM_VERSION)).willReturn(evmVersions[i % 2]);
         given(properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION))
                 .willReturn((i + 84) % 2 == 0);
+        given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
+                .willReturn((i + 85) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

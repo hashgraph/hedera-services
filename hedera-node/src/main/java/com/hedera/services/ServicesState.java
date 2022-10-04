@@ -280,6 +280,8 @@ public class ServicesState extends PartialNaryMerkleInternal
         createGenesisChildren(addressBook, seqStart, bootstrapProps);
 
         internalInit(platform, bootstrapProps, dualState, GENESIS, null);
+        // Ensure that traceability export immediately de-activates itself
+        networkCtx().markPostUpgradeScanStatus();
     }
 
     private void internalInit(
@@ -601,6 +603,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         app.workingState().updatePrimitiveChildrenFrom(this);
         log.info("Finished migrations needed for deserialized version {}", deserializedVersion);
         logStateChildrenSizes();
+        networkCtx().markPostUpgradeScanStatus();
     }
 
     boolean shouldMigrateNfts() {

@@ -33,6 +33,8 @@ public enum MapAccessType {
     ACCOUNTS_GET_FOR_MODIFY,
     /** To remove an expired contract that is deleted or past its grace period. */
     ACCOUNTS_REMOVE,
+    /** To get the bytecode of a pre-existing contract during traceability export. */
+    BLOBS_GET,
     /** To remove the bytecode of an expired contract that is deleted or past its grace period. */
     BLOBS_REMOVE,
     /** To get a head NFT's {@code next} link before removal. */

@@ -15,13 +15,10 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.*;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.config.HederaNumbers;
@@ -32,6 +29,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.tasks.SystemTaskManager;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
@@ -49,8 +47,8 @@ class EntityAutoExpiryTest {
 
     private final long aNum = 1002L, bNum = 1003L, cNum = 1004L;
 
+    @Mock private SystemTaskManager taskManager;
     @Mock private SequenceNumber seqNo;
-    @Mock private ExpiryProcess expiryProcess;
     @Mock private NetworkCtxManager networkCtxManager;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
@@ -67,8 +65,8 @@ class EntityAutoExpiryTest {
                         expiryStats,
                         mockHederaNums,
                         expiryThrottle,
-                        expiryProcess,
                         recordsHistorian,
+                        taskManager,
                         mockDynamicProps,
                         networkCtxManager,
                         () -> networkCtx,
@@ -85,7 +83,7 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(expiryProcess);
+        verifyNoInteractions(taskManager);
         verify(networkCtx).syncExpiryThrottle(expiryThrottle);
     }
 
@@ -98,7 +96,7 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(expiryProcess);
+        verifyNoInteractions(taskManager);
         verify(networkCtx).syncExpiryThrottle(expiryThrottle);
     }
 
@@ -111,7 +109,7 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(expiryProcess);
+        verifyNoInteractions(taskManager);
     }
 
     @Test
@@ -124,7 +122,7 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(expiryProcess);
+        verifyNoInteractions(taskManager);
     }
 
     @Test
@@ -136,7 +134,7 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verifyNoInteractions(expiryProcess);
+        verifyNoInteractions(taskManager);
     }
 
     @Test
@@ -145,7 +143,7 @@ class EntityAutoExpiryTest {
         given(networkCtxManager.currentTxnIsFirstInConsensusSecond()).willReturn(true);
         givenWrapNum(aNum + 123);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(anyLong(), any())).willReturn(NOTHING_TO_DO);
+        given(taskManager.process(anyLong(), any(), any())).willReturn(NOTHING_TO_DO);
         given(networkCtx.idsScannedThisSecond()).willReturn(666L);
 
         // when:
@@ -164,14 +162,15 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(anyLong(), eq(instantNow))).willReturn(NOTHING_TO_DO);
+        given(taskManager.process(anyLong(), eq(instantNow), eq(networkCtx)))
+                .willReturn(NOTHING_TO_DO);
 
         // when:
         subject.execute(instantNow);
 
         // then:
         for (long i = aNum; i < aNum + numToScan; i++) {
-            verify(expiryProcess).process(i, instantNow);
+            verify(taskManager).process(i, instantNow, networkCtx);
         }
         // and:
         verify(networkCtx).updateLastScannedEntity(aNum + numToScan - 1);
@@ -184,40 +183,17 @@ class EntityAutoExpiryTest {
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
         givenWrapNum(aNum + numToScan + 1);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(aNum, instantNow))
-                .willReturn(STILL_MORE_TO_DO)
-                .willReturn(DONE);
+        given(taskManager.process(aNum, instantNow, networkCtx))
+                .willReturn(NEEDS_DIFFERENT_CONTEXT);
         mockDynamicProps.setMaxToTouch(1);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(expiryProcess, times(2)).process(aNum, instantNow);
-        verifyNoMoreInteractions(expiryProcess);
-        verify(networkCtx).updateAutoRenewSummaryCounts(1, 1);
-        verify(networkCtx).updateLastScannedEntity(aNum);
-    }
-
-    @Test
-    void lastEntityScannedDoesntChangeIfTouchedEntityIsntDone() {
-        final var numToScan = 3L;
-
-        given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
-        givenWrapNum(aNum + numToScan + 1);
-        givenLastScanned(aNum - 1);
-        given(expiryProcess.process(aNum, instantNow))
-                .willReturn(STILL_MORE_TO_DO)
-                .willReturn(STILL_MORE_TO_DO)
-                .willReturn(STILL_MORE_TO_DO)
-                .willReturn(NO_CAPACITY_LEFT);
-
-        // when:
-        subject.execute(instantNow);
-
-        // then:
-        verify(expiryProcess, times(4)).process(aNum, instantNow);
-        verifyNoMoreInteractions(expiryProcess);
+        verify(taskManager, times(1)).process(aNum, instantNow, networkCtx);
+        verifyNoMoreInteractions(taskManager);
+        verify(networkCtx).updateAutoRenewSummaryCounts(1, 0);
         verify(networkCtx).updateLastScannedEntity(aNum - 1);
     }
 
@@ -229,18 +205,18 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(aNum, instantNow)).willReturn(DONE);
-        given(expiryProcess.process(bNum, instantNow)).willReturn(DONE);
+        given(taskManager.process(aNum, instantNow, networkCtx)).willReturn(DONE);
+        given(taskManager.process(bNum, instantNow, networkCtx)).willReturn(DONE);
 
         // when:
         subject.execute(instantNow);
 
         // then:
         for (long i = aNum; i < cNum; i++) {
-            verify(expiryProcess).process(i, instantNow);
+            verify(taskManager).process(i, instantNow, networkCtx);
         }
         // and:
-        verify(expiryProcess, never()).process(cNum, instantNow);
+        verify(taskManager, never()).process(cNum, instantNow, networkCtx);
         verify(networkCtx).updateLastScannedEntity(bNum);
     }
 
@@ -252,7 +228,7 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(expiryProcess.process(aNum, instantNow))
+        given(taskManager.process(aNum, instantNow, networkCtx))
                 .willAnswer(
                         i -> {
                             given(consensusTimeTracker.hasMoreStandaloneRecordTime())
@@ -264,9 +240,9 @@ class EntityAutoExpiryTest {
         subject.execute(instantNow);
 
         // then:
-        verify(expiryProcess).process(aNum, instantNow);
+        verify(taskManager).process(aNum, instantNow, networkCtx);
         // and:
-        verify(expiryProcess, never()).process(bNum, instantNow);
+        verify(taskManager, never()).process(bNum, instantNow, networkCtx);
         verify(networkCtx).updateLastScannedEntity(aNum);
     }
 
@@ -278,21 +254,22 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum + numToScan - 2);
-        given(expiryProcess.process(aNum + numToScan - 1, instantNow)).willReturn(NOTHING_TO_DO);
-        given(expiryProcess.process(aNum - 1, instantNow)).willReturn(NOTHING_TO_DO);
-        given(expiryProcess.process(aNum, instantNow)).willReturn(DONE);
-        given(expiryProcess.process(bNum, instantNow)).willReturn(DONE);
+        given(taskManager.process(aNum + numToScan - 1, instantNow, networkCtx))
+                .willReturn(NOTHING_TO_DO);
+        given(taskManager.process(aNum - 1, instantNow, networkCtx)).willReturn(NOTHING_TO_DO);
+        given(taskManager.process(aNum, instantNow, networkCtx)).willReturn(DONE);
+        given(taskManager.process(bNum, instantNow, networkCtx)).willReturn(DONE);
 
         // when:
         subject.execute(instantNow);
 
         // then:
-        verify(expiryProcess).process(aNum + numToScan - 1, instantNow);
+        verify(taskManager).process(aNum + numToScan - 1, instantNow, networkCtx);
         for (long i = aNum; i < cNum; i++) {
-            verify(expiryProcess).process(i, instantNow);
+            verify(taskManager).process(i, instantNow, networkCtx);
         }
         // and:
-        verify(expiryProcess, never()).process(cNum, instantNow);
+        verify(taskManager, never()).process(cNum, instantNow, networkCtx);
         verify(networkCtx).updateLastScannedEntity(bNum);
         // and:
         verify(networkCtx).updateAutoRenewSummaryCounts(4, 2);

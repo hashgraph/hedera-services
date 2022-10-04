@@ -15,33 +15,41 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
 
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.state.expiry.renewal.RenewalWork;
+import com.hedera.services.state.tasks.SystemTask;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-@Singleton
-public class ExpiryProcess {
+public class ExpiryProcess implements SystemTask {
     private final RenewalWork renewalWork;
     private final RemovalWork removalWork;
     private final ClassificationWork classifier;
+    private final ConsensusTimeTracker consensusTimeTracker;
 
     @Inject
     public ExpiryProcess(
             final ClassificationWork classifier,
             final RenewalWork renewalWork,
-            final RemovalWork removalWork) {
+            final RemovalWork removalWork,
+            final ConsensusTimeTracker consensusTimeTracker) {
+        this.consensusTimeTracker = consensusTimeTracker;
         this.renewalWork = renewalWork;
         this.removalWork = removalWork;
         this.classifier = classifier;
     }
 
-    public ExpiryProcessResult process(final long literalNum, final Instant now) {
+    @Override
+    public SystemTaskResult process(final long literalNum, final Instant now) {
+        if (!consensusTimeTracker.hasMoreStandaloneRecordTime()) {
+            return NEEDS_DIFFERENT_CONTEXT;
+        }
         final var entityNum = EntityNum.fromLong(literalNum);
         final var result = classifier.classify(entityNum, now);
         return switch (result) {

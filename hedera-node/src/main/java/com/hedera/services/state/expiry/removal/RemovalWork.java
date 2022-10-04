@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import com.hedera.services.state.expiry.ExpiryProcessResult;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.utils.EntityNum;
 
 /** Provides the logic needed for the account and contract expiry and removal cycle */
@@ -28,7 +28,7 @@ public interface RemovalWork {
      * @param account expired account
      * @return result for the successful removal
      */
-    ExpiryProcessResult tryToRemoveAccount(EntityNum account);
+    SystemTaskResult tryToRemoveAccount(EntityNum account);
     /**
      * Tries to remove an expired contract and returns {@code EntityProcessResult.DONE} if it is
      * successful. If the auto-removal of expiring contracts is not enabled, returns {@code
@@ -37,5 +37,5 @@ public interface RemovalWork {
      * @param contract expired contract
      * @return result for the successful removal
      */
-    ExpiryProcessResult tryToRemoveContract(EntityNum contract);
+    SystemTaskResult tryToRemoveContract(EntityNum contract);
 }

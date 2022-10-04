@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
-import com.hedera.services.state.expiry.ExpiryProcessResult;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
 
@@ -30,7 +30,7 @@ public interface RenewalWork {
      * @param cycleTime consensus time for the current renewal cycle
      * @return result for the successful renewal
      */
-    ExpiryProcessResult tryToRenewAccount(EntityNum account, final Instant cycleTime);
+    SystemTaskResult tryToRenewAccount(EntityNum account, final Instant cycleTime);
 
     /**
      * Tries to renew a contract and returns {@code EntityProcessResult.DONE} if it is successful.
@@ -41,5 +41,5 @@ public interface RenewalWork {
      * @param cycleTime consensus time for the current renewal cycle
      * @return result for the successful renewal
      */
-    ExpiryProcessResult tryToRenewContract(EntityNum contract, final Instant cycleTime);
+    SystemTaskResult tryToRenewContract(EntityNum contract, final Instant cycleTime);
 }

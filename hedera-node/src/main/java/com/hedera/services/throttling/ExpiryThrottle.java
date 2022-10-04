@@ -71,6 +71,14 @@ public class ExpiryThrottle {
         return false;
     }
 
+    public boolean allowOne(final MapAccessType accessType) {
+        if (config != null) {
+            config.throttle.resetLastAllowedUse();
+            return config.throttle.allowInstantaneous(config.accessReqs.get(accessType));
+        }
+        return false;
+    }
+
     public void reclaimLastAllowedUse() {
         if (config != null) {
             config.throttle.reclaimLastAllowedUse();
