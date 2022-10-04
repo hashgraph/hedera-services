@@ -15,12 +15,12 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;
@@ -52,7 +52,7 @@ public class RemovalHelper implements RemovalWork {
     }
 
     @Override
-    public ExpiryProcessResult tryToRemoveAccount(final EntityNum account) {
+    public SystemTaskResult tryToRemoveAccount(final EntityNum account) {
         if (!properties.shouldAutoRenewAccounts()) {
             return NOTHING_TO_DO;
         }
@@ -60,14 +60,14 @@ public class RemovalHelper implements RemovalWork {
     }
 
     @Override
-    public ExpiryProcessResult tryToRemoveContract(final EntityNum contract) {
+    public SystemTaskResult tryToRemoveContract(final EntityNum contract) {
         if (!properties.shouldAutoRenewContracts()) {
             return NOTHING_TO_DO;
         }
         return remove(contract, true);
     }
 
-    private ExpiryProcessResult remove(final EntityNum num, final boolean isContract) {
+    private SystemTaskResult remove(final EntityNum num, final boolean isContract) {
         final var lastClassified = classifier.getLastClassified();
         if (isContract && !contractGC.expireBestEffort(num, lastClassified)) {
             return NO_CAPACITY_LEFT;

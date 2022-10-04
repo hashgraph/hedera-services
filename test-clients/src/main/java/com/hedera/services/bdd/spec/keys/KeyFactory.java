@@ -29,12 +29,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.keys.Ed25519Utils;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.ThresholdKey;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.*;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
@@ -42,13 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -396,6 +385,9 @@ public class KeyFactory implements Serializable {
             Key generated;
 
             switch (sc.getNature()) {
+                case PREDEFINED:
+                    generated = registry.getKey(sc.predefined());
+                    break;
                 case CONTRACT_ID:
                     final var cid = asContractId(sc.contract(), spec);
                     generated = Key.newBuilder().setContractID(cid).build();

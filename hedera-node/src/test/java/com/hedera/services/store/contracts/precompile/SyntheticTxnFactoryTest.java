@@ -343,6 +343,16 @@ class SyntheticTxnFactoryTest {
     }
 
     @Test
+    void synthesizesExpectedNoopContractUpdate() {
+        final var result = subject.synthNoopContractUpdate(contractNum);
+        final var synthBody = result.build();
+
+        assertTrue(result.hasContractUpdateInstance());
+        final var op = synthBody.getContractUpdateInstance();
+        assertEquals(contractNum.toGrpcContractID(), op.getContractID());
+    }
+
+    @Test
     void synthesizesExpectedContractAutoRemove() {
         final var result = subject.synthContractAutoRemove(contractNum);
         final var synthBody = result.build();

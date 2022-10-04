@@ -224,10 +224,20 @@ public class SyntheticTxnFactory {
     public TransactionBody.Builder synthContractAutoRenew(
             final EntityNum contractNum, final long newExpiry) {
         final var op =
-                ContractUpdateTransactionBody.newBuilder()
-                        .setContractID(contractNum.toGrpcContractID())
+                baseSynthContractUpdate(contractNum)
                         .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
         return TransactionBody.newBuilder().setContractUpdateInstance(op);
+    }
+
+    public TransactionBody.Builder synthNoopContractUpdate(final EntityNum contractNum) {
+        return TransactionBody.newBuilder()
+                .setContractUpdateInstance(baseSynthContractUpdate(contractNum));
+    }
+
+    private ContractUpdateTransactionBody.Builder baseSynthContractUpdate(
+            final EntityNum contractNum) {
+        return ContractUpdateTransactionBody.newBuilder()
+                .setContractID(contractNum.toGrpcContractID());
     }
 
     public TransactionBody.Builder synthAccountAutoRenew(

@@ -205,6 +205,7 @@ class ServicesStateTest {
         mockMigrators();
         final var inOrder =
                 inOrder(
+                        networkContext,
                         autoRenewalMigrator,
                         scheduledTxnsMigrator,
                         iterableStorageMigrator,
@@ -216,7 +217,6 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
         subject.setMetadata(metadata);
-        given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
 
         given(metadata.app()).willReturn(app);
         given(app.workingState()).willReturn(workingState);
@@ -237,8 +237,9 @@ class ServicesStateTest {
         inOrder.verify(iterableStorageMigrator)
                 .makeStorageIterable(eq(subject), any(), any(), eq(iterableStorage));
         inOrder.verify(scheduledTxnsMigrator).accept(subject);
-        inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
+        inOrder.verify(autoRenewalMigrator, never()).grantFreeAutoRenew(subject, consensusTime);
         inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
+        inOrder.verify(networkContext).markPostUpgradeScanStatus();
 
         unmockMigrators();
     }
@@ -559,7 +560,6 @@ class ServicesStateTest {
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
         APPS.save(selfId.getId(), app);
@@ -704,7 +704,6 @@ class ServicesStateTest {
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
         APPS.save(selfId.getId(), app);
@@ -803,7 +802,6 @@ class ServicesStateTest {
 
     @Test
     void copiesNonNullChildren() {
-        // setup:
         subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
@@ -829,23 +827,6 @@ class ServicesStateTest {
         assertSame(addressBook, copy.addressBook());
         assertSame(networkContext, copy.networkCtx());
         assertSame(specialFiles, copy.specialFiles());
-    }
-
-    @Test
-    void reconnectMarksTraceabilityRecordsAsStreamed() {
-        given(app.hashLogger()).willReturn(hashLogger);
-        given(app.initializationFlow()).willReturn(initFlow);
-        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
-        given(platform.getSelfId()).willReturn(selfId);
-        // and:
-        APPS.save(selfId.getId(), app);
-
-        // when:
-        subject.init(platform, addressBook, dualState, RECONNECT, currentVersion);
-
-        // then:
-        verify(migrationRecordsManager).markTraceabilityMigrationAsDone();
     }
 
     @Test

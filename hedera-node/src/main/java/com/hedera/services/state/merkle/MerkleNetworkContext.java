@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.tasks.SystemTaskManager;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
@@ -68,6 +69,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     private static final String NOT_AVAILABLE = "<N/A>";
     private static final String NOT_AVAILABLE_SUFFIX = "<N/A>";
 
+    public static final byte LAST_PRE_EXISTING_ENTITY_NOT_SCANNED = 0;
+    public static final byte LAST_PRE_EXISTING_ENTITY_SCANNED = 1;
+    public static final byte ALL_PRE_EXISTING_ENTITIES_SCANNED = 2;
+
     public static final int UPDATE_FILE_HASH_LEN = 48;
     public static final int UNRECORDED_STATE_VERSION = -1;
     public static final int NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING = 5;
@@ -82,7 +87,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     static final int RELEASE_0260_VERSION = 8;
     static final int RELEASE_0270_VERSION = 9;
     static final int RELEASE_0300_VERSION = 10;
-    static final int CURRENT_VERSION = RELEASE_0300_VERSION;
+    static final int RELEASE_0310_VERSION = 11;
+    static final int CURRENT_VERSION = RELEASE_0310_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
     static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
     static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS =
@@ -98,10 +104,14 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     private ExchangeRates midnightRates;
     @Nullable private Instant consensusTimeOfLastHandledTxn = null;
     private SequenceNumber seqNo;
+    private int nextTaskTodo;
     private long lastScannedEntity;
+    private long seqNoPostUpgrade;
+    private long lastScannedPostUpgrade;
     private long entitiesScannedThisSecond = 0L;
     private long entitiesTouchedThisSecond = 0L;
     private long preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
+    private byte preExistingEntityScanStatus;
     private byte[] preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
     private boolean migrationRecordsStreamed;
     @Nullable private FeeMultiplierSource multiplierSource = null;
@@ -156,6 +166,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         this.totalStakedRewardStart = that.totalStakedRewardStart;
         this.totalStakedStart = that.totalStakedStart;
         this.pendingRewards = that.pendingRewards;
+        this.nextTaskTodo = that.nextTaskTodo;
+        this.seqNoPostUpgrade = that.seqNoPostUpgrade;
+        this.lastScannedPostUpgrade = that.lastScannedPostUpgrade;
+        this.preExistingEntityScanStatus = that.preExistingEntityScanStatus;
     }
 
     // Helpers that reset the received argument based on the network context
@@ -368,21 +382,32 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
             blockNo = in.readLong();
             if (version >= RELEASE_0270_VERSION) {
-                stakingRewardsActivated = in.readBoolean();
-                totalStakedRewardStart = in.readLong();
-                totalStakedStart = in.readLong();
-                pendingRewards = in.readLong();
-                if (version >= RELEASE_0300_VERSION) {
-                    final var expiryCapacityUsed = in.readLong();
-                    final var lastExpiryUsage = readNullable(in, RichInstant::from);
-                    expiryUsageSnapshot =
-                            new DeterministicThrottle.UsageSnapshot(
-                                    expiryCapacityUsed,
-                                    (lastExpiryUsage == null) ? null : lastExpiryUsage.toJava());
-                }
+                readPreBlockData(in, version);
             }
             blockHashes.clear();
             in.readSerializable(true, () -> blockHashes);
+        }
+    }
+
+    private void readPreBlockData(final SerializableDataInputStream in, final int version)
+            throws IOException {
+        stakingRewardsActivated = in.readBoolean();
+        totalStakedRewardStart = in.readLong();
+        totalStakedStart = in.readLong();
+        pendingRewards = in.readLong();
+        if (version >= RELEASE_0300_VERSION) {
+            final var expiryCapacityUsed = in.readLong();
+            final var lastExpiryUsage = readNullable(in, RichInstant::from);
+            expiryUsageSnapshot =
+                    new DeterministicThrottle.UsageSnapshot(
+                            expiryCapacityUsed,
+                            (lastExpiryUsage == null) ? null : lastExpiryUsage.toJava());
+            if (version >= RELEASE_0310_VERSION) {
+                nextTaskTodo = in.readInt();
+                seqNoPostUpgrade = in.readLong();
+                lastScannedPostUpgrade = in.readLong();
+                preExistingEntityScanStatus = in.readByte();
+            }
         }
     }
 
@@ -519,6 +544,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return blockNo;
     }
 
+    @SuppressWarnings("java:S125")
     public org.hyperledger.besu.datatypes.Hash getBlockHashByNumber(final long reqBlockNo) {
         if (reqBlockNo < 0) {
             return UNAVAILABLE_BLOCK_HASH;
@@ -727,6 +753,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         out.writeLong(expiryUsageSnapshot.used());
         writeNullable(
                 fromJava(expiryUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
+        out.writeInt(nextTaskTodo);
+        out.writeLong(seqNoPostUpgrade);
+        out.writeLong(lastScannedPostUpgrade);
+        out.writeByte(preExistingEntityScanStatus);
     }
 
     private void reset(
@@ -845,12 +875,65 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         pendingRewards = newPendingRewards;
     }
 
+    public long lastScannedPostUpgrade() {
+        return lastScannedPostUpgrade;
+    }
+
+    public void setLastScannedPostUpgrade(final long lastScannedPostUpgrade) {
+        throwIfImmutable("Cannot set post-upgrade last scanned in immutable context");
+        this.lastScannedPostUpgrade = lastScannedPostUpgrade;
+    }
+
+    public long seqNoPostUpgrade() {
+        return seqNoPostUpgrade;
+    }
+
+    public void markPostUpgradeScanStatus() {
+        throwIfImmutable("Cannot set post-upgrade last scanned in immutable context");
+        this.seqNoPostUpgrade = seqNo.current();
+        this.lastScannedPostUpgrade = this.lastScannedEntity;
+        this.preExistingEntityScanStatus = LAST_PRE_EXISTING_ENTITY_NOT_SCANNED;
+    }
+
+    public byte getPreExistingEntityScanStatus() {
+        return preExistingEntityScanStatus;
+    }
+
+    public void setPreExistingEntityScanStatus(final byte preExistingEntityScanStatus) {
+        throwIfImmutable("Cannot update pre-existing entity scan status in immutable context");
+        this.preExistingEntityScanStatus = preExistingEntityScanStatus;
+    }
+
+    public boolean areAllPreUpgradeEntitiesScanned() {
+        return this.preExistingEntityScanStatus == ALL_PRE_EXISTING_ENTITIES_SCANNED;
+    }
+
     public void markMigrationRecordsStreamed() {
         this.migrationRecordsStreamed = true;
     }
 
     public void markMigrationRecordsNotYetStreamed() {
         this.migrationRecordsStreamed = false;
+    }
+
+    /**
+     * Gives the consensus view (from state) of which zero-indexed task number to do next.
+     *
+     * @return the consensus next task number
+     */
+    public int nextTaskTodo() {
+        return nextTaskTodo;
+    }
+
+    /**
+     * Updates the consensus view in state of which zero-indexed task number to do next, given the
+     * total number of task types the {@link SystemTaskManager} is aware of.
+     *
+     * @param i the zero-indexed task number
+     */
+    public void setNextTaskTodo(final int i) {
+        throwIfImmutable("Cannot set post-upgrade sequence number in immutable context");
+        nextTaskTodo = i;
     }
 
     /* Only used for unit tests */
@@ -957,5 +1040,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     public void setExpiryUsageSnapshot(
             final DeterministicThrottle.UsageSnapshot expiryUsageSnapshot) {
         this.expiryUsageSnapshot = expiryUsageSnapshot;
+    }
+
+    @VisibleForTesting
+    public void setSeqNoPostUpgrade(long seqNoPostUpgrade) {
+        this.seqNoPostUpgrade = seqNoPostUpgrade;
     }
 }

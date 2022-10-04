@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
+import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.utils.MiscUtils.synthWithRecordTxnId;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -26,9 +27,12 @@ import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.*;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -68,7 +72,7 @@ public class ExpiryRecordsHelper {
                                 : " returned treasury assets");
 
         final var expirableTxnRecord =
-                forTouchedAccount(entityNum, eventTime, txnId)
+                baseRecordWith(eventTime, txnId)
                         .setMemo(memo)
                         .setTokens(cryptoGcOutcome.allReturnedTokens())
                         .setTokenAdjustments(cryptoGcOutcome.parallelAdjustments())
@@ -82,7 +86,7 @@ public class ExpiryRecordsHelper {
         } else {
             synthBody = syntheticTxnFactory.synthTokenTransfer(cryptoGcOutcome);
         }
-        stream(expirableTxnRecord, synthBody, eventTime);
+        finalizeAndStream(expirableTxnRecord, synthBody, eventTime, recordStreaming);
     }
 
     public void streamCryptoRenewal(
@@ -94,37 +98,46 @@ public class ExpiryRecordsHelper {
         final var memo =
                 (isContract ? "Contract " : "Account ")
                         + entityNum.toIdString()
-                        + " was automatically renewed. New expiration time: "
-                        + newExpiry
-                        + ".";
+                        + " was automatically renewed; new expiration time: "
+                        + newExpiry;
         final var synthBody =
                 isContract
                         ? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry)
                         : syntheticTxnFactory.synthAccountAutoRenew(entityNum, newExpiry);
         final var txnId = recordsHistorian.computeNextSystemTransactionId();
         final var expirableTxnRecord =
-                forTouchedAccount(entityNum, eventTime, txnId)
+                baseRecordWith(eventTime, txnId)
                         .setMemo(memo)
                         .setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
                         .setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
                         .setFee(fee);
-        stream(expirableTxnRecord, synthBody, eventTime);
+        finalizeAndStream(expirableTxnRecord, synthBody, eventTime, recordStreaming);
     }
 
-    private void stream(
+    public static void finalizeAndStream(
             final ExpirableTxnRecord.Builder expiringRecord,
             final TransactionBody.Builder synthBody,
-            final Instant at) {
+            final Instant at,
+            final RecordStreaming recordStreaming) {
+        finalizeAndStream(expiringRecord, synthBody, at, recordStreaming, Collections.emptyList());
+    }
+
+    public static void finalizeAndStream(
+            final ExpirableTxnRecord.Builder expiringRecord,
+            final TransactionBody.Builder synthBody,
+            final Instant at,
+            final RecordStreaming recordStreaming,
+            final List<TransactionSidecarRecord.Builder> sidecars) {
         final var synthTxn = synthWithRecordTxnId(synthBody, expiringRecord);
-        final var rso = new RecordStreamObject(expiringRecord.build(), synthTxn, at);
+        final var rso = new RecordStreamObject(expiringRecord.build(), synthTxn, at, sidecars);
         recordStreaming.streamSystemRecord(rso);
     }
 
-    private ExpirableTxnRecord.Builder forTouchedAccount(
-            final EntityNum expiryNum, final Instant consensusTime, final TxnId txnId) {
+    public static ExpirableTxnRecord.Builder baseRecordWith(
+            final Instant consensusTime, final TxnId txnId) {
         final var at = RichInstant.fromJava(consensusTime);
         final var receipt = new TxnReceipt();
-        receipt.setAccountId(expiryNum.toEntityId());
+        receipt.setStatus(SUCCESS_LITERAL);
         return ExpirableTxnRecord.newBuilder()
                 .setTxnId(txnId)
                 .setReceipt(receipt)

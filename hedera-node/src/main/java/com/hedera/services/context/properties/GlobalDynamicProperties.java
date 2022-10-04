@@ -143,11 +143,12 @@ public class GlobalDynamicProperties {
     private boolean requireMinStakeToReward;
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private int sidecarMaxSizeMb;
-    private boolean enableTraceabilityMigration;
     private boolean itemizeStorageFees;
     private ContractStoragePriceTiers storagePriceTiers;
     private boolean compressRecordFilesOnCreation;
     private boolean tokenAutoCreationsEnabled;
+    private boolean doTraceabilityExport;
+    private boolean compressAccountBalanceFilesOnCreation;
 
     @Inject
     public GlobalDynamicProperties(
@@ -289,8 +290,6 @@ public class GlobalDynamicProperties {
         nodeMaxMinStakeRatios =
                 properties.getNodeStakeRatiosProperty(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS);
         sidecarMaxSizeMb = properties.getIntProperty(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB);
-        enableTraceabilityMigration =
-                properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
         storagePriceTiers =
                 ContractStoragePriceTiers.from(
                         properties.getStringProperty(CONTRACTS_STORAGE_SLOT_PRICE_TIERS),
@@ -301,6 +300,10 @@ public class GlobalDynamicProperties {
         compressRecordFilesOnCreation =
                 properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
         tokenAutoCreationsEnabled = properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED);
+        compressAccountBalanceFilesOnCreation =
+                properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
+        doTraceabilityExport =
+                properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
     }
 
     public int maxTokensPerAccount() {
@@ -707,10 +710,6 @@ public class GlobalDynamicProperties {
         return sidecarMaxSizeMb;
     }
 
-    public boolean isTraceabilityMigrationEnabled() {
-        return enableTraceabilityMigration;
-    }
-
     public ContractStoragePriceTiers storagePriceTiers() {
         return storagePriceTiers;
     }
@@ -725,5 +724,13 @@ public class GlobalDynamicProperties {
 
     public boolean areTokenAutoCreationsEnabled() {
         return tokenAutoCreationsEnabled;
+    }
+
+    public boolean shouldCompressAccountBalanceFilesOnCreation() {
+        return compressAccountBalanceFilesOnCreation;
+    }
+
+    public boolean shouldDoTraceabilityExport() {
+        return doTraceabilityExport;
     }
 }

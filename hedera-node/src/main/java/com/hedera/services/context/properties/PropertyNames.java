@@ -80,6 +80,7 @@ public class PropertyNames {
     public static final String BALANCES_EXPORT_TOKEN_BALANCES = "balances.exportTokenBalances";
     public static final String BALANCES_NODE_BALANCE_WARN_THRESHOLD =
             "balances.nodeBalanceWarningThreshold";
+    public static final String BALANCES_COMPRESS_ON_CREATION = "balances.compressOnCreation";
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
     public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME =
@@ -147,6 +148,7 @@ public class PropertyNames {
     public static final String EXPIRY_THROTTLE_RESOURCE = "expiry.throttleResource";
     public static final String EXPIRY_MIN_CYCLE_ENTRY_CAPACITY = "expiry.minCycleEntryCapacity";
     public static final String AUTO_RENEW_GRACE_PERIOD = "autorenew.gracePeriod";
+    public static final String AUTO_RENEW_GRANT_FREE_RENEWALS = "autorenew.grantFreeRenewals";
     public static final String LEDGER_CHANGE_HIST_MEM_SECS = "ledger.changeHistorian.memorySecs";
     public static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION =
             "ledger.autoRenewPeriod.maxDuration";

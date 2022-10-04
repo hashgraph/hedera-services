@@ -26,10 +26,15 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Manages the "map value linked list" of each account's owned non-treasury NFTs. */
 public class LinkAwareUniqueTokensCommitInterceptor
         implements CommitInterceptor<NftId, UniqueTokenAdapter, NftProperty> {
+
+    private static final Logger log =
+            LogManager.getLogger(LinkAwareUniqueTokensCommitInterceptor.class);
     private boolean burnOrMint;
 
     private final UsageLimits usageLimits;
@@ -43,6 +48,7 @@ public class LinkAwareUniqueTokensCommitInterceptor
 
     /** {@inheritDoc} */
     @Override
+    @SuppressWarnings("java:S3776")
     public void preview(
             final EntityChangeSet<NftId, UniqueTokenAdapter, NftProperty> pendingChanges) {
         burnOrMint = false;
@@ -61,14 +67,31 @@ public class LinkAwareUniqueTokensCommitInterceptor
                     if (!MISSING_ENTITY_ID.equals(fromAccount)) {
                         // Non-treasury-owned NFT wiped (or burned via a multi-stage contract
                         // operation)
-                        uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), null, nftId);
+                        try {
+                            uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), null, nftId);
+                        } catch (Exception irrecoverable) {
+                            log.error(
+                                    "Unable to update links burning {} from owner {}",
+                                    nftId,
+                                    fromAccount,
+                                    irrecoverable);
+                        }
                     }
                 } else if (changes.containsKey(OWNER)) {
                     final var toAccount = (EntityId) changes.get(OWNER);
                     if (!Objects.equals(fromAccount, toAccount)) {
                         // NFT owner changed (could be a treasury exit or return)
-                        uniqueTokensLinkManager.updateLinks(
-                                fromAccount.asNum(), toAccount.asNum(), nftId);
+                        try {
+                            uniqueTokensLinkManager.updateLinks(
+                                    fromAccount.asNum(), toAccount.asNum(), nftId);
+                        } catch (Exception irrecoverable) {
+                            log.error(
+                                    "Unable to update links changing {} owner from {} to {}",
+                                    nftId,
+                                    fromAccount,
+                                    toAccount,
+                                    irrecoverable);
+                        }
                     }
                 }
             } else if (changes != null) {
@@ -77,9 +100,17 @@ public class LinkAwareUniqueTokensCommitInterceptor
                 if (!MISSING_ENTITY_ID.equals(newOwner)) {
                     // Non-treasury-owned NFT minted via a multi-stage contract operation
                     final var nftKey = pendingChanges.id(i);
-                    final var mintedNft =
-                            uniqueTokensLinkManager.updateLinks(null, newOwner.asNum(), nftKey);
-                    pendingChanges.cacheEntity(i, mintedNft);
+                    try {
+                        final var mintedNft =
+                                uniqueTokensLinkManager.updateLinks(null, newOwner.asNum(), nftKey);
+                        pendingChanges.cacheEntity(i, mintedNft);
+                    } catch (Exception irrecoverable) {
+                        log.error(
+                                "Unable to update links minting {} to owner {}",
+                                nftId,
+                                newOwner,
+                                irrecoverable);
+                    }
                 }
             }
         }

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -24,6 +24,8 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.tasks.SystemTaskManager;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
@@ -36,7 +38,7 @@ import javax.inject.Singleton;
 public class EntityAutoExpiry {
     private final long firstEntityToScan;
     private final ExpiryThrottle expiryThrottle;
-    private final ExpiryProcess expiryProcess;
+    private final SystemTaskManager taskManager;
     private final RecordsHistorian recordsHistorian;
     private final NetworkCtxManager networkCtxManager;
     private final GlobalDynamicProperties dynamicProps;
@@ -53,8 +55,8 @@ public class EntityAutoExpiry {
             final ExpiryStats expiryStats,
             final HederaNumbers hederaNumbers,
             final ExpiryThrottle expiryThrottle,
-            final ExpiryProcess expiryProcess,
             final RecordsHistorian recordsHistorian,
+            final SystemTaskManager taskManager,
             final GlobalDynamicProperties dynamicProps,
             final NetworkCtxManager networkCtxManager,
             final Supplier<MerkleNetworkContext> networkCtx,
@@ -66,8 +68,8 @@ public class EntityAutoExpiry {
         this.recordsHistorian = recordsHistorian;
         this.networkCtxManager = networkCtxManager;
         this.expiryThrottle = expiryThrottle;
-        this.expiryProcess = expiryProcess;
         this.dynamicProps = dynamicProps;
+        this.taskManager = taskManager;
         this.consensusTimeTracker = consensusTimeTracker;
 
         this.firstEntityToScan = hederaNumbers.numReservedSystemEntities() + 1;
@@ -99,14 +101,13 @@ public class EntityAutoExpiry {
         int entitiesProcessed = 0;
         long scanNum = curNetworkCtx.lastScannedEntity();
         boolean advanceScan = true;
-        ExpiryProcessResult result = null;
+        SystemTaskResult result = null;
         while (canContinueGiven(result, idsScanned, entitiesProcessed)) {
             if (advanceScan) {
                 scanNum = next(scanNum, wrapNum);
                 idsScanned++;
             }
-            // Each processing attempt will generate at most one child record
-            result = expiryProcess.process(scanNum, now);
+            result = taskManager.process(scanNum, now, curNetworkCtx);
             if (result == NOTHING_TO_DO) {
                 advanceScan = true;
             } else {
@@ -122,12 +123,13 @@ public class EntityAutoExpiry {
     }
 
     private boolean canContinueGiven(
-            final @Nullable ExpiryProcessResult result,
+            final @Nullable SystemTaskResult result,
             final int idsScanned,
             final int entitiesProcessed) {
         return idsScanned < maxIdsToScan
                 && entitiesProcessed < maxEntitiesToProcess
                 && result != NO_CAPACITY_LEFT
+                && result != NEEDS_DIFFERENT_CONTEXT
                 && consensusTimeTracker.hasMoreStandaloneRecordTime();
     }
 

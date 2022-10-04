@@ -16,6 +16,7 @@
 package com.hedera.services;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_FIRST_USER_ENTITY;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
@@ -279,6 +280,8 @@ public class ServicesState extends PartialNaryMerkleInternal
         createGenesisChildren(addressBook, seqStart, bootstrapProps);
 
         internalInit(platform, bootstrapProps, dualState, GENESIS, null);
+        // Ensure that traceability export immediately de-activates itself
+        networkCtx().markPostUpgradeScanStatus();
     }
 
     private void internalInit(
@@ -363,9 +366,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // Do this separately from ensureSystemAccounts(), as that call is expensive with a
                 // large saved state
                 app.treasuryCloner().ensureTreasuryClonesExist();
-            }
-            if (trigger == RECONNECT) {
-                app.migrationRecordsManager().markTraceabilityMigrationAsDone();
             }
         }
     }
@@ -592,7 +592,9 @@ public class ServicesState extends PartialNaryMerkleInternal
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
         }
         if (FIRST_030X_VERSION.isAfter(deserializedVersion)) {
-            autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+            if (getBootstrapProperties().getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS)) {
+                autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+            }
             nftLinksRepair.rebuildOwnershipLists(accounts(), uniqueTokens());
         }
 
@@ -601,6 +603,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         app.workingState().updatePrimitiveChildrenFrom(this);
         log.info("Finished migrations needed for deserialized version {}", deserializedVersion);
         logStateChildrenSizes();
+        networkCtx().markPostUpgradeScanStatus();
     }
 
     boolean shouldMigrateNfts() {

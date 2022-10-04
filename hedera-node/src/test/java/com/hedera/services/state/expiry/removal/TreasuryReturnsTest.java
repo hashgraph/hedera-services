@@ -110,7 +110,7 @@ class TreasuryReturnsTest {
     @Test
     void returnsAllUnitsGivenCapacity() {
         givenStandardUnitsSetup(true, true);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allow(anyList())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
         final var expected = new FungibleTreasuryReturns(List.of(bTokenId), List.of(), true);

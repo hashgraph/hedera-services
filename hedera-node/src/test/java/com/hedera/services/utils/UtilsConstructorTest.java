@@ -77,6 +77,8 @@ import com.hedera.services.txns.util.UtilLogicModule;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TokenListChecks;
 import com.hedera.services.txns.validation.TransferListChecks;
+import com.hedera.services.utils.forensics.OrderedComparison;
+import com.hedera.services.utils.forensics.RecordParsers;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -88,7 +90,8 @@ class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested =
             new HashSet<>(
                     Arrays.asList(
-                            AbiConstants.class,
+                            OrderedComparison.class,
+                            RecordParsers.class,
                             Units.class,
                             AbiConstants.class,
                             MapValueListUtils.class,
