@@ -51,6 +51,7 @@ import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.MigrationRecordsManager;
+import com.hedera.services.state.tasks.TaskModule;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
@@ -88,6 +89,7 @@ import javax.inject.Singleton;
 @Singleton
 @Component(
         modules = {
+            TaskModule.class,
             FeesModule.class,
             KeysModule.class,
             SigsModule.class,

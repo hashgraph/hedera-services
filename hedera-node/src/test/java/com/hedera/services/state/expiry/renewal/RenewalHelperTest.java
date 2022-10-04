@@ -35,7 +35,7 @@ import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.fees.charging.NonHapiFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.expiry.ExpiryProcessResult;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
@@ -176,7 +176,7 @@ class RenewalHelperTest {
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
+        assertEquals(SystemTaskResult.NO_CAPACITY_LEFT, result);
         verifyNoInteractions(sideEffectsTracker);
     }
 
@@ -201,18 +201,18 @@ class RenewalHelperTest {
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
+        assertEquals(SystemTaskResult.NO_CAPACITY_LEFT, result);
     }
 
     @Test
     void doesNothingWhenDisabled() {
         properties.disableAutoRenew();
         var result = subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
+        assertEquals(SystemTaskResult.NOTHING_TO_DO, result);
 
         properties.disableContractAutoRenew();
         result = subject.tryToRenewContract(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
+        assertEquals(SystemTaskResult.NOTHING_TO_DO, result);
         verifyNoInteractions(sideEffectsTracker);
     }
 

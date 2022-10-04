@@ -62,8 +62,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(LogCaptureExtension.class)
 class MerkleNetworkContextTest {
     private final int stateVersion = 13;
+    private final int nextTaskTodo = 666;
     private final long preparedUpdateFileNum = 150L;
     private final long lastScannedEntity = 1000L;
+    private final byte preExistingEntityScanStatus = ALL_PRE_EXISTING_ENTITIES_SCANNED;
+    private final long seqNoPostUpgrade = 1001L;
+    private final long lastScannedPostUpgrade = 1234L;
     private final long entitiesTouchedThisSecond = 123L;
     private final long entitiesScannedThisSecond = 123_456L;
     private final byte[] preparedUpdateFileHash =
@@ -134,6 +138,10 @@ class MerkleNetworkContextTest {
         subject.markMigrationRecordsStreamed();
         subject.setFirstConsTimeOfCurrentBlock(firstConsTimeOfCurrentBlock);
         subject.setBlockNo(0L);
+        subject.setNextTaskTodo(nextTaskTodo);
+        subject.setLastScannedPostUpgrade(lastScannedPostUpgrade);
+        subject.setSeqNoPostUpgrade(seqNoPostUpgrade);
+        subject.setPreExistingEntityScanStatus(preExistingEntityScanStatus);
     }
 
     @Test
@@ -206,6 +214,7 @@ class MerkleNetworkContextTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void copyWorks() {
         // given:
         var subjectCopy = subject.copy();
@@ -234,6 +243,9 @@ class MerkleNetworkContextTest {
         assertEquals(subjectCopy.areRewardsActivated(), subject.areRewardsActivated());
         assertEquals(subjectCopy.getTotalStakedRewardStart(), subject.getTotalStakedRewardStart());
         assertEquals(subjectCopy.getTotalStakedStart(), subject.getTotalStakedStart());
+        assertEquals(subjectCopy.lastScannedPostUpgrade(), subject.lastScannedPostUpgrade());
+        assertEquals(subjectCopy.seqNoPostUpgrade(), subject.seqNoPostUpgrade());
+        assertEquals(subjectCopy.getPreExistingEntityScanStatus(), subject.getPreExistingEntityScanStatus());
         // and:
         assertTrue(subject.isImmutable());
         assertFalse(subjectCopy.isImmutable());
@@ -317,7 +329,6 @@ class MerkleNetworkContextTest {
 
         final var someThrottle = DeterministicThrottle.withTpsAndBurstPeriod(1, 23);
         someThrottle.allow(1, Instant.now());
-        final var someStart = Instant.ofEpochSecond(7_654_321L, 0);
 
         given(throttling.allActiveThrottles()).willReturn(List.of(someThrottle));
         given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
@@ -346,6 +357,18 @@ class MerkleNetworkContextTest {
         assertEquals(a.getAlignmentBlockNo(), b.getAlignmentBlockNo());
         assertEquals(a.firstConsTimeOfCurrentBlock(), b.firstConsTimeOfCurrentBlock());
         assertEquals(a.getBlockHashes(), b.getBlockHashes());
+        assertEquals(a.nextTaskTodo(), b.nextTaskTodo());
+        assertEquals(a.lastScannedPostUpgrade(), b.lastScannedPostUpgrade());
+        assertEquals(a.seqNoPostUpgrade(), b.seqNoPostUpgrade());
+        assertEquals(a.getPreExistingEntityScanStatus(), b.getPreExistingEntityScanStatus());
+    }
+
+    @Test
+    void canResetScanStatusAfterUpgrade() {
+        subject.markPostUpgradeScanStatus();
+        assertEquals(seqNo.current(), subject.seqNoPostUpgrade());
+        assertEquals(lastScannedEntity, subject.lastScannedEntity());
+        assertFalse(subject.areAllPreUpgradeEntitiesScanned());
     }
 
     @Test
@@ -364,6 +387,10 @@ class MerkleNetworkContextTest {
         assertThrows(
                 MutabilityException.class, () -> subject.setConsensusTimeOfLastHandledTxn(null));
         assertThrows(MutabilityException.class, () -> subject.setPreparedUpdateFileNum(123));
+        assertThrows(MutabilityException.class, () -> subject.setNextTaskTodo(123));
+        assertThrows(MutabilityException.class, () -> subject.setLastScannedPostUpgrade(4321));
+        assertThrows(MutabilityException.class, subject::markPostUpgradeScanStatus);
+        assertThrows(MutabilityException.class, () -> subject.setPreExistingEntityScanStatus((byte) 1));
         assertThrows(
                 MutabilityException.class,
                 () -> subject.setPreparedUpdateFileHash(NO_PREPARED_UPDATE_FILE_HASH));

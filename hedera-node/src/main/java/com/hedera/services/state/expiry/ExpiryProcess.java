@@ -15,18 +15,19 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
 
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.state.expiry.renewal.RenewalWork;
+import com.hedera.services.state.tasks.SystemTask;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-@Singleton
-public class ExpiryProcess {
+public class ExpiryProcess implements SystemTask {
     private final RenewalWork renewalWork;
     private final RemovalWork removalWork;
     private final ClassificationWork classifier;
@@ -41,7 +42,15 @@ public class ExpiryProcess {
         this.classifier = classifier;
     }
 
-    public ExpiryProcessResult process(final long literalNum, final Instant now) {
+    @Override
+    public boolean isActive() {
+        // Can refactor to return dynamicProperties.shouldAutoRenewSomeEntityType()
+        // when convenient (currently checked in EntityAutoExpiry)
+        return true;
+    }
+
+    @Override
+    public SystemTaskResult process(final long literalNum, final Instant now) {
         final var entityNum = EntityNum.fromLong(literalNum);
         final var result = classifier.classify(entityNum, now);
         return switch (result) {

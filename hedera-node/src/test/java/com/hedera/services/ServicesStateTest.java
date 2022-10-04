@@ -65,6 +65,7 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.*;
 import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -205,6 +206,7 @@ class ServicesStateTest {
         mockMigrators();
         final var inOrder =
                 inOrder(
+                        networkContext,
                         autoRenewalMigrator,
                         scheduledTxnsMigrator,
                         iterableStorageMigrator,
@@ -239,6 +241,7 @@ class ServicesStateTest {
         inOrder.verify(scheduledTxnsMigrator).accept(subject);
         inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
         inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
+        inOrder.verify(networkContext).markPostUpgradeScanStatus();
 
         unmockMigrators();
     }
@@ -801,7 +804,6 @@ class ServicesStateTest {
 
     @Test
     void copiesNonNullChildren() {
-        // setup:
         subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);

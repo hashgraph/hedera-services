@@ -601,6 +601,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         app.workingState().updatePrimitiveChildrenFrom(this);
         log.info("Finished migrations needed for deserialized version {}", deserializedVersion);
         logStateChildrenSizes();
+        networkCtx().markPostUpgradeScanStatus();
     }
 
     boolean shouldMigrateNfts() {

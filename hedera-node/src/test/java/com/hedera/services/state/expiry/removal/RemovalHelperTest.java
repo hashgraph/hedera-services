@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.state.expiry.ExpiryProcessResult;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
@@ -81,11 +81,11 @@ class RemovalHelperTest {
     void doesNothingWhenDisabled() {
         properties.disableAutoRenew();
         var result = subject.tryToRemoveAccount(EntityNum.fromLong(nonExpiredAccountNum));
-        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
+        assertEquals(SystemTaskResult.NOTHING_TO_DO, result);
 
         properties.disableContractAutoRenew();
         result = subject.tryToRemoveContract(EntityNum.fromLong(nonExpiredAccountNum));
-        assertEquals(ExpiryProcessResult.NOTHING_TO_DO, result);
+        assertEquals(SystemTaskResult.NOTHING_TO_DO, result);
     }
 
     @Test
@@ -103,7 +103,7 @@ class RemovalHelperTest {
 
         verify(expiryStats, never()).countRemovedContract();
         verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, finishedReturns);
-        assertEquals(ExpiryProcessResult.DONE, result);
+        assertEquals(SystemTaskResult.DONE, result);
     }
 
     @Test
@@ -120,7 +120,7 @@ class RemovalHelperTest {
         var result = subject.tryToRemoveAccount(expiredNum);
 
         verifyNoInteractions(recordsHelper);
-        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
+        assertEquals(SystemTaskResult.NO_CAPACITY_LEFT, result);
     }
 
     @Test
@@ -141,7 +141,7 @@ class RemovalHelperTest {
 
         verify(recordsHelper).streamCryptoRemovalStep(true, expiredNum, finishedReturns);
         verify(expiryStats).countRemovedContract();
-        assertEquals(ExpiryProcessResult.DONE, result);
+        assertEquals(SystemTaskResult.DONE, result);
     }
 
     @Test
@@ -155,7 +155,7 @@ class RemovalHelperTest {
 
         var result = subject.tryToRemoveContract(expiredNum);
 
-        assertEquals(ExpiryProcessResult.NO_CAPACITY_LEFT, result);
+        assertEquals(SystemTaskResult.NO_CAPACITY_LEFT, result);
     }
 
     private final Instant now = Instant.ofEpochSecond(1_234_567L);

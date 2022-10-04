@@ -193,7 +193,7 @@ public class SerializedForms {
                             MIN_TEST_CASES_PER_VERSION),
                     entry(
                             MerkleNetworkContext.class,
-                            SeededPropertySource::next0300NetworkContext,
+                            SeededPropertySource::next0310NetworkContext,
                             MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
                     entry(
                             MerkleScheduledTransactionsState.class,

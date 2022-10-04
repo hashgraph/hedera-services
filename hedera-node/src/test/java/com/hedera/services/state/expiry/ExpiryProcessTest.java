@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -140,6 +140,11 @@ class ExpiryProcessTest {
                         contractGC,
                         accountGC,
                         recordsHelper);
+    }
+
+    @Test
+    void alwaysActive() {
+        assertTrue(subject.isActive());
     }
 
     @Test
