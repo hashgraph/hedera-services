@@ -15,16 +15,11 @@
  */
 package com.hedera.services.fees;
 
-//import com.hedera.services.precompile.Precompile;
+// import com.hedera.services.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.fee.FeeObject;
-
-import java.time.Instant;
 
 public interface PricesAndFeesProvider {
     FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at);
@@ -33,7 +28,8 @@ public interface PricesAndFeesProvider {
 
     long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
-//    FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
+    //    FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at,
+    // ResponseType type);
 
-//    long gasFeeInTinybars(final Instant consensusTime, final Precompile precompile);
+    //    long gasFeeInTinybars(final Instant consensusTime, final Precompile precompile);
 }

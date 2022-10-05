@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.execution;
+package com.hedera.services.fees.calculation;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -39,7 +36,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class LivePricesSourceTest {
+class PricesAndFeesTest {
     private static final Instant now = Instant.ofEpochSecond(1_234_567L);
     private static final Timestamp timeNow = MiscUtils.asTimestamp(now);
     private static final long gasPriceTinybars = 123;
@@ -54,24 +51,21 @@ class LivePricesSourceTest {
     private static final ExchangeRate activeRate =
             ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(12).build();
     private static final long reasonableMultiplier = 7;
-    private static final long insaneMultiplier = Long.MAX_VALUE / 2;
 
     @Mock private HbarCentExchange exchange;
+    @Mock private FeeCalculator feeCalculator;
     @Mock private UsagePricesProvider usagePrices;
-    @Mock private FeeMultiplierSource feeMultiplierSource;
-    @Mock private TransactionContext txnCtx;
-    @Mock private TxnAccessor accessor;
 
-    private LivePricesSource subject;
+    private PricesAndFeesImplementation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new LivePricesSource(exchange, usagePrices, feeMultiplierSource, txnCtx);
+        subject = new PricesAndFeesImplementation(exchange, feeCalculator, usagePrices);
     }
 
     @Test
     void getsExpectedGasPriceWithReasonableMultiplier() {
-        givenCollabsWithMultiplier(reasonableMultiplier);
+        givenCollabs();
 
         final var expected =
                 getTinybarsFromTinyCents(activeRate, gasPriceTinybars) * reasonableMultiplier;
@@ -91,7 +85,7 @@ class LivePricesSourceTest {
 
     @Test
     void getsExpectedSbhPriceWithReasonableMultiplier() {
-        givenCollabsWithMultiplier(reasonableMultiplier);
+        givenCollabs();
 
         final var expected =
                 getTinybarsFromTinyCents(activeRate, sbhPriceTinybars) * reasonableMultiplier;
@@ -101,15 +95,13 @@ class LivePricesSourceTest {
 
     @Test
     void getsExpectedSbhPriceWithInsaneMultiplier() {
-        givenCollabsWithMultiplier(insaneMultiplier);
+        givenCollabs();
 
         assertEquals(Long.MAX_VALUE, subject.currentStorageByteHoursPrice(now, ContractCall));
     }
 
-    private void givenCollabsWithMultiplier(final long multiplier) {
+    private void givenCollabs() {
         given(exchange.rate(timeNow)).willReturn(activeRate);
         given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
-        given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
-        given(txnCtx.accessor()).willReturn(accessor);
     }
 }

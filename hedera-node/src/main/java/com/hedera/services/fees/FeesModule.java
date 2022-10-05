@@ -46,7 +46,6 @@ import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.RecordedStorageFeeCharging;
 import com.hedera.services.fees.charging.StorageFeeCharging;
-import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

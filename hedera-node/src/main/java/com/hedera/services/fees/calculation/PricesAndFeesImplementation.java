@@ -19,12 +19,16 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.PricesAndFeesProvider;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Instant;
+import java.util.function.ToLongFunction;
+
+import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 @Singleton
 public class PricesAndFeesImplementation implements PricesAndFeesProvider {
@@ -56,5 +60,48 @@ public class PricesAndFeesImplementation implements PricesAndFeesProvider {
     @Override
     public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
         return feeCalculator.estimatedGasPriceInTinybars(function, at);
+    }
+
+    public long currentGasPrice(final Instant now, final HederaFunctionality function) {
+        return currentPrice(now, function, FeeComponents::getGas);
+    }
+
+    public long currentStorageByteHoursPrice(
+            final Instant now, final HederaFunctionality function) {
+        return currentPrice(now, function, FeeComponents::getSbh);
+    }
+
+    public long currentGasPriceInTinycents(final Instant now, final HederaFunctionality function) {
+        return currentFeeInTinycents(now, function, FeeComponents::getGas);
+    }
+
+    private long currentPrice(
+            final Instant now,
+            final HederaFunctionality function,
+            final ToLongFunction<FeeComponents> resourcePriceFn) {
+        final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
+        long feeInTinyCents = currentFeeInTinycents(now, function, resourcePriceFn);
+        long feeInTinyBars = getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
+        final var unscaledPrice = Math.max(1L, feeInTinyBars);
+
+        final var maxMultiplier = Long.MAX_VALUE / feeInTinyBars;
+        // Hardcoded
+        final var curMultiplier = 7;
+        if (curMultiplier > maxMultiplier) {
+            return Long.MAX_VALUE;
+        } else {
+            return unscaledPrice * curMultiplier;
+        }
+    }
+
+    private long currentFeeInTinycents(
+            final Instant now,
+            final HederaFunctionality function,
+            final ToLongFunction<FeeComponents> resourcePriceFn) {
+        final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
+        final var prices = usagePrices.defaultPricesGiven(function, timestamp);
+
+        /* Fee schedule prices are set in thousandths of a tinycent */
+        return resourcePriceFn.applyAsLong(prices.getServicedata()) / 1000;
     }
 }
