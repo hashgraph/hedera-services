@@ -1,36 +1,22 @@
 package com.hedera.services.evm.implementation.contracts.execution;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-
 import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.evm.implementation.contracts.execution.traceability.HederaEvmTracer;
-import com.hedera.services.evm.implementation.exceptions.InvalidTransactionException;
-import com.hedera.services.evm.implementation.exceptions.ResourceLimitException;
 import com.hedera.services.evm.implementation.store.models.EvmAccount;
 import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
-import com.hedera.services.evm.store.contracts.HederaWorldUpdater;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Provider;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
@@ -57,6 +43,8 @@ abstract class HederaEvmTxProcessor {
   private final Map<String, Provider<ContractCreationProcessor>> ccps;
   private AbstractMessageProcessor messageCallProcessor;
   private AbstractMessageProcessor contractCreationProcessor;
+  private HederaEvmTransactionProcessingResult transactionProcessingResult;
+  private OperationTracer tracer;
   protected final EvmProperties dynamicProperties;
 
   protected HederaEvmTxProcessor(
@@ -74,6 +62,10 @@ abstract class HederaEvmTxProcessor {
 
   protected void setWorldState(final HederaEvmMutableWorldState worldState) {
     this.worldState = worldState;
+  }
+
+  protected void setOperationTracer(final OperationTracer tracer) {
+    this.tracer = tracer;
   }
 
   protected HederaEvmTxProcessor(
@@ -114,7 +106,7 @@ abstract class HederaEvmTxProcessor {
    *     address
    * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
    */
-  protected TransactionProcessingResult execute(
+  protected void execute(
       final EvmAccount sender,
       final Address receiver,
       final long gasPrice,
@@ -160,14 +152,6 @@ abstract class HederaEvmTxProcessor {
         buildInitialFrame(commonInitialFrame, receiver, payload, value);
     messageFrameStack.addFirst(initialFrame);
 
-    HederaEvmTracer hederaTracer =
-        new HederaEvmTracer(
-            !isStatic
-                && dynamicProperties
-                .enabledSidecars()
-                .contains(SidecarType.CONTRACT_ACTION));
-    hederaTracer.init(initialFrame);
-
     if (dynamicProperties.dynamicEvmVersion()) {
       String evmVersion = dynamicProperties.evmVersion();
       messageCallProcessor = mcps.get(evmVersion).get();
@@ -175,34 +159,33 @@ abstract class HederaEvmTxProcessor {
     }
 
     while (!messageFrameStack.isEmpty()) {
-      process(messageFrameStack.peekFirst(), hederaTracer);
+      process(messageFrameStack.peekFirst(), tracer);
     }
 
     var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
     final long sbhRefund = updater.getSbhRefund();
-//    final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
     // Externalise result
     if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-      return TransactionProcessingResult.successful(
+      this.transactionProcessingResult = HederaEvmTransactionProcessingResult.successful(
           initialFrame.getLogs(),
           gasUsedByTransaction,
           sbhRefund,
           gasPrice,
           initialFrame.getOutputData(),
-          mirrorReceiver,
-          stateChanges,
-          hederaTracer.getActions());
+          mirrorReceiver);
     } else {
-      return TransactionProcessingResult.failed(
+      this.transactionProcessingResult = HederaEvmTransactionProcessingResult.failed(
           gasUsedByTransaction,
           sbhRefund,
           gasPrice,
           initialFrame.getRevertReason(),
-          initialFrame.getExceptionalHaltReason(),
-          stateChanges,
-          hederaTracer.getActions());
+          initialFrame.getExceptionalHaltReason());
     }
+  }
+
+  public HederaEvmTransactionProcessingResult getResult() {
+    return this.transactionProcessingResult;
   }
 
   private long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
@@ -248,4 +231,3 @@ abstract class HederaEvmTxProcessor {
     };
   }
 }
-
