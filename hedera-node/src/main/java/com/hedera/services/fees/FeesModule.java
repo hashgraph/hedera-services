@@ -98,7 +98,8 @@ public interface FeesModule {
 
     @Binds
     @Singleton
-    PricesAndFeesProvider bindPricesAndFeesProvider(PricesAndFeesImplementation pricesAndFeesImplementation);
+    PricesAndFeesProvider bindPricesAndFeesProvider(
+            PricesAndFeesImplementation pricesAndFeesImplementation);
 
     @Provides
     @ElementsIntoSet
