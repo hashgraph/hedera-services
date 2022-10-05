@@ -10,4 +10,5 @@ module com.hedera.services.evm {
   exports com.hedera.services.evm;
   exports com.hedera.services.evm.contracts.execution;
   exports com.hedera.services.evm.store.contracts;
+  exports com.hedera.services.evm.store.models;
 }

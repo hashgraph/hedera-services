@@ -9,7 +9,6 @@ public interface EvmProperties {
   String evmVersion();
   Address fundingAccount();
   boolean dynamicEvmVersion();
-  Set<SidecarType> enabledSidecars();
   int maxGasRefundPercentage();
 
 }

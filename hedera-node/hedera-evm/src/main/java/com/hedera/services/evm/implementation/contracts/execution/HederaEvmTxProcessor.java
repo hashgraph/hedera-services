@@ -1,13 +1,10 @@
 package com.hedera.services.evm.implementation.contracts.execution;
 
 import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
-import com.hedera.services.evm.implementation.contracts.execution.traceability.HederaEvmTracer;
-import com.hedera.services.evm.implementation.store.models.EvmAccount;
 import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
-import com.hedera.services.stream.proto.SidecarType;
+import com.hedera.services.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -17,6 +14,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
@@ -26,18 +24,18 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all the peripherals upon
- * instantiation. Provides a base {@link EvmTxProcessor#execute(EvmAccount, Address, long, long, long,
- * Bytes, boolean, boolean, Address, BigInteger, long, EvmAccount)} method that handles the end-to-end
+ * instantiation. Provides a base {@link HederaEvmTxProcessor#execute(HederaEvmAccount, Address, long, long, long,
+ * Bytes, boolean, boolean, Address)} method that handles the end-to-end
  * execution of an EVM transaction.
  */
 abstract class HederaEvmTxProcessor {
   private static final int MAX_STACK_SIZE = 1024;
-  private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
   private BlockMetaSource blockMetaSource;
   private HederaEvmMutableWorldState worldState;
 
   private final GasCalculator gasCalculator;
+  //FEATURE WORK add implementation that provides logic for multiple price related methods
   private final PricesAndFeesProvider livePricesSource;
   private final Map<String, Provider<MessageCallProcessor>> mcps;
   private final Map<String, Provider<ContractCreationProcessor>> ccps;
@@ -89,8 +87,7 @@ abstract class HederaEvmTxProcessor {
   }
 
   /**
-   * Executes the {@link MessageFrame} of the EVM transaction. Returns the result as {@link
-   * TransactionProcessingResult}
+   * Executes the {@link MessageFrame} of the EVM transaction and fills execution results into a field.
    *
    * @param sender The origin {@link EvmAccount} that initiates the transaction
    * @param receiver the priority form of the receiving {@link Address} (i.e., EIP-1014 if
@@ -104,10 +101,9 @@ abstract class HederaEvmTxProcessor {
    * @param isStatic Whether the execution is static
    * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
    *     address
-   * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
    */
   protected void execute(
-      final EvmAccount sender,
+      final HederaEvmAccount sender,
       final Address receiver,
       final long gasPrice,
       final long gasLimit,
