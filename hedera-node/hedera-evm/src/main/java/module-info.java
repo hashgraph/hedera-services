@@ -8,4 +8,5 @@ module com.hedera.services.evm.implementation {
     requires hedera.protobuf.java.api;
     requires org.apache.commons.lang3;
     requires javax.inject;
+    requires com.swirlds.common;
 }

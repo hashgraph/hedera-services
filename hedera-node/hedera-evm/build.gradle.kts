@@ -26,6 +26,7 @@ dependencies {
     api(libs.protobuf.java)
     api(libs.besu.evm)
     api(libs.besu.datatypes)
+    api(libs.swirlds.common)
     api(project(":hapi-utils"))
     api(project(":hedera-node:hedera-evm-api"))
     implementation(libs.hapi)
