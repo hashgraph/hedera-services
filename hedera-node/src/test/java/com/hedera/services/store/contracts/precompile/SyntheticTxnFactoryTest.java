@@ -532,8 +532,7 @@ class SyntheticTxnFactoryTest {
                 100L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getDenominator());
         assertEquals(365, txnBody.getNodeStakeUpdate().getStakingPeriodsStored());
         assertEquals(1L, txnBody.getNodeStakeUpdate().getStakingPeriod());
-        assertEquals(
-                0L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getNumerator());
+        assertEquals(0L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getNumerator());
         assertEquals(
                 100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getDenominator());
         assertEquals(
