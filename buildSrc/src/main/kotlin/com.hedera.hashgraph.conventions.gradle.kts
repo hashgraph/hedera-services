@@ -20,9 +20,9 @@ import java.util.*
 plugins {
     `java-library`
     jacoco
-//    id("com.hedera.hashgraph.spotless-conventions")
-//    id("com.hedera.hashgraph.spotless-java-conventions")
-//    id("com.hedera.hashgraph.spotless-kotlin-conventions")
+    id("com.hedera.hashgraph.spotless-conventions")
+    id("com.hedera.hashgraph.spotless-java-conventions")
+    id("com.hedera.hashgraph.spotless-kotlin-conventions")
 }
 
 group = "com.hedera.hashgraph"
