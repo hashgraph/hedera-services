@@ -19,4 +19,3 @@ plugins {
 }
 
 description = "Hedera Services Node"
-
