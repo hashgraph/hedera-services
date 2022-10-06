@@ -15,4 +15,6 @@
  */
 package com.hedera.services.utils.accessors;
 
-public class TxnAccessor {}
+public interface TxnAccessor {
+    boolean congestionExempt();
+}
