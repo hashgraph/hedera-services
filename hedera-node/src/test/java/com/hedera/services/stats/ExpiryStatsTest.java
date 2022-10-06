@@ -50,7 +50,7 @@ class ExpiryStatsTest {
 
         subject.registerWith(platform);
 
-        verify(platform, times(3)).getOrCreateMetric(any());
+        verify(platform, times(3)).getMetrics().getOrCreate(any());
     }
 
     @Test

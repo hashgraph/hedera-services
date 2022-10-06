@@ -93,7 +93,7 @@ class HapiOpSpeedometersTest {
         subject.registerWith(platform);
 
         // then:
-        verify(platform, times(6)).getOrCreateMetric(any());
+        verify(platform, times(6)).getMetrics().getOrCreate(any());
     }
 
     @Test

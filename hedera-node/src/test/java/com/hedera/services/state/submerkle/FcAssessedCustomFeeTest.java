@@ -94,7 +94,7 @@ class FcAssessedCustomFeeTest {
         final var amount = 345L;
         final var subject = new FcAssessedCustomFee(account, token, amount, effectivePayers);
         // and:
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(EntityId.class, EntityId::new));
         // and:
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -130,7 +130,7 @@ class FcAssessedCustomFeeTest {
                         amount,
                         FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
         // and:
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(EntityId.class, EntityId::new));
         // and:
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -160,7 +160,7 @@ class FcAssessedCustomFeeTest {
         final var amount = 345L;
         final var subject = new FcAssessedCustomFee(account, amount, effectivePayers);
         // and:
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(EntityId.class, EntityId::new));
         // and:
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -192,7 +192,7 @@ class FcAssessedCustomFeeTest {
                 new FcAssessedCustomFee(
                         account, amount, FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
         // and:
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(EntityId.class, EntityId::new));
         // and:
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();

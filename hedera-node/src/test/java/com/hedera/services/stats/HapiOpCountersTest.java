@@ -67,7 +67,7 @@ class HapiOpCountersTest {
 
         subject = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
-        given(platform.getOrCreateMetric(any())).willReturn(counter);
+        given(platform.getMetrics().getOrCreate(any())).willReturn(counter);
 
         subject.registerWith(platform);
     }
@@ -98,7 +98,7 @@ class HapiOpCountersTest {
 
     @Test
     void registersExpectedStatEntries() {
-        verify(platform, times(9)).getOrCreateMetric(any());
+        verify(platform, times(9)).getMetrics().getOrCreate(any());
     }
 
     @Test

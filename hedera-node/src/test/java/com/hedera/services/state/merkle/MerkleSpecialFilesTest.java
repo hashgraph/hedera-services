@@ -240,11 +240,11 @@ class MerkleSpecialFilesTest {
     void liveFireSerdeWorksWithNonEmpty() throws IOException, ConstructableRegistryException {
         final var baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(MerkleSpecialFiles.class, MerkleSpecialFiles::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(FCQueue.class, FCQueue::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(BytesElement.class, BytesElement::new));
 
         subject.update(fid, Arrays.copyOfRange(stuff, 0, stuff.length / 2));
@@ -273,7 +273,7 @@ class MerkleSpecialFilesTest {
     void liveFireSerdeWorksWithEmpty() throws IOException, ConstructableRegistryException {
         final var baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(MerkleSpecialFiles.class, MerkleSpecialFiles::new));
 
         subject.serialize(dos);

@@ -143,7 +143,7 @@ class SignedStateBalancesExporterTest {
 
     @BeforeEach
     void setUp() throws ConstructableRegistryException, NoSuchAlgorithmException {
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
         final var secondNonNodeDelTokenAssociationKey =
                 fromAccountTokenRel(secondNonNode, theDeletedToken);

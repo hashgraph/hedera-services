@@ -64,11 +64,11 @@ public class Constructables {
 
     public static void registerForAccounts() {
         try {
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(FCQueue.class, FCQueue::new));
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
@@ -77,7 +77,7 @@ public class Constructables {
 
     public static void registerForStakingInfo() {
         try {
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleStakingInfo.class, MerkleStakingInfo::new));
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
@@ -85,28 +85,28 @@ public class Constructables {
     }
 
     public static void registerForContractStorage() throws ConstructableRegistryException {
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(ContractKey.class, ContractKey::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(ContractKeySerializer.class, ContractKeySerializer::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(ContractKeySupplier.class, ContractKeySupplier::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(IterableContractValue.class, IterableContractValue::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(
                         IterableContractValueSupplier.class, IterableContractValueSupplier::new));
     }
 
     public static void registerForMerkleMap() {
         try {
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(
                             MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
         } catch (ConstructableRegistryException e) {
@@ -115,20 +115,20 @@ public class Constructables {
     }
 
     public static void registerForVirtualMap() throws ConstructableRegistryException {
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(Hash.class, Hash::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(VirtualNodeCache.class, VirtualNodeCache::new));
     }
 
     public static void registerForJasperDb() throws ConstructableRegistryException {
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(JasperDbBuilder.class, JasperDbBuilder::new));
     }
 }

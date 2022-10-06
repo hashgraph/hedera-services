@@ -18,6 +18,7 @@ package com.hedera.services.state.migration;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.INSERTIONS_PER_COPY;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.THREAD_COUNT;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -67,7 +68,8 @@ class ReleaseTwentySixMigrationTest {
         makeStorageIterable(
                 initializingState, migratorFactory, migrationUtility, iterableContractStorage);
 
-        verify(migrationUtility).extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
+        verify(migrationUtility).extractVirtualMapData(
+                getStaticThreadManager(), contractStorage, migrator, THREAD_COUNT);
         verify(migrator).finish();
         verify(initializingState)
                 .setChild(StateChildIndices.CONTRACT_STORAGE, finalContractStorage);
@@ -87,7 +89,7 @@ class ReleaseTwentySixMigrationTest {
                 .willReturn(migrator);
         willThrow(InterruptedException.class)
                 .given(migrationUtility)
-                .extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
+                .extractVirtualMapData(getStaticThreadManager(), contractStorage, migrator, THREAD_COUNT);
 
         Assertions.assertThrows(
                 IllegalStateException.class,

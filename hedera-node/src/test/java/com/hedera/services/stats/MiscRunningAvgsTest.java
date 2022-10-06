@@ -50,7 +50,7 @@ class MiscRunningAvgsTest {
 
         subject.registerWith(platform);
 
-        verify(platform, times(4)).getOrCreateMetric(any());
+        verify(platform, times(4)).getMetrics().getOrCreate(any());
     }
 
     @Test

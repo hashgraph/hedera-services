@@ -23,6 +23,7 @@ import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_V
 import static com.hedera.services.context.properties.SerializableSemVers.forHapiAndHedera;
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -928,7 +929,7 @@ class ServicesStateTest {
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
-        when(platform.getCryptography()).thenReturn(new CryptoEngine());
+        when(platform.getCryptography()).thenReturn(new CryptoEngine(getStaticThreadManager()));
         assertNotNull(platform.getCryptography());
         return platform;
     }

@@ -45,9 +45,9 @@ class RecordStreamFileParsingTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         // this register is needed so that the Hash objects can be de-serialized
-        ConstructableRegistry.registerConstructables("com.swirlds.common");
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
         // this register is needed so that RecordStreamObject can be de-serialized
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(RecordStreamObject.class, RecordStreamObject::new));
         // the following settings are needed for de-serializing Transaction
         SettingsCommon.maxTransactionCountPerEvent = 245760;

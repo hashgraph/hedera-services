@@ -373,19 +373,19 @@ class MigrationRecordsManagerTest {
 
     private void registerConstructables() {
         try {
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(
                             MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(
                             MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-            ConstructableRegistry.registerConstructable(
+            ConstructableRegistry.getInstance().registerConstructable(
                     new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);

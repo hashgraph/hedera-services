@@ -37,15 +37,15 @@ public class ExpiryStats {
 
     public void registerWith(final Platform platform) {
         contractsRemoved =
-                platform.getOrCreateMetric(
+                platform.getMetrics().getOrCreate(
                         new Counter.Config(STAT_CATEGORY, Names.CONTRACTS_REMOVED_SINCE_RESTART)
                                 .withDescription(Descriptions.CONTRACTS_REMOVED_SINCE_RESTART));
         contractsRenewed =
-                platform.getOrCreateMetric(
+                platform.getMetrics().getOrCreate(
                         new Counter.Config(STAT_CATEGORY, Names.CONTRACTS_RENEWED_SINCE_RESTART)
                                 .withDescription(Descriptions.CONTRACTS_RENEWED_SINCE_RESTART));
         idsScannedPerConsSec =
-                platform.getOrCreateMetric(
+                platform.getMetrics().getOrCreate(
                         new RunningAverageMetric.Config(
                                         STAT_CATEGORY, Names.IDS_SCANNED_PER_CONSENSUS_SEC)
                                 .withDescription(Descriptions.IDS_SCANNED_PER_CONSENSUS_SEC)

@@ -16,6 +16,7 @@
 package com.hedera.services.state.migration;
 
 import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -26,6 +27,7 @@ import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +61,7 @@ public class ReleaseTwentySixMigration {
                     "Migrating contract storage into iterable VirtualMap with {} threads",
                     THREAD_COUNT);
             final var watch = StopWatch.createStarted();
-            migrationUtility.extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
+            migrationUtility.extractVirtualMapData(getStaticThreadManager(), contractStorage, migrator, THREAD_COUNT);
             logDone(watch);
         } catch (InterruptedException e) {
             log.error("Interrupted while making contract storage iterable", e);
@@ -86,6 +88,7 @@ public class ReleaseTwentySixMigration {
     @FunctionalInterface
     public interface MigrationUtility {
         void extractVirtualMapData(
+                ThreadManager threadManager,
                 VirtualMap<ContractKey, ContractValue> source,
                 InterruptableConsumer<Pair<ContractKey, ContractValue>> handler,
                 int threadCount)

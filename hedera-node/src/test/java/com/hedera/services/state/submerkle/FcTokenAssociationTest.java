@@ -46,7 +46,7 @@ class FcTokenAssociationTest {
 
     @Test
     void serializationWorks() throws IOException, ConstructableRegistryException {
-        ConstructableRegistry.registerConstructable(
+        ConstructableRegistry.getInstance().registerConstructable(
                 new ClassConstructorPair(EntityId.class, EntityId::new));
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();

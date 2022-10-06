@@ -125,7 +125,7 @@ public class SignedStateViewFactory {
     private void doWithLatest(final Consumer<ServicesState> action)
             throws NoValidSignedStateException {
         try (final AutoCloseableWrapper<ServicesState> wrapper =
-                platform.getLastCompleteSwirldState()) {
+                platform.getLatestSignedState()) {
             final var signedState = wrapper.get();
             if (!isUsable(signedState)) {
                 throw new NoValidSignedStateException();
