@@ -64,6 +64,7 @@ hedera-node/swirlds-tmp
 !hedera-node/hedera-mono-service/src/test/resources/bootstrap/*.json
 !hedera-node/hedera-mono-service/src/main/resources/*.json
 !hedera-node/hedera-mono-service/src/test/resources/testfiles/expiry-throttle.json
+!hedera-node/hedera-mono-service/src/test/resources/R4FeeSchedule.json
 !hedera-node/configuration/**/*.json
 !test-clients/src/main/resource/FeeSchedule.json
 !test-clients/src/main/resource/testSystemFiles/*.json
