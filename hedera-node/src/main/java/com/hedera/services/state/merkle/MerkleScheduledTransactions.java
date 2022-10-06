@@ -16,7 +16,7 @@
 package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Supplier;
+import java.util.function.Supplier;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
