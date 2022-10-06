@@ -4,7 +4,7 @@ module com.hedera.services.evm.implementation {
     requires com.google.protobuf;
     requires com.hedera.services.evm;
     requires tuweni.bytes;
-    requires hedera.protobuf.java.api;
+    requires com.hedera.hashgraph.protobuf.java.api;
     requires org.apache.commons.lang3;
     requires javax.inject;
     requires com.swirlds.common;
