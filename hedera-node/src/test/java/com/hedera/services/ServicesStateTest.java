@@ -115,15 +115,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ServicesStateTest {
     private final String signedStateDir = "src/test/resources/signedState/";
     private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
     private final SoftwareVersion justPriorVersion = forHapiAndHedera("0.28.1", "0.27.9");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
-    private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
-    private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
+    private final SoftwareVersion futureVersion = forHapiAndHedera("2.0.0", "1.0.0");
     private final NodeId selfId = new NodeId(false, 1L);
     private static final String bookMemo = "0.0.4";
 
@@ -172,6 +174,7 @@ class ServicesStateTest {
                 .deployedSoftwareVersion()
                 .setServices(SemanticVersion.newBuilder().setMinor(28).build());
         subject = new ServicesState();
+        setOtherMocks();
         setAllChildren();
     }
 
@@ -224,7 +227,6 @@ class ServicesStateTest {
         inOrder.verify(iterableStorageMigrator)
                 .makeStorageIterable(eq(subject), any(), any(), eq(iterableStorage));
         inOrder.verify(scheduledTransactions).doSchedulesMigrationIfNeeded();
-        inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
         inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
         inOrder.verify(networkContext).markPostUpgradeScanStatus();
 
@@ -259,6 +261,7 @@ class ServicesStateTest {
 
     @Test
     void getsAliasesFromMetadata() {
+        setOtherMocks();
         given(metadata.aliases()).willReturn(aliases);
         subject.setMetadata(metadata);
         assertSame(aliases, subject.aliases());
@@ -353,6 +356,7 @@ class ServicesStateTest {
 
     @Test
     void preHandleUsesEventExpansion() {
+        setOtherMocks();
         subject.setMetadata(metadata);
         given(metadata.app()).willReturn(app);
         given(app.eventExpansion()).willReturn(eventExpansion);
@@ -364,6 +368,7 @@ class ServicesStateTest {
 
     @Test
     void handleThrowsIfImmutable() {
+        setOtherMocks();
         subject.copy();
 
         assertThrows(
@@ -897,7 +902,7 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.STAKING_INFO, mockMm);
     }
 
-    private void setAllChildren() {
+    private void setOtherMocks() {
         given(addressBook.getSize()).willReturn(1);
         given(addressBook.getAddress(0)).willReturn(address);
         given(address.getId()).willReturn(0L);
@@ -905,6 +910,9 @@ class ServicesStateTest {
                 .willReturn(3_000_000_000L);
         given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
+    }
+
+    private void setAllChildren() {
         File databaseFolder = new File("database");
         try {
             if (!databaseFolder.exists()) {

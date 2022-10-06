@@ -565,16 +565,15 @@ public class ServicesState extends PartialNaryMerkleInternal
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
         }
 
-        if (FIRST_032X_VERSION.isAfter(deserializedVersion)) {
-            scheduleTxs().doSchedulesMigrationIfNeeded();
-        }
-
         if (FIRST_030X_VERSION.isAfter(deserializedVersion)) {
             if (getBootstrapProperties().getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS)) {
                 autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
             }
             nftLinksRepair.rebuildOwnershipLists(accounts(), uniqueTokens());
         }
+
+        // migrate any schedule transactions in MerkleMap to VirtualMap
+        scheduleTxs().doSchedulesMigrationIfNeeded();
 
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)
         final var app = getMetadata().app();
