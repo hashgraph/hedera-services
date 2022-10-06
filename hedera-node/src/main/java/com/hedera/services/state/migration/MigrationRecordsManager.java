@@ -16,7 +16,6 @@
 package com.hedera.services.state.migration;
 
 import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
@@ -28,11 +27,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -40,27 +37,14 @@ import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.stream.proto.ContractStateChange;
-import com.hedera.services.stream.proto.ContractStateChanges;
-import com.hedera.services.stream.proto.StorageChange;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.services.stream.proto.TransactionSidecarRecord.Builder;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.SidecarUtils;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
@@ -89,8 +73,6 @@ public class MigrationRecordsManager {
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
 
-    // Ensure we don't accidentally perform traceability exports at this time
-    private static boolean traceabilityKillSwitch = true;
     private final EntityCreator creator;
     private final TreasuryCloner treasuryCloner;
     private final SigImpactHistorian sigImpactHistorian;
@@ -100,9 +82,6 @@ public class MigrationRecordsManager {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private final AccountNumbers accountNumbers;
-    private final TransactionContext transactionContext;
-    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
-    private final EntityAccess entityAccess;
     private final BootstrapProperties bootstrapProperties;
     private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
@@ -117,9 +96,6 @@ public class MigrationRecordsManager {
             final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
             final SyntheticTxnFactory syntheticTxnFactory,
             final AccountNumbers accountNumbers,
-            final TransactionContext transactionContext,
-            final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage,
-            final EntityAccess entityAccess,
             final BootstrapProperties bootstrapProperties) {
         this.treasuryCloner = treasuryCloner;
         this.sigImpactHistorian = sigImpactHistorian;
@@ -130,9 +106,6 @@ public class MigrationRecordsManager {
         this.accounts = accounts;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.accountNumbers = accountNumbers;
-        this.transactionContext = transactionContext;
-        this.contractStorage = contractStorage;
-        this.entityAccess = entityAccess;
         this.bootstrapProperties = bootstrapProperties;
     }
 
@@ -158,13 +131,8 @@ public class MigrationRecordsManager {
                             EntityNum.fromLong(accountNumbers.nodeRewardAccount()));
             stakingFundAccounts.forEach(
                     num -> publishSyntheticCreationForStakingFund(num, implicitAutoRenewPeriod));
-        } else {
-            if (grantingFreeAutoRenewals()) {
-                publishContractFreeAutoRenewalRecords();
-            }
-            if (exportingTraceabilityInfo()) {
-                attemptToPublishTraceabilityMigrationRecords();
-            }
+        } else if (grantingFreeAutoRenewals()) {
+            publishContractFreeAutoRenewalRecords();
         }
 
         // And we always publish records for any treasury clones that needed to be created
@@ -188,12 +156,6 @@ public class MigrationRecordsManager {
 
     private boolean grantingFreeAutoRenewals() {
         return bootstrapProperties.getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS);
-    }
-
-    private boolean exportingTraceabilityInfo() {
-        return !traceabilityKillSwitch
-                && bootstrapProperties.getBooleanProperty(
-                        HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
     }
 
     private void publishSyntheticCreationForStakingFund(
@@ -282,142 +244,8 @@ public class MigrationRecordsManager {
                         });
     }
 
-    private void attemptToPublishTraceabilityMigrationRecords() {
-        if (!isSidecarGeneratingFunction(transactionContext.accessor().getFunction())) {
-            publishTraceabilityMigrationRecords();
-        }
-    }
-
-    private boolean isSidecarGeneratingFunction(final HederaFunctionality function) {
-        return function == HederaFunctionality.ContractCall
-                || function == HederaFunctionality.ContractCreate
-                || function == HederaFunctionality.EthereumTransaction;
-    }
-
-    private void publishTraceabilityMigrationRecords() {
-        final var contractStorageMap = contractStorage.get();
-        accounts.get()
-                .forEach(
-                        (id, account) -> {
-                            if (!account.isSmartContract()) {
-                                return;
-                            }
-                            final var contractId = id.toGrpcContractID();
-
-                            final var bytecodeSidecar =
-                                    generateMigrationBytecodeSidecarFor(contractId);
-                            if (bytecodeSidecar == null) {
-                                log.warn(
-                                        "Contract 0.0.{} has no bytecode in state - no migration"
-                                                + " sidecar records will be published.",
-                                        contractId.getContractNum());
-                                return;
-                            }
-                            transactionContext.addSidecarRecord(bytecodeSidecar);
-                            log.debug(
-                                    "Published migration bytecode sidecar for contract 0.0.{}",
-                                    contractId.getContractNum());
-
-                            var contractStorageKey = account.getFirstContractStorageKey();
-                            if (contractStorageKey == null) {
-                                log.debug(
-                                        "Contract 0.0.{} has no iterable storage - no migration"
-                                                + " state changes will be published.",
-                                        contractId.getContractNum());
-                                return;
-                            }
-                            final var stateChangesSidecar =
-                                    generateMigrationStateChangesSidecar(
-                                            contractId,
-                                            contractStorageMap,
-                                            contractStorageKey,
-                                            account.getNumContractKvPairs());
-                            transactionContext.addSidecarRecord(stateChangesSidecar);
-                            log.debug(
-                                    "Published migration state changes for contract 0.0.{}",
-                                    contractId.getContractNum());
-                        });
-    }
-
-    private TransactionSidecarRecord.Builder generateMigrationBytecodeSidecarFor(
-            final ContractID contractId) {
-        final var runtimeCode =
-                entityAccess.fetchCodeIfPresent(EntityIdUtils.asAccount(contractId));
-        if (runtimeCode == null) {
-            return null;
-        }
-        final var bytecodeSidecar =
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                        contractId, runtimeCode.toArrayUnsafe());
-        bytecodeSidecar.setMigration(true);
-        return bytecodeSidecar;
-    }
-
-    private Builder generateMigrationStateChangesSidecar(
-            final ContractID contractId,
-            final VirtualMap<ContractKey, IterableContractValue> contractStorageMap,
-            ContractKey contractStorageKey,
-            int maxNumberOfKvPairsToIterate) {
-        final var contractStateChangeBuilder =
-                ContractStateChange.newBuilder().setContractId(contractId);
-
-        IterableContractValue iterableValue;
-        while (maxNumberOfKvPairsToIterate > 0 && contractStorageKey != null) {
-            iterableValue = contractStorageMap.get(contractStorageKey);
-            contractStateChangeBuilder.addStorageChanges(
-                    StorageChange.newBuilder()
-                            .setSlot(ByteStringUtils.wrapUnsafely(slotAsBytes(contractStorageKey)))
-                            .setValueRead(
-                                    ByteStringUtils.wrapUnsafely(
-                                            iterableValue
-                                                    .asUInt256()
-                                                    .trimLeadingZeros()
-                                                    .toArrayUnsafe()))
-                            .build());
-            contractStorageKey =
-                    iterableValue.getNextKeyScopedTo(contractStorageKey.getContractId());
-            maxNumberOfKvPairsToIterate--;
-        }
-
-        if (maxNumberOfKvPairsToIterate != 0) {
-            log.warn(
-                    "After walking through all iterable storage of contract 0.0.{},"
-                        + " numContractKvPairs field indicates that there should have been {} more"
-                        + " k/v pair(s) left",
-                    contractId.getContractNum(),
-                    maxNumberOfKvPairsToIterate);
-        }
-
-        return TransactionSidecarRecord.newBuilder()
-                .setStateChanges(
-                        ContractStateChanges.newBuilder()
-                                .addContractStateChanges(contractStateChangeBuilder)
-                                .build())
-                .setMigration(true);
-    }
-
-    private byte[] slotAsBytes(final ContractKey contractStorageKey) {
-        final var numOfNonZeroBytes = contractStorageKey.getUint256KeyNonZeroBytes();
-        // getUint256KeyNonZeroBytes() returns 1 even if slot is 0, so
-        // check the least significant int in the int[] representation
-        // of the key to make sure we are in the edge case
-        if (numOfNonZeroBytes == 1 && contractStorageKey.getKey()[7] == 0) {
-            return new byte[0];
-        }
-        final var contractKeyBytes = new byte[numOfNonZeroBytes];
-        for (int i = numOfNonZeroBytes - 1, j = numOfNonZeroBytes - i - 1; i >= 0; i--, j++) {
-            contractKeyBytes[j] = contractStorageKey.getUint256Byte(i);
-        }
-        return contractKeyBytes;
-    }
-
     @VisibleForTesting
     void setSideEffectsFactory(Supplier<SideEffectsTracker> sideEffectsFactory) {
         this.sideEffectsFactory = sideEffectsFactory;
-    }
-
-    @VisibleForTesting
-    static void setTraceabilityKillSwitch(final boolean traceabilityKillSwitch) {
-        MigrationRecordsManager.traceabilityKillSwitch = traceabilityKillSwitch;
     }
 }

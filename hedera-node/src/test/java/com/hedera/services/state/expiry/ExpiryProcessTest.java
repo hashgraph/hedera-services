@@ -15,12 +15,10 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -33,6 +31,7 @@ import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.fees.charging.NonHapiFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.*;
 import com.hedera.services.state.expiry.renewal.RenewalHelper;
@@ -44,7 +43,6 @@ import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +58,6 @@ class ExpiryProcessTest {
     private final long nonZeroBalance = 2L;
     private final long fee = 1L;
     private final long actualRenewalPeriod = 3600L;
-    private final long fundingAccountNum = 98L;
     private final long nonExpiredAccountNum = 1002L;
     private final long fundedExpiredContractNum = 1004L;
     private final MerkleAccount mockAccount =
@@ -75,13 +72,6 @@ class ExpiryProcessTest {
                     .balance(nonZeroBalance)
                     .expirationTime(now.getEpochSecond() - 1)
                     .get();
-    private final MerkleAccount fundingAccount =
-            MerkleAccountFactory.newAccount()
-                    .number(EntityNum.fromLong(fundingAccountNum))
-                    .balance(nonZeroBalance)
-                    .expirationTime(now.getEpochSecond() + 100L)
-                    .get();
-
     private final CryptoGcOutcome finishedReturns =
             new CryptoGcOutcome(
                     FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
@@ -100,12 +90,12 @@ class ExpiryProcessTest {
     @Mock private AccountGC accountGC;
     @Mock private ContractGC contractGC;
     @Mock private ExpiryRecordsHelper recordsHelper;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private ExpiryStats expiryStats;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     @Mock private FeeDistribution feeDistribution;
     @Mock private SideEffectsTracker sideEffectsTracker;
+    @Mock private ConsensusTimeTracker consensusTimeTracker;
     private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
     private RenewalWork renewalWork;
     private RemovalWork removalWork;
@@ -116,7 +106,8 @@ class ExpiryProcessTest {
     @BeforeEach
     void setUp() {
         setUpPreRequisites();
-        subject = new ExpiryProcess(classifier, renewalWork, removalWork);
+        subject = new ExpiryProcess(classifier, renewalWork, removalWork, consensusTimeTracker);
+        given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
     }
 
     private void setUpPreRequisites() {
@@ -140,6 +131,15 @@ class ExpiryProcessTest {
                         contractGC,
                         accountGC,
                         recordsHelper);
+    }
+
+    @Test
+    void needsNewContextWithNoStandaloneTime() {
+        given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(false);
+
+        var result = subject.process(nonExpiredAccountNum, now);
+
+        assertEquals(NEEDS_DIFFERENT_CONTEXT, result);
     }
 
     @Test
@@ -308,7 +308,7 @@ class ExpiryProcessTest {
 
         given(classifier.getPayerForLastClassified()).willReturn(mockAccount);
         given(classifier.getPayerNumForLastClassified()).willReturn(key);
-        given(expiryThrottle.allow(any())).willReturn(true);
+        given(expiryThrottle.allow(anyList())).willReturn(true);
 
         given(
                         accountsLedger.get(

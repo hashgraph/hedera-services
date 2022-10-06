@@ -41,6 +41,7 @@ class ExpiryThrottleTest {
     private static final Instant pointA = Instant.ofEpochSecond(1_234_567);
     private static final String OTHER_RESOURCE_LOC = "testfiles/other-expiry-throttle.json";
     private static final String VALID_RESOURCE_LOC = "testfiles/expiry-throttle.json";
+    private static final long EXPECTED_SINGLE_USE_CAPACITY = 200000000000000L;
     private static final long EXPECTED_CAPACITY = 10000000000000000L;
     private static final List<MapAccessType> minReqUnitOfWork = List.of(ACCOUNTS_GET, STORAGE_PUT);
 
@@ -159,6 +160,19 @@ class ExpiryThrottleTest {
         assertEquals(EXPECTED_CAPACITY, throttle.used());
 
         assertFalse(subject.allow(List.of(STORAGE_PUT)));
+    }
+
+    @Test
+    void canAllowSingleOpAfterReubild() {
+        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC))
+                .willReturn(getTestResource(VALID_RESOURCE_LOC));
+        assertFalse(subject.allowOne(STORAGE_GET));
+
+        subject.rebuildGiven(VALID_RESOURCE_LOC, minReqUnitOfWork);
+
+        assertTrue(subject.allowOne(STORAGE_PUT));
+        final var throttle = subject.getThrottle();
+        assertEquals(EXPECTED_SINGLE_USE_CAPACITY, throttle.used());
     }
 
     @Test

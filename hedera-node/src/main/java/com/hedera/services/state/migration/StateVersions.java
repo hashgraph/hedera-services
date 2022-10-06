@@ -47,6 +47,7 @@ public final class StateVersions {
     //   - Release 0.27.x was state version 20
     //   - Release 0.28.x was state version 21
     //   - Release 0.29.x was state version 22
+    //   - Release 0.30.x was state version 23
     public static final int RELEASE_025X_VERSION = 18;
     public static final int RELEASE_0260_VERSION = 19;
     public static final int RELEASE_0270_VERSION = 20;
@@ -67,6 +68,8 @@ public final class StateVersions {
             forHapiAndHedera("0.28.0", "0.28.0");
     public static final SerializableSemVers FIRST_030X_VERSION =
             forHapiAndHedera("0.30.0", "0.30.0");
+    public static final SerializableSemVers FIRST_031X_VERSION =
+            forHapiAndHedera("0.31.0", "0.31.0");
     public static final SerializableSemVers FIRST_032X_VERSION =
             forHapiAndHedera("0.32.0", "0.32.0");
 

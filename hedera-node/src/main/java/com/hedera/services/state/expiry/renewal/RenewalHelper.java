@@ -16,7 +16,7 @@
 package com.hedera.services.state.expiry.renewal;
 
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.state.expiry.ExpiryProcessResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
 
@@ -27,11 +27,11 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.NonHapiFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.expiry.ExpiryProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
@@ -81,8 +81,7 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @Override
-    public ExpiryProcessResult tryToRenewContract(
-            final EntityNum contract, final Instant cycleTime) {
+    public SystemTaskResult tryToRenewContract(final EntityNum contract, final Instant cycleTime) {
         if (!dynamicProperties.shouldAutoRenewContracts()) {
             return NOTHING_TO_DO;
         }
@@ -90,14 +89,14 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @Override
-    public ExpiryProcessResult tryToRenewAccount(final EntityNum account, final Instant cycleTime) {
+    public SystemTaskResult tryToRenewAccount(final EntityNum account, final Instant cycleTime) {
         if (!dynamicProperties.shouldAutoRenewAccounts()) {
             return NOTHING_TO_DO;
         }
         return renew(account, cycleTime, false);
     }
 
-    private ExpiryProcessResult renew(
+    private SystemTaskResult renew(
             final EntityNum account, final Instant now, final boolean isContract) {
         assertHasLastClassifiedAccount();
 

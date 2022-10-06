@@ -137,6 +137,7 @@ public class RecordStreamObject extends AbstractSerializableHashable
                 .append("TransactionRecord", transactionRecord)
                 .append("Transaction", transaction)
                 .append("ConsensusTimestamp", consensusTimestamp)
+                .append("Sidecars", sidecars)
                 .toString();
     }
 

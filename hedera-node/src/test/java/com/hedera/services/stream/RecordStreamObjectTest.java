@@ -96,9 +96,9 @@ class RecordStreamObjectTest {
 
     @Test
     void toStringTest() {
-        final String expectedString =
-                "RecordStreamObject[TransactionRecord=mock record,Transaction=mock transaction,"
-                        + "ConsensusTimestamp=mock consensusTimestamp]";
+        final var expectedString =
+                "RecordStreamObject[TransactionRecord=mock record,Transaction=mock"
+                    + " transaction,ConsensusTimestamp=mock consensusTimestamp,Sidecars=<null>]";
         assertEquals(expectedString, recordStreamObject.toString());
     }
 
