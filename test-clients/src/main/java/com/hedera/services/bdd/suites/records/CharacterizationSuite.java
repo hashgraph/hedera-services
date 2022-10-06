@@ -72,6 +72,7 @@ public class CharacterizationSuite extends HapiApiSuite {
                                 .signedBy(DEFAULT_PAYER, "admin", "sender"),
                         getAccountBalance("receiver").hasTinyBars(0L))
                 .then(
+                        cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)),
                         scheduleDelete("twoSigXfer")
                                 .payingWith("sender")
                                 .signedBy("sender", "admin")
