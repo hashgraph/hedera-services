@@ -17,14 +17,18 @@ package com.hedera.services.fees.calculation;
 
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.PricesAndFeesProvider;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
+
 import java.util.function.ToLongFunction;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -35,15 +39,21 @@ public class PricesAndFeesImplementation implements PricesAndFeesProvider {
     private final HbarCentExchange exchange;
     private final FeeCalculator feeCalculator;
     private final UsagePricesProvider usagePrices;
+    private final FeeMultiplierSource feeMultiplierSource;
+    private final TransactionContext txnCtx;
 
     @Inject
     public PricesAndFeesImplementation(
             final HbarCentExchange exchange,
             final FeeCalculator feeCalculator,
-            final UsagePricesProvider usagePrices) {
+            final UsagePricesProvider usagePrices,
+            final FeeMultiplierSource feeMultiplierSource,
+            final TransactionContext txnCtx) {
         this.exchange = exchange;
         this.usagePrices = usagePrices;
         this.feeCalculator = feeCalculator;
+        this.feeMultiplierSource = feeMultiplierSource;
+        this.txnCtx = txnCtx;
     }
 
     @Override
@@ -59,6 +69,16 @@ public class PricesAndFeesImplementation implements PricesAndFeesProvider {
     @Override
     public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
         return feeCalculator.estimatedGasPriceInTinybars(function, at);
+    }
+
+    @Override
+    public long currentMultiplier(TxnAccessor accessor) {
+        return feeMultiplierSource.currentMultiplier(accessor);
+    }
+
+    public long currentStorageByteHoursPrice(
+            final Timestamp now, final HederaFunctionality function) {
+        return currentPrice(now, function, FeeComponents::getSbh);
     }
 
     public long currentGasPriceInTinycents(
@@ -84,12 +104,17 @@ public class PricesAndFeesImplementation implements PricesAndFeesProvider {
             final Timestamp now,
             final HederaFunctionality function,
             final ToLongFunction<FeeComponents> resourcePriceFn) {
+        final var timestamp = Timestamp.newBuilder().setSeconds(now.getSeconds()).build();
         long feeInTinyCents = currentFeeInTinycents(now, function, resourcePriceFn);
-        long feeInTinyBars = getTinybarsFromTinyCents(exchange.rate(now), feeInTinyCents);
+        long feeInTinyBars = getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
         final var unscaledPrice = Math.max(1L, feeInTinyBars);
 
         final var maxMultiplier = Long.MAX_VALUE / feeInTinyBars;
-        final var curMultiplier = 70L;
-        return curMultiplier;
+        final var curMultiplier = feeMultiplierSource.currentMultiplier(txnCtx.accessor());
+        if (curMultiplier > maxMultiplier) {
+            return Long.MAX_VALUE;
+        } else {
+            return unscaledPrice * curMultiplier;
+        }
     }
 }
