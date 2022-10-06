@@ -64,6 +64,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -175,11 +176,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                     final var recoveredEvmAddress =
                             recoverAddressFromPubKey(
                                     keyFromAlias.getECDSASecp256K1().toByteArray());
-                    assert recoveredEvmAddress != null;
 
-                    if (!aliasManager
-                            .lookupIdBy(ByteString.copyFrom(recoveredEvmAddress))
-                            .equals(MISSING_NUM)) {
+                    if (recoveredEvmAddress != null
+                            && !aliasManager
+                                    .lookupIdBy(ByteString.copyFrom(recoveredEvmAddress))
+                                    .equals(MISSING_NUM)) {
                         throw new InvalidTransactionException(INVALID_ALIAS_KEY);
                     }
                 }
@@ -187,6 +188,52 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
                 customizer
                         .key(jKeyFromAlias)
+                        .memo(AUTO_MEMO)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                        .isReceiverSigRequired(false)
+                        .isSmartContract(false)
+                        .alias(op.getAlias());
+            }
+        } else if (!op.getAlias().isEmpty() && op.hasKey()) {
+            if (!aliasManager.lookupIdBy(op.getAlias()).equals(MISSING_NUM)) {
+                throw new InvalidTransactionException(INVALID_ALIAS_KEY);
+            }
+            if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
+                customizer
+                        .key(asFcKeyUnchecked(op.getKey()))
+                        .memo(AUTO_MEMO)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                        .isReceiverSigRequired(false)
+                        .isSmartContract(false)
+                        .alias(op.getAlias());
+            }
+
+            if (!op.getKey().getECDSASecp256K1().isEmpty()) {
+                final var recoveredEvmAddressFromPrimitiveKey =
+                        recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
+
+                if (recoveredEvmAddressFromPrimitiveKey != null
+                        && !aliasManager
+                                .lookupIdBy(
+                                        ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
+                                .equals(MISSING_NUM)) {
+                    throw new InvalidTransactionException(INVALID_ALIAS_KEY);
+                }
+                customizer
+                        .key(asFcKeyUnchecked(op.getKey()))
+                        .memo(AUTO_MEMO)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                        .isReceiverSigRequired(false)
+                        .isSmartContract(false)
+                        .alias(op.getAlias());
+            }
+
+            if (!op.getKey().getEd25519().isEmpty()) {
+                customizer
+                        .key(asFcKeyUnchecked(op.getKey()))
                         .memo(AUTO_MEMO)
                         .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                         .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
@@ -203,11 +250,12 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
-                assert recoveredEvmAddressFromPrimitiveKey != null;
 
-                if (!aliasManager
-                        .lookupIdBy(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
-                        .equals(MISSING_NUM)) {
+                if (recoveredEvmAddressFromPrimitiveKey != null
+                        && !aliasManager
+                                .lookupIdBy(
+                                        ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
+                                .equals(MISSING_NUM)) {
                     throw new InvalidTransactionException(INVALID_ALIAS_KEY);
                 }
                 customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
@@ -249,20 +297,50 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         if (memoValidity != OK) {
             return memoValidity;
         }
-        if (!op.hasKey() && op.getAlias().isEmpty()) {
-            return KEY_REQUIRED;
-        }
-        if (!validator.hasGoodEncoding(op.getKey()) && op.getAlias().isEmpty()) {
-            return BAD_ENCODING;
-        }
-
         if (op.getAlias().isEmpty()) {
+            if (!op.hasKey()) {
+                return KEY_REQUIRED;
+            }
+            if (!validator.hasGoodEncoding(op.getKey())) {
+                return BAD_ENCODING;
+            }
             var fcKey = asFcKeyUnchecked(op.getKey());
             if (fcKey.isEmpty()) {
                 return KEY_REQUIRED;
             }
             if (!fcKey.isValid()) {
                 return INVALID_ADMIN_KEY;
+            }
+        }
+
+        if (op.hasKey() && !op.getAlias().isEmpty()) {
+            if (!validator.hasGoodEncoding(op.getKey())) {
+                return BAD_ENCODING;
+            }
+            var fcKey = asFcKeyUnchecked(op.getKey());
+            if (fcKey.isEmpty()) {
+                return KEY_REQUIRED;
+            }
+            if (!fcKey.isValid()) {
+                return INVALID_ADMIN_KEY;
+            }
+            if (!op.getKey().getEd25519().isEmpty()
+                    && !op.getKey().equals(asPrimitiveKeyUnchecked(op.getAlias()))) {
+                return INVALID_ALIAS_KEY;
+            }
+
+            if (!op.getKey().getECDSASecp256K1().isEmpty()
+                    && op.getAlias().size() == EVM_ADDRESS_SIZE) {
+                final var recoveredEvmAddress =
+                        recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
+                if (!Arrays.equals(recoveredEvmAddress, op.getAlias().toByteArray())) {
+                    return INVALID_ALIAS_KEY;
+                }
+            }
+            if (!op.getKey().getECDSASecp256K1().isEmpty()
+                    && op.getAlias().size() != EVM_ADDRESS_SIZE
+                    && !op.getKey().equals(asPrimitiveKeyUnchecked(op.getAlias()))) {
+                return INVALID_ALIAS_KEY;
             }
         }
 
