@@ -35,9 +35,9 @@ dependencies {
     implementation(libs.hapi)
     implementation(libs.headlong)
     implementation(
-        variantOf(libs.netty.transport.native.epoll) {
-            classifier("linux-x86_64")
-        }
+            variantOf(libs.netty.transport.native.epoll) {
+                classifier("linux-x86_64")
+            }
     )
     implementation(libs.commons.codec)
     implementation(libs.commons.io)
@@ -65,13 +65,15 @@ tasks.withType<JavaCompile> {
 val jmhDaggerSources = file("build/generated/sources/annotationProcessor/java/jmh")
 java.sourceSets["jmh"].java.srcDir(jmhDaggerSources)
 
+val nodeWorkingDir = "" + rootProject.file("hedera-node")
 // Add all the libs dependencies into the jar manifest!
 tasks.jar {
     manifest {
         attributes(
-            "Main-Class" to "com.hedera.services.ServicesMain",
-            "Class-Path" to configurations.getByName("runtimeClasspath")
-                .joinToString(separator = " ") { "../lib/" + it.name }
+                "Main-Class" to "com.hedera.services.ServicesMain",
+                "Class-Path" to configurations.getByName("runtimeClasspath")
+                        .joinToString(separator = " ") { "$nodeWorkingDir/data/lib/" + it.name }
+
         )
     }
 }
@@ -94,40 +96,40 @@ tasks.processResources {
 // Copy dependencies into `data/lib`
 val copyLib = tasks.register<Copy>("copyLib") {
     from(project.configurations.getByName("runtimeClasspath"))
-    into(File(project.projectDir, "data/lib"))
-    shouldRunAfter(tasks.assemble)
+    into(File(project.projectDir, "$nodeWorkingDir/data/lib"))
 }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
 val copyApp = tasks.register<Copy>("copyApp") {
     from(tasks.jar)
-    into("data/apps")
+    into("$nodeWorkingDir/data/apps")
     rename { "HederaNode.jar" }
-    shouldRunAfter(tasks.assemble)
+    shouldRunAfter(tasks.getByName("copyLib"))
 }
 
 tasks.assemble {
-    dependsOn(copyApp)
     dependsOn(copyLib)
+    dependsOn(copyApp)
 }
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     dependsOn(tasks.assemble)
-    classpath("data/apps/HederaNode.jar")
+    workingDir(nodeWorkingDir)
+    classpath("$nodeWorkingDir/data/apps/HederaNode.jar")
 }
 
 val cleanRun = tasks.register("cleanRun") {
-    project.delete(File(project.projectDir, "database"))
-    project.delete(File(project.projectDir, "output"))
-    project.delete(File(project.projectDir, "settingsUsed.txt"))
-    project.delete(File(project.projectDir, "swirlds.jar"))
-    project.projectDir.list { _, fileName -> fileName.startsWith("MainNetStats") }
-        ?.forEach { file ->
-            project.delete(file)
-        }
+    project.delete(File(project.projectDir, "$nodeWorkingDir/database"))
+    project.delete(File(project.projectDir, "$nodeWorkingDir/output"))
+    project.delete(File(project.projectDir, "$nodeWorkingDir/settingsUsed.txt"))
+    project.delete(File(project.projectDir, "$nodeWorkingDir/swirlds.jar"))
+    project.projectDir.list { _, fileName -> fileName.startsWith(nodeWorkingDir + "MainNetStats") }
+            ?.forEach { file ->
+                project.delete(file)
+            }
 
-    val dataDir = File(project.projectDir, "data")
+    val dataDir = File(project.projectDir, "$nodeWorkingDir/data")
     project.delete(File(dataDir, "accountBalances"))
     project.delete(File(dataDir, "apps"))
     project.delete(File(dataDir, "lib"))
