@@ -198,6 +198,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(69L, subject.maxPrecedingRecords());
         assertEquals(70L, subject.maxFollowingRecords());
         assertEquals(76L, subject.maxDailyStakeRewardThPerH());
+        assertEquals(88L, subject.traceabilityMinFreeToUsedGasThrottleRatio());
     }
 
     @Test
@@ -518,6 +519,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 84) % 2 == 0);
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
                 .willReturn((i + 85) % 2 == 0);
+        given(properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO))
+                .willReturn(i + 87L);
     }
 
     private Set<EntityType> typesFor(final int i) {

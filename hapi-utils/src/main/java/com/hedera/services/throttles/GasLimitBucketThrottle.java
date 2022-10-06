@@ -75,6 +75,15 @@ public class GasLimitBucketThrottle {
                 / bucket.totalCapacity();
     }
 
+    /**
+     * Returns the approximate ratio of free-to-used capacity in the underlying bucket.
+     *
+     * @return the free-to-used ratio
+     */
+    public long freeToUsedRatio() {
+        return bucket.capacityFree() / bucket.capacityUsed();
+    }
+
     void resetLastAllowedUse() {
         lastAllowedUnits = 0;
     }

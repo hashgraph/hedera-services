@@ -30,6 +30,8 @@ import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.throttling.ExpiryThrottle;
+import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
@@ -56,6 +58,7 @@ public class TraceabilityExportTask implements SystemTask {
 
     private final EntityAccess entityAccess;
     private final ExpiryThrottle expiryThrottle;
+    private final FunctionalityThrottling handleThrottling;
     private final GlobalDynamicProperties dynamicProperties;
     private final TraceabilityRecordsHelper recordsHelper;
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
@@ -67,6 +70,7 @@ public class TraceabilityExportTask implements SystemTask {
             final ExpiryThrottle expiryThrottle,
             final GlobalDynamicProperties dynamicProperties,
             final TraceabilityRecordsHelper recordsHelper,
+            final @HandleThrottle FunctionalityThrottling handleThrottling,
             final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
             final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage) {
         this.entityAccess = entityAccess;
@@ -75,6 +79,7 @@ public class TraceabilityExportTask implements SystemTask {
         this.accounts = accounts;
         this.recordsHelper = recordsHelper;
         this.contractStorage = contractStorage;
+        this.handleThrottling = handleThrottling;
     }
 
     @Override
@@ -87,7 +92,7 @@ public class TraceabilityExportTask implements SystemTask {
 
     @Override
     public SystemTaskResult process(final long literalNum, final Instant now) {
-        if (!recordsHelper.canExportNow()) {
+        if (!recordsHelper.canExportNow() || inHighGasRegime()) {
             return NEEDS_DIFFERENT_CONTEXT;
         }
         // It would be a lot of work to split even a single sidecar's construction across
@@ -109,6 +114,11 @@ public class TraceabilityExportTask implements SystemTask {
             recordsHelper.exportSidecarsViaSynthUpdate(literalNum, sidecars);
         }
         return DONE;
+    }
+
+    private boolean inHighGasRegime() {
+        return handleThrottling.gasLimitThrottle().freeToUsedRatio()
+                < dynamicProperties.traceabilityMinFreeToUsedGasThrottleRatio();
     }
 
     private void addStateChangesSideCar(

@@ -127,6 +127,10 @@ public class GasLimitDeterministicThrottle {
         return new DeterministicThrottle.UsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
     }
 
+    public long freeToUsedRatio() {
+        return delegate.freeToUsedRatio();
+    }
+
     public void resetUsageTo(final DeterministicThrottle.UsageSnapshot usageSnapshot) {
         final var bucket = delegate.bucket();
         lastDecisionTime = usageSnapshot.lastDecisionTime();

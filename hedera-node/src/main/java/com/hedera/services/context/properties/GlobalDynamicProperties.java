@@ -149,6 +149,7 @@ public class GlobalDynamicProperties {
     private boolean tokenAutoCreationsEnabled;
     private boolean doTraceabilityExport;
     private boolean compressAccountBalanceFilesOnCreation;
+    private long traceabilityMinFreeToUsedGasThrottleRatio;
 
     @Inject
     public GlobalDynamicProperties(
@@ -304,6 +305,8 @@ public class GlobalDynamicProperties {
                 properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
         doTraceabilityExport =
                 properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
+        traceabilityMinFreeToUsedGasThrottleRatio =
+                properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
     }
 
     public int maxTokensPerAccount() {
@@ -732,5 +735,9 @@ public class GlobalDynamicProperties {
 
     public boolean shouldDoTraceabilityExport() {
         return doTraceabilityExport;
+    }
+
+    public long traceabilityMinFreeToUsedGasThrottleRatio() {
+        return traceabilityMinFreeToUsedGasThrottleRatio;
     }
 }
