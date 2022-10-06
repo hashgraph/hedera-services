@@ -59,11 +59,11 @@ hedera-node/swirlds-tmp
 !hapi-fees/src/test/resources/*.json
 !hapi-utils/src/test/resources/bootstrap/*.json
 !hapi-utils/src/test/resources/sysfiles/*.json
-!hedera-node/src/test/resources/fees/feeSchedules.json
-!hedera-node/src/test/resources/legacyAccounts.json
-!hedera-node/src/test/resources/bootstrap/*.json
-!hedera-node/src/main/resources/*.json
-!hedera-node/src/test/resources/testfiles/expiry-throttle.json
+!hedera-node/hedera-mono-service/src/test/resources/fees/feeSchedules.json
+!hedera-node/hedera-mono-service/src/test/resources/legacyAccounts.json
+!hedera-node/hedera-mono-service/src/test/resources/bootstrap/*.json
+!hedera-node/hedera-mono-service/src/main/resources/*.json
+!hedera-node/hedera-mono-service/src/test/resources/testfiles/expiry-throttle.json
 !hedera-node/configuration/**/*.json
 !test-clients/src/main/resource/FeeSchedule.json
 !test-clients/src/main/resource/testSystemFiles/*.json
@@ -101,7 +101,9 @@ hedera-node/database/
 hedera-node/output/
 hedera-node/target/
 hedera-node/src/test/resources/diskFs
+hedera-node/hedera-mono-service/src/test/resources/diskFs
 hedera-node/src/test/resources/upgrade
+hedera-node/hedera-mono-service/src/test/resources/upgrade
 hedera-node/forensics
 hedera-node/pgdata
 hedera-node/temp
