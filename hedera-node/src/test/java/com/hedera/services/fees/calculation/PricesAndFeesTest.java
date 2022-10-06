@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
-
 import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +82,9 @@ class PricesAndFeesTest {
         exchange = mock(HbarCentExchange.class);
         feeCalculator = mock(FeeCalculator.class);
         feeMultiplierSource = mock(FeeMultiplierSource.class);
-        subject = new PricesAndFeesImplementation(exchange, feeCalculator, usagePrices, feeMultiplierSource, txnCtx);
+        subject =
+                new PricesAndFeesImplementation(
+                        exchange, feeCalculator, usagePrices, feeMultiplierSource, txnCtx);
     }
 
     @Test

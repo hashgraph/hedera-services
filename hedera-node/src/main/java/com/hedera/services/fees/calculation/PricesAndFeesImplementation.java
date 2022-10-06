@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
-
 import java.util.function.ToLongFunction;
 import javax.inject.Inject;
 import javax.inject.Singleton;
