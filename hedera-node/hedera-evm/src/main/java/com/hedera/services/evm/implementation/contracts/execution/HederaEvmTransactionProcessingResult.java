@@ -69,7 +69,7 @@ public class HederaEvmTransactionProcessingResult {
         Optional.empty());
   }
 
-  private HederaEvmTransactionProcessingResult(
+  protected HederaEvmTransactionProcessingResult(
       final Status status,
       final List<Log> logs,
       final long gasUsed,

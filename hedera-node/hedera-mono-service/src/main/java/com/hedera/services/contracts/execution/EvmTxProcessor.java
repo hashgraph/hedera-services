@@ -23,19 +23,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.traceability.HederaTracer;
+import com.hedera.services.evm.implementation.contracts.execution.BlockMetaSource;
+import com.hedera.services.evm.implementation.contracts.execution.HederaEvmTxProcessor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,19 +59,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  * Bytes, boolean, boolean, Address, BigInteger, long, Account)} method that handles the end-to-end
  * execution of an EVM transaction.
  */
-abstract class EvmTxProcessor {
-    private static final int MAX_STACK_SIZE = 1024;
-
-    private BlockMetaSource blockMetaSource;
-    private HederaMutableWorldState worldState;
-
-    private final GasCalculator gasCalculator;
-    private final LivePricesSource livePricesSource;
-    private final Map<String, Provider<MessageCallProcessor>> mcps;
-    private final Map<String, Provider<ContractCreationProcessor>> ccps;
-    private AbstractMessageProcessor messageCallProcessor;
-    private AbstractMessageProcessor contractCreationProcessor;
-    protected final GlobalDynamicProperties dynamicProperties;
+abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
     protected EvmTxProcessor(
             final LivePricesSource livePricesSource,
@@ -83,14 +70,6 @@ abstract class EvmTxProcessor {
         this(null, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, null);
     }
 
-    protected void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
-        this.blockMetaSource = blockMetaSource;
-    }
-
-    protected void setWorldState(final HederaMutableWorldState worldState) {
-        this.worldState = worldState;
-    }
-
     protected EvmTxProcessor(
             final HederaMutableWorldState worldState,
             final LivePricesSource livePricesSource,
@@ -99,16 +78,7 @@ abstract class EvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource) {
-        this.worldState = worldState;
-        this.livePricesSource = livePricesSource;
-        this.dynamicProperties = dynamicProperties;
-        this.gasCalculator = gasCalculator;
-
-        this.mcps = mcps;
-        this.ccps = ccps;
-        this.messageCallProcessor = mcps.get(dynamicProperties.evmVersion()).get();
-        this.contractCreationProcessor = ccps.get(dynamicProperties.evmVersion()).get();
-        this.blockMetaSource = blockMetaSource;
+        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
     }
 
     /**
@@ -144,10 +114,18 @@ abstract class EvmTxProcessor {
             final Account relayer) {
         final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
         final Wei upfrontCost = gasCost.add(value);
-        final long intrinsicGas =
-                gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
-        final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
+        final HederaTracer hederaTracer =
+            new HederaTracer(
+                !isStatic
+                    && ((GlobalDynamicProperties) dynamicProperties)
+                    .enabledSidecars()
+                    .contains(SidecarType.CONTRACT_ACTION));
+        hederaTracer.init(initialFrame);
+        super.setOperationTracer(hederaTracer);
+        super.execute(sender, receiver, gasPrice, gasLimit, value, payload, contractCreation, isStatic,
+            mirrorReceiver);
+
         final var chargingResult =
                 chargeForGas(
                         gasCost,
@@ -161,59 +139,8 @@ abstract class EvmTxProcessor {
                         userOfferedGasPrice,
                         sender.getId().asEvmAddress(),
                         relayer == null ? null : relayer.getId().asEvmAddress(),
-                        updater);
+                    (HederaWorldState.Updater) updater);
 
-        final var coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-        final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
-        final var gasAvailable = gasLimit - intrinsicGas;
-        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
-
-        final var valueAsWei = Wei.of(value);
-        final var stackedUpdater = updater.updater();
-        final var senderEvmAddress = sender.canonicalAddress();
-        final MessageFrame.Builder commonInitialFrame =
-                MessageFrame.builder()
-                        .messageFrameStack(messageFrameStack)
-                        .maxStackSize(MAX_STACK_SIZE)
-                        .worldUpdater(stackedUpdater)
-                        .initialGas(gasAvailable)
-                        .originator(senderEvmAddress)
-                        .gasPrice(Wei.of(gasPrice))
-                        .sender(senderEvmAddress)
-                        .value(valueAsWei)
-                        .apparentValue(valueAsWei)
-                        .blockValues(blockValues)
-                        .depth(0)
-                        .completer(unused -> {})
-                        .isStatic(isStatic)
-                        .miningBeneficiary(coinbase)
-                        .blockHashLookup(blockMetaSource::getBlockHash)
-                        .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
-
-        final MessageFrame initialFrame =
-                buildInitialFrame(commonInitialFrame, receiver, payload, value);
-        messageFrameStack.addFirst(initialFrame);
-
-        HederaTracer hederaTracer =
-                new HederaTracer(
-                        !isStatic
-                                && dynamicProperties
-                                        .enabledSidecars()
-                                        .contains(SidecarType.CONTRACT_ACTION));
-        hederaTracer.init(initialFrame);
-
-        if (dynamicProperties.dynamicEvmVersion()) {
-            String evmVersion = dynamicProperties.evmVersion();
-            messageCallProcessor = mcps.get(evmVersion).get();
-            contractCreationProcessor = ccps.get(evmVersion).get();
-        }
-
-        while (!messageFrameStack.isEmpty()) {
-            process(messageFrameStack.peekFirst(), hederaTracer);
-        }
-
-        var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
-        final long sbhRefund = updater.getSbhRefund();
         final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
         if (isStatic) {
@@ -239,11 +166,11 @@ abstract class EvmTxProcessor {
                     chargingResult.sender().incrementBalance(refundedWei);
                 }
             }
-            sendToCoinbase(coinbase, gasLimit - refunded, gasPrice, updater);
+            sendToCoinbase(coinbase, gasLimit - refunded, gasPrice, (HederaWorldState.Updater) updater);
             initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-            if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
-                stateChanges = updater.getFinalStateChanges();
+            if (((GlobalDynamicProperties) dynamicProperties).enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+                stateChanges = ((HederaWorldState.Updater) updater).getFinalStateChanges();
             } else {
                 stateChanges = Map.of();
             }
@@ -283,26 +210,11 @@ abstract class EvmTxProcessor {
         }
 
         // Externalise result
-        if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-            return TransactionProcessingResult.successful(
-                    initialFrame.getLogs(),
-                    gasUsedByTransaction,
-                    sbhRefund,
-                    gasPrice,
-                    initialFrame.getOutputData(),
-                    mirrorReceiver,
-                    stateChanges,
-                    hederaTracer.getActions());
-        } else {
-            return TransactionProcessingResult.failed(
-                    gasUsedByTransaction,
-                    sbhRefund,
-                    gasPrice,
-                    initialFrame.getRevertReason(),
-                    initialFrame.getExceptionalHaltReason(),
-                    stateChanges,
-                    hederaTracer.getActions());
-        }
+        final var transactionProcessingResult = (TransactionProcessingResult) super.getResult();
+        transactionProcessingResult.setStateChanges(stateChanges);
+        transactionProcessingResult.setActions(hederaTracer.getActions());
+
+        return transactionProcessingResult;
     }
 
     private void sendToCoinbase(

@@ -35,7 +35,6 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.contracts.execution.BlockMetaSource;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;

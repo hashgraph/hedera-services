@@ -28,22 +28,28 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  * Bytes, boolean, boolean, Address)} method that handles the end-to-end
  * execution of an EVM transaction.
  */
-abstract class HederaEvmTxProcessor {
+public abstract class HederaEvmTxProcessor {
   private static final int MAX_STACK_SIZE = 1024;
 
-  private BlockMetaSource blockMetaSource;
-  private HederaEvmMutableWorldState worldState;
+  protected BlockMetaSource blockMetaSource;
+  protected HederaEvmMutableWorldState worldState;
 
-  private final GasCalculator gasCalculator;
+  protected final GasCalculator gasCalculator;
   //FEATURE WORK add implementation that provides logic for multiple price related methods
-  private final PricesAndFeesProvider livePricesSource;
-  private final Map<String, Provider<MessageCallProcessor>> mcps;
-  private final Map<String, Provider<ContractCreationProcessor>> ccps;
-  private AbstractMessageProcessor messageCallProcessor;
-  private AbstractMessageProcessor contractCreationProcessor;
-  private HederaEvmTransactionProcessingResult transactionProcessingResult;
-  private OperationTracer tracer;
-  protected final EvmProperties dynamicProperties;
+  protected final PricesAndFeesProvider livePricesSource;
+  protected final Map<String, Provider<MessageCallProcessor>> mcps;
+  protected final Map<String, Provider<ContractCreationProcessor>> ccps;
+  protected AbstractMessageProcessor messageCallProcessor;
+  protected AbstractMessageProcessor contractCreationProcessor;
+  protected HederaEvmTransactionProcessingResult transactionProcessingResult;
+  protected OperationTracer tracer;
+  protected EvmProperties dynamicProperties;
+  protected Address coinbase;
+  protected HederaEvmWorldState updater;
+  protected long intrinsicGas;
+  protected MessageFrame initialFrame;
+  protected long gasUsedByTransaction;
+  protected long sbhRefund;
 
   protected HederaEvmTxProcessor(
       final PricesAndFeesProvider livePricesSource,
@@ -54,15 +60,15 @@ abstract class HederaEvmTxProcessor {
     this(null, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, null);
   }
 
-  protected void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
+  public void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
     this.blockMetaSource = blockMetaSource;
   }
 
-  protected void setWorldState(final HederaEvmMutableWorldState worldState) {
+  public void setWorldState(final HederaEvmMutableWorldState worldState) {
     this.worldState = worldState;
   }
 
-  protected void setOperationTracer(final OperationTracer tracer) {
+  public void setOperationTracer(final OperationTracer tracer) {
     this.tracer = tracer;
   }
 
@@ -112,12 +118,11 @@ abstract class HederaEvmTxProcessor {
       final boolean contractCreation,
       final boolean isStatic,
       final Address mirrorReceiver) {
-    final long intrinsicGas =
+    this.intrinsicGas =
         gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+    this.updater = (HederaEvmWorldState) worldState.updater();
 
-    final HederaEvmWorldState updater = (HederaEvmWorldState) worldState.updater();
-
-    final var coinbase = dynamicProperties.fundingAccount();
+    this.coinbase = dynamicProperties.fundingAccountAddress();
     final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
     final var gasAvailable = gasLimit - intrinsicGas;
     final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
@@ -144,7 +149,7 @@ abstract class HederaEvmTxProcessor {
             .blockHashLookup(blockMetaSource::getBlockHash)
             .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
-    final MessageFrame initialFrame =
+    this.initialFrame =
         buildInitialFrame(commonInitialFrame, receiver, payload, value);
     messageFrameStack.addFirst(initialFrame);
 
@@ -158,8 +163,8 @@ abstract class HederaEvmTxProcessor {
       process(messageFrameStack.peekFirst(), tracer);
     }
 
-    var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
-    final long sbhRefund = updater.getSbhRefund();
+    this.gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
+    this.sbhRefund = updater.getSbhRefund();
 
     // Externalise result
     if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {

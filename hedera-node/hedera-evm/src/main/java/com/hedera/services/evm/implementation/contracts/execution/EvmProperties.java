@@ -7,8 +7,7 @@ import org.hyperledger.besu.datatypes.Address;
 public interface EvmProperties {
 
   String evmVersion();
-  Address fundingAccount();
+  Address fundingAccountAddress();
   boolean dynamicEvmVersion();
   int maxGasRefundPercentage();
-
 }
