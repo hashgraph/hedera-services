@@ -104,16 +104,6 @@ public class ServicesState extends PartialNaryMerkleInternal
     /* Set to true if virtual NFTs are enabled. */
     private boolean enabledVirtualNft;
 
-    /**
-     * For scheduled transaction migration we need to initialize the new scheduled transactions'
-     * storage _before_ the {@link #migrateFrom(SoftwareVersion)} call. There are things that call
-     * {@link #scheduleTxs()} before {@link #migrateFrom(SoftwareVersion)} is called, like
-     * initializationFlow, which would cause casting and other issues if not handled.
-     *
-     * <p>Remove this once we no longer need to handle migrations from pre-0.26.
-     */
-    private MerkleScheduledTransactions migrationSchedules;
-
     private final BootstrapProperties bootstrapProperties;
 
     public ServicesState() {
@@ -573,10 +563,9 @@ public class ServicesState extends PartialNaryMerkleInternal
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
         }
 
-        if(FIRST_032X_VERSION.isAfter(deserializedVersion)){
+        if (FIRST_032X_VERSION.isAfter(deserializedVersion)) {
             scheduleTxs().doSchedulesMigrationIfNeeded();
         }
-
 
         if (FIRST_030X_VERSION.isAfter(deserializedVersion)) {
             if (getBootstrapProperties().getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS)) {
