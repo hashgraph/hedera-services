@@ -96,7 +96,7 @@ tasks.processResources {
 // Copy dependencies into `data/lib`
 val copyLib = tasks.register<Copy>("copyLib") {
     from(project.configurations.getByName("runtimeClasspath"))
-    into(File(project.projectDir, "$nodeWorkingDir/data/lib"))
+    into("$nodeWorkingDir/data/lib")
 }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
