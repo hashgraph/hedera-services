@@ -59,10 +59,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
-/**
- * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release. It
- * should be moved back to VirtualMap in 0.30. Eventually implementing MerkleLeaf should be removed.
- */
 public class ScheduleVirtualValue extends PartialMerkleLeaf
         implements VirtualValue, Keyed<EntityNumVirtualKey>, MerkleLeaf, WritableCopyable {
 

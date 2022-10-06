@@ -32,10 +32,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
-/**
- * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release. It
- * should be moved back to VirtualMap in 0.30. Eventually implementing MerkleLeaf should be removed.
- */
 public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         implements VirtualValue, Keyed<ScheduleEqualityVirtualKey>, MerkleLeaf, WritableCopyable {
 
@@ -204,7 +200,7 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
     }
 
     /**
-     * Needed until getForModify works on VirtualMap
+     * Needed until getForModify works on VirtualMap // Do we need this now ?
      *
      * @return a copy of this without marking this as immutable
      */

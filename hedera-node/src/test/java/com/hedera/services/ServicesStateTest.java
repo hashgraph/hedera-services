@@ -401,7 +401,7 @@ class ServicesStateTest {
     @Test
     void minimumVersionIsRelease025() {
         // expect:
-        assertEquals(StateVersions.RELEASE_025X_VERSION, subject.getMinimumSupportedVersion());
+        assertEquals(StateVersions.RELEASE_0270_VERSION, subject.getMinimumSupportedVersion());
     }
 
     @Test

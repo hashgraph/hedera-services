@@ -16,7 +16,6 @@
 package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
-import java.util.function.Supplier;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
@@ -33,6 +32,7 @@ import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
