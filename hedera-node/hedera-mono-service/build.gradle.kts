@@ -35,9 +35,9 @@ dependencies {
     implementation(libs.hapi)
     implementation(libs.headlong)
     implementation(
-            variantOf(libs.netty.transport.native.epoll) {
-                classifier("linux-x86_64")
-            }
+        variantOf(libs.netty.transport.native.epoll) {
+            classifier("linux-x86_64")
+        }
     )
     implementation(libs.commons.codec)
     implementation(libs.commons.io)
@@ -70,9 +70,9 @@ val nodeWorkingDir = "" + rootProject.file("hedera-node")
 tasks.jar {
     manifest {
         attributes(
-                "Main-Class" to "com.hedera.services.ServicesMain",
-                "Class-Path" to configurations.getByName("runtimeClasspath")
-                        .joinToString(separator = " ") { "$nodeWorkingDir/data/lib/" + it.name }
+            "Main-Class" to "com.hedera.services.ServicesMain",
+            "Class-Path" to configurations.getByName("runtimeClasspath")
+                .joinToString(separator = " ") { "$nodeWorkingDir/data/lib/" + it.name }
 
         )
     }
@@ -125,9 +125,9 @@ val cleanRun = tasks.register("cleanRun") {
     project.delete(File(project.projectDir, "$nodeWorkingDir/settingsUsed.txt"))
     project.delete(File(project.projectDir, "$nodeWorkingDir/swirlds.jar"))
     project.projectDir.list { _, fileName -> fileName.startsWith(nodeWorkingDir + "MainNetStats") }
-            ?.forEach { file ->
-                project.delete(file)
-            }
+        ?.forEach { file ->
+            project.delete(file)
+        }
 
     val dataDir = File(project.projectDir, "$nodeWorkingDir/data")
     project.delete(File(dataDir, "accountBalances"))
