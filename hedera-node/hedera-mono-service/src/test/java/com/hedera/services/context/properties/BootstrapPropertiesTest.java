@@ -34,7 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.mock;
 
+import com.google.common.collect.ImmutableMap;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -52,6 +55,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
@@ -314,18 +318,19 @@ class BootstrapPropertiesTest {
 
     @Test
     void throwsIseIfIoExceptionOccurs() {
-        final var bkup = BootstrapProperties.resourceStreamProvider;
+        // This test requires special instantiation, and thus uses its own subject (instead of the
+        // 'subject' class field)
+        final var subject =
+                new BootstrapProperties(
+                        ignore -> {
+                            throw new IOException("Oops!");
+                        },
+                        BootstrapProperties.DEFAULT_FILE_STREAM_PROVIDER);
         subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
-        BootstrapProperties.resourceStreamProvider =
-                ignore -> {
-                    throw new IOException("Oops!");
-                };
 
         final var ise = assertThrows(IllegalStateException.class, subject::ensureProps);
         final var msg = String.format("'%s' could not be loaded!", STD_PROPS_RESOURCE);
         assertEquals(msg, ise.getMessage());
-
-        BootstrapProperties.resourceStreamProvider = bkup;
     }
 
     @Test
@@ -370,6 +375,32 @@ class BootstrapPropertiesTest {
         assertEquals(
                 EnumSet.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE),
                 subject.getProperty(CONTRACTS_SIDECARS));
+    }
+
+    @Test
+    void includesEnvironmentOverrides() {
+        // This test requires special instantiation, and thus uses its own subject (instead of the
+        // 'subject' class field)
+        final var envProvider = mock(EnvironmentProvider.class);
+        BDDMockito.given(envProvider.getDefinedVariables(anyCollection()))
+                .willReturn(
+                        ImmutableMap.of(
+                                TOKENS_MAX_PER_ACCOUNT,
+                                "100",
+                                SCHEDULING_LONG_TERM_ENABLED,
+                                "true"));
+        final var subject = new BootstrapProperties(envProvider);
+        subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
+        subject.bootstrapOverridePropsLoc = OVERRIDE_PROPS_LOC;
+
+        subject.ensureProps();
+
+        // Environment var property that overrides the override file (and the base file):
+        assertEquals(100, subject.getProperty(TOKENS_MAX_PER_ACCOUNT));
+        // Environment var property that overrides the base file, but not the override file:
+        assertEquals(true, subject.getProperty(SCHEDULING_LONG_TERM_ENABLED));
+        // Override file property (not from the environment var) that overrides the base file:
+        assertEquals(30, subject.getProperty(TOKENS_MAX_RELS_PER_INFO_QUERY));
     }
 
     @Test

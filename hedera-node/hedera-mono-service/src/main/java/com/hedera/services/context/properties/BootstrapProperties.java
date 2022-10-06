@@ -21,16 +21,14 @@ import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toSet;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -47,7 +45,10 @@ public final class BootstrapProperties implements PropertySource {
 
     private static final Logger log = LogManager.getLogger(BootstrapProperties.class);
 
-    static ThrowingStreamProvider resourceStreamProvider =
+    private final ThrowingStreamProvider resourceStreamProvider;
+    private final ThrowingStreamProvider fileStreamProvider;
+
+    static final ThrowingStreamProvider DEFAULT_RESOURCE_STREAM_PROVIDER =
             resource -> {
                 var in = nullableResourceStreamProvider.apply(resource);
                 if (in == null) {
@@ -56,12 +57,37 @@ public final class BootstrapProperties implements PropertySource {
                 }
                 return in;
             };
-    private static ThrowingStreamProvider fileStreamProvider =
+    static final ThrowingStreamProvider DEFAULT_FILE_STREAM_PROVIDER =
             loc -> Files.newInputStream(Paths.get(loc));
+
+    private final EnvironmentProvider envVarsProvider;
 
     @Inject
     public BootstrapProperties() {
-        /* No-op */
+        this(
+                DEFAULT_RESOURCE_STREAM_PROVIDER,
+                DEFAULT_FILE_STREAM_PROVIDER,
+                EnvironmentProvider.getInstance());
+    }
+
+    public BootstrapProperties(EnvironmentProvider envVarsProvider) {
+        this(DEFAULT_RESOURCE_STREAM_PROVIDER, DEFAULT_FILE_STREAM_PROVIDER, envVarsProvider);
+    }
+
+    @VisibleForTesting
+    BootstrapProperties(
+            ThrowingStreamProvider resourceStreamProvider,
+            ThrowingStreamProvider fileStreamProvider) {
+        this(resourceStreamProvider, fileStreamProvider, EnvironmentProvider.getInstance());
+    }
+
+    private BootstrapProperties(
+            ThrowingStreamProvider resourceStreamProvider,
+            ThrowingStreamProvider fileStreamProvider,
+            EnvironmentProvider envVarsProvider) {
+        this.resourceStreamProvider = resourceStreamProvider;
+        this.fileStreamProvider = fileStreamProvider;
+        this.envVarsProvider = envVarsProvider;
     }
 
     String bootstrapPropsResource = "bootstrap.properties";
@@ -73,9 +99,17 @@ public final class BootstrapProperties implements PropertySource {
         final var resourceProps = new Properties();
         load(bootstrapPropsResource, resourceProps);
         loadOverride(bootstrapOverridePropsLoc, resourceProps, fileStreamProvider, log);
+        loadEnvOverrides(resourceProps);
         checkForUnrecognizedProps(resourceProps);
         checkForMissingProps(resourceProps);
         resolveBootstrapProps(resourceProps);
+    }
+
+    private void loadEnvOverrides(Properties resourceProps) {
+        var environmentVarOverrides = envVarsProvider.getDefinedVariables(ALL_SUPPORTED_PROPERTIES);
+        for (var kvOverride : environmentVarOverrides.entrySet()) {
+            resourceProps.setProperty(kvOverride.getKey(), kvOverride.getValue());
+        }
     }
 
     private void checkForUnrecognizedProps(final Properties resourceProps)
@@ -551,4 +585,35 @@ public final class BootstrapProperties implements PropertySource {
                     entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, AS_BOOLEAN),
                     entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
                     entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN));
+    private static final Pattern HUMAN_NAME_PATTERN = Pattern.compile(".*[.](.*)");
+
+    private static List<String> loadSupportedPropertyNames() {
+        final Map<String, String> propertyValuesByFieldName =
+                Arrays.stream(PropertyNames.class.getDeclaredFields())
+                        .filter(f -> HUMAN_NAME_PATTERN.matcher(f.toString()).matches())
+                        .collect(
+                                Collectors.toMap(
+                                        field -> {
+                                            final var match =
+                                                    HUMAN_NAME_PATTERN.matcher(field.toString());
+                                            if (match.find()) {
+                                                return match.group(1);
+                                            } else {
+                                                throw new IllegalStateException(
+                                                        String.format(
+                                                                "Group not present for field '%s'",
+                                                                field.getName()));
+                                            }
+                                        },
+                                        field -> {
+                                            try {
+                                                return (String) field.get(null);
+                                            } catch (IllegalAccessException e) {
+                                                throw new IllegalStateException(e);
+                                            }
+                                        }));
+        return propertyValuesByFieldName.values().stream().toList();
+    }
+
+    private static final Collection<String> ALL_SUPPORTED_PROPERTIES = loadSupportedPropertyNames();
 }
