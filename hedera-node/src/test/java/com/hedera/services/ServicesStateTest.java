@@ -174,7 +174,6 @@ class ServicesStateTest {
                 .deployedSoftwareVersion()
                 .setServices(SemanticVersion.newBuilder().setMinor(28).build());
         subject = new ServicesState();
-        setOtherMocks();
         setAllChildren();
     }
 
@@ -261,7 +260,6 @@ class ServicesStateTest {
 
     @Test
     void getsAliasesFromMetadata() {
-        setOtherMocks();
         given(metadata.aliases()).willReturn(aliases);
         subject.setMetadata(metadata);
         assertSame(aliases, subject.aliases());
@@ -356,7 +354,6 @@ class ServicesStateTest {
 
     @Test
     void preHandleUsesEventExpansion() {
-        setOtherMocks();
         subject.setMetadata(metadata);
         given(metadata.app()).willReturn(app);
         given(app.eventExpansion()).willReturn(eventExpansion);
@@ -368,7 +365,6 @@ class ServicesStateTest {
 
     @Test
     void handleThrowsIfImmutable() {
-        setOtherMocks();
         subject.copy();
 
         assertThrows(
@@ -902,7 +898,7 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.STAKING_INFO, mockMm);
     }
 
-    private void setOtherMocks() {
+    private void setAllChildren() {
         given(addressBook.getSize()).willReturn(1);
         given(addressBook.getAddress(0)).willReturn(address);
         given(address.getId()).willReturn(0L);
@@ -910,9 +906,6 @@ class ServicesStateTest {
                 .willReturn(3_000_000_000L);
         given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
-    }
-
-    private void setAllChildren() {
         File databaseFolder = new File("database");
         try {
             if (!databaseFolder.exists()) {
