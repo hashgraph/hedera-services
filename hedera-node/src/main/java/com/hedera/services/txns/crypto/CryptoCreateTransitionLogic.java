@@ -142,6 +142,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 JKey jKey = asFcKeyUnchecked(key);
                 aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
             }
+            if (op.hasKey() && !op.getKey().getECDSASecp256K1().isEmpty()) {
+                aliasManager.link(
+                        ledger.getAccountsLedger().getImmutableRef(created).getAlias(),
+                        EntityNum.fromAccountId(created));
+            }
         } catch (InsufficientFundsException ife) {
             txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
         } catch (Exception e) {
