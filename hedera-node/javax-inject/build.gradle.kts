@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 plugins {
-    id("com.hedera.hashgraph.conventions")
+    `java-library`
 }
 
 group = "javax.inject"

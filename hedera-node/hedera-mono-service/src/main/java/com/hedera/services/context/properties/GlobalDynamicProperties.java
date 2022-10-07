@@ -22,7 +22,7 @@ import static com.hedera.services.context.properties.PropertyNames.*;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.evm.implementation.contracts.execution.EvmProperties;
+import com.hedera.services.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.charging.ContractStoragePriceTiers;
 import com.hedera.services.stream.proto.SidecarType;

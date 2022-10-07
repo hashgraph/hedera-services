@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.evm.implementation.contracts.execution;
+package com.hedera.services.evm.contracts.execution;
 
-import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.services.evm.store.models.HederaEvmAccount;

@@ -26,5 +26,7 @@ dependencies {
     api(libs.commons.lang3)
     api(libs.besu.evm)
     api(libs.besu.datatypes)
+    api(libs.swirlds.common)
+    api(project(":hedera-node:javax-inject"))
     implementation(libs.hapi)
 }

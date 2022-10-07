@@ -26,9 +26,9 @@ include(":hedera-node")
 include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-api")
 include(":hedera-node:hedera-evm")
-include(":hedera-node:hedera-evm:javax-inject")
 include(":hedera-node:hedera-evm-api")
 include(":hedera-node:hedera-mono-service")
+include(":hedera-node:javax-inject")
 include(":test-clients")
 
 // Enable Gradle Build Scan

@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.evm.implementation.contracts.execution.traceability;
+package com.hedera.services.evm.contracts.execution;
 
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
+import org.hyperledger.besu.datatypes.Address;
 
-public class HederaEvmTracer implements OperationTracer {
+public interface EvmProperties {
 
-    @Override
-    public void traceExecution(MessageFrame currentFrame, ExecuteOperation executeOperation) {
-        executeOperation.execute();
-    }
+    String evmVersion();
+
+    Address fundingAccountAddress();
+
+    boolean dynamicEvmVersion();
+
+    int maxGasRefundPercentage();
 }
