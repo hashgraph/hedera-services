@@ -15,7 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.context.properties.PropertyNames.*;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
@@ -44,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -81,7 +80,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
-import com.hedera.test.mocks.BootstrapPropertiesProvider;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.*;
 import java.math.BigInteger;
@@ -107,7 +105,8 @@ class SyntheticTxnFactoryTest {
 
     @BeforeEach
     void setUp() {
-        propertySource = BootstrapPropertiesProvider.mockBaseBootstrap();
+        propertySource = new BootstrapProperties();
+        propertySource.ensureProps();
         dynamicProperties =
                 new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
 
@@ -514,7 +513,10 @@ class SyntheticTxnFactoryTest {
                                 .setStake(987_654_321L)
                                 .setStakeRewarded(54_321L)
                                 .build());
-        given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1L);
+        propertySource.ensureProps();
+        dynamicProperties =
+                new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+        subject = new SyntheticTxnFactory(dynamicProperties);
 
         final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes, propertySource);
 
