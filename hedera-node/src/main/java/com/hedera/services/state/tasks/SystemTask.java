@@ -40,6 +40,20 @@ public interface SystemTask {
      *
      * @param literalNum the id of the entity to process
      * @param now the current consensus time
+     * @param curNetworkCtx the current network context
+     * @return the result of the task's work
+     */
+    default SystemTaskResult process(
+            final long literalNum, final Instant now, final MerkleNetworkContext curNetworkCtx) {
+        return process(literalNum, now);
+    }
+
+    /**
+     * Attempts to do this task's work on the entity with the given id, if applicable and capacity
+     * and context permit.
+     *
+     * @param literalNum the id of the entity to process
+     * @param now the current consensus time
      * @return the result of the task's work
      */
     SystemTaskResult process(long literalNum, Instant now);

@@ -103,7 +103,9 @@ class TraceabilityExportTaskTest {
 
     @Test
     void needsDifferentContextIfCannotExportRecords() {
-        assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW));
+        assertEquals(
+                SystemTaskResult.NEEDS_DIFFERENT_CONTEXT,
+                subject.process(ENTITY_NUM, NOW, networkCtx));
 
         verifyNoInteractions(expiryThrottle);
     }
@@ -115,32 +117,51 @@ class TraceabilityExportTaskTest {
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
         given(gasThrottle.freeToUsedRatio(NOW)).willReturn(4L);
 
-        assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW));
+        assertEquals(
+                SystemTaskResult.NEEDS_DIFFERENT_CONTEXT,
+                subject.process(ENTITY_NUM, NOW, networkCtx));
+    }
+
+    @Test
+    void needsDifferentContextIfTooManyEntitiesProcessedThisSecond() {
+        given(recordsHelper.canExportNow()).willReturn(true);
+        given(dynamicProperties.traceabilityMinFreeToUsedGasThrottleRatio()).willReturn(5L);
+        given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
+        given(gasThrottle.freeToUsedRatio(NOW)).willReturn(6L);
+        given(networkCtx.getEntitiesTouchedThisSecond()).willReturn(21L);
+        given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(20L);
+
+        assertEquals(
+                SystemTaskResult.NEEDS_DIFFERENT_CONTEXT,
+                subject.process(ENTITY_NUM, NOW, networkCtx));
     }
 
     @Test
     void nothingToDoIfNotAnAccount() {
+        given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(1L);
         given(recordsHelper.canExportNow()).willReturn(true);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
 
-        assertEquals(SystemTaskResult.NOTHING_TO_DO, subject.process(ENTITY_NUM, NOW));
+        assertEquals(SystemTaskResult.NOTHING_TO_DO, subject.process(ENTITY_NUM, NOW, networkCtx));
 
         verify(expiryThrottle).allowOne(MapAccessType.ACCOUNTS_GET);
     }
 
     @Test
     void nothingToDoIfNotAContract() {
+        given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(1L);
         given(recordsHelper.canExportNow()).willReturn(true);
 
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
         given(accounts.get(EntityNum.fromLong(ENTITY_NUM))).willReturn(AN_ACCOUNT);
-        assertEquals(SystemTaskResult.NOTHING_TO_DO, subject.process(ENTITY_NUM, NOW));
+        assertEquals(SystemTaskResult.NOTHING_TO_DO, subject.process(ENTITY_NUM, NOW, networkCtx));
 
         verify(expiryThrottle).allowOne(MapAccessType.ACCOUNTS_GET);
     }
 
     @Test
     void createsWellBehavedContractSideCars() {
+        given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(1L);
         given(recordsHelper.canExportNow()).willReturn(true);
         final ArgumentCaptor<List<TransactionSidecarRecord.Builder>> captor = forClass(List.class);
 
@@ -185,7 +206,7 @@ class TraceabilityExportTaskTest {
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
 
         // when:
-        final var result = subject.process(entityNum1.longValue(), NOW);
+        final var result = subject.process(entityNum1.longValue(), NOW, networkCtx);
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
@@ -245,6 +266,7 @@ class TraceabilityExportTaskTest {
 
     @Test
     void createsPoisonPillContractSideCars() {
+        given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(1L);
         given(recordsHelper.canExportNow()).willReturn(true);
         final ArgumentCaptor<List<TransactionSidecarRecord.Builder>> captor = forClass(List.class);
 
@@ -271,7 +293,7 @@ class TraceabilityExportTaskTest {
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
 
         // when:
-        final var result = subject.process(entityNum2.longValue(), NOW);
+        final var result = subject.process(entityNum2.longValue(), NOW, networkCtx);
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
@@ -313,6 +335,7 @@ class TraceabilityExportTaskTest {
 
     @Test
     void createsMisSizedContractSideCars() {
+        given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(1L);
         given(recordsHelper.canExportNow()).willReturn(true);
         final ArgumentCaptor<List<TransactionSidecarRecord.Builder>> captor = forClass(List.class);
 
@@ -336,7 +359,7 @@ class TraceabilityExportTaskTest {
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
 
         // when:
-        final var result = subject.process(entityNum1.longValue(), NOW);
+        final var result = subject.process(entityNum1.longValue(), NOW, networkCtx);
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
@@ -376,6 +399,7 @@ class TraceabilityExportTaskTest {
 
     @Test
     void createsStorageLessContractSideCar() {
+        given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(1L);
         given(recordsHelper.canExportNow()).willReturn(true);
         final ArgumentCaptor<List<TransactionSidecarRecord.Builder>> captor = forClass(List.class);
 
@@ -391,7 +415,7 @@ class TraceabilityExportTaskTest {
         given(accounts.get(entityNum)).willReturn(contract);
 
         // when:
-        final var result = subject.process(entityNum.longValue(), NOW);
+        final var result = subject.process(entityNum.longValue(), NOW, networkCtx);
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
@@ -408,6 +432,7 @@ class TraceabilityExportTaskTest {
 
     @Test
     void skipsBytecodeLessContractSideCars() {
+        given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(1L);
         given(recordsHelper.canExportNow()).willReturn(true);
         // Mock contract no storage
         final var contract = mock(MerkleAccount.class);
@@ -418,7 +443,7 @@ class TraceabilityExportTaskTest {
         given(accounts.get(contractEntityNum)).willReturn(contract);
 
         // when:
-        final var result = subject.process(contractEntityNum.longValue(), NOW);
+        final var result = subject.process(contractEntityNum.longValue(), NOW, networkCtx);
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:

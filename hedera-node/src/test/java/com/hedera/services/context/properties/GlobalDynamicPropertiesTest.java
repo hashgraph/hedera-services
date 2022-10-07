@@ -199,6 +199,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(70L, subject.maxFollowingRecords());
         assertEquals(76L, subject.maxDailyStakeRewardThPerH());
         assertEquals(88L, subject.traceabilityMinFreeToUsedGasThrottleRatio());
+        assertEquals(89L, subject.traceabilityMaxExportsPerConsSec());
     }
 
     @Test
@@ -521,6 +522,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 85) % 2 == 0);
         given(properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO))
                 .willReturn(i + 87L);
+        given(properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC))
+                .willReturn(i + 88L);
     }
 
     private Set<EntityType> typesFor(final int i) {

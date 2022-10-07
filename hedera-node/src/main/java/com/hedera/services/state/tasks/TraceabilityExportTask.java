@@ -55,6 +55,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class TraceabilityExportTask implements SystemTask {
     private static final Logger log = LogManager.getLogger(TraceabilityExportTask.class);
+    private static final int EXPORTS_PER_LOG = 1000;
 
     private final EntityAccess entityAccess;
     private final ExpiryThrottle expiryThrottle;
@@ -63,6 +64,8 @@ public class TraceabilityExportTask implements SystemTask {
     private final TraceabilityRecordsHelper recordsHelper;
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
+
+    private int exportsCompleted = 0;
 
     @Inject
     public TraceabilityExportTask(
@@ -91,8 +94,9 @@ public class TraceabilityExportTask implements SystemTask {
     }
 
     @Override
-    public SystemTaskResult process(final long literalNum, final Instant now) {
-        if (!recordsHelper.canExportNow() || inHighGasRegime(now)) {
+    public SystemTaskResult process(
+            final long literalNum, final Instant now, final MerkleNetworkContext curNetworkCtx) {
+        if (!recordsHelper.canExportNow() || needsBackPressure(now, curNetworkCtx)) {
             return NEEDS_DIFFERENT_CONTEXT;
         }
         // It would be a lot of work to split even a single sidecar's construction across
@@ -113,7 +117,22 @@ public class TraceabilityExportTask implements SystemTask {
             addStateChangesSideCar(contractId, account, sidecars);
             recordsHelper.exportSidecarsViaSynthUpdate(literalNum, sidecars);
         }
+        exportsCompleted++;
+        if (exportsCompleted % EXPORTS_PER_LOG == 0) {
+            log.info("Have exported traceability info for {} contracts now", exportsCompleted);
+        }
         return DONE;
+    }
+
+    @Override
+    public SystemTaskResult process(final long literalNum, final Instant now) {
+        throw new UnsupportedOperationException();
+    }
+
+    private boolean needsBackPressure(final Instant now, final MerkleNetworkContext curNetworkCtx) {
+        return inHighGasRegime(now)
+                || curNetworkCtx.getEntitiesTouchedThisSecond()
+                        >= dynamicProperties.traceabilityMaxExportsPerConsSec();
     }
 
     private boolean inHighGasRegime(final Instant now) {
