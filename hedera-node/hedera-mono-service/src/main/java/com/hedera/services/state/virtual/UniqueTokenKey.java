@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 
 /** Represents a key for a unique token (NFT). */
@@ -43,6 +42,8 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
      * the non-leading zero-bytes representing the serial number.
      */
     public static final int ESTIMATED_SIZE_BYTES = Long.BYTES + Long.BYTES + 1;
+
+    private static final long LARGE_PRIME = 2000000011L;
 
     /**
      * Constructs a UniqueTokenKey from an NftId instance.
@@ -85,7 +86,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
         this.entityNum = entityNum;
         this.tokenSerial = tokenSerial;
         // Consider using NonCryptographicHashing.hash64(long1, long2) when made available.
-        this.hashCode = Objects.hash(entityNum, tokenSerial);
+        this.hashCode = Long.hashCode(entityNum * LARGE_PRIME + tokenSerial);
     }
 
     private static int computeNonZeroBytes(final long value) {
@@ -236,6 +237,16 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
             return this.entityNum == other.entityNum && this.tokenSerial == other.tokenSerial;
         }
         return false;
+    }
+
+    public boolean equalsTo(final ByteBuffer byteBuffer) throws IOException {
+        final byte packedLengths = byteBuffer.get();
+        final int numEntityBytes = unpackUpperLength(packedLengths);
+        final int numSerialBytes = unpackLowerLength(packedLengths);
+        final long num = decodeVariableField(byteBuffer::get, numEntityBytes);
+        if (num != this.entityNum) return false;
+        final long serial = decodeVariableField(byteBuffer::get, numSerialBytes);
+        return serial == this.tokenSerial;
     }
 
     @Override
