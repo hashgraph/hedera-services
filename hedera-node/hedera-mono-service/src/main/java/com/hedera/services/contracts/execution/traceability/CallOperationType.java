@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.benchmark-conventions")
-}
+package com.hedera.services.contracts.execution.traceability;
 
-description = "Hedera Services Node"
+public enum CallOperationType {
+    /** default operation type is UNKNOWN */
+    OP_UNKNOWN,
+
+    /** CALL operation type. */
+    OP_CALL,
+
+    /** CALLCODE operation type */
+    OP_CALLCODE,
+
+    /** DELEGATECALL operation type */
+    OP_DELEGATECALL,
+
+    /** STATICCALL operation type */
+    OP_STATICCALL,
+
+    /** CREATE operation type */
+    OP_CREATE,
+
+    /** CREATE2 operation type */
+    OP_CREATE2;
+}
