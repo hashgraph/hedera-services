@@ -71,6 +71,7 @@ dependencyResolutionManagement {
             version("swirlds-version", "0.31.0-alpha.1")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
+            version("jakarta-version", "2.0.1")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
@@ -78,7 +79,7 @@ dependencyResolutionManagement {
             // Use when you need to use bouncy castle
             bundle("bouncycastle", listOf("bouncycastle-bcprov-jdk15on", "bouncycastle-bcpkix-jdk15on"))
             // Use when you need to make use of dependency injection.
-            bundle("di", listOf("javax-inject", "dagger-api"))
+            bundle("di", listOf("javax-inject", "jakarta.inject-api", "dagger-api"))
             // Use when you need logging
             bundle("logging", listOf("log4j-api", "log4j-core"))
             // Use when you need to depend upon netty
@@ -136,6 +137,7 @@ dependencyResolutionManagement {
             library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap").versionRef("swirlds-version")
             library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
             library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
+            library("jakarta.inject-api", "jakarta.inject", "jakarta.inject-api").versionRef("jakarta-version")
         }
 
         // The libs of this catalog can be used for test or build uses.

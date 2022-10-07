@@ -6,6 +6,6 @@ module com.hedera.services.evm.implementation {
     requires tuweni.bytes;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires org.apache.commons.lang3;
-    requires javax.inject;
     requires com.swirlds.common;
+    requires jakarta.inject;
 }
