@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.evm.implementation.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.hamcrest.MatcherAssert.assertThat;

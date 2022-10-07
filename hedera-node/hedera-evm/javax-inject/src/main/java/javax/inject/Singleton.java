@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+package javax.inject;/*
+ * Copyright (C) 2009 The JSR-330 Expert Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
 
-group = "com.hedera.evm"
-description = "Hedera EVM - Implementation"
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-dependencies {
-    api(libs.commons.lang3)
-    api(libs.protobuf.java)
-    api(libs.besu.evm)
-    api(libs.besu.datatypes)
-    api(libs.swirlds.common)
-    api(project(":hapi-utils"))
-    api(project(":hedera-node:hedera-evm-api"))
-    api(project(":hedera-node:hedera-evm:javax-inject"))
-    implementation(libs.hapi)
-}
+/**
+ * Identifies a type that the injector only instantiates once. Not inherited.
+ *
+ * @see Scope @Scope
+ */
+@Scope
+@Documented
+@Retention(RUNTIME)
+public @interface Singleton {}

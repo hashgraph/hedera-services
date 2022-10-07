@@ -38,6 +38,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.evm.implementation.contracts.execution.BlockMetaSource;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;

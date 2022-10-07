@@ -17,17 +17,5 @@ plugins {
     id("com.hedera.hashgraph.conventions")
 }
 
-group = "com.hedera.evm"
-description = "Hedera EVM - Implementation"
-
-dependencies {
-    api(libs.commons.lang3)
-    api(libs.protobuf.java)
-    api(libs.besu.evm)
-    api(libs.besu.datatypes)
-    api(libs.swirlds.common)
-    api(project(":hapi-utils"))
-    api(project(":hedera-node:hedera-evm-api"))
-    api(project(":hedera-node:hedera-evm:javax-inject"))
-    implementation(libs.hapi)
-}
+group = "javax.inject"
+description = "Javax Annotations"

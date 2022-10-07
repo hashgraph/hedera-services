@@ -7,5 +7,5 @@ module com.hedera.services.evm.implementation {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires org.apache.commons.lang3;
     requires com.swirlds.common;
-    requires jakarta.inject;
+    requires javax.inject.custom;
 }

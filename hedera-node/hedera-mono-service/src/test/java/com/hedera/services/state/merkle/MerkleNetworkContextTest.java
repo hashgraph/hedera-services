@@ -16,7 +16,7 @@
 package com.hedera.services.state.merkle;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
-import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.evm.implementation.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
