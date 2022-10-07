@@ -250,9 +250,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                 b -> {
                                     if (withAlias.isPresent()) {
                                         b.setAlias(withAlias.get());
-                                        if (key != null) {
-                                            b.setKey(key);
-                                        }
+                                        keyName.ifPresent(s -> b.setKey(spec.registry().getKey(s)));
                                     } else {
                                         b.setKey(key);
                                     }
