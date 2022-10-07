@@ -449,6 +449,21 @@ class SyntheticTxnFactoryTest {
     }
 
     @Test
+    void createsExpectedHollowAccountCreate() {
+        final var balance = 10L;
+        final var result = subject.createHollowAccount(balance);
+        final var txnBody = result.build();
+
+        assertTrue(txnBody.hasCryptoCreateAccount());
+        assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
+        assertEquals(
+                THREE_MONTHS_IN_SECONDS,
+                txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
+        assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
+        assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+    }
+
+    @Test
     void fungibleTokenChangeAddsAutoAssociations() {
         final var balance = 10L;
         final var alias = KeyFactory.getDefaultInstance().newEd25519();

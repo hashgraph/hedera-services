@@ -196,6 +196,13 @@ class AliasManagerTest {
     }
 
     @Test
+    void lookupIdByECDSAKeyAliasShouldReturnExistingEVMAddressAlias()
+            throws InvalidProtocolBufferException, DecoderException {
+        subject.link(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num);
+        assertEquals(num, subject.lookupIdBy(ByteString.copyFrom(ECDSA_PUBLIC_KEY)));
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void rebuildsFromMap() throws ConstructableRegistryException {
         ConstructableRegistry.registerConstructable(
