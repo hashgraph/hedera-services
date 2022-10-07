@@ -113,7 +113,7 @@ class TraceabilityExportTaskTest {
         given(recordsHelper.canExportNow()).willReturn(true);
         given(dynamicProperties.traceabilityMinFreeToUsedGasThrottleRatio()).willReturn(5L);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
-        given(gasThrottle.freeToUsedRatio()).willReturn(4L);
+        given(gasThrottle.freeToUsedRatio(NOW)).willReturn(4L);
 
         assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW));
     }

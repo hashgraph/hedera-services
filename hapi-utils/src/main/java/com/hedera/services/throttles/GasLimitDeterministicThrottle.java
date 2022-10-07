@@ -15,6 +15,9 @@
  */
 package com.hedera.services.throttles;
 
+import static com.hedera.services.throttles.DeterministicThrottle.elapsedNanosBetween;
+
+import com.google.common.annotations.VisibleForTesting;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -51,22 +54,16 @@ public class GasLimitDeterministicThrottle {
      *     throttled.
      */
     public boolean allow(Instant now, long txGasLimit) {
-        long elapsedNanos = 0L;
-        if (lastDecisionTime != NEVER) {
-            elapsedNanos = Duration.between(lastDecisionTime, now).toNanos();
-            if (elapsedNanos < 0L) {
-                throw new IllegalArgumentException(
-                        "Throttle timeline must advance, but "
-                                + now
-                                + " is not after "
-                                + lastDecisionTime
-                                + "!");
-            }
-        }
-
+        final var elapsedNanos = elapsedNanosBetween(lastDecisionTime, now);
         var decision = delegate.allow(txGasLimit, elapsedNanos);
         lastDecisionTime = now;
         return decision;
+    }
+
+    public long freeToUsedRatio(final Instant now) {
+        delegate.leakFor(elapsedNanosBetween(lastDecisionTime, now));
+        lastDecisionTime = now;
+        return delegate.freeToUsedRatio();
     }
 
     /**
@@ -127,10 +124,6 @@ public class GasLimitDeterministicThrottle {
         return new DeterministicThrottle.UsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
     }
 
-    public long freeToUsedRatio() {
-        return delegate.freeToUsedRatio();
-    }
-
     public void resetUsageTo(final DeterministicThrottle.UsageSnapshot usageSnapshot) {
         final var bucket = delegate.bucket();
         lastDecisionTime = usageSnapshot.lastDecisionTime();
@@ -149,5 +142,10 @@ public class GasLimitDeterministicThrottle {
 
     public void resetLastAllowedUse() {
         delegate.resetLastAllowedUse();
+    }
+
+    @VisibleForTesting
+    Instant getLastDecisionTime() {
+        return lastDecisionTime;
     }
 }

@@ -92,7 +92,7 @@ public class TraceabilityExportTask implements SystemTask {
 
     @Override
     public SystemTaskResult process(final long literalNum, final Instant now) {
-        if (!recordsHelper.canExportNow() || inHighGasRegime()) {
+        if (!recordsHelper.canExportNow() || inHighGasRegime(now)) {
             return NEEDS_DIFFERENT_CONTEXT;
         }
         // It would be a lot of work to split even a single sidecar's construction across
@@ -116,8 +116,8 @@ public class TraceabilityExportTask implements SystemTask {
         return DONE;
     }
 
-    private boolean inHighGasRegime() {
-        return handleThrottling.gasLimitThrottle().freeToUsedRatio()
+    private boolean inHighGasRegime(final Instant now) {
+        return handleThrottling.gasLimitThrottle().freeToUsedRatio(now)
                 < dynamicProperties.traceabilityMinFreeToUsedGasThrottleRatio();
     }
 

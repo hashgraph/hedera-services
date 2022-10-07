@@ -51,7 +51,7 @@ public class GasLimitBucketThrottle {
      * @return true if there is enough capacity, false if the transaction should be throttled
      */
     public boolean allow(final long txGasLimit, final long elapsedNanos) {
-        bucket.leak(effectiveLeak(elapsedNanos));
+        leakFor(elapsedNanos);
         if (bucket.capacityFree() >= txGasLimit) {
             bucket.useCapacity(txGasLimit);
             lastAllowedUnits += txGasLimit;
@@ -59,6 +59,10 @@ public class GasLimitBucketThrottle {
         } else {
             return false;
         }
+    }
+
+    void leakFor(final long elapsedNanos) {
+        bucket.leak(effectiveLeak(elapsedNanos));
     }
 
     /**
@@ -76,12 +80,14 @@ public class GasLimitBucketThrottle {
     }
 
     /**
-     * Returns the approximate ratio of free-to-used capacity in the underlying bucket.
+     * Returns the approximate ratio of free-to-used capacity in the underlying bucket; if there is
+     * no capacity used, returns {@code Long.MAX_VALUE}
      *
      * @return the free-to-used ratio
      */
     public long freeToUsedRatio() {
-        return bucket.capacityFree() / bucket.capacityUsed();
+        final var used = bucket.capacityUsed();
+        return (used == 0) ? Long.MAX_VALUE : bucket.capacityFree() / used;
     }
 
     void resetLastAllowedUse() {
