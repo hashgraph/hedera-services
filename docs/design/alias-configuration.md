@@ -72,6 +72,22 @@ In this flow
 
 ## Cases
 
+### CryptoCreate
+
+With ED key:
+- CryptoCreate with ED key and no alias specified in the tx body: the resulting account will have `key` = `ED key` and no alias;
+- CryptoCreate with ED key and `ED key alias` specified in the tx body: validate that the key and alias match; create an account with `key` = `ED key` and `alias` = `ED key alias`;
+
+With EC key:
+**Always validate the 0.0.ECDSA alias format is missing from the alias map as well as the calculated evm_address alias format**
+
+- CryptoCreate with EC key and no alias specified in the tx body: the resulting account will have `key` = `EC key` and `alias` = `evmAddress` derived from the EC key;
+- CryptoCreate with EC key and `EC Key` alias specified in the tx body: validate that the key and alias match; the resulting account will have `key` = `EC key`, `alias` = `EC key alias` + we will automatically calculate the `evmAddress` derived from the EC key and store it in the in-memory structure;
+- CryptoCreate with EC key and `evmAddress alias` specified in the tx body: first we validate that the alias can be derived from the EC key; the resulting account will have `key` = `EC Key` and `alias` = `evmAddress`;
+- CryptoCreate with no key and `evmAddress alias` specified in the tx body: this is lazy create 1/2: a hollow account with only alias = `evmAddress` will be created; lazy create 2/2 is required before the account can sign transactions;
+
+### CryptoTransfer
+
 - Crypto Transfer Transaction to EVM address alias should create an account with its alias field set to the EVM address and its key will be empty (to be populated by a signed transaction as part of lazy account create)
 - For any type of signed transaction coming after an initial Crypto Transfer to EVM address e.g. (CryptoTransfer, ContractCreate, ContractCall, EthereumTransaction, TokenAssociation):
   - We need to extract the public key from signature with extractSig
@@ -82,7 +98,6 @@ In this flow
 - Crypto Transfer Transaction to ECDSA key alias should create an account with its alias field set to the ECDSA key, populate the alias map with the EVM address calculated based on the ECDSA key, and the key field set with the value of the ECDSA key (currently implemented) and another Crypto Transfer Transaction to the EVM address corresponding to the ECDSA key should transfer to the account created in the previous transaction
 - Crypto Create Transaction with ECDSA key alias:
     
-**Always validate the 0.0.ECDSA alias format is missing from the alias map as well as the calculated evm_address alias format**
     
   1. Create an account with its alias and key fields set to the ECDSA key, and populate the alias map with the EVM address calculated based on the ECDSA key.
       - Account with:
@@ -107,10 +122,9 @@ In this flow
         - Account with:
             - hedera id: 0.0.20
             - admin key: ECDSA key
-            - alias: 0.0.ECDSA key
+            - alias: EVM_address alias
         - AliasManager with:
             - map with the EVM_address alias based on the ECDSA key → hedera id
-            - map with the 0.0.ECDSA key alias → hedera id
 
 - Ethereum Transaction for crypto transfer should create an account with its alias field set to the `to` value of the transaction and its key will be empty (i.e. lazy create hollow account)
   1. Validate that `to` and `value` are set, `to` should be an EVM address and `value` should be non-zero
