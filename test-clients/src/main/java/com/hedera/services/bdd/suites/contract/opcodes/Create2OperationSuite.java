@@ -60,17 +60,18 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.*;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -504,7 +505,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
                                                 .sending(tcValue)
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(
                                 () ->
                                         getContractInfo(expectedCreate2Address.get())
@@ -589,7 +590,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
                                                 /* Cannot repeat CREATE2 with same args without destroying the existing contract */
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // https://github.com/hashgraph/hedera-services/issues/2874
                         // autoRenewAccountID is inherited from the sender
                         sourcing(
@@ -1435,7 +1436,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                         sourcing(
                                 () ->
                                         contractCallLocal(contract, CALL_RETURNER, mirrorAddr.get())
-                                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
+                                                .hasAnswerOnlyPrecheck(FAIL_INVALID)
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -1467,7 +1468,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                         sourcing(
                                 () ->
                                         contractCall(contract, CALL_RETURNER, mirrorAddr.get())
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
+                                                .hasKnownStatus(FAIL_INVALID)
                                                 .payingWith(GENESIS)
                                                 .via(mirrorCall)))
                 .then(

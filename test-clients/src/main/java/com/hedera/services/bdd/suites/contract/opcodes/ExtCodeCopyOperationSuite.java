@@ -25,7 +25,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -59,9 +60,9 @@ public class ExtCodeCopyOperationSuite extends HapiApiSuite {
                 .when()
                 .then(
                         contractCall(contract, codeCopyOf, invalidAddress)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         contractCallLocal(contract, codeCopyOf, invalidAddress)
-                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
+                                .hasAnswerOnlyPrecheck(OK),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var accountID =

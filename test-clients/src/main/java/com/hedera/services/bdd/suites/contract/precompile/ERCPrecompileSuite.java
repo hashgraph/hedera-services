@@ -71,7 +71,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
@@ -3661,7 +3660,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         1L)
                                                 .via(MISSING_TOKEN)
                                                 .gas(1_000_000)
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -3823,7 +3822,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get())
                                                 .via(MISSING_TOKEN)
                                                 .gas(1_000_000)
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -3919,7 +3918,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         1L)
                                                 .via(MISSING_TOKEN)
                                                 .gas(1_000_000)
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(
                                 () ->
                                         contractCall(
