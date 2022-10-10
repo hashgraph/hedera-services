@@ -99,7 +99,8 @@ import org.mockito.ArgumentCaptor;
 class HfsSystemFilesManagerTest {
     private static final String R4_FEE_SCHEDULE_REPR_PATH =
             "src/test/resources/testfiles/r4FeeSchedule.bin";
-    private static final String bootstrapJutilPropsLoc = "src/test/resources/bootstrap.properties";
+    private static final String bootstrapJutilPropsLoc =
+            "src/test/resources/bootstrap/hfsSystemFilesBootstrap.properties";
     private static final String bootstrapJutilPermsLoc =
             "src/test/resources/permission-bootstrap.properties";
     private static final String nonexistentBootstrapJutilLoc = "nowhere";
