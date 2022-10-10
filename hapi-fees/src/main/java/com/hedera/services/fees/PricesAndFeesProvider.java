@@ -16,7 +16,6 @@
 package com.hedera.services.fees;
 
 // import com.hedera.services.precompile.Precompile;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -29,7 +28,7 @@ public interface PricesAndFeesProvider {
 
     long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
-    long currentMultiplier(TxnAccessor accessor);
+    //    long currentMultiplier(TxnAccessor accessor);
 
     //    FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at,
     // ResponseType type);

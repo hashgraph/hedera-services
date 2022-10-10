@@ -70,7 +70,6 @@ public class PricesAndFeesImplementation implements PricesAndFeesProvider {
         return feeCalculator.estimatedGasPriceInTinybars(function, at);
     }
 
-    @Override
     public long currentMultiplier(TxnAccessor accessor) {
         return feeMultiplierSource.currentMultiplier(accessor);
     }
