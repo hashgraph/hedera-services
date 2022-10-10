@@ -61,7 +61,7 @@ public abstract class HederaEvmTxProcessor {
     protected HederaEvmWorldUpdater updater;
     protected long intrinsicGas;
     protected MessageFrame initialFrame;
-    protected long gasUsedByTransaction;
+    protected long gasUsed;
     protected long sbhRefund;
 
     protected HederaEvmTxProcessor(
@@ -134,8 +134,7 @@ public abstract class HederaEvmTxProcessor {
             final Address mirrorReceiver) {
         this.intrinsicGas =
                 gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
-        this.updater = (HederaEvmWorldUpdater) worldState.updater();
-
+        this.updater = worldState.updater();
         this.coinbase = dynamicProperties.fundingAccountAddress();
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var gasAvailable = gasLimit - intrinsicGas;
@@ -176,21 +175,21 @@ public abstract class HederaEvmTxProcessor {
             process(messageFrameStack.peekFirst(), tracer);
         }
 
-        this.gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
+        this.gasUsed = calculateGasUsedByTX(gasLimit, initialFrame);
         this.sbhRefund = updater.getSbhRefund();
 
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             return HederaEvmTransactionProcessingResult.successful(
                     initialFrame.getLogs(),
-                    gasUsedByTransaction,
+                    gasUsed,
                     sbhRefund,
                     gasPrice,
                     initialFrame.getOutputData(),
                     mirrorReceiver);
         } else {
             return HederaEvmTransactionProcessingResult.failed(
-                    gasUsedByTransaction,
+                    gasUsed,
                     sbhRefund,
                     gasPrice,
                     initialFrame.getRevertReason(),
@@ -198,7 +197,7 @@ public abstract class HederaEvmTxProcessor {
         }
     }
 
-    private long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
+    protected long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
         long gasUsedByTransaction = txGasLimit - initialFrame.getRemainingGas();
         /* Return leftover gas */
         final long selfDestructRefund =
