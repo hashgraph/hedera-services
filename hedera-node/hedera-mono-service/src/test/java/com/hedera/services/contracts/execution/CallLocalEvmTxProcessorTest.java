@@ -216,8 +216,8 @@ class CallLocalEvmTxProcessorTest {
     private void givenValidMock() {
         given(worldState.updater()).willReturn(updater);
         given(worldState.updater().updater()).willReturn(stackedUpdater);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
 
         var evmAccount = mock(EvmAccount.class);
 

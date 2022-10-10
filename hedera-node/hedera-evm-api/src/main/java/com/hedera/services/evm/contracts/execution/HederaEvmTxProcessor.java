@@ -55,7 +55,6 @@ public abstract class HederaEvmTxProcessor {
     protected final Map<String, Provider<ContractCreationProcessor>> ccps;
     protected AbstractMessageProcessor messageCallProcessor;
     protected AbstractMessageProcessor contractCreationProcessor;
-    protected HederaEvmTransactionProcessingResult transactionProcessingResult;
     protected OperationTracer tracer;
     protected EvmProperties dynamicProperties;
     protected Address coinbase;
@@ -123,7 +122,7 @@ public abstract class HederaEvmTxProcessor {
      * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
      *     address
      */
-    protected void execute(
+    protected HederaEvmTransactionProcessingResult execute(
             final HederaEvmAccount sender,
             final Address receiver,
             final long gasPrice,
@@ -182,27 +181,21 @@ public abstract class HederaEvmTxProcessor {
 
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-            this.transactionProcessingResult =
-                    HederaEvmTransactionProcessingResult.successful(
-                            initialFrame.getLogs(),
-                            gasUsedByTransaction,
-                            sbhRefund,
-                            gasPrice,
-                            initialFrame.getOutputData(),
-                            mirrorReceiver);
+            return HederaEvmTransactionProcessingResult.successful(
+                    initialFrame.getLogs(),
+                    gasUsedByTransaction,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getOutputData(),
+                    mirrorReceiver);
         } else {
-            this.transactionProcessingResult =
-                    HederaEvmTransactionProcessingResult.failed(
-                            gasUsedByTransaction,
-                            sbhRefund,
-                            gasPrice,
-                            initialFrame.getRevertReason(),
-                            initialFrame.getExceptionalHaltReason());
+            return HederaEvmTransactionProcessingResult.failed(
+                    gasUsedByTransaction,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getRevertReason(),
+                    initialFrame.getExceptionalHaltReason());
         }
-    }
-
-    public HederaEvmTransactionProcessingResult getResult() {
-        return this.transactionProcessingResult;
     }
 
     private long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
