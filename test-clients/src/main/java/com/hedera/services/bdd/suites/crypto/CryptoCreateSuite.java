@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
@@ -490,7 +489,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2);
@@ -528,12 +527,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(evmAddressBytes)
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2, op3);
@@ -568,7 +567,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ed25519Key.toByteString())
-                                                    .hasKnownStatus(FAIL_INVALID);
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY);
 
                                     allRunFor(spec, op, op2);
                                     var hapiGetAccountInfo =
@@ -602,12 +601,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(evmAddressBytes)
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2, op3);
@@ -653,17 +652,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(evmAddressBytes)
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op5 =
                                             cryptoCreate(ACCOUNT)
@@ -708,7 +707,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ed25519Key.toByteString())
-                                                    .hasKnownStatus(FAIL_INVALID);
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY);
 
                                     allRunFor(spec, op, op2);
                                     var hapiGetAccountInfo =
@@ -747,17 +746,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(evmAddressBytes)
-                                                    .hasKnownStatus(FAIL_INVALID)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2, op3, op4);
