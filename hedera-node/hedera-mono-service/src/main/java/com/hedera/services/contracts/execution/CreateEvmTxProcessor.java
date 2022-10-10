@@ -16,6 +16,7 @@
 package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -46,7 +47,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
     @Inject
     public CreateEvmTxProcessor(
             final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
+            final PricesAndFeesImpl pricesAndFees,
             final CodeCache codeCache,
             final GlobalDynamicProperties globalDynamicProperties,
             final GasCalculator gasCalculator,
@@ -55,7 +56,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
             final InHandleBlockMetaSource blockMetaSource) {
         super(
                 worldState,
-                livePricesSource,
+                pricesAndFees,
                 globalDynamicProperties,
                 gasCalculator,
                 mcps,

@@ -20,11 +20,11 @@ import static com.hedera.services.contracts.ContractsModule.*;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.RecordsHistorian;
@@ -104,7 +104,7 @@ public interface ContractsTestComponent {
         Builder prngLogic(PrngLogic prngLogic);
 
         @BindsInstance
-        Builder livePricesSource(LivePricesSource livePricesSource);
+        Builder pricesAndFeesSource(PricesAndFeesImpl pricesAndFees);
 
         @BindsInstance
         Builder transactionContext(TransactionContext transactionContext);

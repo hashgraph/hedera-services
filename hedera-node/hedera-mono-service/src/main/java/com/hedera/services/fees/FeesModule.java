@@ -20,6 +20,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
+import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
@@ -94,6 +95,10 @@ public interface FeesModule {
     @Binds
     @Singleton
     HbarCentExchange bindHbarCentExchange(BasicHbarCentExchange basicHbarCentExchange);
+
+    @Binds
+    @Singleton
+    PricesAndFeesProvider bindPricesAndFeesProvider(PricesAndFeesImpl pricesAndFeesImplementation);
 
     @Provides
     @ElementsIntoSet

@@ -15,9 +15,22 @@
  */
 package com.hedera.services.evm.contracts.execution;
 
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 
 public interface PricesAndFeesProvider {
+    FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at);
+
+    ExchangeRate rate(Timestamp at);
+
+    long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
+
+    //    FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at,
+    // ResponseType type);
+
+    //    long gasFeeInTinybars(final Instant consensusTime, final Precompile precompile);
     long currentGasPrice(final Instant now, final HederaFunctionality function);
 }
