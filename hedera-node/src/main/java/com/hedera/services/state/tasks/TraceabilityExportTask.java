@@ -51,18 +51,22 @@ import org.apache.logging.log4j.Logger;
  * A {@link SystemTask} added in release 0.31 that exports the bytecode and storage slots of all
  * contracts from the post-upgrade saved state.
  *
- * <p>After all pre-existing entities have been scanned, always returns false from {@code isActive()}.
+ * <p>After all pre-existing entities have been scanned, always returns false from {@code
+ * isActive()}.
  *
- * <p>Enforces two kinds of "back-pressure" by returning {@link SystemTaskResult#NEEDS_DIFFERENT_CONTEXT}
- * from {@code process()} if,
+ * <p>Enforces two kinds of "back-pressure" by returning {@link
+ * SystemTaskResult#NEEDS_DIFFERENT_CONTEXT} from {@code process()} if,
+ *
  * <ol>
- *     <li>More than {@code traceability.maxExportsPerConsSec} entities have been
- *     processed by the {@link SystemTaskManager} in the last consensus second; or,</li>
- *     <li>The free-to-used ratio of the consensus gas throttle has fallen below
- *     {@code traceability.minFreeToUsedGasThrottleRatio}.</li>
+ *   <li>More than {@code traceability.maxExportsPerConsSec} entities have been processed by the
+ *       {@link SystemTaskManager} in the last consensus second; or,
+ *   <li>The free-to-used ratio of the consensus gas throttle has fallen below {@code
+ *       traceability.minFreeToUsedGasThrottleRatio}.
  * </ol>
- * With default settings, this stops traceability exports whenever gas usage is above 10 percent
- * of capacity; or when there have already been 10 traceability exports in the current consensus second.
+ *
+ * With default settings, this stops traceability exports whenever gas usage is above 10 percent of
+ * capacity; or when there have already been 10 traceability exports in the current consensus
+ * second.
  */
 @Singleton
 public class TraceabilityExportTask implements SystemTask {

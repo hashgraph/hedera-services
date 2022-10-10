@@ -35,8 +35,8 @@ public interface SystemTask {
     }
 
     /**
-     * Tries to do this task's work on the entity with the given id, if applicable and capacity
-     * and context permit.
+     * Tries to do this task's work on the entity with the given id, if applicable and capacity and
+     * context permit.
      *
      * @param literalNum the id of the entity to process
      * @param now the current consensus time
@@ -49,8 +49,8 @@ public interface SystemTask {
     }
 
     /**
-     * Tries to do this task's work on the entity with the given id, if applicable and capacity
-     * and context permit.
+     * Tries to do this task's work on the entity with the given id, if applicable and capacity and
+     * context permit.
      *
      * @param literalNum the id of the entity to process
      * @param now the current consensus time

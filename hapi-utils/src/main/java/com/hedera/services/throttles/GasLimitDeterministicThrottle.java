@@ -61,8 +61,8 @@ public class GasLimitDeterministicThrottle {
     }
 
     /**
-     * Given a time which must not be before the {@code lastDecisionTime} of this throttle,
-     * leaks until that time and returns the resulting free-to-used ratio.
+     * Given a time which must not be before the {@code lastDecisionTime} of this throttle, leaks
+     * until that time and returns the resulting free-to-used ratio.
      *
      * @param now the time at which the free-to-used ratio must be computed
      * @return the free-to-used ratio at that time
