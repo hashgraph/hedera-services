@@ -57,7 +57,7 @@ dependencyResolutionManagement {
             version("commons-lang3-version", "3.12.0")
             version("dagger-version", "2.42")
             version("eddsa-version", "0.3.0")
-            version("grpc-version", "1.39.0")
+            version("grpc-version", "1.48.1")
             version("guava-version", "31.1-jre")
             version("hapi-version", "0.31.0-alpha.0-SNAPSHOT")
             version("headlong-version", "6.1.1")
@@ -71,6 +71,9 @@ dependencyResolutionManagement {
             version("swirlds-version", "0.31.0-alpha.1")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
+            version("jsr305-version", "3.0.2")
+            version("spotbugs-version", "4.7.2")
+            version("proto-parse-version", "1.0-SNAPSHOT")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
@@ -136,6 +139,9 @@ dependencyResolutionManagement {
             library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap").versionRef("swirlds-version")
             library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
             library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
+            library("jsr305-annotation", "com.google.code.findbugs", "jsr305").versionRef("jsr305-version")
+            library("spotbugs", "com.github.spotbugs", "spotbugs").versionRef("spotbugs-version")
+            library("proto-parse", "com.hedera.hashgraph.protoparse", "proto-parse").versionRef("proto-parse-version")
         }
 
         // The libs of this catalog can be used for test or build uses.
