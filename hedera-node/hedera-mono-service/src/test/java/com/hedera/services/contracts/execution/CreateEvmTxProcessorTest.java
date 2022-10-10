@@ -148,11 +148,11 @@ class CreateEvmTxProcessorTest {
     void assertSuccessfulExecutionEth() {
         givenValidMockEth(true);
 
-        var evmAccount = mock(EvmAccount.class);
-        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
-        var senderMutableAccount = mock(MutableAccount.class);
-        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
-        given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
+//        var evmAccount = mock(EvmAccount.class);
+//        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+//        var senderMutableAccount = mock(MutableAccount.class);
+//        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+//        given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
 
         var result =
                 createEvmTxProcessor.executeEth(
@@ -372,13 +372,16 @@ class CreateEvmTxProcessorTest {
 
     private void givenValidMockEth(boolean expectedSuccess) {
         given(worldState.updater()).willReturn(updater);
-        given(worldState.updater().updater()).willReturn(updater);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(worldState.updater().updater()).willReturn(stackedUpdater);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
 
         var evmAccount = mock(EvmAccount.class);
 
-        given(worldState.updater()).willReturn(updater);
+        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
+//        given(worldState.updater()).willReturn(updater);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
 
@@ -389,21 +392,20 @@ class CreateEvmTxProcessorTest {
         given(senderMutableAccount.getCode()).willReturn(Bytes.EMPTY);
 
         if (expectedSuccess) {
-            given(gasCalculator.codeDepositGasCost(0)).willReturn(0L);
+//            given(gasCalculator.codeDepositGasCost(0)).willReturn(0L);
         }
+        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-        given(updater.getSenderAccount(any())).willReturn(evmAccount);
-        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.getOrCreate(any())).willReturn(evmAccount);
-        given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.getSbhRefund()).willReturn(0L);
+        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+//        given(updater.getSbhRefund()).willReturn(0L);
 
-        given(updater.getSenderAccount(any())).willReturn(evmAccount);
-        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+        given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
     }
 
     private void givenExtantSender() {
