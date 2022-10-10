@@ -147,7 +147,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             stateChanges = Map.of();
         } else {
             // Return gas price to accounts
-            final long refunded = gasLimit - gasUsedByTransaction + sbhRefund;
+            final long refunded = gasLimit - gasUsed + sbhRefund;
             final Wei refundedWei = Wei.of(refunded * gasPrice);
             if (refundedWei.greaterThan(Wei.ZERO)) {
                 final var allowanceCharged = chargingResult.allowanceCharged();
@@ -213,7 +213,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             return TransactionProcessingResult.successful(
                 initialFrame.getLogs(),
-                gasUsedByTransaction,
+                gasUsed,
                 sbhRefund,
                 gasPrice,
                 initialFrame.getOutputData(),
@@ -222,7 +222,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                 hederaTracer.getActions());
         } else {
             return TransactionProcessingResult.failed(
-                gasUsedByTransaction,
+                gasUsed,
                 sbhRefund,
                 gasPrice,
                 initialFrame.getRevertReason(),
@@ -319,25 +319,6 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             }
         }
         return new ChargingResult(mutableSender, mutableRelayer, allowanceCharged);
-    }
-
-    private long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
-        long gasUsedByTransaction = txGasLimit - initialFrame.getRemainingGas();
-        /* Return leftover gas */
-        final long selfDestructRefund =
-                gasCalculator.getSelfDestructRefundAmount()
-                        * Math.min(
-                                initialFrame.getSelfDestructs().size(),
-                                gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
-
-        gasUsedByTransaction =
-                gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
-
-        final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
-        gasUsedByTransaction =
-                Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
-
-        return gasUsedByTransaction;
     }
 
     protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
