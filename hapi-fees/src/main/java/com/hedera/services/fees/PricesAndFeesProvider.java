@@ -28,8 +28,6 @@ public interface PricesAndFeesProvider {
 
     long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
-    //    long currentMultiplier(TxnAccessor accessor);
-
     //    FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at,
     // ResponseType type);
 
