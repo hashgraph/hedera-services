@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -53,7 +53,7 @@ public class StaticCallOperationSuite extends HapiApiSuite {
                 .when()
                 .then(
                         contractCall(contract, "staticcall", INVALID_ADDRESS)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(FAIL_INVALID),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var id = spec.registry().getAccountID(DEFAULT_PAYER);

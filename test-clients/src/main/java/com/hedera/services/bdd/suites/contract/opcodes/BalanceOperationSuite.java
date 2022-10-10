@@ -30,7 +30,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
@@ -66,9 +67,9 @@ public class BalanceOperationSuite extends HapiApiSuite {
                 .when()
                 .then(
                         contractCall(contract, "balanceOf", INVALID_ADDRESS)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         contractCallLocal(contract, "balanceOf", INVALID_ADDRESS)
-                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
+                                .hasAnswerOnlyPrecheck(OK),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var id = spec.registry().getAccountID(ACCOUNT);
