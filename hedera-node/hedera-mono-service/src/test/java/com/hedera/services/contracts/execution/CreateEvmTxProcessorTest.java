@@ -16,17 +16,12 @@
 package com.hedera.services.contracts.execution;
 
 import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -36,7 +31,6 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Deque;
@@ -126,119 +120,129 @@ class CreateEvmTxProcessorTest {
                         blockMetaSource);
     }
 
-//    @Test
-//    void assertSuccessfulExecution() {
-//        givenValidMock(true);
-//        givenSenderWithBalance(350_000L);
-//        var result =
-//                createEvmTxProcessor.execute(
-//                        sender,
-//                        receiver.getId().asEvmAddress(),
-//                        33_333L,
-//                        1234L,
-//                        Bytes.EMPTY,
-//                        consensusTime);
-//        assertTrue(result.isSuccessful());
-//        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-//        verify(codeCache).invalidate(receiver.getId().asEvmAddress());
-//    }
+    //    @Test
+    //    void assertSuccessfulExecution() {
+    //        givenValidMock(true);
+    //        givenSenderWithBalance(350_000L);
+    //        var result =
+    //                createEvmTxProcessor.execute(
+    //                        sender,
+    //                        receiver.getId().asEvmAddress(),
+    //                        33_333L,
+    //                        1234L,
+    //                        Bytes.EMPTY,
+    //                        consensusTime);
+    //        assertTrue(result.isSuccessful());
+    //        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    //        verify(codeCache).invalidate(receiver.getId().asEvmAddress());
+    //    }
 
-//    @Test
-//    void assertSuccessfulExecutionEth() {
-//        givenValidMockEth(true);
-//
-//        var evmAccount = mock(EvmAccount.class);
-//        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
-//        var senderMutableAccount = mock(MutableAccount.class);
-//        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
-//        given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
-//
-//        var result =
-//                createEvmTxProcessor.executeEth(
-//                        sender,
-//                        receiver.getId().asEvmAddress(),
-//                        33_333L,
-//                        1234L,
-//                        Bytes.EMPTY,
-//                        consensusTime,
-//                        relayer,
-//                        BigInteger.valueOf(10_000L),
-//                        55_555L);
-//        assertTrue(result.isSuccessful());
-//        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-//        verify(codeCache).invalidate(receiver.getId().asEvmAddress());
-//    }
+    //    @Test
+    //    void assertSuccessfulExecutionEth() {
+    //        givenValidMockEth(true);
+    //
+    //        var evmAccount = mock(EvmAccount.class);
+    //        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+    //        var senderMutableAccount = mock(MutableAccount.class);
+    //        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+    //        given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
+    //
+    //        var result =
+    //                createEvmTxProcessor.executeEth(
+    //                        sender,
+    //                        receiver.getId().asEvmAddress(),
+    //                        33_333L,
+    //                        1234L,
+    //                        Bytes.EMPTY,
+    //                        consensusTime,
+    //                        relayer,
+    //                        BigInteger.valueOf(10_000L),
+    //                        55_555L);
+    //        assertTrue(result.isSuccessful());
+    //        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    //        verify(codeCache).invalidate(receiver.getId().asEvmAddress());
+    //    }
 
-//    @Test
-//    void assertSuccessExecutionChargesCorrectMinimumGas() {
-//        givenValidMock(true);
-//        given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
-//        givenSenderWithBalance(350_000L);
-//        var result =
-//                createEvmTxProcessor.execute(
-//                        sender,
-//                        receiver.getId().asEvmAddress(),
-//                        GAS_LIMIT,
-//                        1234L,
-//                        Bytes.EMPTY,
-//                        consensusTime);
-//        assertTrue(result.isSuccessful());
-//        assertEquals(result.getGasUsed(), GAS_LIMIT - GAS_LIMIT * MAX_REFUND_PERCENT / 100);
-//        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-//    }
+    //    @Test
+    //    void assertSuccessExecutionChargesCorrectMinimumGas() {
+    //        givenValidMock(true);
+    //
+    // given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
+    //        givenSenderWithBalance(350_000L);
+    //        var result =
+    //                createEvmTxProcessor.execute(
+    //                        sender,
+    //                        receiver.getId().asEvmAddress(),
+    //                        GAS_LIMIT,
+    //                        1234L,
+    //                        Bytes.EMPTY,
+    //                        consensusTime);
+    //        assertTrue(result.isSuccessful());
+    //        assertEquals(result.getGasUsed(), GAS_LIMIT - GAS_LIMIT * MAX_REFUND_PERCENT / 100);
+    //        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    //    }
 
-//    @Test
-//    void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
-//        givenValidMock(true);
-//        given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(5);
-//        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
-//                .willReturn(INTRINSIC_GAS_COST);
-//        givenSenderWithBalance(350_000L);
-//        var result =
-//                createEvmTxProcessor.execute(
-//                        sender,
-//                        receiver.getId().asEvmAddress(),
-//                        GAS_LIMIT,
-//                        1234L,
-//                        Bytes.EMPTY,
-//                        consensusTime);
-//        assertTrue(result.isSuccessful());
-//        assertEquals(INTRINSIC_GAS_COST, result.getGasUsed());
-//        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-//    }
+    //    @Test
+    //    void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
+    //        givenValidMock(true);
+    //        given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(5);
+    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
+    //                .willReturn(INTRINSIC_GAS_COST);
+    //        givenSenderWithBalance(350_000L);
+    //        var result =
+    //                createEvmTxProcessor.execute(
+    //                        sender,
+    //                        receiver.getId().asEvmAddress(),
+    //                        GAS_LIMIT,
+    //                        1234L,
+    //                        Bytes.EMPTY,
+    //                        consensusTime);
+    //        assertTrue(result.isSuccessful());
+    //        assertEquals(INTRINSIC_GAS_COST, result.getGasUsed());
+    //        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    //    }
 
-//    @Test
-//    void assertFailedExecution() {
-//        givenValidMock(false);
-//        // and:
-//        given(gasCalculator.mStoreOperationGasCost(any(), anyLong())).willReturn(200L);
-//        given(gasCalculator.mLoadOperationGasCost(any(), anyLong())).willReturn(30L);
-//        given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(5000L);
-//        givenSenderWithBalance(350_000L);
-//
-//        // when:
-//        var result =
-//                createEvmTxProcessor.execute(
-//                        sender,
-//                        receiver.getId().asEvmAddress(),
-//                        33_333L,
-//                        0,
-//                        Bytes.fromHexString(
-//                                "6080604052348015600f57600080fd5b506000604e576040517f08c379a"
-//                                    + "00000000000000000000000000000000000000000000000000000000081"
-//                                    + "526004016045906071565b60405180910390fd5b60c9565b6000605d601"
-//                                    + "183608f565b915060668260a0565b602082019050919050565b60006020"
-//                                    + "8201905081810360008301526088816052565b9050919050565b6000828"
-//                                    + "25260208201905092915050565b7f636f756c64206e6f74206578656375"
-//                                    + "7465000000000000000000000000000000600082015250565b603f80610"
-//                                    + "0d76000396000f3fe6080604052600080fdfea2646970667358221220d8"
-//                                    + "2b5e4f0118f9b6972aae9287dfe93930fdbc1e62ca10ea7ac70bde1c0ad"
-//                                    + "d2464736f6c63430008070033"),
-//                        consensusTime);
-//
-//        // then:
-//        assertFalse(result.isSuccessful());
-//    }
+    //    @Test
+    //    void assertFailedExecution() {
+    //        givenValidMock(false);
+    //        // and:
+    //        given(gasCalculator.mStoreOperationGasCost(any(), anyLong())).willReturn(200L);
+    //        given(gasCalculator.mLoadOperationGasCost(any(), anyLong())).willReturn(30L);
+    //        given(gasCalculator.memoryExpansionGasCost(any(), anyLong(),
+    // anyLong())).willReturn(5000L);
+    //        givenSenderWithBalance(350_000L);
+    //
+    //        // when:
+    //        var result =
+    //                createEvmTxProcessor.execute(
+    //                        sender,
+    //                        receiver.getId().asEvmAddress(),
+    //                        33_333L,
+    //                        0,
+    //                        Bytes.fromHexString(
+    //                                "6080604052348015600f57600080fd5b506000604e576040517f08c379a"
+    //                                    +
+    // "00000000000000000000000000000000000000000000000000000000081"
+    //                                    +
+    // "526004016045906071565b60405180910390fd5b60c9565b6000605d601"
+    //                                    +
+    // "183608f565b915060668260a0565b602082019050919050565b60006020"
+    //                                    +
+    // "8201905081810360008301526088816052565b9050919050565b6000828"
+    //                                    +
+    // "25260208201905092915050565b7f636f756c64206e6f74206578656375"
+    //                                    +
+    // "7465000000000000000000000000000000600082015250565b603f80610"
+    //                                    +
+    // "0d76000396000f3fe6080604052600080fdfea2646970667358221220d8"
+    //                                    +
+    // "2b5e4f0118f9b6972aae9287dfe93930fdbc1e62ca10ea7ac70bde1c0ad"
+    //                                    + "d2464736f6c63430008070033"),
+    //                        consensusTime);
+    //
+    //        // then:
+    //        assertFalse(result.isSuccessful());
+    //    }
 
     @Test
     void assertIsContractCallFunctionality() {
@@ -277,46 +281,47 @@ class CreateEvmTxProcessorTest {
         assertEquals(transaction.getValue(), buildMessageFrame.getApparentValue());
     }
 
-//    @Test
-//    void throwsWhenSenderCannotCoverUpfrontCost() {
-//        givenInvalidMock();
-//        givenSenderWithBalance(123);
-//
-//        Address receiver = this.receiver.getId().asEvmAddress();
-//        assertFailsWith(
-//                () ->
-//                        createEvmTxProcessor.execute(
-//                                sender, receiver, 333_333L, 1234L, Bytes.EMPTY, consensusTime),
-//                ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
-//    }
+    //    @Test
+    //    void throwsWhenSenderCannotCoverUpfrontCost() {
+    //        givenInvalidMock();
+    //        givenSenderWithBalance(123);
+    //
+    //        Address receiver = this.receiver.getId().asEvmAddress();
+    //        assertFailsWith(
+    //                () ->
+    //                        createEvmTxProcessor.execute(
+    //                                sender, receiver, 333_333L, 1234L, Bytes.EMPTY,
+    // consensusTime),
+    //                ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+    //    }
 
-//    @Test
-//    void throwsWhenIntrinsicGasCostExceedsGasLimit() {
-//        givenInvalidMock();
-//        givenExtantSender();
-//
-//        Address receiver = this.receiver.getId().asEvmAddress();
-//        assertFailsWith(
-//                () ->
-//                        createEvmTxProcessor.execute(
-//                                sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
-//                INSUFFICIENT_GAS);
-//    }
+    //    @Test
+    //    void throwsWhenIntrinsicGasCostExceedsGasLimit() {
+    //        givenInvalidMock();
+    //        givenExtantSender();
+    //
+    //        Address receiver = this.receiver.getId().asEvmAddress();
+    //        assertFailsWith(
+    //                () ->
+    //                        createEvmTxProcessor.execute(
+    //                                sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
+    //                INSUFFICIENT_GAS);
+    //    }
 
-//    @Test
-//    void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
-//        givenInvalidMock();
-//        givenExtantSender();
-//        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
-//                .willReturn(MAX_GAS_LIMIT + 1L);
-//
-//        Address receiver = this.receiver.getId().asEvmAddress();
-//        assertFailsWith(
-//                () ->
-//                        createEvmTxProcessor.execute(
-//                                sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
-//                INSUFFICIENT_GAS);
-//    }
+    //    @Test
+    //    void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
+    //        givenInvalidMock();
+    //        givenExtantSender();
+    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
+    //                .willReturn(MAX_GAS_LIMIT + 1L);
+    //
+    //        Address receiver = this.receiver.getId().asEvmAddress();
+    //        assertFailsWith(
+    //                () ->
+    //                        createEvmTxProcessor.execute(
+    //                                sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
+    //                INSUFFICIENT_GAS);
+    //    }
 
     private void givenInvalidMock() {
         given(worldState.updater()).willReturn(updater);

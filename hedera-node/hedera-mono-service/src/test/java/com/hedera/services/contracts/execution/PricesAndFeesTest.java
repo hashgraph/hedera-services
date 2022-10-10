@@ -35,8 +35,6 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-
-import java.util.Map;
 import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,9 +91,7 @@ class PricesAndFeesTest {
         usagePrices = mock(UsagePricesProvider.class);
         exchange = mock(HbarCentExchange.class);
         feeMultiplierSource = mock(FeeMultiplierSource.class);
-        subject =
-                new PricesAndFeesImpl(
-                        exchange, usagePrices, feeMultiplierSource, txnCtx);
+        subject = new PricesAndFeesImpl(exchange, usagePrices, feeMultiplierSource, txnCtx);
     }
 
     @Test
@@ -133,6 +129,7 @@ class PricesAndFeesTest {
         final var expected =
                 getTinybarsFromTinyCents(activeRate, gasPriceTinybars) * reasonableMultiplier;
 
-        assertEquals(expected, subject.currentGasPrice(MiscUtils.timestampToInstant(now), ContractCall));
+        assertEquals(
+                expected, subject.currentGasPrice(MiscUtils.timestampToInstant(now), ContractCall));
     }
 }

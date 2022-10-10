@@ -133,7 +133,8 @@ class EnvironmentProviderTest {
         assertEquals(NETTY_PATH, result.get(PATH_PROPERTY));
         assertEquals("false", result.get(BOOLEAN_PROPERTY));
         // This test handles the case where all 3 properties on the command line are present, but
-        // the call will only request two of the option names, and thus the third command line option
+        // the call will only request two of the option names, and thus the third command line
+        // option
         // should not be in the result
         assertEquals(2, result.size());
     }

@@ -16,17 +16,11 @@
 package com.hedera.services.contracts.execution;
 
 import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -128,50 +122,50 @@ class CallLocalEvmTxProcessorTest {
         callLocalEvmTxProcessor.setBlockMetaSource(blockMetaSource);
     }
 
-//    @Test
-//    void assertSuccessExecute() {
-//        givenValidMock();
-//        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
-//        final var receiverAddress = receiver.getId().asEvmAddress();
-//        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-//        var result =
-//                callLocalEvmTxProcessor.execute(
-//                        sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY);
-//        assertTrue(result.isSuccessful());
-//        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-//        verify(globalDynamicProperties, never()).enabledSidecars();
-//    }
+    //    @Test
+    //    void assertSuccessExecute() {
+    //        givenValidMock();
+    //        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+    //        final var receiverAddress = receiver.getId().asEvmAddress();
+    //        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+    //        var result =
+    //                callLocalEvmTxProcessor.execute(
+    //                        sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY);
+    //        assertTrue(result.isSuccessful());
+    //        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    //        verify(globalDynamicProperties, never()).enabledSidecars();
+    //    }
 
-//    @Test
-//    void throwsWhenCodeCacheFailsLoading() {
-//        given(worldState.updater()).willReturn(updater);
-//        given(worldState.updater().updater()).willReturn(updater);
-//        given(globalDynamicProperties.fundingAccount())
-//                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
-//
-//        var evmAccount = mock(EvmAccount.class);
-//
-//        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-//
-//        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-//                .willReturn(evmAccount);
-//        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable())
-//                .willReturn(mock(MutableAccount.class));
-//        given(worldState.updater()).willReturn(updater);
-//
-//        var senderMutableAccount = mock(MutableAccount.class);
-//
-//        given(updater.getSenderAccount(any())).willReturn(evmAccount);
-//        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-//        given(updater.getOrCreate(any())).willReturn(evmAccount);
-//        given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-//
-//        assertFailsWith(
-//                () ->
-//                        callLocalEvmTxProcessor.execute(
-//                                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY),
-//                INVALID_CONTRACT_ID);
-//    }
+    //    @Test
+    //    void throwsWhenCodeCacheFailsLoading() {
+    //        given(worldState.updater()).willReturn(updater);
+    //        given(worldState.updater().updater()).willReturn(updater);
+    //        given(globalDynamicProperties.fundingAccount())
+    //                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+    //
+    //        var evmAccount = mock(EvmAccount.class);
+    //
+    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+    //
+    //        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+    //                .willReturn(evmAccount);
+    //        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable())
+    //                .willReturn(mock(MutableAccount.class));
+    //        given(worldState.updater()).willReturn(updater);
+    //
+    //        var senderMutableAccount = mock(MutableAccount.class);
+    //
+    //        given(updater.getSenderAccount(any())).willReturn(evmAccount);
+    //        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+    //        given(updater.getOrCreate(any())).willReturn(evmAccount);
+    //        given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+    //
+    //        assertFailsWith(
+    //                () ->
+    //                        callLocalEvmTxProcessor.execute(
+    //                                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY),
+    //                INVALID_CONTRACT_ID);
+    //    }
 
     @Test
     void assertIsContractCallFunctionality() {

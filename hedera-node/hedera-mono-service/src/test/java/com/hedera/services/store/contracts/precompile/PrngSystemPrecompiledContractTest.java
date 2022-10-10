@@ -54,7 +54,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
@@ -129,10 +128,12 @@ class PrngSystemPrecompiledContractTest {
     void calculatesGasCorrectly() {
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
         given(
-                pricesAndFees.currentGasPriceInTinycents(
+                        pricesAndFees.currentGasPriceInTinycents(
                                 consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(800L);
-        assertEquals(100000000L / 800L, subject.calculateGas(MiscUtils.timestampToInstant(consensusNow)));
+        assertEquals(
+                100000000L / 800L,
+                subject.calculateGas(MiscUtils.timestampToInstant(consensusNow)));
     }
 
     @Test
@@ -141,7 +142,10 @@ class PrngSystemPrecompiledContractTest {
         initialSetUp();
         given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
         given(frame.getRemainingGas()).willReturn(0L);
-        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
+        given(frame.getBlockValues())
+                .willReturn(
+                        new HederaBlockValues(
+                                10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
 
         final var response = subject.computePrngResult(10L, input, frame);
         assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
@@ -161,7 +165,10 @@ class PrngSystemPrecompiledContractTest {
         given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString()))
                 .willReturn(childRecord);
         given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
-        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
+        given(frame.getBlockValues())
+                .willReturn(
+                        new HederaBlockValues(
+                                10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
 
         final var response = subject.computePrngResult(10L, input, frame);
         assertEquals(Optional.empty(), response.getLeft().getHaltReason());
@@ -182,7 +189,10 @@ class PrngSystemPrecompiledContractTest {
     void unknownExceptionFailsTheCall() {
         final var input = random256BitGeneratorInput();
         initialSetUp();
-        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
+        given(frame.getBlockValues())
+                .willReturn(
+                        new HederaBlockValues(
+                                10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
         final var logic = mock(PrngLogic.class);
         subject =
                 new PrngSystemPrecompiledContract(
@@ -308,7 +318,10 @@ class PrngSystemPrecompiledContractTest {
         given(updater.parentUpdater()).willReturn(Optional.empty());
         given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
                 .willReturn(childRecord);
-        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
+        given(frame.getBlockValues())
+                .willReturn(
+                        new HederaBlockValues(
+                                10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
         given(runningHashLeaf.nMinusThreeRunningHash())
                 .willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
@@ -343,7 +356,7 @@ class PrngSystemPrecompiledContractTest {
                 .willReturn(ALTBN128_ADD.toArray());
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
         given(
-                pricesAndFees.currentGasPriceInTinycents(
+                        pricesAndFees.currentGasPriceInTinycents(
                                 consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(830L);
         given(frame.getRemainingGas()).willReturn(400_000L);
