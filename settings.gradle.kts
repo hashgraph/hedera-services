@@ -27,6 +27,7 @@ include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-api")
 include(":hedera-node:hedera-evm")
 include(":hedera-node:hedera-evm-api")
+include(":hedera-node:hedera-mono-service")
 include(":test-clients")
 
 // Enable Gradle Build Scan
@@ -67,7 +68,7 @@ dependencyResolutionManagement {
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
-            version("swirlds-version", "0.31.0-alpha.0")
+            version("swirlds-version", "0.31.0-alpha.1")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
 

@@ -425,4 +425,20 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                                 "Bad pending rewards!"));
         return this;
     }
+
+    public AccountInfoAsserts maxAutoAssociations(int num) {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                num,
+                                ((AccountInfo) o).getMaxAutomaticTokenAssociations(),
+                                "Bad maxAutomaticTokenAssociations!"));
+        return this;
+    }
+
+    public AccountInfoAsserts ownedNfts(int num) {
+        registerProvider(
+                (spec, o) -> assertEquals(num, ((AccountInfo) o).getOwnedNfts(), "Bad ownedNfts!"));
+        return this;
+    }
 }

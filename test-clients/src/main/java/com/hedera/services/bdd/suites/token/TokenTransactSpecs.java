@@ -55,9 +55,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.roy
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -80,13 +78,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.OptionalLong;
+import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,12 +96,41 @@ import org.apache.logging.log4j.Logger;
 public class TokenTransactSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
 
+    public static final String PAYER = "payer";
     private static final long TOTAL_SUPPLY = 1_000;
     private static final String A_TOKEN = "TokenA";
     private static final String B_TOKEN = "TokenB";
     private static final String FIRST_USER = "Client1";
     private static final String SECOND_USER = "Client2";
-    private static final String TOKEN_TREASURY = "treasury";
+    private static final String CIVILIAN = "civilian";
+    public static final String NEW_TREASURY = "newTreasury";
+    public static final String SIGNING_KEY_FIRST_USER = "signingKeyFirstUser";
+    public static final String FIRST_TREASURY = "firstTreasury";
+    public static final String BENEFICIARY = "beneficiary";
+    public static final String MULTIPURPOSE = "multipurpose";
+    public static final String SECOND_TREASURY = "secondTreasury";
+    public static final String WEST_WIND_ART = "westWindArt";
+    public static final String FREEZE_KEY = "freezeKey";
+    public static final String SPONSOR = "sponsor";
+    public static final String TXN_FROM_TREASURY = "txnFromTreasury";
+    public static final String TOKEN_WITH_FRACTIONAL_FEE = "TokenWithFractionalFee";
+    public static final String DEBBIE = "Debbie";
+    public static final String COLLECTION = "collection";
+    public static final String MULTI_PURPOSE = "multiPurpose";
+    public static final String SUPPLY_KEY = "supplyKey";
+    public static final String SENTINEL_ACCOUNT = "0.0.0";
+    public static final String SIGNING_KEY_TREASURY = "signingKeyTreasury";
+    public static final String OLD_TREASURY = "oldTreasury";
+    public static final String EDGAR = "Edgar";
+    public static final String TOKEN_WITH_NESTED_FEE = "TokenWithNestedFee";
+    public static final String NESTED_TOKEN_TREASURY = "NestedTokenTreasury";
+    public static final String AMELIE = "amelie";
+    public static final String FUGUES_AND_FANTASTICS = "Fugues and fantastics";
+    public static final String RANDOM_BENEFICIARY = "randomBeneficiary";
+    public static final String SUPPLY = "supply";
+    public static final String UNIQUE = "unique";
+    public static final String FUNGIBLE = "fungible";
+    public static final String TRANSFER_TXN = "transferTxn";
 
     public static void main(String... args) {
         new TokenTransactSpecs().runSuiteAsync();
@@ -111,6 +142,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
     }
 
     @Override
+    @SuppressWarnings("java:S3878")
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
@@ -136,7 +168,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                     cannotGiveNftsToDissociatedContractsOrAccounts(),
                     recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
                     transferListsEnforceTokenTypeRestrictions(),
-                    /* HIP-18 charging case studies */
+                    // HIP-18 charging case studies
                     fixedHbarCaseStudy(),
                     fractionalCaseStudy(),
                     simpleHtsFeeCaseStudy(),
@@ -152,7 +184,13 @@ public class TokenTransactSpecs extends HapiApiSuite {
                     fractionalNetOfTransfersCaseStudy(),
                     royaltyAndFractionalTogetherCaseStudy(),
                     respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
-                    /* HIP-23 */
+                    // HIP-573 charging case studies---all will fail at this time!
+                    collectorIsChargedFixedFeeUnlessExempt(),
+                    collectorIsChargedFractionalFeeUnlessExempt(),
+                    collectorIsChargedNetOfTransferFractionalFeeUnlessExempt(),
+                    collectorIsChargedRoyaltyFeeUnlessExempt(),
+                    collectorIsChargedRoyaltyFallbackFeeUnlessExempt(),
+                    // HIP-23
                     happyPathAutoAssociationsWorkForBothTokenTypes(),
                     failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
                     newSlotsCanBeOpenedViaUpdate(),
@@ -164,18 +202,17 @@ public class TokenTransactSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory() {
-        final var treasury = "treasury";
-        final var beneficiary = "beneficiary";
-        final var uniqueToken = "unique";
-        final var fungibleToken = "fungible";
+        final var beneficiary = BENEFICIARY;
+        final var uniqueToken = UNIQUE;
+        final var fungibleToken = FUNGIBLE;
         final var otherFungibleToken = "otherFungibleToken";
-        final var multiPurpose = "multiPurpose";
-        final var transferTxn = "transferTxn";
+        final var multiPurpose = MULTI_PURPOSE;
+        final var transferTxn = TRANSFER_TXN;
 
         return defaultHapiSpec("AutoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory")
                 .given(
                         newKeyNamed(multiPurpose),
-                        cryptoCreate(treasury).maxAutomaticTokenAssociations(1),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(1),
                         cryptoCreate(beneficiary).maxAutomaticTokenAssociations(2),
                         tokenCreate(fungibleToken)
                                 .freezeDefault(true)
@@ -190,15 +227,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(multiPurpose)
                                 .initialSupply(0L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
                         getAccountInfo(beneficiary).savingSnapshot(beneficiary),
-                        getAccountInfo(treasury).savingSnapshot(treasury))
+                        getAccountInfo(TOKEN_TREASURY).savingSnapshot(TOKEN_TREASURY))
                 .when(
                         cryptoTransfer(
                                         movingUnique(uniqueToken, 1L)
-                                                .between(treasury, beneficiary),
-                                        moving(500, fungibleToken).between(beneficiary, treasury))
+                                                .between(TOKEN_TREASURY, beneficiary),
+                                        moving(500, fungibleToken)
+                                                .between(beneficiary, TOKEN_TREASURY))
                                 .via(transferTxn)
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN))
                 .then(
@@ -208,27 +246,27 @@ public class TokenTransactSpecs extends HapiApiSuite {
                         getAccountInfo(beneficiary)
                                 .hasAlreadyUsedAutomaticAssociations(0)
                                 .has(accountWith().noChangesFromSnapshot(beneficiary)),
-                        getAccountInfo(treasury)
+                        getAccountInfo(TOKEN_TREASURY)
                                 .hasAlreadyUsedAutomaticAssociations(0)
-                                .has(accountWith().noChangesFromSnapshot(treasury)),
+                                .has(accountWith().noChangesFromSnapshot(TOKEN_TREASURY)),
                         /* The treasury should still have an open auto-association slots */
                         cryptoTransfer(
-                                moving(500, otherFungibleToken).between(beneficiary, treasury)));
+                                moving(500, otherFungibleToken)
+                                        .between(beneficiary, TOKEN_TREASURY)));
     }
 
     public HapiApiSpec autoAssociationWithKycTokenHasNoSideEffectsOrHistory() {
-        final var treasury = "treasury";
-        final var beneficiary = "beneficiary";
-        final var uniqueToken = "unique";
-        final var fungibleToken = "fungible";
+        final var beneficiary = BENEFICIARY;
+        final var uniqueToken = UNIQUE;
+        final var fungibleToken = FUNGIBLE;
         final var otherFungibleToken = "otherFungibleToken";
-        final var multiPurpose = "multiPurpose";
-        final var transferTxn = "transferTxn";
+        final var multiPurpose = MULTI_PURPOSE;
+        final var transferTxn = TRANSFER_TXN;
 
         return defaultHapiSpec("autoAssociationWithKycTokenHasNoSideEffectsOrHistory")
                 .given(
                         newKeyNamed(multiPurpose),
-                        cryptoCreate(treasury).maxAutomaticTokenAssociations(1),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(1),
                         cryptoCreate(beneficiary).maxAutomaticTokenAssociations(2),
                         tokenCreate(fungibleToken)
                                 .kycKey(multiPurpose)
@@ -242,15 +280,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(multiPurpose)
                                 .initialSupply(0L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
                         getAccountInfo(beneficiary).savingSnapshot(beneficiary),
-                        getAccountInfo(treasury).savingSnapshot(treasury))
+                        getAccountInfo(TOKEN_TREASURY).savingSnapshot(TOKEN_TREASURY))
                 .when(
                         cryptoTransfer(
                                         movingUnique(uniqueToken, 1L)
-                                                .between(treasury, beneficiary),
-                                        moving(500, fungibleToken).between(beneficiary, treasury))
+                                                .between(TOKEN_TREASURY, beneficiary),
+                                        moving(500, fungibleToken)
+                                                .between(beneficiary, TOKEN_TREASURY))
                                 .via(transferTxn)
                                 .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN))
                 .then(
@@ -260,37 +299,37 @@ public class TokenTransactSpecs extends HapiApiSuite {
                         getAccountInfo(beneficiary)
                                 .hasAlreadyUsedAutomaticAssociations(0)
                                 .has(accountWith().noChangesFromSnapshot(beneficiary)),
-                        getAccountInfo(treasury)
+                        getAccountInfo(TOKEN_TREASURY)
                                 .hasAlreadyUsedAutomaticAssociations(0)
-                                .has(accountWith().noChangesFromSnapshot(treasury)),
+                                .has(accountWith().noChangesFromSnapshot(TOKEN_TREASURY)),
                         /* The treasury should still have an open auto-association slots */
                         cryptoTransfer(
-                                moving(500, otherFungibleToken).between(beneficiary, treasury)));
+                                moving(500, otherFungibleToken)
+                                        .between(beneficiary, TOKEN_TREASURY)));
     }
 
     public HapiApiSpec failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem() {
-        final var treasury = "treasury";
-        final var beneficiary = "beneficiary";
+        final var beneficiary = BENEFICIARY;
         final var unluckyBeneficiary = "unluckyBeneficiary";
         final var thirdParty = "thirdParty";
-        final var uniqueToken = "unique";
-        final var fungibleToken = "fungible";
-        final var multiPurpose = "multiPurpose";
-        final var transferTxn = "transferTxn";
+        final var uniqueToken = UNIQUE;
+        final var fungibleToken = FUNGIBLE;
+        final var multiPurpose = MULTI_PURPOSE;
+        final var transferTxn = TRANSFER_TXN;
 
         return defaultHapiSpec("failedAutoAssociationHasNoSideEffectsOrHistory")
                 .given(
                         newKeyNamed(multiPurpose),
-                        cryptoCreate(treasury),
+                        cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(fungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(1_000L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         tokenCreate(uniqueToken)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(multiPurpose)
                                 .initialSupply(0L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
                         cryptoCreate(beneficiary).maxAutomaticTokenAssociations(2),
                         cryptoCreate(unluckyBeneficiary),
@@ -298,14 +337,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
                         tokenAssociate(unluckyBeneficiary, uniqueToken),
                         getAccountInfo(beneficiary).savingSnapshot(beneficiary),
                         getAccountInfo(unluckyBeneficiary).savingSnapshot(unluckyBeneficiary),
-                        cryptoTransfer(movingUnique(uniqueToken, 2L).between(treasury, thirdParty)))
+                        cryptoTransfer(
+                                movingUnique(uniqueToken, 2L).between(TOKEN_TREASURY, thirdParty)))
                 .when(
                         cryptoTransfer(
                                         movingUnique(uniqueToken, 1L)
-                                                .between(treasury, beneficiary),
-                                        moving(500, fungibleToken).between(treasury, beneficiary),
+                                                .between(TOKEN_TREASURY, beneficiary),
+                                        moving(500, fungibleToken)
+                                                .between(TOKEN_TREASURY, beneficiary),
                                         movingUnique(uniqueToken, 2L)
-                                                .between(treasury, unluckyBeneficiary))
+                                                .between(TOKEN_TREASURY, unluckyBeneficiary))
                                 .via(transferTxn)
                                 .hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO))
                 .then(
@@ -317,71 +358,73 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                 .has(accountWith().noChangesFromSnapshot(beneficiary)),
                         /* The beneficiary should still have two open auto-association slots */
                         cryptoTransfer(
-                                movingUnique(uniqueToken, 1L).between(treasury, beneficiary),
-                                moving(500, fungibleToken).between(treasury, beneficiary)));
+                                movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, beneficiary),
+                                moving(500, fungibleToken).between(TOKEN_TREASURY, beneficiary)));
     }
 
     public HapiApiSpec newSlotsCanBeOpenedViaUpdate() {
-        final var treasury = "treasury";
-        final var beneficiary = "beneficiary";
-        final var uniqueToken = "unique";
+        final var beneficiary = BENEFICIARY;
+        final var uniqueToken = UNIQUE;
         final var firstFungibleToken = "firstFungibleToken";
         final var secondFungibleToken = "secondFungibleToken";
         final var thirdFungibleToken = "thirdFungibleToken";
-        final var multiPurpose = "multiPurpose";
+        final var multiPurpose = MULTI_PURPOSE;
         final var firstXfer = "firstXfer";
         final var secondXfer = "secondXfer";
 
         return defaultHapiSpec("NewSlotsCanBeOpenedViaUpdate")
                 .given(
                         newKeyNamed(multiPurpose),
-                        cryptoCreate(treasury),
+                        cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(firstFungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(1_000L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         tokenCreate(secondFungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(1_000L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         tokenCreate(thirdFungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(1_000L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         tokenCreate(uniqueToken)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(multiPurpose)
                                 .initialSupply(0L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
                         cryptoCreate(beneficiary).maxAutomaticTokenAssociations(1),
                         getAccountInfo(beneficiary).savingSnapshot(beneficiary),
                         tokenAssociate(beneficiary, secondFungibleToken))
                 .when(
-                        cryptoTransfer(movingUnique(uniqueToken, 1L).between(treasury, beneficiary))
+                        cryptoTransfer(
+                                        movingUnique(uniqueToken, 1L)
+                                                .between(TOKEN_TREASURY, beneficiary))
                                 .via(firstXfer),
                         cryptoTransfer(
                                         moving(500, firstFungibleToken)
-                                                .between(treasury, beneficiary))
+                                                .between(TOKEN_TREASURY, beneficiary))
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
                         // Dissociating from a token that didn't use a slot doesn't free one up
                         tokenDissociate(beneficiary, secondFungibleToken),
                         cryptoTransfer(
                                         moving(500, firstFungibleToken)
-                                                .between(treasury, beneficiary))
+                                                .between(TOKEN_TREASURY, beneficiary))
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
                         cryptoUpdate(beneficiary).maxAutomaticAssociations(2),
                         cryptoTransfer(
                                         moving(500, firstFungibleToken)
-                                                .between(treasury, beneficiary))
+                                                .between(TOKEN_TREASURY, beneficiary))
                                 .via(secondXfer),
                         cryptoTransfer(
                                         moving(500, thirdFungibleToken)
-                                                .between(treasury, beneficiary))
+                                                .between(TOKEN_TREASURY, beneficiary))
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
                         tokenAssociate(beneficiary, thirdFungibleToken),
                         cryptoTransfer(
-                                moving(500, thirdFungibleToken).between(treasury, beneficiary)))
+                                moving(500, thirdFungibleToken)
+                                        .between(TOKEN_TREASURY, beneficiary)))
                 .then(
                         getTxnRecord(firstXfer)
                                 .hasPriority(
@@ -415,43 +458,44 @@ public class TokenTransactSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec newSlotsCanBeOpenedViaDissociate() {
-        final var treasury = "treasury";
-        final var beneficiary = "beneficiary";
-        final var uniqueToken = "unique";
+        final var beneficiary = BENEFICIARY;
+        final var uniqueToken = UNIQUE;
         final var firstFungibleToken = "firstFungibleToken";
-        final var multiPurpose = "multiPurpose";
+        final var multiPurpose = MULTI_PURPOSE;
         final var firstXfer = "firstXfer";
         final var secondXfer = "secondXfer";
 
         return defaultHapiSpec("NewSlotsCanBeOpenedViaDissociate")
                 .given(
                         newKeyNamed(multiPurpose),
-                        cryptoCreate(treasury),
+                        cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(firstFungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(1_000L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         tokenCreate(uniqueToken)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(multiPurpose)
                                 .initialSupply(0L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
                         cryptoCreate(beneficiary).maxAutomaticTokenAssociations(1),
                         getAccountInfo(beneficiary).savingSnapshot(beneficiary))
                 .when(
-                        cryptoTransfer(movingUnique(uniqueToken, 1L).between(treasury, beneficiary))
+                        cryptoTransfer(
+                                        movingUnique(uniqueToken, 1L)
+                                                .between(TOKEN_TREASURY, beneficiary))
                                 .via(firstXfer),
                         cryptoTransfer(
                                         moving(500, firstFungibleToken)
-                                                .between(treasury, beneficiary))
+                                                .between(TOKEN_TREASURY, beneficiary))
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
                         cryptoTransfer(
-                                movingUnique(uniqueToken, 1L).between(beneficiary, treasury)),
+                                movingUnique(uniqueToken, 1L).between(beneficiary, TOKEN_TREASURY)),
                         tokenDissociate(beneficiary, uniqueToken),
                         cryptoTransfer(
                                         moving(500, firstFungibleToken)
-                                                .between(treasury, beneficiary))
+                                                .between(TOKEN_TREASURY, beneficiary))
                                 .via(secondXfer))
                 .then(
                         getTxnRecord(firstXfer)
@@ -484,34 +528,34 @@ public class TokenTransactSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec happyPathAutoAssociationsWorkForBothTokenTypes() {
-        final var treasury = "treasury";
-        final var beneficiary = "beneficiary";
-        final var uniqueToken = "unique";
-        final var fungibleToken = "fungible";
-        final var multiPurpose = "multiPurpose";
-        final var transferTxn = "transferTxn";
+        final var beneficiary = BENEFICIARY;
+        final var uniqueToken = UNIQUE;
+        final var fungibleToken = FUNGIBLE;
+        final var multiPurpose = MULTI_PURPOSE;
+        final var transferTxn = TRANSFER_TXN;
 
         return defaultHapiSpec("HappyPathAutoAssociationsWorkForBothTokenTypes")
                 .given(
                         newKeyNamed(multiPurpose),
-                        cryptoCreate(treasury),
+                        cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(fungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(1_000L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         tokenCreate(uniqueToken)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(multiPurpose)
                                 .initialSupply(0L)
-                                .treasury(treasury),
+                                .treasury(TOKEN_TREASURY),
                         mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
                         cryptoCreate(beneficiary).maxAutomaticTokenAssociations(2),
                         getAccountInfo(beneficiary).savingSnapshot(beneficiary))
                 .when(
                         cryptoTransfer(
                                         movingUnique(uniqueToken, 1L)
-                                                .between(treasury, beneficiary),
-                                        moving(500, fungibleToken).between(treasury, beneficiary))
+                                                .between(TOKEN_TREASURY, beneficiary),
+                                        moving(500, fungibleToken)
+                                                .between(TOKEN_TREASURY, beneficiary))
                                 .via(transferTxn))
                 .then(
                         getTxnRecord(transferTxn)
@@ -541,8 +585,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 
     public HapiApiSpec transferListsEnforceTokenTypeRestrictions() {
         final var theAccount = "anybody";
-        final var B_TOKEN = "non-fungible";
-        final var theKey = "multipurpose";
+        final var nonFungibleToken = "non-fungible";
+        final var theKey = MULTIPURPOSE;
         return defaultHapiSpec("TransferListsEnforceTokenTypeRestrictions")
                 .given(
                         newKeyNamed(theKey),
@@ -552,18 +596,20 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(1_000L)
                                 .treasury(TOKEN_TREASURY),
-                        tokenCreate(B_TOKEN)
+                        tokenCreate(nonFungibleToken)
                                 .supplyKey(theKey)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0L)
                                 .treasury(TOKEN_TREASURY))
                 .when(
-                        mintToken(B_TOKEN, List.of(copyFromUtf8("dark"))),
-                        tokenAssociate(theAccount, List.of(A_TOKEN, B_TOKEN)))
+                        mintToken(nonFungibleToken, List.of(copyFromUtf8("dark"))),
+                        tokenAssociate(theAccount, List.of(A_TOKEN, nonFungibleToken)))
                 .then(
                         cryptoTransfer(movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, theAccount))
                                 .hasKnownStatus(INVALID_NFT_ID),
-                        cryptoTransfer(moving(1, B_TOKEN).between(TOKEN_TREASURY, theAccount))
+                        cryptoTransfer(
+                                        moving(1, nonFungibleToken)
+                                                .between(TOKEN_TREASURY, theAccount))
                                 .hasKnownStatus(
                                         ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON));
     }
@@ -572,7 +618,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
         final var theUniqueToken = "special";
         final var theCommonToken = "quotidian";
         final var theAccount = "lucky";
-        final var theKey = "multipurpose";
+        final var theKey = MULTIPURPOSE;
         final var theTxn = "diverseXfer";
 
         return defaultHapiSpec("RecordsIncludeBothFungibleTokenChangesAndOwnershipChange")
@@ -605,7 +651,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec cannotGiveNftsToDissociatedContractsOrAccounts() {
         final var theContract = "tbd";
         final var theAccount = "alsoTbd";
-        final var theKey = "multipurpose";
+        final var theKey = MULTIPURPOSE;
         return defaultHapiSpec("CannotGiveNftsToDissociatedContractsOrAccounts")
                 .given(
                         newKeyNamed(theKey),
@@ -682,8 +728,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
         final var theContract = "CreateDonor";
         final String tokenA = "tokenA";
         final String tokenB = "tokenB";
-        final String uniqueToken = "unique";
-        final String treasury = "treasury";
+        final String uniqueToken = UNIQUE;
         final String tokenAcreateTxn = "tokenACreate";
         final String tokenBcreateTxn = "tokenBCreate";
         final String transferToFU = "transferToFU";
@@ -691,33 +736,33 @@ public class TokenTransactSpecs extends HapiApiSuite {
         return defaultHapiSpec("autoAssociationWorksForContracts")
                 .given(
                         overriding("contracts.allowAutoAssociations", "true"),
-                        newKeyNamed("supplyKey"),
+                        newKeyNamed(SUPPLY_KEY),
                         uploadInitCode(theContract),
                         contractCreate(theContract).maxAutomaticTokenAssociations(2),
-                        cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(tokenA)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
+                                .treasury(TOKEN_TREASURY)
                                 .via(tokenAcreateTxn),
                         tokenCreate(tokenB)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
+                                .treasury(TOKEN_TREASURY)
                                 .via(tokenBcreateTxn),
                         tokenCreate(uniqueToken)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0L)
-                                .supplyKey("supplyKey")
-                                .treasury(treasury),
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(TOKEN_TREASURY),
                         mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
                         getTxnRecord(tokenAcreateTxn)
-                                .hasNewTokenAssociation(tokenA, treasury)
+                                .hasNewTokenAssociation(tokenA, TOKEN_TREASURY)
                                 .logged(),
                         getTxnRecord(tokenBcreateTxn)
-                                .hasNewTokenAssociation(tokenB, treasury)
+                                .hasNewTokenAssociation(tokenB, TOKEN_TREASURY)
                                 .logged(),
-                        cryptoTransfer(moving(1, tokenA).between(treasury, theContract))
+                        cryptoTransfer(moving(1, tokenA).between(TOKEN_TREASURY, theContract))
                                 .via(transferToFU)
                                 .logged(),
                         getTxnRecord(transferToFU)
@@ -730,14 +775,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                                 .maxAutoAssociations(2)))
                 .when(
                         cryptoTransfer(
-                                movingUnique(uniqueToken, 1L).between(treasury, theContract)),
+                                movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, theContract)),
                         getContractInfo(theContract)
                                 .has(
                                         ContractInfoAsserts.contractWith()
                                                 .hasAlreadyUsedAutomaticAssociations(2)
                                                 .maxAutoAssociations(2)))
                 .then(
-                        cryptoTransfer(moving(1, tokenB).between(treasury, theContract))
+                        cryptoTransfer(moving(1, tokenB).between(TOKEN_TREASURY, theContract))
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
                                 .via("failedTransfer"),
                         getContractInfo(theContract)
@@ -753,11 +798,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
                 .given(tokenCreate("some").treasury(DEFAULT_PAYER))
                 .when()
                 .then(
-                        cryptoTransfer(moving(1L, "some").between(DEFAULT_PAYER, "0.0.0"))
+                        cryptoTransfer(moving(1L, "some").between(DEFAULT_PAYER, SENTINEL_ACCOUNT))
                                 .signedBy(DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID),
                         cryptoTransfer(
-                                        moving(100_000_000_000_000L, "0.0.0")
+                                        moving(100_000_000_000_000L, SENTINEL_ACCOUNT)
                                                 .between(DEFAULT_PAYER, FUNDING))
                                 .signedBy(DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_TOKEN_ID));
@@ -766,27 +811,27 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec balancesAreChecked() {
         return defaultHapiSpec("BalancesAreChecked")
                 .given(
-                        cryptoCreate("payer"),
-                        cryptoCreate("firstTreasury"),
-                        cryptoCreate("secondTreasury"),
-                        cryptoCreate("beneficiary"))
+                        cryptoCreate(PAYER),
+                        cryptoCreate(FIRST_TREASURY),
+                        cryptoCreate(SECOND_TREASURY),
+                        cryptoCreate(BENEFICIARY))
                 .when(
-                        tokenCreate(A_TOKEN).initialSupply(100).treasury("firstTreasury"),
-                        tokenAssociate("beneficiary", A_TOKEN))
+                        tokenCreate(A_TOKEN).initialSupply(100).treasury(FIRST_TREASURY),
+                        tokenAssociate(BENEFICIARY, A_TOKEN))
                 .then(
                         cryptoTransfer(
                                         moving(100_000_000_000_000L, A_TOKEN)
-                                                .between("firstTreasury", "beneficiary"))
-                                .payingWith("payer")
-                                .signedBy("payer", "firstTreasury")
+                                                .between(FIRST_TREASURY, BENEFICIARY))
+                                .payingWith(PAYER)
+                                .signedBy(PAYER, FIRST_TREASURY)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
                         cryptoTransfer(
-                                        moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
+                                        moving(1, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
                                         movingHbar(ONE_HUNDRED_HBARS)
-                                                .between("firstTreasury", "beneficiary"))
-                                .payingWith("payer")
-                                .signedBy("payer", "firstTreasury")
+                                                .between(FIRST_TREASURY, BENEFICIARY))
+                                .payingWith(PAYER)
+                                .signedBy(PAYER, FIRST_TREASURY)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
     }
@@ -794,113 +839,103 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue() {
         return defaultHapiSpec("AccountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue")
                 .given(
-                        cryptoCreate("randomBeneficiary").balance(0L),
-                        cryptoCreate("treasury").balance(0L),
-                        cryptoCreate("payer"),
-                        newKeyNamed("freezeKey"))
+                        cryptoCreate(RANDOM_BENEFICIARY).balance(0L),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(PAYER),
+                        newKeyNamed(FREEZE_KEY))
                 .when(
                         tokenCreate(A_TOKEN)
-                                .treasury("treasury")
-                                .freezeKey("freezeKey")
+                                .treasury(TOKEN_TREASURY)
+                                .freezeKey(FREEZE_KEY)
                                 .freezeDefault(true),
-                        tokenAssociate("randomBeneficiary", A_TOKEN),
+                        tokenAssociate(RANDOM_BENEFICIARY, A_TOKEN),
                         cryptoTransfer(
                                         moving(100, A_TOKEN)
-                                                .between("treasury", "randomBeneficiary"))
+                                                .between(TOKEN_TREASURY, RANDOM_BENEFICIARY))
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
                         /* and */
-                        tokenCreate(B_TOKEN).treasury("treasury").freezeDefault(false),
-                        tokenAssociate("randomBeneficiary", B_TOKEN),
+                        tokenCreate(B_TOKEN).treasury(TOKEN_TREASURY).freezeDefault(false),
+                        tokenAssociate(RANDOM_BENEFICIARY, B_TOKEN),
                         cryptoTransfer(
                                         moving(100, B_TOKEN)
-                                                .between("treasury", "randomBeneficiary"))
-                                .payingWith("payer")
+                                                .between(TOKEN_TREASURY, RANDOM_BENEFICIARY))
+                                .payingWith(PAYER)
                                 .via("successfulTransfer"))
                 .then(
-                        getAccountBalance("randomBeneficiary").hasTokenBalance(B_TOKEN, 100),
+                        getAccountBalance(RANDOM_BENEFICIARY).hasTokenBalance(B_TOKEN, 100),
                         getTxnRecord("successfulTransfer").logged());
     }
 
     public HapiApiSpec allRequiredSigsAreChecked() {
         return defaultHapiSpec("AllRequiredSigsAreChecked")
                 .given(
-                        cryptoCreate("payer"),
-                        cryptoCreate("firstTreasury").balance(0L),
-                        cryptoCreate("secondTreasury").balance(0L),
-                        cryptoCreate("sponsor"),
-                        cryptoCreate("beneficiary").receiverSigRequired(true))
+                        cryptoCreate(PAYER),
+                        cryptoCreate(FIRST_TREASURY).balance(0L),
+                        cryptoCreate(SECOND_TREASURY).balance(0L),
+                        cryptoCreate(SPONSOR),
+                        cryptoCreate(BENEFICIARY).receiverSigRequired(true))
                 .when(
-                        tokenCreate(A_TOKEN).initialSupply(123).treasury("firstTreasury"),
-                        tokenCreate(B_TOKEN).initialSupply(234).treasury("secondTreasury"),
-                        tokenAssociate("beneficiary", A_TOKEN, B_TOKEN))
+                        tokenCreate(A_TOKEN).initialSupply(123).treasury(FIRST_TREASURY),
+                        tokenCreate(B_TOKEN).initialSupply(234).treasury(SECOND_TREASURY),
+                        tokenAssociate(BENEFICIARY, A_TOKEN, B_TOKEN))
                 .then(
                         cryptoTransfer(
-                                        moving(100, A_TOKEN)
-                                                .between("firstTreasury", "beneficiary"),
-                                        moving(100, B_TOKEN)
-                                                .between("secondTreasury", "beneficiary"),
-                                        movingHbar(1_000).between("sponsor", "firstTreasury"))
-                                .payingWith("payer")
-                                .signedBy("payer", "firstTreasury", "beneficiary", "sponsor")
+                                        moving(100, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
+                                        moving(100, B_TOKEN).between(SECOND_TREASURY, BENEFICIARY),
+                                        movingHbar(1_000).between(SPONSOR, FIRST_TREASURY))
+                                .payingWith(PAYER)
+                                .signedBy(PAYER, FIRST_TREASURY, BENEFICIARY, SPONSOR)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         cryptoTransfer(
-                                        moving(100, A_TOKEN)
-                                                .between("firstTreasury", "beneficiary"),
-                                        moving(100, B_TOKEN)
-                                                .between("secondTreasury", "beneficiary"),
-                                        movingHbar(1_000).between("sponsor", "firstTreasury"))
-                                .payingWith("payer")
-                                .signedBy("payer", "firstTreasury", "secondTreasury", "sponsor")
+                                        moving(100, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
+                                        moving(100, B_TOKEN).between(SECOND_TREASURY, BENEFICIARY),
+                                        movingHbar(1_000).between(SPONSOR, FIRST_TREASURY))
+                                .payingWith(PAYER)
+                                .signedBy(PAYER, FIRST_TREASURY, SECOND_TREASURY, SPONSOR)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         cryptoTransfer(
-                                        moving(100, A_TOKEN)
-                                                .between("firstTreasury", "beneficiary"),
-                                        moving(100, B_TOKEN)
-                                                .between("secondTreasury", "beneficiary"),
-                                        movingHbar(1_000).between("sponsor", "firstTreasury"))
-                                .payingWith("payer")
+                                        moving(100, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
+                                        moving(100, B_TOKEN).between(SECOND_TREASURY, BENEFICIARY),
+                                        movingHbar(1_000).between(SPONSOR, FIRST_TREASURY))
+                                .payingWith(PAYER)
                                 .fee(ONE_HUNDRED_HBARS)
-                                .signedBy("payer", "firstTreasury", "secondTreasury", "beneficiary")
+                                .signedBy(PAYER, FIRST_TREASURY, SECOND_TREASURY, BENEFICIARY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         cryptoTransfer(
-                                        moving(100, A_TOKEN)
-                                                .between("firstTreasury", "beneficiary"),
-                                        moving(100, B_TOKEN)
-                                                .between("secondTreasury", "beneficiary"),
-                                        movingHbar(1_000).between("sponsor", "firstTreasury"))
+                                        moving(100, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
+                                        moving(100, B_TOKEN).between(SECOND_TREASURY, BENEFICIARY),
+                                        movingHbar(1_000).between(SPONSOR, FIRST_TREASURY))
                                 .fee(ONE_HUNDRED_HBARS)
-                                .payingWith("payer"));
+                                .payingWith(PAYER));
     }
 
     public HapiApiSpec senderSigsAreValid() {
         return defaultHapiSpec("SenderSigsAreValid")
                 .given(
-                        cryptoCreate("payer"),
-                        cryptoCreate("firstTreasury").balance(0L),
-                        cryptoCreate("secondTreasury").balance(0L),
-                        cryptoCreate("beneficiary"))
+                        cryptoCreate(PAYER),
+                        cryptoCreate(FIRST_TREASURY).balance(0L),
+                        cryptoCreate(SECOND_TREASURY).balance(0L),
+                        cryptoCreate(BENEFICIARY))
                 .when(
-                        tokenCreate(A_TOKEN).initialSupply(123).treasury("firstTreasury"),
-                        tokenCreate(B_TOKEN).initialSupply(234).treasury("secondTreasury"),
-                        tokenAssociate("beneficiary", A_TOKEN, B_TOKEN),
-                        balanceSnapshot("treasuryBefore", "firstTreasury"),
-                        balanceSnapshot("beneBefore", "beneficiary"))
+                        tokenCreate(A_TOKEN).initialSupply(123).treasury(FIRST_TREASURY),
+                        tokenCreate(B_TOKEN).initialSupply(234).treasury(SECOND_TREASURY),
+                        tokenAssociate(BENEFICIARY, A_TOKEN, B_TOKEN),
+                        balanceSnapshot("treasuryBefore", FIRST_TREASURY),
+                        balanceSnapshot("beneBefore", BENEFICIARY))
                 .then(
                         cryptoTransfer(
-                                        moving(100, A_TOKEN)
-                                                .between("firstTreasury", "beneficiary"),
-                                        movingHbar(ONE_HBAR)
-                                                .between("beneficiary", "firstTreasury"))
-                                .payingWith("payer")
-                                .signedBy("firstTreasury", "payer", "beneficiary")
+                                        moving(100, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
+                                        movingHbar(ONE_HBAR).between(BENEFICIARY, FIRST_TREASURY))
+                                .payingWith(PAYER)
+                                .signedBy(FIRST_TREASURY, PAYER, BENEFICIARY)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .via("transactTxn"),
-                        getAccountBalance("firstTreasury")
+                        getAccountBalance(FIRST_TREASURY)
                                 .hasTinyBars(changeFromSnapshot("treasuryBefore", +1 * ONE_HBAR))
                                 .hasTokenBalance(A_TOKEN, 23),
-                        getAccountBalance("beneficiary")
+                        getAccountBalance(BENEFICIARY)
                                 .hasTinyBars(changeFromSnapshot("beneBefore", -1 * ONE_HBAR))
                                 .hasTokenBalance(A_TOKEN, 100),
                         getTxnRecord("transactTxn"));
@@ -909,29 +944,27 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec tokenPlusHbarTxnsAreAtomic() {
         return defaultHapiSpec("TokenPlusHbarTxnsAreAtomic")
                 .given(
-                        cryptoCreate("payer"),
-                        cryptoCreate("firstTreasury").balance(0L),
-                        cryptoCreate("secondTreasury").balance(0L),
-                        cryptoCreate("beneficiary"),
+                        cryptoCreate(PAYER),
+                        cryptoCreate(FIRST_TREASURY).balance(0L),
+                        cryptoCreate(SECOND_TREASURY).balance(0L),
+                        cryptoCreate(BENEFICIARY),
                         cryptoCreate("tbd").balance(0L))
                 .when(
                         cryptoDelete("tbd"),
-                        tokenCreate(A_TOKEN).initialSupply(123).treasury("firstTreasury"),
-                        tokenCreate(B_TOKEN).initialSupply(50).treasury("secondTreasury"),
-                        tokenAssociate("beneficiary", A_TOKEN, B_TOKEN),
-                        balanceSnapshot("before", "beneficiary"),
+                        tokenCreate(A_TOKEN).initialSupply(123).treasury(FIRST_TREASURY),
+                        tokenCreate(B_TOKEN).initialSupply(50).treasury(SECOND_TREASURY),
+                        tokenAssociate(BENEFICIARY, A_TOKEN, B_TOKEN),
+                        balanceSnapshot("before", BENEFICIARY),
                         cryptoTransfer(
-                                        moving(100, A_TOKEN)
-                                                .between("firstTreasury", "beneficiary"),
-                                        moving(10, B_TOKEN)
-                                                .between("secondTreasury", "beneficiary"),
-                                        movingHbar(1).between("beneficiary", "tbd"))
+                                        moving(100, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
+                                        moving(10, B_TOKEN).between(SECOND_TREASURY, BENEFICIARY),
+                                        movingHbar(1).between(BENEFICIARY, "tbd"))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasKnownStatus(ACCOUNT_DELETED))
                 .then(
-                        getAccountBalance("firstTreasury").logged().hasTokenBalance(A_TOKEN, 123),
-                        getAccountBalance("secondTreasury").logged().hasTokenBalance(B_TOKEN, 50),
-                        getAccountBalance("beneficiary")
+                        getAccountBalance(FIRST_TREASURY).logged().hasTokenBalance(A_TOKEN, 123),
+                        getAccountBalance(SECOND_TREASURY).logged().hasTokenBalance(B_TOKEN, 50),
+                        getAccountBalance(BENEFICIARY)
                                 .logged()
                                 .hasTinyBars(changeFromSnapshot("before", 0L)));
     }
@@ -939,48 +972,46 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec tokenOnlyTxnsAreAtomic() {
         return defaultHapiSpec("TokenOnlyTxnsAreAtomic")
                 .given(
-                        cryptoCreate("payer"),
-                        cryptoCreate("firstTreasury").balance(0L),
-                        cryptoCreate("secondTreasury").balance(0L),
-                        cryptoCreate("beneficiary"))
+                        cryptoCreate(PAYER),
+                        cryptoCreate(FIRST_TREASURY).balance(0L),
+                        cryptoCreate(SECOND_TREASURY).balance(0L),
+                        cryptoCreate(BENEFICIARY))
                 .when(
-                        tokenCreate(A_TOKEN).initialSupply(123).treasury("firstTreasury"),
-                        tokenCreate(B_TOKEN).initialSupply(50).treasury("secondTreasury"),
-                        tokenAssociate("beneficiary", A_TOKEN, B_TOKEN),
+                        tokenCreate(A_TOKEN).initialSupply(123).treasury(FIRST_TREASURY),
+                        tokenCreate(B_TOKEN).initialSupply(50).treasury(SECOND_TREASURY),
+                        tokenAssociate(BENEFICIARY, A_TOKEN, B_TOKEN),
                         cryptoTransfer(
-                                        moving(100, A_TOKEN)
-                                                .between("firstTreasury", "beneficiary"),
-                                        moving(100, B_TOKEN)
-                                                .between("secondTreasury", "beneficiary"))
+                                        moving(100, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
+                                        moving(100, B_TOKEN).between(SECOND_TREASURY, BENEFICIARY))
                                 .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE))
                 .then(
-                        getAccountBalance("firstTreasury").logged().hasTokenBalance(A_TOKEN, 123),
-                        getAccountBalance("secondTreasury").logged().hasTokenBalance(B_TOKEN, 50),
-                        getAccountBalance("beneficiary").logged());
+                        getAccountBalance(FIRST_TREASURY).logged().hasTokenBalance(A_TOKEN, 123),
+                        getAccountBalance(SECOND_TREASURY).logged().hasTokenBalance(B_TOKEN, 50),
+                        getAccountBalance(BENEFICIARY).logged());
     }
 
     public HapiApiSpec duplicateAccountsInTokenTransferRejected() {
         return defaultHapiSpec("DuplicateAccountsInTokenTransferRejected")
                 .given(
-                        cryptoCreate("firstTreasury").balance(0L),
-                        cryptoCreate("beneficiary").balance(0L))
+                        cryptoCreate(FIRST_TREASURY).balance(0L),
+                        cryptoCreate(BENEFICIARY).balance(0L))
                 .when(tokenCreate(A_TOKEN))
                 .then(
                         cryptoTransfer(
-                                        moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
-                                        moving(1, A_TOKEN).from("firstTreasury"))
+                                        moving(1, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
+                                        moving(1, A_TOKEN).from(FIRST_TREASURY))
                                 .dontFullyAggregateTokenTransfers()
                                 .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
 
     public HapiApiSpec nonZeroTransfersRejected() {
         return defaultHapiSpec("NonZeroTransfersRejected")
-                .given(cryptoCreate("firstTreasury").balance(0L))
+                .given(cryptoCreate(FIRST_TREASURY).balance(0L))
                 .when(tokenCreate(A_TOKEN))
                 .then(
-                        cryptoTransfer(moving(1, A_TOKEN).from("firstTreasury"))
+                        cryptoTransfer(moving(1, A_TOKEN).from(FIRST_TREASURY))
                                 .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
-                        cryptoTransfer(movingHbar(1).from("firstTreasury"))
+                        cryptoTransfer(movingHbar(1).from(FIRST_TREASURY))
                                 .hasPrecheck(INVALID_ACCOUNT_AMOUNTS));
     }
 
@@ -1013,22 +1044,22 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec uniqueTokenTxnAccountBalance() {
         return defaultHapiSpec("UniqueTokenTxnAccountBalance")
                 .given(
-                        newKeyNamed("supplyKey"),
-                        newKeyNamed("signingKeyTreasury"),
-                        newKeyNamed("signingKeyFirstUser"),
-                        cryptoCreate(FIRST_USER).key("signingKeyFirstUser"),
-                        cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(SIGNING_KEY_TREASURY),
+                        newKeyNamed(SIGNING_KEY_FIRST_USER),
+                        cryptoCreate(FIRST_USER).key(SIGNING_KEY_FIRST_USER),
+                        cryptoCreate(TOKEN_TREASURY).key(SIGNING_KEY_TREASURY),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY),
                         mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))),
                         tokenAssociate(FIRST_USER, A_TOKEN))
                 .when(
                         cryptoTransfer(movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER))
                                 .signedBy(
-                                        "signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER)
+                                        SIGNING_KEY_TREASURY, SIGNING_KEY_FIRST_USER, DEFAULT_PAYER)
                                 .via("cryptoTransferTxn"))
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(A_TOKEN, 0),
@@ -1044,39 +1075,37 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec uniqueTokenTxnAccountBalancesForTreasury() {
         return defaultHapiSpec("UniqueTokenTxnAccountBalancesForTreasury")
                 .given(
-                        newKeyNamed("supplyKey"),
-                        cryptoCreate("newTreasury"),
-                        cryptoCreate("oldTreasury"),
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(NEW_TREASURY),
+                        cryptoCreate(OLD_TREASURY),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .supplyKey("supplyKey")
-                                .treasury("oldTreasury"),
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(OLD_TREASURY),
                         tokenCreate(B_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .adminKey("supplyKey")
-                                .supplyKey("supplyKey")
-                                .treasury("oldTreasury"),
+                                .adminKey(SUPPLY_KEY)
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(OLD_TREASURY),
                         mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))),
                         mintToken(B_TOKEN, List.of(copyFromUtf8("memo2"))),
-                        tokenAssociate("newTreasury", A_TOKEN, B_TOKEN),
-                        tokenUpdate(B_TOKEN).treasury("newTreasury").hasKnownStatus(SUCCESS))
+                        tokenAssociate(NEW_TREASURY, A_TOKEN, B_TOKEN),
+                        tokenUpdate(B_TOKEN).treasury(NEW_TREASURY).hasKnownStatus(SUCCESS))
                 .when(
-                        cryptoTransfer(
-                                        movingUnique(A_TOKEN, 1)
-                                                .between("oldTreasury", "newTreasury"))
+                        cryptoTransfer(movingUnique(A_TOKEN, 1).between(OLD_TREASURY, NEW_TREASURY))
                                 .via("cryptoTransferTxn"))
                 .then(
-                        getAccountBalance("oldTreasury").hasTokenBalance(A_TOKEN, 0),
-                        getAccountBalance("newTreasury").hasTokenBalance(A_TOKEN, 1),
-                        getAccountBalance("newTreasury").hasTokenBalance(B_TOKEN, 1),
+                        getAccountBalance(OLD_TREASURY).hasTokenBalance(A_TOKEN, 0),
+                        getAccountBalance(NEW_TREASURY).hasTokenBalance(A_TOKEN, 1),
+                        getAccountBalance(NEW_TREASURY).hasTokenBalance(B_TOKEN, 1),
                         getTokenNftInfo(A_TOKEN, 1)
                                 .hasExpectedLedgerId("0x03")
                                 .hasSerialNum(1)
                                 .hasMetadata(copyFromUtf8("memo"))
                                 .hasTokenID(A_TOKEN)
-                                .hasAccountID("newTreasury"));
+                                .hasAccountID(NEW_TREASURY));
     }
 
     public HapiApiSpec uniqueTokenTxnWithNoAssociation() {
@@ -1084,11 +1113,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(FIRST_USER),
-                        newKeyNamed("supplyKey"),
+                        newKeyNamed(SUPPLY_KEY),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
                 .when(mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))))
                 .then(
@@ -1101,14 +1130,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(FIRST_USER).balance(0L),
-                        newKeyNamed("freezeKey"),
-                        newKeyNamed("supplyKey"),
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(SUPPLY_KEY),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .freezeKey("freezeKey")
+                                .freezeKey(FREEZE_KEY)
                                 .freezeDefault(true)
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(FIRST_USER, A_TOKEN))
                 .when(mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))))
@@ -1120,14 +1149,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec uniqueTokenTxnWithSenderNotSigned() {
         return defaultHapiSpec("UniqueTokenTxnWithOwnerNotSigned")
                 .given(
-                        newKeyNamed("supplyKey"),
-                        newKeyNamed("signingKeyTreasury"),
-                        cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(SIGNING_KEY_TREASURY),
+                        cryptoCreate(TOKEN_TREASURY).key(SIGNING_KEY_TREASURY),
                         cryptoCreate(FIRST_USER),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(FIRST_USER, A_TOKEN))
                 .when(mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))))
@@ -1140,39 +1169,39 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec uniqueTokenTxnWithReceiverNotSigned() {
         return defaultHapiSpec("UniqueTokenTxnWithOwnerNotSigned")
                 .given(
-                        newKeyNamed("supplyKey"),
-                        newKeyNamed("signingKeyTreasury"),
-                        newKeyNamed("signingKeyFirstUser"),
-                        cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(SIGNING_KEY_TREASURY),
+                        newKeyNamed(SIGNING_KEY_FIRST_USER),
+                        cryptoCreate(TOKEN_TREASURY).key(SIGNING_KEY_TREASURY),
                         cryptoCreate(FIRST_USER)
-                                .key("signingKeyFirstUser")
+                                .key(SIGNING_KEY_FIRST_USER)
                                 .receiverSigRequired(true),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(FIRST_USER, A_TOKEN))
                 .when(mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))))
                 .then(
                         cryptoTransfer(movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER))
-                                .signedBy("signingKeyTreasury", DEFAULT_PAYER)
+                                .signedBy(SIGNING_KEY_TREASURY, DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     public HapiApiSpec uniqueTokenTxnsAreAtomic() {
         return defaultHapiSpec("UniqueTokenTxnsAreAtomic")
                 .given(
-                        newKeyNamed("supplyKey"),
-                        newKeyNamed("signingKeyTreasury"),
-                        newKeyNamed("signingKeyFirstUser"),
-                        cryptoCreate(FIRST_USER).key("signingKeyFirstUser"),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(SIGNING_KEY_TREASURY),
+                        newKeyNamed(SIGNING_KEY_FIRST_USER),
+                        cryptoCreate(FIRST_USER).key(SIGNING_KEY_FIRST_USER),
                         cryptoCreate(SECOND_USER),
-                        cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+                        cryptoCreate(TOKEN_TREASURY).key(SIGNING_KEY_TREASURY),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY),
                         tokenCreate(B_TOKEN).initialSupply(100).treasury(TOKEN_TREASURY),
                         mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))),
@@ -1195,16 +1224,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec uniqueTokenDeletedTxn() {
         return defaultHapiSpec("UniqueTokenDeletedTxn")
                 .given(
-                        newKeyNamed("supplyKey"),
+                        newKeyNamed(SUPPLY_KEY),
                         newKeyNamed("nftAdmin"),
-                        newKeyNamed("signingKeyTreasury"),
-                        newKeyNamed("signingKeyFirstUser"),
-                        cryptoCreate(FIRST_USER).key("signingKeyFirstUser"),
-                        cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+                        newKeyNamed(SIGNING_KEY_TREASURY),
+                        newKeyNamed(SIGNING_KEY_FIRST_USER),
+                        cryptoCreate(FIRST_USER).key(SIGNING_KEY_FIRST_USER),
+                        cryptoCreate(TOKEN_TREASURY).key(SIGNING_KEY_TREASURY),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .adminKey("nftAdmin")
                                 .treasury(TOKEN_TREASURY),
                         mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))),
@@ -1213,7 +1242,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                 .then(
                         cryptoTransfer(movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER))
                                 .signedBy(
-                                        "signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER)
+                                        SIGNING_KEY_TREASURY, SIGNING_KEY_FIRST_USER, DEFAULT_PAYER)
                                 .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
@@ -1221,10 +1250,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
         final var alice = "Alice";
         final var bob = "Bob";
         final var tokenWithHbarFee = "TokenWithHbarFee";
-        final var treasuryForToken = "TokenTreasury";
+        final var treasuryForToken = TOKEN_TREASURY;
         final var supplyKey = "antique";
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromAlice = "txnFromAlice";
 
         return defaultHapiSpec("FixedHbarCaseStudy")
@@ -1275,10 +1304,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec fractionalCaseStudy() {
         final var alice = "Alice";
         final var bob = "Bob";
-        final var tokenWithFractionalFee = "TokenWithFractionalFee";
-        final var treasuryForToken = "TokenTreasury";
+        final var tokenWithFractionalFee = TOKEN_WITH_FRACTIONAL_FEE;
+        final var treasuryForToken = TOKEN_TREASURY;
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromBob = "txnFromBob";
 
         return defaultHapiSpec("FractionalCaseStudy")
@@ -1330,10 +1359,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec fractionalNetOfTransfersCaseStudy() {
         final var gerry = "gerry";
         final var horace = "horace";
-        final var useCaseToken = "TokenWithFractionalFee";
-        final var treasuryForToken = "TokenTreasury";
+        final var useCaseToken = TOKEN_WITH_FRACTIONAL_FEE;
+        final var treasuryForToken = TOKEN_TREASURY;
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromHorace = "txnFromHorace";
 
         return defaultHapiSpec("FractionalNetOfTransfersCaseStudy")
@@ -1382,12 +1411,12 @@ public class TokenTransactSpecs extends HapiApiSuite {
 
     public HapiApiSpec simpleHtsFeeCaseStudy() {
         final var claire = "Claire";
-        final var debbie = "Debbie";
+        final var debbie = DEBBIE;
         final var simpleHtsFeeToken = "SimpleHtsFeeToken";
         final var commissionPaymentToken = "commissionPaymentToken";
-        final var treasuryForToken = "TokenTreasury";
+        final var treasuryForToken = TOKEN_TREASURY;
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromClaire = "txnFromClaire";
 
         return defaultHapiSpec("SimpleHtsFeeCaseStudy")
@@ -1441,14 +1470,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec nestedHbarCaseStudy() {
-        final var debbie = "Debbie";
-        final var edgar = "Edgar";
+        final var debbie = DEBBIE;
+        final var edgar = EDGAR;
         final var tokenWithHbarFee = "TokenWithHbarFee";
-        final var tokenWithNestedFee = "TokenWithNestedFee";
-        final var treasuryForTopLevelCollection = "TokenTreasury";
-        final var treasuryForNestedCollection = "NestedTokenTreasury";
+        final var tokenWithNestedFee = TOKEN_WITH_NESTED_FEE;
+        final var treasuryForTopLevelCollection = TOKEN_TREASURY;
+        final var treasuryForNestedCollection = NESTED_TOKEN_TREASURY;
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromDebbie = "txnFromDebbie";
 
         return defaultHapiSpec("NestedHbarCaseStudy")
@@ -1518,14 +1547,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec nestedFractionalCaseStudy() {
-        final var edgar = "Edgar";
+        final var edgar = EDGAR;
         final var fern = "Fern";
-        final var tokenWithFractionalFee = "TokenWithFractionalFee";
-        final var tokenWithNestedFee = "TokenWithNestedFee";
-        final var treasuryForTopLevelCollection = "TokenTreasury";
-        final var treasuryForNestedCollection = "NestedTokenTreasury";
+        final var tokenWithFractionalFee = TOKEN_WITH_FRACTIONAL_FEE;
+        final var tokenWithNestedFee = TOKEN_WITH_NESTED_FEE;
+        final var treasuryForTopLevelCollection = TOKEN_TREASURY;
+        final var treasuryForNestedCollection = NESTED_TOKEN_TREASURY;
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromEdgar = "txnFromEdgar";
 
         return defaultHapiSpec("NestedFractionalCaseStudy")
@@ -1604,16 +1633,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
 
     public HapiApiSpec multipleRoyaltyFallbackCaseStudy() {
         final var zephyr = "zephyr";
-        final var amelie = "amelie";
+        final var amelie = AMELIE;
         final var usdcTreasury = "bank";
-        final var westWindTreasury = "collection";
-        final var westWindArt = "westWindArt";
+        final var westWindTreasury = COLLECTION;
+        final var westWindArt = WEST_WIND_ART;
         final var westWindDirector = "director";
         final var westWindOwner = "owner";
         final var usdc = "USDC";
-        final var supplyKey = "supply";
+        final var supplyKey = SUPPLY;
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromZephyr = "txnFromZephyr";
 
         return defaultHapiSpec("MultipleRoyaltyFallbackCaseStudy")
@@ -1648,7 +1677,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                                 westWindOwner)),
                         tokenAssociate(amelie, List.of(westWindArt, usdc)),
                         tokenAssociate(zephyr, List.of(westWindArt, usdc)),
-                        mintToken(westWindArt, List.of(copyFromUtf8("Fugues and fantastics"))))
+                        mintToken(westWindArt, List.of(copyFromUtf8(FUGUES_AND_FANTASTICS))))
                 .when(
                         cryptoTransfer(
                                         movingUnique(westWindArt, 1L)
@@ -1676,12 +1705,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public HapiApiSpec respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList() {
         final var supplyKey = "misc";
         final var nonfungible = "nonfungible";
-        final var civilian = "civilian";
-        final var beneficiary = "beneficiary";
+        final var beneficiary = BENEFICIARY;
 
         return defaultHapiSpec("RespondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList")
                 .given(
-                        cryptoCreate(civilian).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(10),
                         cryptoCreate(beneficiary).maxAutomaticTokenAssociations(10),
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(supplyKey),
@@ -1705,12 +1733,12 @@ public class TokenTransactSpecs extends HapiApiSuite {
                 .when(
                         cryptoTransfer(
                                         TokenMovement.movingUnique(nonfungible, 1L, 2L, 3L)
-                                                .between(TOKEN_TREASURY, civilian))
-                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, civilian)
+                                                .between(TOKEN_TREASURY, CIVILIAN))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, CIVILIAN)
                                 .fee(ONE_HBAR))
                 .then(
-                        cryptoTransfer(moving(1, nonfungible).between(civilian, beneficiary))
-                                .signedBy(DEFAULT_PAYER, civilian, beneficiary)
+                        cryptoTransfer(moving(1, nonfungible).between(CIVILIAN, beneficiary))
+                                .signedBy(DEFAULT_PAYER, CIVILIAN, beneficiary)
                                 .fee(ONE_HBAR)
                                 .hasKnownStatus(
                                         ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON));
@@ -1718,15 +1746,15 @@ public class TokenTransactSpecs extends HapiApiSuite {
 
     public HapiApiSpec royaltyAndFractionalTogetherCaseStudy() {
         final var alice = "alice";
-        final var amelie = "amelie";
+        final var amelie = AMELIE;
         final var usdcTreasury = "bank";
         final var usdcCollector = "usdcFees";
-        final var westWindTreasury = "collection";
-        final var westWindArt = "westWindArt";
+        final var westWindTreasury = COLLECTION;
+        final var westWindArt = WEST_WIND_ART;
         final var usdc = "USDC";
-        final var supplyKey = "supply";
+        final var supplyKey = SUPPLY;
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromAmelie = "txnFromAmelie";
 
         return defaultHapiSpec("RoyaltyAndFractionalTogetherCaseStudy")
@@ -1757,7 +1785,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                                 westWindTreasury)),
                         tokenAssociate(amelie, List.of(westWindArt, usdc)),
                         tokenAssociate(alice, List.of(westWindArt, usdc)),
-                        mintToken(westWindArt, List.of(copyFromUtf8("Fugues and fantastics"))),
+                        mintToken(westWindArt, List.of(copyFromUtf8(FUGUES_AND_FANTASTICS))),
                         cryptoTransfer(moving(200, usdc).between(usdcTreasury, alice))
                                 .fee(ONE_HBAR),
                         cryptoTransfer(
@@ -1779,14 +1807,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
 
     public HapiApiSpec normalRoyaltyCaseStudy() {
         final var alice = "alice";
-        final var amelie = "amelie";
+        final var amelie = AMELIE;
         final var usdcTreasury = "bank";
-        final var westWindTreasury = "collection";
-        final var westWindArt = "westWindArt";
+        final var westWindTreasury = COLLECTION;
+        final var westWindArt = WEST_WIND_ART;
         final var usdc = "USDC";
-        final var supplyKey = "supply";
+        final var supplyKey = SUPPLY;
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromAmelie = "txnFromAmelie";
 
         return defaultHapiSpec("NormalRoyaltyCaseStudy")
@@ -1811,7 +1839,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                                 westWindTreasury)),
                         tokenAssociate(amelie, List.of(westWindArt, usdc)),
                         tokenAssociate(alice, List.of(westWindArt, usdc)),
-                        mintToken(westWindArt, List.of(copyFromUtf8("Fugues and fantastics"))),
+                        mintToken(westWindArt, List.of(copyFromUtf8(FUGUES_AND_FANTASTICS))),
                         cryptoTransfer(moving(200, usdc).between(usdcTreasury, alice))
                                 .fee(ONE_HBAR),
                         cryptoTransfer(
@@ -1832,15 +1860,15 @@ public class TokenTransactSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec nestedHtsCaseStudy() {
-        final var debbie = "Debbie";
-        final var edgar = "Edgar";
+        final var debbie = DEBBIE;
+        final var edgar = EDGAR;
         final var feeToken = "FeeToken";
         final var tokenWithHtsFee = "TokenWithHtsFee";
-        final var tokenWithNestedFee = "TokenWithNestedFee";
-        final var treasuryForTopLevelCollection = "TokenTreasury";
-        final var treasuryForNestedCollection = "NestedTokenTreasury";
+        final var tokenWithNestedFee = TOKEN_WITH_NESTED_FEE;
+        final var treasuryForTopLevelCollection = TOKEN_TREASURY;
+        final var treasuryForNestedCollection = NESTED_TOKEN_TREASURY;
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromDebbie = "txnFromDebbie";
 
         return defaultHapiSpec("NestedHtsCaseStudy")
@@ -1933,7 +1961,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                 .symbol("SELF")
                                 .initialSupply(1_234_567L)
                                 .treasury(gabriella)
-                                .withCustom(fixedHtsFee(1, "0.0.0", gabriella)))
+                                .withCustom(fixedHtsFee(1, SENTINEL_ACCOUNT, gabriella)))
                 .when(
                         tokenAssociate(harry, protocolToken),
                         cryptoTransfer(moving(100, protocolToken).between(gabriella, harry)))
@@ -1983,7 +2011,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
         final var gabriella = "gabriella";
         final var harry = "harry";
         final var uncompletableTxn = "uncompletableTxn";
-        final var supplyKey = "supplyKey";
+        final var supplyKey = SUPPLY_KEY;
         final var serialNo1Meta = copyFromUtf8("PRICELESS");
 
         return defaultHapiSpec("NftOwnersChangeAtomically")
@@ -2021,14 +2049,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec treasuriesAreExemptFromAllCustomFees() {
-        final var edgar = "Edgar";
+        final var edgar = EDGAR;
         final var feeToken = "FeeToken";
         final var topLevelToken = "TopLevelToken";
         final var treasuryForTopLevel = "TokenTreasury";
         final var collectorForTopLevel = "FeeCollector";
         final var nonTreasury = "nonTreasury";
 
-        final var txnFromTreasury = "txnFromTreasury";
+        final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromNonTreasury = "txnFromNonTreasury";
 
         return defaultHapiSpec("TreasuriesAreExemptFromAllFees")
@@ -2112,12 +2140,12 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                 .hasTokenBalance(topLevelToken, 50L),
                         getAccountBalance(edgar).hasTokenBalance(topLevelToken, 1_000L - 50L),
                         getAccountBalance(nonTreasury)
-                                .hasTokenBalance(topLevelToken, 1_000L - 1_000L)
+                                .hasTokenBalance(topLevelToken, 0L)
                                 .hasTokenBalance(feeToken, 1_000L - 50L));
     }
 
     public HapiApiSpec collectorsAreExemptFromTheirOwnFeesButNotOthers() {
-        final var edgar = "Edgar";
+        final var edgar = EDGAR;
         final var topLevelToken = "TopLevelToken";
         final var treasuryForTopLevel = "TokenTreasury";
         final var firstCollectorForTopLevel = "AFeeCollector";
@@ -2164,6 +2192,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                                 firstCollectorForTopLevel,
                                                 secondCollectorForTopLevel)))
                 .when(
+                        getTokenInfo(topLevelToken).logged(),
                         cryptoTransfer(
                                         moving(1_000L, topLevelToken)
                                                 .between(firstCollectorForTopLevel, edgar))
@@ -2182,13 +2211,302 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                         HBAR_TOKEN_SENTINEL,
                                         secondCollectorForTopLevel,
                                         2 * ONE_HBAR)
-                                .hasHbarAmount(secondCollectorForTopLevel, 2 * ONE_HBAR),
+                                .hasHbarAmount(secondCollectorForTopLevel, 2 * ONE_HBAR)
+                                .logged(),
                         getAccountBalance(firstCollectorForTopLevel)
-                                .hasTokenBalance(topLevelToken, 1_000L - 1_000L),
+                                .hasTokenBalance(topLevelToken, 0L),
                         getAccountBalance(secondCollectorForTopLevel)
                                 .hasTinyBars((10 + 2) * ONE_HBAR)
                                 .hasTokenBalance(topLevelToken, 1_000L + 100L),
                         getAccountBalance(edgar).hasTokenBalance(topLevelToken, 1_000L - 100L));
+    }
+
+    // HIP-573 tests below
+    public HapiApiSpec collectorIsChargedFixedFeeUnlessExempt() {
+        return defaultHapiSpec("CollectorIsChargedFixedFeeUnlessExempt")
+                .given(
+                        setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
+                                NON_FUNGIBLE_UNIQUE, this::fixedFeeWith),
+                        getTokenInfo(TOKEN_WITH_PARALLEL_FEES).logged())
+                .when(
+                        // This sender is only exempt from its own fee, but not from the other
+                        // fee; so a custom fee should be collected
+                        cryptoTransfer(
+                                        movingUnique(TOKEN_WITH_PARALLEL_FEES, 1)
+                                                .between(
+                                                        COLLECTOR_OF_FEE_WITH_EXEMPTIONS,
+                                                        TOKEN_TREASURY))
+                                .via(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE),
+                        // This sender is already exempt from one fee, and the other
+                        // fee exempts all collectors; so no custom fees should be collected
+                        cryptoTransfer(
+                                        movingUnique(TOKEN_WITH_PARALLEL_FEES, 2)
+                                                .between(
+                                                        COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS,
+                                                        TOKEN_TREASURY))
+                                .via(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE))
+                .then(
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(1))
+                                .logged(),
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(0))
+                                .logged());
+    }
+
+    public HapiApiSpec collectorIsChargedFractionalFeeUnlessExempt() {
+        return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt")
+                .given(
+                        setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
+                                FUNGIBLE_COMMON, this::fractionalFeeWith),
+                        cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(1),
+                        cryptoTransfer(
+                                moving(100_000, TOKEN_WITH_PARALLEL_FEES)
+                                        .between(TOKEN_TREASURY, CIVILIAN)),
+                        getTokenInfo(TOKEN_WITH_PARALLEL_FEES).logged())
+                .when(
+                        // This receiver is only exempt from its own fee, so a custom
+                        // fee should be collected
+                        cryptoTransfer(
+                                        moving(10_000, TOKEN_WITH_PARALLEL_FEES)
+                                                .between(
+                                                        CIVILIAN, COLLECTOR_OF_FEE_WITH_EXEMPTIONS))
+                                .via(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE),
+                        // This receiver is already exempt from its own fee, and the other
+                        // fee exempts all collectors; so no custom fees should be collected
+                        cryptoTransfer(
+                                        moving(10_000, TOKEN_WITH_PARALLEL_FEES)
+                                                .between(
+                                                        CIVILIAN,
+                                                        COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS))
+                                .via(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE))
+                .then(
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(1))
+                                .logged(),
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(0))
+                                .logged());
+    }
+
+    public HapiApiSpec collectorIsChargedNetOfTransferFractionalFeeUnlessExempt() {
+        return defaultHapiSpec("CollectorIsChargedNetOfTransferFractionalFeeUnlessExempt")
+                .given(
+                        setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
+                                FUNGIBLE_COMMON, this::netOfTransferFractionalFeeWith),
+                        cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(1),
+                        getTokenInfo(TOKEN_WITH_PARALLEL_FEES).logged())
+                .when(
+                        // This sender is only exempt from its own fee, so a custom
+                        // fee should be collected
+                        cryptoTransfer(
+                                        moving(10_000, TOKEN_WITH_PARALLEL_FEES)
+                                                .between(
+                                                        COLLECTOR_OF_FEE_WITH_EXEMPTIONS, CIVILIAN))
+                                .via(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE),
+                        // This sender is already exempt from its own fee, and the other
+                        // fee exempts all collectors; so no custom fees should be collected
+                        cryptoTransfer(
+                                        moving(10_000, TOKEN_WITH_PARALLEL_FEES)
+                                                .between(
+                                                        COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS,
+                                                        CIVILIAN))
+                                .via(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE))
+                .then(
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(1))
+                                .logged(),
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(0))
+                                .logged());
+    }
+
+    public HapiApiSpec collectorIsChargedRoyaltyFeeUnlessExempt() {
+        return defaultHapiSpec("CollectorIsChargedRoyaltyFeeUnlessExempt")
+                .given(
+                        setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
+                                NON_FUNGIBLE_UNIQUE, this::royaltyFeeNoFallbackWith),
+                        cryptoCreate(CIVILIAN)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(1),
+                        getTokenInfo(TOKEN_WITH_PARALLEL_FEES).logged())
+                .when(
+                        // This sender is only exempt from its own fee, but not from the other
+                        // fee; so a custom fee should be collected
+                        cryptoTransfer(
+                                        movingUnique(TOKEN_WITH_PARALLEL_FEES, 1)
+                                                .between(
+                                                        COLLECTOR_OF_FEE_WITH_EXEMPTIONS, CIVILIAN),
+                                        movingHbar(10 * ONE_HBAR)
+                                                .between(
+                                                        CIVILIAN, COLLECTOR_OF_FEE_WITH_EXEMPTIONS))
+                                .via(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE),
+                        // This sender is already exempt from one fee, and the other
+                        // fee exempts all collectors; so no custom fees should be collected
+                        cryptoTransfer(
+                                        movingUnique(TOKEN_WITH_PARALLEL_FEES, 2)
+                                                .between(
+                                                        COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS,
+                                                        CIVILIAN),
+                                        movingHbar(10 * ONE_HBAR)
+                                                .between(
+                                                        CIVILIAN,
+                                                        COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS))
+                                .via(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE))
+                .then(
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(1))
+                                .logged(),
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(0))
+                                .logged());
+    }
+
+    public HapiApiSpec collectorIsChargedRoyaltyFallbackFeeUnlessExempt() {
+        return defaultHapiSpec("CollectorIsChargedRoyaltyFallbackFeeUnlessExempt")
+                .given(
+                        setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
+                                NON_FUNGIBLE_UNIQUE, this::royaltyFeePlusFallbackWith),
+                        cryptoCreate(CIVILIAN)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(1),
+                        cryptoTransfer(
+                                movingUnique(TOKEN_WITH_PARALLEL_FEES, 3, 4)
+                                        .between(TOKEN_TREASURY, CIVILIAN)),
+                        getTokenInfo(TOKEN_WITH_PARALLEL_FEES).logged())
+                .when(
+                        // This receiver is only exempt from its own fee, but not from the other
+                        // fee; so a custom fee should be collected
+                        cryptoTransfer(
+                                        movingUnique(TOKEN_WITH_PARALLEL_FEES, 3)
+                                                .between(
+                                                        CIVILIAN, COLLECTOR_OF_FEE_WITH_EXEMPTIONS))
+                                .via(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE),
+                        // This sender is already exempt from one fee, and the other
+                        // fee exempts all collectors; so no custom fees should be collected
+                        cryptoTransfer(
+                                        movingUnique(TOKEN_WITH_PARALLEL_FEES, 4)
+                                                .between(
+                                                        CIVILIAN,
+                                                        COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS))
+                                .via(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE))
+                .then(
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(1))
+                                .logged(),
+                        getTxnRecord(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE)
+                                .hasPriority(recordWith().assessedCustomFeeCount(0))
+                                .logged());
+    }
+
+    private static final String TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE = "collectorExempt";
+    private static final String TXN_TRIGGERING_COLLECTOR_NON_EXEMPT_FEE = "collectorNonExempt";
+
+    private static final String TWO_FEE_SUPPLY_KEY = "multiKey";
+    private static final String TOKEN_WITH_PARALLEL_FEES = "twoFeeToken";
+    private static final String COLLECTOR_OF_FEE_WITH_EXEMPTIONS = "selflessCollector";
+    private static final String COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS = "selfishCollector";
+
+    private HapiSpecOperation setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
+            final TokenType tokenType,
+            final Function<Boolean, Function<HapiApiSpec, CustomFee>> feeFactory) {
+        final var creationOp =
+                tokenCreate(TOKEN_WITH_PARALLEL_FEES)
+                        .treasury(TOKEN_TREASURY)
+                        .supplyKey(TWO_FEE_SUPPLY_KEY)
+                        .tokenType(tokenType)
+                        .withCustom(feeFactory.apply(Boolean.TRUE))
+                        .withCustom(feeFactory.apply(Boolean.FALSE));
+        final HapiSpecOperation finisher;
+        if (tokenType == NON_FUNGIBLE_UNIQUE) {
+            creationOp.initialSupply(0L);
+            finisher =
+                    blockingOrder(
+                            mintToken(
+                                    TOKEN_WITH_PARALLEL_FEES,
+                                    List.of(
+                                            ByteString.copyFromUtf8("FIRST"),
+                                            ByteString.copyFromUtf8("SECOND"),
+                                            ByteString.copyFromUtf8("THIRD"),
+                                            ByteString.copyFromUtf8("FOURTH"))),
+                            cryptoTransfer(
+                                    movingUnique(TOKEN_WITH_PARALLEL_FEES, 1L)
+                                            .between(
+                                                    TOKEN_TREASURY,
+                                                    COLLECTOR_OF_FEE_WITH_EXEMPTIONS),
+                                    movingUnique(TOKEN_WITH_PARALLEL_FEES, 2L)
+                                            .between(
+                                                    TOKEN_TREASURY,
+                                                    COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS)));
+        } else {
+            creationOp.initialSupply(1_000_000L);
+            finisher =
+                    cryptoTransfer(
+                            moving(100_000L, TOKEN_WITH_PARALLEL_FEES)
+                                    .between(TOKEN_TREASURY, COLLECTOR_OF_FEE_WITH_EXEMPTIONS),
+                            moving(100_000L, TOKEN_WITH_PARALLEL_FEES)
+                                    .between(TOKEN_TREASURY, COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS));
+        }
+        return blockingOrder(
+                newKeyNamed(TWO_FEE_SUPPLY_KEY),
+                inParallel(
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(COLLECTOR_OF_FEE_WITH_EXEMPTIONS)
+                                .maxAutomaticTokenAssociations(2)
+                                .key(DEFAULT_PAYER),
+                        cryptoCreate(COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS)
+                                .maxAutomaticTokenAssociations(2)
+                                .key(DEFAULT_PAYER)),
+                creationOp,
+                finisher);
+    }
+
+    private Function<HapiApiSpec, CustomFee> fixedFeeWith(final boolean allCollectorsExempt) {
+        return fixedHbarFee(
+                ONE_HBAR, nameForCollectorOfFeeWith(allCollectorsExempt), allCollectorsExempt);
+    }
+
+    private Function<HapiApiSpec, CustomFee> fractionalFeeWith(final boolean allCollectorsExempt) {
+        return fractionalFee(
+                1,
+                10,
+                0,
+                OptionalLong.empty(),
+                nameForCollectorOfFeeWith(allCollectorsExempt),
+                allCollectorsExempt);
+    }
+
+    private Function<HapiApiSpec, CustomFee> netOfTransferFractionalFeeWith(
+            final boolean allCollectorsExempt) {
+        return fractionalFeeNetOfTransfers(
+                1,
+                10,
+                0,
+                OptionalLong.empty(),
+                nameForCollectorOfFeeWith(allCollectorsExempt),
+                allCollectorsExempt);
+    }
+
+    private Function<HapiApiSpec, CustomFee> royaltyFeeNoFallbackWith(
+            final boolean allCollectorsExempt) {
+        return royaltyFeeNoFallback(
+                1, 10, nameForCollectorOfFeeWith(allCollectorsExempt), allCollectorsExempt);
+    }
+
+    private Function<HapiApiSpec, CustomFee> royaltyFeePlusFallbackWith(
+            final boolean allCollectorsExempt) {
+        return royaltyFeeWithFallback(
+                1,
+                10,
+                fixedHbarFeeInheritingRoyaltyCollector(ONE_HBAR),
+                nameForCollectorOfFeeWith(allCollectorsExempt),
+                allCollectorsExempt);
+    }
+
+    private String nameForCollectorOfFeeWith(final boolean allCollectorsExempt) {
+        return allCollectorsExempt
+                ? COLLECTOR_OF_FEE_WITH_EXEMPTIONS
+                : COLLECTOR_OF_FEE_WITHOUT_EXEMPTIONS;
     }
 
     @Override

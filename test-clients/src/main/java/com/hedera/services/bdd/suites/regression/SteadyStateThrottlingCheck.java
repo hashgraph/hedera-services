@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -38,12 +39,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Stopwatch;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -67,9 +70,11 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
             HapiSpecSetup.getDefaultNodeProps().get(TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR);
 
     private static final int REGRESSION_NETWORK_SIZE = 4;
+    private static final int PREVIEWNET_NETWORK_SIZE = 7;
 
     private static final double THROUGHPUT_LIMITS_XFER_NETWORK_TPS = 100.0;
     private static final double THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS = 30.0;
+    private static final double PREVIEWNET_THROUGHPUT_LIMITS_NON_FUNGIBLE_MINT_NETWORK_TPS = 50.0;
 
     private static final double PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS = 2.0;
     private static final double CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS = 1.0;
@@ -81,6 +86,11 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
             THROUGHPUT_LIMITS_XFER_NETWORK_TPS / NETWORK_SIZE;
     private static final double EXPECTED_FUNGIBLE_MINT_TPS =
             THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS / NETWORK_SIZE;
+
+    @SuppressWarnings("java:S1068")
+    private static final double EXPECTED_PREVIEWNET_NON_FUNGIBLE_MINT_TPS =
+            PREVIEWNET_THROUGHPUT_LIMITS_NON_FUNGIBLE_MINT_NETWORK_TPS / PREVIEWNET_NETWORK_SIZE;
+
     private static final double EXPECTED_CONTRACT_CALL_TPS =
             PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
     private static final double EXPECTED_CRYPTO_CREATE_TPS =
@@ -141,11 +151,36 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL));
     }
 
-    @SuppressWarnings("java:S5960")
     private HapiApiSpec checkTps(
             String txn, double expectedTps, Function<HapiApiSpec, OpProvider> provider) {
-        return defaultHapiSpec("Throttles" + txn + "AsExpected")
-                .given()
+        return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
+    }
+
+    /**
+     * An example of how to use this in a spot check of previewnet NFT mint throttle is,
+     *
+     * <pre>{@code
+     * checkCustomNetworkTps(
+     *   "NonFungibleMints",
+     *   EXPECTED_PREVIEWNET_NON_FUNGIBLE_MINT_TPS,
+     *   nonFungibleMintOps(), Map.of(
+     *     "nodes", "35.231.208.148",
+     *     "default.payer.pemKeyLoc", "[SUPERUSER_PEM]",
+     *     "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
+     * }</pre>
+     */
+    @SuppressWarnings("java:S5960")
+    private HapiApiSpec checkCustomNetworkTps(
+            String txn,
+            double expectedTps,
+            Function<HapiApiSpec, OpProvider> provider,
+            Map<String, String> custom) {
+        final var name = "Throttles" + txn + "AsExpected";
+        final var baseSpec =
+                custom.isEmpty()
+                        ? defaultHapiSpec(name)
+                        : customHapiSpec(name).withProperties(custom);
+        return baseSpec.given()
                 .when(
                         runWithProvider(provider)
                                 .lasting(duration::get, unit::get)
@@ -335,6 +370,41 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                     public Optional<HapiSpecOperation> get() {
                         var op =
                                 mintToken(TOKEN, 1L)
+                                        .fee(ONE_HBAR)
+                                        .noLogging()
+                                        .rememberingNothing()
+                                        .deferStatusResolution()
+                                        .signedBy(TOKEN_TREASURY, SUPPLY)
+                                        .payingWith(TOKEN_TREASURY)
+                                        .hasKnownStatusFrom(OK, SUCCESS)
+                                        .hasPrecheckFrom(OK, BUSY);
+                        return Optional.of(op);
+                    }
+                };
+    }
+
+    @SuppressWarnings("java:S1144")
+    private Function<HapiApiSpec, OpProvider> nonFungibleMintOps() {
+        final var metadata =
+                "01234567890123456789012345678901234567890123456789"
+                        + "01234567890123456789012345678901234567890123456789";
+        return spec ->
+                new OpProvider() {
+                    @Override
+                    public List<HapiSpecOperation> suggestedInitializers() {
+                        return List.of(
+                                newKeyNamed(SUPPLY),
+                                cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
+                                tokenCreate(TOKEN)
+                                        .initialSupply(0)
+                                        .treasury(TOKEN_TREASURY)
+                                        .supplyKey(SUPPLY));
+                    }
+
+                    @Override
+                    public Optional<HapiSpecOperation> get() {
+                        var op =
+                                mintToken(TOKEN, List.of(ByteString.copyFromUtf8(metadata)))
                                         .fee(ONE_HBAR)
                                         .noLogging()
                                         .rememberingNothing()

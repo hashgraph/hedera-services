@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 
 import com.google.protobuf.UInt32Value;
@@ -206,7 +206,7 @@ public class TokenMovement {
 
     private AccountAmount adjustment(String name, long value, HapiApiSpec spec) {
         return AccountAmount.newBuilder()
-                .setAccountID(asId(name, spec))
+                .setAccountID(asIdForKeyLookUp(name, spec))
                 .setAmount(value)
                 .setIsApproval(isApproval)
                 .build();
@@ -215,8 +215,8 @@ public class TokenMovement {
     private NftTransfer adjustment(
             String senderName, String receiverName, long value, HapiApiSpec spec) {
         return NftTransfer.newBuilder()
-                .setSenderAccountID(asId(senderName, spec))
-                .setReceiverAccountID(asId(receiverName, spec))
+                .setSenderAccountID(asIdForKeyLookUp(senderName, spec))
+                .setReceiverAccountID(asIdForKeyLookUp(receiverName, spec))
                 .setSerialNumber(value)
                 .setIsApproval(isApproval)
                 .build();
@@ -298,6 +298,11 @@ public class TokenMovement {
         public TokenMovement from(String magician) {
             return new TokenMovement(
                     token, Optional.of(magician), amount, Optional.empty(), Optional.empty());
+        }
+
+        public TokenMovement to(String receiver) {
+            return new TokenMovement(
+                    token, Optional.empty(), amount, Optional.of(receiver), Optional.empty());
         }
 
         public TokenMovement empty() {

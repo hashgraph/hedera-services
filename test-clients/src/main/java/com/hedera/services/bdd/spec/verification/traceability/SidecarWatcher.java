@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.verification.traceability;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.hedera.services.recordstreaming.RecordStreamingUtils;
+import com.hedera.services.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.io.File;
@@ -60,17 +60,42 @@ public class SidecarWatcher {
                         final var newFilePath = file.getPath();
                         if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
                             log.info("New sidecar file: {}", newFilePath);
-                            final SidecarFile sidecarFile;
-                            try {
-                                sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
-                            } catch (IOException e) {
-                                log.fatal(
-                                        "An error occurred trying to parse sidecar file {} - {}",
-                                        newFilePath,
-                                        e);
-                                throw new IllegalStateException();
+                            var retryCount = 0;
+                            while (true) {
+                                retryCount++;
+                                try {
+                                    final var sidecarFile =
+                                            RecordStreamingUtils.readSidecarFile(newFilePath);
+                                    onNewSidecarFile(sidecarFile);
+                                    return;
+                                } catch (IOException e) {
+                                    // given that there is a slight chance we poll the
+                                    // file system at the exact time the file is being created,
+                                    // *but not yet finished*, and we try reading it in this
+                                    // unfinished state, which will throw an exception,
+                                    // we wait 250ms and try reading the file again
+                                    // we wait for a maximum of 1s for the file to be finished
+                                    log.warn(
+                                            "Attempt #{} - an error occurred trying to parse"
+                                                    + " sidecar file {} - {}.",
+                                            retryCount,
+                                            newFilePath,
+                                            e);
+                                    if (retryCount < 4) {
+                                        try {
+                                            Thread.sleep(POLLING_INTERVAL_MS);
+                                        } catch (InterruptedException ignored) {
+                                            Thread.currentThread().interrupt();
+                                        }
+                                    } else {
+                                        log.fatal(
+                                                "Could not read sidecar file {} - {}, exiting now.",
+                                                newFilePath,
+                                                e);
+                                        throw new IllegalStateException();
+                                    }
+                                }
                             }
-                            onNewSidecarFile(sidecarFile);
                         }
                     }
 
