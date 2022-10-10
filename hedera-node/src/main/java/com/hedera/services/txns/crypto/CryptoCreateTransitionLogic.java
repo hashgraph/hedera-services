@@ -22,6 +22,7 @@ import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -42,7 +43,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_EN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -60,7 +60,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -72,6 +71,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoCreate transaction, and the conditions
@@ -136,19 +136,22 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             txnCtx.setStatus(SUCCESS);
             if (!op.getAlias().isEmpty()) {
                 aliasManager.link(op.getAlias(), EntityNum.fromAccountId(created));
-            }
-            if (op.getAlias().size() > EVM_ADDRESS_SIZE) {
-                final var key = asPrimitiveKeyUnchecked(op.getAlias());
-                JKey jKey = asFcKeyUnchecked(key);
-                aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
-            }
-            if (op.hasKey() && !op.getKey().getECDSASecp256K1().isEmpty()) {
-                aliasManager.link(
-                        ledger.getAccountsLedger().getImmutableRef(created).getAlias(),
-                        EntityNum.fromAccountId(created));
+                if (op.getAlias().size() > EVM_ADDRESS_SIZE) {
+                    final var key = asPrimitiveKeyUnchecked(op.getAlias());
+                    JKey jKey = asFcKeyUnchecked(key);
+                    aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
+                }
+            } else {
+                if (op.hasKey() && !op.getKey().getECDSASecp256K1().isEmpty()) {
+                    aliasManager.link(
+                            ledger.getAccountsLedger().getImmutableRef(created).getAlias(),
+                            EntityNum.fromAccountId(created));
+                }
             }
         } catch (InsufficientFundsException ife) {
             txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
+        } catch (InvalidTransactionException ite) {
+            txnCtx.setStatus(ite.getResponseCode());
         } catch (Exception e) {
             log.warn("Avoidable exception!", e);
             txnCtx.setStatus(FAIL_INVALID);
@@ -204,17 +207,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             if (!aliasManager.lookupIdBy(op.getAlias()).equals(MISSING_NUM)) {
                 throw new InvalidTransactionException(INVALID_ALIAS_KEY);
             }
-            if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
-                customizer
-                        .key(asFcKeyUnchecked(op.getKey()))
-                        .memo(AUTO_MEMO)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                        .isReceiverSigRequired(false)
-                        .isSmartContract(false)
-                        .alias(op.getAlias());
-            }
-
             if (!op.getKey().getECDSASecp256K1().isEmpty()) {
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
@@ -226,26 +218,15 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                                 .equals(MISSING_NUM)) {
                     throw new InvalidTransactionException(INVALID_ALIAS_KEY);
                 }
-                customizer
-                        .key(asFcKeyUnchecked(op.getKey()))
-                        .memo(AUTO_MEMO)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                        .isReceiverSigRequired(false)
-                        .isSmartContract(false)
-                        .alias(op.getAlias());
             }
-
-            if (!op.getKey().getEd25519().isEmpty()) {
-                customizer
-                        .key(asFcKeyUnchecked(op.getKey()))
-                        .memo(AUTO_MEMO)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                        .isReceiverSigRequired(false)
-                        .isSmartContract(false)
-                        .alias(op.getAlias());
-            }
+            customizer
+                    .key(asFcKeyUnchecked(op.getKey()))
+                    .memo(AUTO_MEMO)
+                    .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                    .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                    .isReceiverSigRequired(false)
+                    .isSmartContract(false)
+                    .alias(op.getAlias());
         } else {
             /* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
             if (!op.getKey().getECDSASecp256K1().isEmpty()) {
@@ -302,51 +283,40 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         if (memoValidity != OK) {
             return memoValidity;
         }
-        if (op.getAlias().isEmpty()) {
+        if (op.hasKey() && !op.getAlias().isEmpty()) {
+            final var validatedKeyResponse = validateKey(op);
+            if (validatedKeyResponse != null) {
+                return validatedKeyResponse;
+            }
+            if (op.getAlias().size() < EVM_ADDRESS_SIZE) {
+                return INVALID_ALIAS_KEY;
+            } else if (op.getAlias().size() > EVM_ADDRESS_SIZE) {
+                if ((!op.getKey().getEd25519().isEmpty()
+                                || !op.getKey().getECDSASecp256K1().isEmpty())
+                        && !op.getKey().equals(asPrimitiveKeyUnchecked(op.getAlias()))) {
+                    return INVALID_ALIAS_KEY;
+                }
+            } else {
+                if (!op.getKey().getECDSASecp256K1().isEmpty()) {
+                    final var recoveredEvmAddress =
+                            recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
+                    if (!Arrays.equals(recoveredEvmAddress, op.getAlias().toByteArray())) {
+                        return INVALID_ALIAS_KEY;
+                    }
+                } else {
+                    return INVALID_ADMIN_KEY;
+                }
+            }
+        } else if (op.getAlias().isEmpty()) {
             if (!op.hasKey()) {
                 return KEY_REQUIRED;
             }
-            if (!validator.hasGoodEncoding(op.getKey())) {
-                return BAD_ENCODING;
+            final var validatedKeyResponse = validateKey(op);
+            if (validatedKeyResponse != null) {
+                return validatedKeyResponse;
             }
-            var fcKey = asFcKeyUnchecked(op.getKey());
-            if (fcKey.isEmpty()) {
-                return KEY_REQUIRED;
-            }
-            if (!fcKey.isValid()) {
-                return INVALID_ADMIN_KEY;
-            }
-        }
-
-        if (op.hasKey() && !op.getAlias().isEmpty()) {
-            if (!validator.hasGoodEncoding(op.getKey())) {
-                return BAD_ENCODING;
-            }
-            var fcKey = asFcKeyUnchecked(op.getKey());
-            if (fcKey.isEmpty()) {
-                return KEY_REQUIRED;
-            }
-            if (!fcKey.isValid()) {
-                return INVALID_ADMIN_KEY;
-            }
-            if (!op.getKey().getEd25519().isEmpty()
-                    && !op.getKey().equals(asPrimitiveKeyUnchecked(op.getAlias()))) {
-                return INVALID_ALIAS_KEY;
-            }
-
-            if (!op.getKey().getECDSASecp256K1().isEmpty()
-                    && op.getAlias().size() == EVM_ADDRESS_SIZE) {
-                final var recoveredEvmAddress =
-                        recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
-                if (!Arrays.equals(recoveredEvmAddress, op.getAlias().toByteArray())) {
-                    return INVALID_ALIAS_KEY;
-                }
-            }
-            if (!op.getKey().getECDSASecp256K1().isEmpty()
-                    && op.getAlias().size() != EVM_ADDRESS_SIZE
-                    && !op.getKey().equals(asPrimitiveKeyUnchecked(op.getAlias()))) {
-                return INVALID_ALIAS_KEY;
-            }
+        } else if (!op.getAlias().isEmpty() && op.getAlias().size() < EVM_ADDRESS_SIZE) {
+            return INVALID_ALIAS_KEY;
         }
 
         if (op.getInitialBalance() < 0L) {
@@ -388,17 +358,24 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         return OK;
     }
 
+    @Nullable
+    private ResponseCodeEnum validateKey(CryptoCreateTransactionBody op) {
+        if (!validator.hasGoodEncoding(op.getKey())) {
+            return BAD_ENCODING;
+        }
+        var fcKey = asFcKeyUnchecked(op.getKey());
+        if (fcKey.isEmpty()) {
+            return KEY_REQUIRED;
+        }
+        if (!fcKey.isValid()) {
+            return INVALID_ADMIN_KEY;
+        }
+        return null;
+    }
+
     private boolean tooManyAutoAssociations(final int n) {
         return n > MAX_CHARGEABLE_AUTO_ASSOCIATIONS
                 || (dynamicProperties.areTokenAssociationsLimited()
                         && n > dynamicProperties.maxTokensPerAccount());
-    }
-
-    private Key asPrimitiveKeyUnchecked(final ByteString alias) {
-        try {
-            return Key.parseFrom(alias);
-        } catch (InvalidProtocolBufferException internal) {
-            throw new IllegalStateException(internal);
-        }
     }
 }
