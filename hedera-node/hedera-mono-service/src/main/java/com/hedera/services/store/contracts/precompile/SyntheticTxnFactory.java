@@ -495,8 +495,9 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
-    public TransactionBody.Builder createHollowAccount(final long balance) {
+    public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
         final var baseBuilder = createAccountBase(balance);
+        baseBuilder.setAlias(alias);
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 

@@ -56,6 +56,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -201,7 +202,7 @@ class AutoCreationLogicTest {
                                         .setAccountId(new EntityId(0, 0, createdNum.longValue())));
 
         givenCollaborators(mockBuilderWithEVMAlias);
-        given(syntheticTxnFactory.createHollowAccount(0L)).willReturn(mockSyntheticCreation);
+        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias,0L)).willReturn(mockSyntheticCreation);
 
         final var input = wellKnownChange(evmAddressAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -215,6 +216,11 @@ class AutoCreationLogicTest {
         verify(aliasManager).link(evmAddressAlias, createdNum);
         verify(sigImpactHistorian).markAliasChanged(evmAddressAlias);
         verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+        verify(accountsLedger, never())
+                .set(createdNum.toGrpcAccountId(), AccountProperty.KEY, null);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.ALIAS, evmAddressAlias);
+        assertEquals(EntityIdUtils.EVM_ADDRESS_SIZE, evmAddressAlias.size());
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
         verify(accountsLedger, never())
