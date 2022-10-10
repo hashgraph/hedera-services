@@ -49,8 +49,20 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link SystemTask} added in release 0.31 that exports the bytecode and storage slots of all
- * contracts from the 0.30.x saved state. After all pre-existing entities have been scanned, always
- * returns false from {@code isActive()}.
+ * contracts from the post-upgrade saved state.
+ *
+ * <p>After all pre-existing entities have been scanned, always returns false from {@code isActive()}.
+ *
+ * <p>Enforces two kinds of "back-pressure" by returning {@link SystemTaskResult#NEEDS_DIFFERENT_CONTEXT}
+ * from {@code process()} if,
+ * <ol>
+ *     <li>More than {@code traceability.maxExportsPerConsSec} entities have been
+ *     processed by the {@link SystemTaskManager} in the last consensus second; or,</li>
+ *     <li>The free-to-used ratio of the consensus gas throttle has fallen below
+ *     {@code traceability.minFreeToUsedGasThrottleRatio}.</li>
+ * </ol>
+ * With default settings, this stops traceability exports whenever gas usage is above 10 percent
+ * of capacity; or when there have already been 10 traceability exports in the current consensus second.
  */
 @Singleton
 public class TraceabilityExportTask implements SystemTask {
@@ -65,6 +77,10 @@ public class TraceabilityExportTask implements SystemTask {
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
 
+    // Used to occasionally log the progress of the traceability export; because this is
+    // not in state, will become inaccurate on a node that falls behind or restarts, but
+    // that doesn't matter---exports will finish within a few hours and we can just check
+    // the logs of a node that didn't fall behind
     private int exportsCompleted = 0;
 
     @Inject
@@ -89,7 +105,7 @@ public class TraceabilityExportTask implements SystemTask {
     public boolean isActive(final long literalNum, final MerkleNetworkContext curNetworkCtx) {
         return dynamicProperties.shouldDoTraceabilityExport()
                 && !curNetworkCtx.areAllPreUpgradeEntitiesScanned()
-                // No need to do traceability export for an 0.31.x contract
+                // No need to do traceability export for a contract created post-upgrade
                 && literalNum < curNetworkCtx.seqNoPostUpgrade();
     }
 
