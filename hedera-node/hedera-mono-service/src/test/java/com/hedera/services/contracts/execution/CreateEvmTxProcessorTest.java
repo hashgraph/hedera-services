@@ -129,8 +129,8 @@ class CreateEvmTxProcessorTest {
 
     @Test
     void assertSuccessfulExecution() {
-        givenValidMock(true, -1);
-        givenSenderWithBalance(350_000L);
+        givenValidMock(true, 350_000L, true);
+//        givenSenderWithBalance(350_000L);
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -172,9 +172,8 @@ class CreateEvmTxProcessorTest {
 
     @Test
     void assertSuccessExecutionChargesCorrectMinimumGas() {
-        givenValidMock(true, 350_000L);
+        givenValidMock(true, 350_000L, true);
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
-        givenSenderWithBalance(350_000L);
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -190,11 +189,11 @@ class CreateEvmTxProcessorTest {
 
     @Test
     void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
-        givenValidMock(true, 350_000L);
+        givenValidMock(true, 350_000L, true);
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(5);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
                 .willReturn(INTRINSIC_GAS_COST);
-        givenSenderWithBalance(350_000L);
+//        givenSenderWithBalance(350_000L);
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -210,12 +209,11 @@ class CreateEvmTxProcessorTest {
 
     @Test
     void assertFailedExecution() {
-        givenValidMock(false, -1);
+        givenValidMock(false, 350_000L, true);
         // and:
         given(gasCalculator.mStoreOperationGasCost(any(), anyLong())).willReturn(200L);
         given(gasCalculator.mLoadOperationGasCost(any(), anyLong())).willReturn(30L);
         given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(5000L);
-        givenSenderWithBalance(350_000L);
 
         // when:
         var result =
@@ -282,7 +280,7 @@ class CreateEvmTxProcessorTest {
     void throwsWhenSenderCannotCoverUpfrontCost() {
 //        givenInvalidMock();
 //        givenSenderWithBalance(123);
-        givenValidMock(true, 123);
+        givenValidMock(true, 123, false);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
             .willReturn(100_000L);
 
@@ -298,7 +296,7 @@ class CreateEvmTxProcessorTest {
     void throwsWhenIntrinsicGasCostExceedsGasLimit() {
 //        givenInvalidMock();
 //        givenExtantSender();
-        givenValidMock(true, -1);
+        givenValidMock(true, -1, false);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
             .willReturn(MAX_GAS_LIMIT + 1L);
 
@@ -314,7 +312,7 @@ class CreateEvmTxProcessorTest {
     void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
 //        givenInvalidMock();
 //        givenExtantSender();
-        givenValidMock(true, -1);
+        givenValidMock(true, -1, false);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
                 .willReturn(MAX_GAS_LIMIT + 1L);
 
@@ -331,7 +329,7 @@ class CreateEvmTxProcessorTest {
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(100_000L);
     }
 
-    private void givenValidMock(boolean expectedSuccess, final long amount) {
+    private void givenValidMock(boolean expectedSuccess, final long amount, boolean getOrCreateMocking) {
         given(worldState.updater()).willReturn(updater);
         given(worldState.updater().updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress())
@@ -341,7 +339,10 @@ class CreateEvmTxProcessorTest {
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
                 .willReturn(evmAccount);
-        given(worldState.updater()).willReturn(updater);
+        if (getOrCreateMocking) {
+            given(updater.getOrCreate(any())).willReturn(evmAccount);
+        }
+//        given(worldState.updater()).willReturn(updater);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
 
@@ -358,14 +359,14 @@ class CreateEvmTxProcessorTest {
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
         given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
-        given(updater.getSbhRefund()).willReturn(0L);
+//        given(updater.getSbhRefund()).willReturn(0L);
 
         given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
         given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
         given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
         if (amount >= 0) {
-            given(senderMutableAccount.getBalance()).willReturn(Wei.of(123));
+            given(senderMutableAccount.getBalance()).willReturn(Wei.of(amount));
         }
     }
 
