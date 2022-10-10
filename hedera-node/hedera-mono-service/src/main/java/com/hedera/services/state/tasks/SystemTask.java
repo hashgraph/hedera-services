@@ -24,7 +24,7 @@ import java.time.Instant;
  */
 public interface SystemTask {
     /**
-     * Whether this task is still active.
+     * Whether this task is still active for a particular entity id.
      *
      * @param literalNum the id of the entity to consider processing
      * @param curNetworkCtx the current network context
@@ -35,8 +35,22 @@ public interface SystemTask {
     }
 
     /**
-     * Attempts to do this task's work on the entity with the given id, if applicable and capacity
-     * and context permit.
+     * Tries to do this task's work on the entity with the given id, if applicable and capacity and
+     * context permit.
+     *
+     * @param literalNum the id of the entity to process
+     * @param now the current consensus time
+     * @param curNetworkCtx the current network context
+     * @return the result of the task's work
+     */
+    default SystemTaskResult process(
+            final long literalNum, final Instant now, final MerkleNetworkContext curNetworkCtx) {
+        return process(literalNum, now);
+    }
+
+    /**
+     * Tries to do this task's work on the entity with the given id, if applicable and capacity and
+     * context permit.
      *
      * @param literalNum the id of the entity to process
      * @param now the current consensus time
