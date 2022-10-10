@@ -59,8 +59,7 @@ public class ExtCodeCopyOperationSuite extends HapiApiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, codeCopyOf, invalidAddress)
-                                .hasKnownStatus(SUCCESS),
+                        contractCall(contract, codeCopyOf, invalidAddress).hasKnownStatus(SUCCESS),
                         contractCallLocal(contract, codeCopyOf, invalidAddress)
                                 .hasAnswerOnlyPrecheck(OK),
                         withOpContext(

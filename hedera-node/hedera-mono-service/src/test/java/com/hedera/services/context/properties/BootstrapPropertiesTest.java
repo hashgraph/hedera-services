@@ -17,7 +17,6 @@ package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.PropertyNames.*;
 import static com.hedera.services.context.properties.PropertyNames.TOPICS_MAX_NUM;
-import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.services.contracts.ContractsV_0_31Module.EVM_VERSION_0_31;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
