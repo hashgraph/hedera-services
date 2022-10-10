@@ -97,7 +97,16 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
             final Optional<ExceptionalHaltReason> haltReason,
             final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
             final List<SolidityAction> actions) {
-        super(status, logs, gasUsed, sbhRefund, gasPrice, output, recipient, revertReason, haltReason);
+        super(
+                status,
+                logs,
+                gasUsed,
+                sbhRefund,
+                gasPrice,
+                output,
+                recipient,
+                revertReason,
+                haltReason);
         this.stateChanges = stateChanges;
         this.actions = actions;
     }
@@ -115,6 +124,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
     public List<ContractID> getCreatedContracts() {
         return createdContracts;
     }
+
     public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
         return stateChanges;
     }
@@ -122,6 +132,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
     public void setStateChanges(final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
         this.stateChanges = stateChanges;
     }
+
     public List<SolidityAction> getActions() {
         return actions;
     }
