@@ -452,13 +452,15 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedHollowAccountCreate() {
         final var balance = 10L;
-        final var evmAddressAlias = ByteString.copyFrom(Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
+        final var evmAddressAlias =
+                ByteString.copyFrom(Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
         final var result = subject.createHollowAccount(evmAddressAlias, balance);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
         assertEquals(Key.getDefaultInstance(), txnBody.getCryptoCreateAccount().getKey());
-        assertEquals(EntityIdUtils.EVM_ADDRESS_SIZE, txnBody.getCryptoCreateAccount().getAlias().size());
+        assertEquals(
+                EntityIdUtils.EVM_ADDRESS_SIZE, txnBody.getCryptoCreateAccount().getAlias().size());
         assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
         assertEquals(
                 THREE_MONTHS_IN_SECONDS,

@@ -202,7 +202,8 @@ class AutoCreationLogicTest {
                                         .setAccountId(new EntityId(0, 0, createdNum.longValue())));
 
         givenCollaborators(mockBuilderWithEVMAlias);
-        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias,0L)).willReturn(mockSyntheticCreation);
+        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L))
+                .willReturn(mockSyntheticCreation);
 
         final var input = wellKnownChange(evmAddressAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
