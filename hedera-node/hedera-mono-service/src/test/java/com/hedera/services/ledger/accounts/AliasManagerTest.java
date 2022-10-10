@@ -196,7 +196,7 @@ class AliasManagerTest {
     }
 
     @Test
-    void lookupIdByECDSAKeyAliasShouldReturnExistingEVMAddressAlias()
+    void lookupIdByECDSAKeyAliasShouldReturnNumFromEVMAddressAliasMap()
             throws InvalidProtocolBufferException, DecoderException {
         subject.link(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num);
         assertEquals(num, subject.lookupIdBy(ByteString.copyFrom(ECDSA_PUBLIC_KEY)));
