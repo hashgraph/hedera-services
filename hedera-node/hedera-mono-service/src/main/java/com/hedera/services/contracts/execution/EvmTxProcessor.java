@@ -210,11 +210,8 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         }
 
         // Externalise result
-        final var transactionProcessingResult = (TransactionProcessingResult) super.getResult();
-        transactionProcessingResult.setStateChanges(stateChanges);
-        transactionProcessingResult.setActions(hederaTracer.getActions());
-
-        return transactionProcessingResult;
+        final var hederaTransactionProcessingResult = super.getResult();
+        return new TransactionProcessingResult(hederaTransactionProcessingResult, stateChanges, hederaTracer.getActions());
     }
 
     private void sendToCoinbase(

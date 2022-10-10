@@ -19,8 +19,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
- *
- * <p>Unless the contained {@link ResponseCodeEnum} is exactly {@code FAIL_INVALID}, this represents
+ * Unless the contained {@link ResponseCodeEnum} is exactly {@code FAIL_INVALID}, this represents
  * some form of user error. The {@code FAIL_INVALID} code indicates an internal system error; and it
  * is usually desirable in that case to include a detail message in the constructor.
  */

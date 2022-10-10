@@ -85,6 +85,17 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
                 actions);
     }
 
+    public TransactionProcessingResult(final HederaEvmTransactionProcessingResult hederaEvmTransactionProcessingResult,
+        final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges, List<SolidityAction> actions) {
+        super(hederaEvmTransactionProcessingResult.isSuccessful() ? Status.SUCCESSFUL : Status.FAILED, hederaEvmTransactionProcessingResult.getLogs(),
+            hederaEvmTransactionProcessingResult.getGasUsed(), hederaEvmTransactionProcessingResult.getSbhRefund(),
+            hederaEvmTransactionProcessingResult.getGasPrice(), hederaEvmTransactionProcessingResult.getOutput(),
+            hederaEvmTransactionProcessingResult.getRecipient(), hederaEvmTransactionProcessingResult.getRevertReason(),
+            hederaEvmTransactionProcessingResult.getHaltReason());
+        this.stateChanges = stateChanges;
+        this.actions = actions;
+    }
+
     private TransactionProcessingResult(
             final Status status,
             final List<Log> logs,

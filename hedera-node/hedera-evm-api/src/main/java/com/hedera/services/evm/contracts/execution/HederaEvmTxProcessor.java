@@ -17,6 +17,7 @@ package com.hedera.services.evm.contracts.execution;
 
 import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
+import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.services.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.time.Instant;
@@ -59,7 +60,7 @@ public abstract class HederaEvmTxProcessor {
     protected OperationTracer tracer;
     protected EvmProperties dynamicProperties;
     protected Address coinbase;
-    protected HederaEvmWorldState updater;
+    protected HederaEvmWorldUpdater updater;
     protected long intrinsicGas;
     protected MessageFrame initialFrame;
     protected long gasUsedByTransaction;
@@ -135,7 +136,7 @@ public abstract class HederaEvmTxProcessor {
             final Address mirrorReceiver) {
         this.intrinsicGas =
                 gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
-        this.updater = (HederaEvmWorldState) worldState.updater();
+        this.updater = (HederaEvmWorldUpdater) worldState.updater();
 
         this.coinbase = dynamicProperties.fundingAccountAddress();
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
