@@ -262,6 +262,10 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
                     | DecoderException
                     | IllegalArgumentException ignore) {
                 // any expected exception means no eth mapping
+                log.info(
+                        "Was not able to find entity num for {} alias or its corresponding EVM"
+                                + " address",
+                        alias);
             }
         }
 
