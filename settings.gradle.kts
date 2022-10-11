@@ -30,6 +30,10 @@ include(":hedera-node:hedera-evm-api")
 include(":hedera-node:hedera-mono-service")
 include(":test-clients")
 
+include(":modules:hedera-app")
+include(":modules:hedera-app-api")
+include(":modules:hedera-proto-api")
+
 // Enable Gradle Build Scan
 gradleEnterprise {
     buildScan {
