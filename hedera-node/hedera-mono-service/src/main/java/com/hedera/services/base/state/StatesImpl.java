@@ -18,7 +18,8 @@ package com.hedera.services.base.state;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.MutableStateChildren;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 public class StatesImpl implements States {
     private final MutableStateChildren children = new MutableStateChildren();
@@ -38,7 +39,9 @@ public class StatesImpl implements States {
     }
 
     @Override
-    public @NonNull <K, V> State<K, V> get(@NonNull final String stateKey) {
+    public @Nonnull <K, V> State<K, V> get(@Nonnull final String stateKey) {
+        Objects.requireNonNull(stateKey);
+
         if (stateKey.equals(ACCOUNTS_KEY)) {
             final var state =
                     new InMemoryStateImpl<>(stateKey, children.accounts(), children.signedAt());

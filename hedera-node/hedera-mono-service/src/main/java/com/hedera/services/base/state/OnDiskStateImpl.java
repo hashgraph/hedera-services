@@ -21,7 +21,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import java.time.Instant;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * An implementation of {@link com.hedera.services.base.state.State} backed by a {@link VirtualMap},
@@ -36,9 +35,9 @@ public class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends VirtualV
     private final Instant lastModifiedTime;
 
     OnDiskStateImpl(
-            @NotNull final String stateKey,
+            @Nonnull final String stateKey,
             @Nonnull VirtualMap<K, V> virtualMap,
-            @NotNull final Instant lastModifiedTime) {
+            @Nonnull final Instant lastModifiedTime) {
         super(stateKey);
         this.virtualMap = Objects.requireNonNull(virtualMap);
         this.lastModifiedTime = lastModifiedTime;

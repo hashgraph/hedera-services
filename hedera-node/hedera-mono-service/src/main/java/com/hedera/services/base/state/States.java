@@ -15,7 +15,7 @@
  */
 package com.hedera.services.base.state;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 
 /**
  * A set of {@link State} used by a service. Any service may have one or more {@link State}s, and
@@ -31,8 +31,9 @@ public interface States {
      * @return The State for that key. This will never be null.
      * @param <K> The key type in the State.
      * @param <V> The value type in the State.
-     * @throws IllegalArgumentException if the state cannot be found, or stateKey is null.
+     * @throws NullPointerException if stateKey is null.
+     * @throws IllegalArgumentException if the state cannot be found.
      */
-    @NonNull
-    <K, V> State<K, V> get(@NonNull String stateKey);
+    @Nonnull
+    <K, V> State<K, V> get(@Nonnull String stateKey);
 }
