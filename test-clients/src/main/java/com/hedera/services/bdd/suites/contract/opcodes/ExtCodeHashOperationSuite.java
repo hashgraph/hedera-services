@@ -61,8 +61,7 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, hashOf, invalidAddress)
-                                .hasKnownStatus(SUCCESS),
+                        contractCall(contract, hashOf, invalidAddress).hasKnownStatus(SUCCESS),
                         contractCallLocal(contract, hashOf, invalidAddress)
                                 .hasAnswerOnlyPrecheck(OK),
                         withOpContext(

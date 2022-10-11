@@ -64,8 +64,7 @@ public class ExtCodeSizeOperationSuite extends HapiApiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, sizeOf, invalidAddress)
-                                .hasKnownStatus(SUCCESS),
+                        contractCall(contract, sizeOf, invalidAddress).hasKnownStatus(SUCCESS),
                         contractCallLocal(contract, sizeOf, invalidAddress)
                                 .hasAnswerOnlyPrecheck(OK),
                         withOpContext(

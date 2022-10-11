@@ -329,9 +329,7 @@ public class ContractCreateSuite extends HapiApiSuite {
         return defaultHapiSpec("CannotSendToNonExistentAccount")
                 .given(uploadInitCode(contract))
                 .when(contractCreate(contract).balance(666))
-                .then(
-                        contractCall(contract, "donate", donationArgs)
-                                .hasKnownStatus(FAIL_INVALID));
+                .then(contractCall(contract, "donate", donationArgs).hasKnownStatus(FAIL_INVALID));
     }
 
     private HapiApiSpec createsVanillaContractAsExpectedWithOmittedAdminKey() {
