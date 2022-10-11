@@ -384,66 +384,110 @@ class CallEvmTxProcessorTest {
         }
     }
 
-    //    @Test
-    //    void throwsWhenSenderCannotCoverUpfrontCost() {
-    //        givenInvalidMock();
-    //        givenSenderWithBalance(123);
-    //
-    //        assertFailsWith(
-    //                () ->
-    //                        callEvmTxProcessor.execute(
-    //                                sender,
-    //                                receiverAddress,
-    //                                333_333L,
-    //                                1234L,
-    //                                Bytes.EMPTY,
-    //                                consensusTime),
-    //                ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
-    //    }
+    @Test
+    void throwsWhenSenderCannotCoverUpfrontCost() {
+        givenInvalidMock();
 
-    //    @Test
-    //    void throwsWhenIntrinsicGasCostExceedsGasLimit() {
-    //        givenInvalidMock();
-    //        final var wrappedSenderAccount = mock(EvmAccount.class);
-    //        final var mutableSenderAccount = mock(MutableAccount.class);
-    //        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-    //        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-    //                .willReturn(wrappedSenderAccount);
-    //
-    //        assertFailsWith(
-    //                () ->
-    //                        callEvmTxProcessor.execute(
-    //                                sender,
-    //                                receiverAddress,
-    //                                33_333L,
-    //                                1234L,
-    //                                Bytes.EMPTY,
-    //                                consensusTime),
-    //                INSUFFICIENT_GAS);
-    //    }
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(wrappedSenderAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(mutableSenderAccount);
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(100_000L);
 
-    //    @Test
-    //    void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
-    //        givenInvalidMock();
-    //        final var wrappedSenderAccount = mock(EvmAccount.class);
-    //        final var mutableSenderAccount = mock(MutableAccount.class);
-    //        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-    //        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-    //                .willReturn(wrappedSenderAccount);
-    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
-    //                .willReturn(MAX_GAS_LIMIT + 1L);
-    //
-    //        assertFailsWith(
-    //                () ->
-    //                        callEvmTxProcessor.execute(
-    //                                sender,
-    //                                receiverAddress,
-    //                                MAX_GAS_LIMIT,
-    //                                1234L,
-    //                                Bytes.EMPTY,
-    //                                consensusTime),
-    //                INSUFFICIENT_GAS);
-    //    }
+        final var wrappedRecipientAccount = mock(EvmAccount.class);
+        final var mutableRecipientAccount = mock(MutableAccount.class);
+
+        given(stackedUpdater.getOrCreate(any())).willReturn(wrappedRecipientAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(mutableRecipientAccount);
+        given(updater.updater()).willReturn(stackedUpdater);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+
+        givenSenderWithBalance(123);
+
+        assertFailsWith(
+                () ->
+                        callEvmTxProcessor.execute(
+                                sender,
+                                receiverAddress,
+                                333_333L,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime),
+                ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+    }
+
+    @Test
+    void throwsWhenIntrinsicGasCostExceedsGasLimit() {
+        given(worldState.updater()).willReturn(updater);
+        given(updater.updater()).willReturn(stackedUpdater);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+
+        var evmAccount = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(evmAccount);
+        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
+        given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+
+        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+
+        givenInvalidMock();
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(wrappedSenderAccount);
+
+        assertFailsWith(
+                () ->
+                        callEvmTxProcessor.execute(
+                                sender,
+                                receiverAddress,
+                                33_333L,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime),
+                INSUFFICIENT_GAS);
+    }
+
+    @Test
+    void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
+        givenValidMockWithoutGetOrCreate(100_000L);
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(wrappedSenderAccount);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
+                .willReturn(MAX_GAS_LIMIT + 1L);
+
+        assertFailsWith(
+                () ->
+                        callEvmTxProcessor.execute(
+                                sender,
+                                receiverAddress,
+                                MAX_GAS_LIMIT,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime),
+                INSUFFICIENT_GAS);
+    }
 
     @Test
     void assertIsContractCallFunctionality() {
@@ -691,136 +735,154 @@ class CallEvmTxProcessorTest {
         verify(mutableSenderAccount, never()).incrementBalance(any());
     }
 
-    //    @Test
-    //    void assertThrowsEthereumTransactionWhenSenderBalanceNotEnoughToCoverFeeWhenBothPay() {
-    //        given(worldState.updater()).willReturn(updater);
-    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-    //        given(worldState.updater()).willReturn(updater);
-    //        final var wrappedSenderAccount = mock(EvmAccount.class);
-    //        final var mutableSenderAccount = mock(MutableAccount.class);
-    //        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-    //        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-    //                .willReturn(wrappedSenderAccount);
-    //        given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
-    //        final var wrappedRelayerAccount = mock(EvmAccount.class);
-    //        final var mutableRelayerAccount = mock(MutableAccount.class);
-    //        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
-    //        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
-    //                .willReturn(wrappedRelayerAccount);
-    //        final long gasPrice = 40L;
-    //        given(
-    //                pricesAndFees.currentGasPrice(
-    //                                consensusTime, HederaFunctionality.EthereumTransaction))
-    //                .willReturn(gasPrice);
-    //        final var receiverAddress = receiver.getId().asEvmAddress();
-    //        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-    //        final long offeredGasPrice = 10L;
-    //        final int gasLimit = 1000;
-    //        final var userOfferedGasPrice =
-    //                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
-    //
-    //        assertThrows(
-    //                InvalidTransactionException.class,
-    //                () ->
-    //                        callEvmTxProcessor.executeEth(
-    //                                sender,
-    //                                receiverAddress,
-    //                                gasLimit,
-    //                                1234L,
-    //                                Bytes.EMPTY,
-    //                                consensusTime,
-    //                                userOfferedGasPrice,
-    //                                relayer,
-    //                                10 * ONE_HBAR));
-    //    }
+    @Test
+    void assertThrowsEthereumTransactionWhenSenderBalanceNotEnoughToCoverFeeWhenBothPay() {
+        given(worldState.updater()).willReturn(updater);
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
 
-    //    @Test
-    //    void assertThrowsEthereumTransactionWhenGasAllowanceNotEnoughWhenBothPay() {
-    //        given(worldState.updater()).willReturn(updater);
-    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-    //        given(worldState.updater()).willReturn(updater);
-    //        final var wrappedSenderAccount = mock(EvmAccount.class);
-    //        final var mutableSenderAccount = mock(MutableAccount.class);
-    //        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-    //        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-    //                .willReturn(wrappedSenderAccount);
-    //        given(mutableSenderAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
-    //        final var wrappedRelayerAccount = mock(EvmAccount.class);
-    //        final var mutableRelayerAccount = mock(MutableAccount.class);
-    //        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
-    //        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
-    //                .willReturn(wrappedRelayerAccount);
-    //        final long gasPrice = 40L;
-    //        given(
-    //                pricesAndFees.currentGasPrice(
-    //                                consensusTime, HederaFunctionality.EthereumTransaction))
-    //                .willReturn(gasPrice);
-    //        final var receiverAddress = receiver.getId().asEvmAddress();
-    //        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-    //        final long offeredGasPrice = 10L;
-    //        final int gasLimit = 1000;
-    //        final var userOfferedGasPrice =
-    //                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
-    //
-    //        assertThrows(
-    //                InvalidTransactionException.class,
-    //                () ->
-    //                        callEvmTxProcessor.executeEth(
-    //                                sender,
-    //                                receiverAddress,
-    //                                gasLimit,
-    //                                1234L,
-    //                                Bytes.EMPTY,
-    //                                consensusTime,
-    //                                userOfferedGasPrice,
-    //                                relayer,
-    //                                100));
-    //    }
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(wrappedSenderAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(mutableSenderAccount);
+        given(mutableSenderAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+        given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
 
-    //    @Test
-    //    void
-    // assertThrowsEthereumTransactionWhenRelayerBalanceNotEnoughToCoverAllowanceWhenBothPay() {
-    //        given(worldState.updater()).willReturn(updater);
-    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-    //        given(worldState.updater()).willReturn(updater);
-    //        final var wrappedSenderAccount = mock(EvmAccount.class);
-    //        final var mutableSenderAccount = mock(MutableAccount.class);
-    //        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-    //        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-    //                .willReturn(wrappedSenderAccount);
-    //        given(mutableSenderAccount.getBalance()).willReturn(Wei.of(ONE_HBAR * 100));
-    //        final var wrappedRelayerAccount = mock(EvmAccount.class);
-    //        final var mutableRelayerAccount = mock(MutableAccount.class);
-    //        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
-    //        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
-    //                .willReturn(wrappedRelayerAccount);
-    //        given(mutableRelayerAccount.getBalance()).willReturn(Wei.ONE);
-    //        final long gasPrice = 40L;
-    //        given(
-    //                pricesAndFees.currentGasPrice(
-    //                                consensusTime, HederaFunctionality.EthereumTransaction))
-    //                .willReturn(gasPrice);
-    //        final var receiverAddress = receiver.getId().asEvmAddress();
-    //        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-    //        final long offeredGasPrice = 10L;
-    //        final int gasLimit = 1000;
-    //        final var userOfferedGasPrice =
-    //                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
-    //
-    //        assertThrows(
-    //                InvalidTransactionException.class,
-    //                () ->
-    //                        callEvmTxProcessor.executeEth(
-    //                                sender,
-    //                                receiverAddress,
-    //                                gasLimit,
-    //                                1234L,
-    //                                Bytes.EMPTY,
-    //                                consensusTime,
-    //                                userOfferedGasPrice,
-    //                                relayer,
-    //                                10 * ONE_HBAR));
-    //    }
+        given(updater.getOrCreateSenderAccount(any())).willReturn(wrappedSenderAccount);
+
+        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(updater.updater()).willReturn(stackedUpdater);
+
+        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+
+        final var wrappedRelayerAccount = mock(EvmAccount.class);
+        final var mutableRelayerAccount = mock(MutableAccount.class);
+
+        given(stackedUpdater.getOrCreate(any())).willReturn(wrappedRelayerAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(mutableRelayerAccount);
+
+        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+        final long gasPrice = 40L;
+        given(
+                        livePricesSource.currentGasPrice(
+                                consensusTime, HederaFunctionality.EthereumTransaction))
+                .willReturn(gasPrice);
+        final var receiverAddress = receiver.getId().asEvmAddress();
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        final long offeredGasPrice = 10L;
+        final int gasLimit = 1000;
+        final var userOfferedGasPrice =
+                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        callEvmTxProcessor.executeEth(
+                                sender,
+                                receiverAddress,
+                                gasLimit,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime,
+                                userOfferedGasPrice,
+                                relayer,
+                                10 * ONE_HBAR));
+    }
+
+    @Test
+    void assertThrowsEthereumTransactionWhenGasAllowanceNotEnoughWhenBothPay() {
+        givenValidMockWithoutGetOrCreateEth();
+        given(worldState.updater()).willReturn(updater);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(worldState.updater()).willReturn(updater);
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(wrappedSenderAccount);
+        given(mutableSenderAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+        final var wrappedRelayerAccount = mock(EvmAccount.class);
+        final var mutableRelayerAccount = mock(MutableAccount.class);
+        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(wrappedRelayerAccount);
+        final long gasPrice = 40L;
+        given(
+                        livePricesSource.currentGasPrice(
+                                consensusTime, HederaFunctionality.EthereumTransaction))
+                .willReturn(gasPrice);
+        final var receiverAddress = receiver.getId().asEvmAddress();
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        final long offeredGasPrice = 10L;
+        final int gasLimit = 1000;
+        final var userOfferedGasPrice =
+                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        callEvmTxProcessor.executeEth(
+                                sender,
+                                receiverAddress,
+                                gasLimit,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime,
+                                userOfferedGasPrice,
+                                relayer,
+                                100));
+    }
+
+    @Test
+    void assertThrowsEthereumTransactionWhenRelayerBalanceNotEnoughToCoverAllowanceWhenBothPay() {
+        givenValidMockWithoutGetOrCreateEth();
+        given(worldState.updater()).willReturn(updater);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(worldState.updater()).willReturn(updater);
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(wrappedSenderAccount);
+        given(mutableSenderAccount.getBalance()).willReturn(Wei.of(ONE_HBAR * 100));
+        final var wrappedRelayerAccount = mock(EvmAccount.class);
+        final var mutableRelayerAccount = mock(MutableAccount.class);
+        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(wrappedRelayerAccount);
+        given(mutableRelayerAccount.getBalance()).willReturn(Wei.ONE);
+        final long gasPrice = 40L;
+        given(
+                        livePricesSource.currentGasPrice(
+                                consensusTime, HederaFunctionality.EthereumTransaction))
+                .willReturn(gasPrice);
+        final var receiverAddress = receiver.getId().asEvmAddress();
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        final long offeredGasPrice = 10L;
+        final int gasLimit = 1000;
+        final var userOfferedGasPrice =
+                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        callEvmTxProcessor.executeEth(
+                                sender,
+                                receiverAddress,
+                                gasLimit,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime,
+                                userOfferedGasPrice,
+                                relayer,
+                                10 * ONE_HBAR));
+    }
 
     @Test
     void assertSuccessEthereumTransactionExecutionChargesRelayerWhenSenderGasPriceIs0() {
@@ -868,95 +930,110 @@ class CallEvmTxProcessorTest {
         verify(mutableRelayerAccount).decrementBalance(Wei.of(gasPrice * gasLimit));
     }
 
-    //    @Test
-    //    void assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndAllowanceCannotCoverFees() {
-    //        given(worldState.updater()).willReturn(updater);
-    //
-    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-    //        given(worldState.updater()).willReturn(updater);
-    //        final var wrappedSenderAccount = mock(EvmAccount.class);
-    //        final var mutableSenderAccount = mock(MutableAccount.class);
-    //        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-    //        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-    //                .willReturn(wrappedSenderAccount);
-    //        final var wrappedRelayerAccount = mock(EvmAccount.class);
-    //        final var mutableRelayerAccount = mock(MutableAccount.class);
-    //        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
-    //        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
-    //                .willReturn(wrappedRelayerAccount);
-    //        final long gasPrice = 40L;
-    //        given(
-    //                pricesAndFees.currentGasPrice(
-    //                                consensusTime, HederaFunctionality.EthereumTransaction))
-    //                .willReturn(gasPrice);
-    //        final var receiverAddress = receiver.getId().asEvmAddress();
-    //        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-    //        final long offeredGasPrice = 0L;
-    //        final int gasLimit = 1000;
-    //        final var userOfferedGasPrice =
-    //                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
-    //
-    //        assertThrows(
-    //                InvalidTransactionException.class,
-    //                () ->
-    //                        callEvmTxProcessor.executeEth(
-    //                                sender,
-    //                                receiverAddress,
-    //                                gasLimit,
-    //                                1234L,
-    //                                Bytes.EMPTY,
-    //                                consensusTime,
-    //                                userOfferedGasPrice,
-    //                                relayer,
-    //                                100));
-    //    }
+    @Test
+    void assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndAllowanceCannotCoverFees() {
+        givenValidMockWithoutGetOrCreate(0L);
+        given(worldState.updater()).willReturn(updater);
 
-    //    @Test
-    //    void
-    //
-    // assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndRelayerDoesNotHaveBalanceForAllowance() {
-    //        given(worldState.updater()).willReturn(updater);
-    //
-    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-    //        given(worldState.updater()).willReturn(updater);
-    //
-    //        final var wrappedSenderAccount = mock(EvmAccount.class);
-    //        final var mutableSenderAccount = mock(MutableAccount.class);
-    //        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-    //        given(stackedUpdater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-    //                .willReturn(wrappedSenderAccount);
-    //        final var wrappedRelayerAccount = mock(EvmAccount.class);
-    //        final var mutableRelayerAccount = mock(MutableAccount.class);
-    //        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
-    //        given(stackedUpdater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
-    //                .willReturn(wrappedRelayerAccount);
-    //        given(mutableRelayerAccount.getBalance()).willReturn(Wei.ONE);
-    //        final long gasPrice = 40L;
-    //        given(
-    //                pricesAndFees.currentGasPrice(
-    //                                consensusTime, HederaFunctionality.EthereumTransaction))
-    //                .willReturn(gasPrice);
-    //        final var receiverAddress = receiver.getId().asEvmAddress();
-    //        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-    //        final long offeredGasPrice = 0L;
-    //        final int gasLimit = 1000;
-    //        final var userOfferedGasPrice =
-    //                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
-    //
-    //        assertThrows(
-    //                InvalidTransactionException.class,
-    //                () ->
-    //                        callEvmTxProcessor.executeEth(
-    //                                sender,
-    //                                receiverAddress,
-    //                                gasLimit,
-    //                                1234L,
-    //                                Bytes.EMPTY,
-    //                                consensusTime,
-    //                                userOfferedGasPrice,
-    //                                relayer,
-    //                                10 * ONE_HBAR));
-    //    }
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(worldState.updater()).willReturn(updater);
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(wrappedSenderAccount);
+        final var wrappedRelayerAccount = mock(EvmAccount.class);
+        final var mutableRelayerAccount = mock(MutableAccount.class);
+        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(wrappedRelayerAccount);
+        final long gasPrice = 40L;
+        given(
+                        livePricesSource.currentGasPrice(
+                                consensusTime, HederaFunctionality.EthereumTransaction))
+                .willReturn(gasPrice);
+        final var receiverAddress = receiver.getId().asEvmAddress();
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        final long offeredGasPrice = 0L;
+        final int gasLimit = 1000;
+        final var userOfferedGasPrice =
+                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        callEvmTxProcessor.executeEth(
+                                sender,
+                                receiverAddress,
+                                gasLimit,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime,
+                                userOfferedGasPrice,
+                                relayer,
+                                100));
+    }
+
+    @Test
+    void
+            assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndRelayerDoesNotHaveBalanceForAllowance() {
+        given(worldState.updater()).willReturn(updater);
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(wrappedSenderAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(mutableSenderAccount);
+        given(mutableSenderAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+        given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
+
+        given(updater.getOrCreateSenderAccount(any())).willReturn(wrappedSenderAccount);
+
+        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(updater.updater()).willReturn(stackedUpdater);
+
+        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+
+        final var wrappedRelayerAccount = mock(EvmAccount.class);
+        final var mutableRelayerAccount = mock(MutableAccount.class);
+
+        given(stackedUpdater.getOrCreate(any())).willReturn(wrappedRelayerAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(mutableRelayerAccount);
+
+        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+        final long gasPrice = 40L;
+        given(
+                        livePricesSource.currentGasPrice(
+                                consensusTime, HederaFunctionality.EthereumTransaction))
+                .willReturn(gasPrice);
+        final var receiverAddress = receiver.getId().asEvmAddress();
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        final long offeredGasPrice = 0L;
+        final int gasLimit = 1000;
+        final var userOfferedGasPrice =
+                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        callEvmTxProcessor.executeEth(
+                                sender,
+                                receiverAddress,
+                                gasLimit,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime,
+                                userOfferedGasPrice,
+                                relayer,
+                                10 * ONE_HBAR));
+    }
 
     @Test
     void

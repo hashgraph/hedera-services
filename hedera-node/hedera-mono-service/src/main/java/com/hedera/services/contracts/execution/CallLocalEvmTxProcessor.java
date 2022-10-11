@@ -61,16 +61,6 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
     }
 
     @Override
-    public void setWorldState(final HederaEvmMutableWorldState worldState) {
-        super.setWorldState(worldState);
-    }
-
-    @Override
-    public void setBlockMetaSource(BlockMetaSource blockMetaSource) {
-        super.setBlockMetaSource(blockMetaSource);
-    }
-
-    @Override
     protected HederaFunctionality getFunctionType() {
         return HederaFunctionality.ContractCallLocal;
     }

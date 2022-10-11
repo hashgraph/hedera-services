@@ -32,9 +32,7 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.stream.proto.SidecarType;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -49,10 +47,8 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all the peripherals upon
@@ -231,23 +227,23 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             return TransactionProcessingResult.successful(
-                initialFrame.getLogs(),
-                gasUsed,
-                sbhRefund,
-                gasPrice,
-                initialFrame.getOutputData(),
-                mirrorReceiver,
-                stateChanges,
-                hederaTracer.getActions());
+                    initialFrame.getLogs(),
+                    gasUsed,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getOutputData(),
+                    mirrorReceiver,
+                    stateChanges,
+                    hederaTracer.getActions());
         } else {
             return TransactionProcessingResult.failed(
-                gasUsed,
-                sbhRefund,
-                gasPrice,
-                initialFrame.getRevertReason(),
-                initialFrame.getExceptionalHaltReason(),
-                stateChanges,
-                hederaTracer.getActions());
+                    gasUsed,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getRevertReason(),
+                    initialFrame.getExceptionalHaltReason(),
+                    stateChanges,
+                    hederaTracer.getActions());
         }
     }
 
@@ -338,29 +334,5 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             }
         }
         return new ChargingResult(mutableSender, mutableRelayer, allowanceCharged);
-    }
-
-    protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
-        return pricesAndFeesProvider.currentGasPrice(
-                consensusTime,
-                isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
-    }
-
-    protected abstract HederaFunctionality getFunctionType();
-
-    protected abstract MessageFrame buildInitialFrame(
-            MessageFrame.Builder baseInitialFrame, Address to, Bytes payload, final long value);
-
-    protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
-        final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());
-
-        executor.process(frame, operationTracer);
-    }
-
-    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type) {
-        return switch (type) {
-            case MESSAGE_CALL -> messageCallProcessor;
-            case CONTRACT_CREATION -> contractCreationProcessor;
-        };
     }
 }
