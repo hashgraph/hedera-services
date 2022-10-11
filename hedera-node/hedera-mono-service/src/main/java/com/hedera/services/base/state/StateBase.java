@@ -16,13 +16,11 @@
 package com.hedera.services.base.state;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.swirlds.common.merkle.MerkleNode;
-
-import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 /**
  * A base class for implementations of {@link State}.
@@ -45,6 +43,7 @@ public abstract class StateBase<K, V> implements State<K, V> {
 
     /**
      * Reads the keys from the state
+     *
      * @param key key to read from state
      * @return
      */

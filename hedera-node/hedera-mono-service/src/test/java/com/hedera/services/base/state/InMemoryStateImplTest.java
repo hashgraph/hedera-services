@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,6 @@
  */
 package com.hedera.services.base.state;
 
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,54 +22,65 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.merkle.map.MerkleMap;
+import java.time.Instant;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 public class InMemoryStateImplTest {
-	private static final String ACCOUNTS_KEY = "ACCOUNTS";
-	private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
-	private final EntityNum num = EntityNum.fromLong(2L);
+    private static final String ACCOUNTS_KEY = "ACCOUNTS";
+    private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
+    private final EntityNum num = EntityNum.fromLong(2L);
 
-	@Mock private MerkleMap<EntityNum, MerkleAccount> accountsMap;
-	@Mock private MerkleAccount mockAccount;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accountsMap;
+    @Mock private MerkleAccount mockAccount;
 
-	private InMemoryStateImpl subject;
+    private InMemoryStateImpl subject;
 
-	@BeforeEach
-	void setUp(){
-		subject = new InMemoryStateImpl(ACCOUNTS_KEY, accountsMap, lastModifiedTime);
-	}
+    @BeforeEach
+    void setUp() {
+        subject = new InMemoryStateImpl(ACCOUNTS_KEY, accountsMap, lastModifiedTime);
+    }
 
-	@Test
-	void gettersWork(){
-		assertEquals(lastModifiedTime, subject.getLastModifiedTime());
-		assertEquals(ACCOUNTS_KEY, subject.getStateKey());
-	}
+    @Test
+    void gettersWork() {
+        assertEquals(lastModifiedTime, subject.getLastModifiedTime());
+        assertEquals(ACCOUNTS_KEY, subject.getStateKey());
+    }
 
-	@Test
-	void readsValueFromMerkleMap(){
-		given(accountsMap.get(num)).willReturn(mockAccount);
+    @Test
+    void readsValueFromMerkleMap() {
+        given(accountsMap.get(num)).willReturn(mockAccount);
 
-		assertEquals(Optional.of(mockAccount), subject.get(num));
-	}
+        assertEquals(Optional.of(mockAccount), subject.get(num));
+    }
 
-	@Test
-	void initializesToEmptyMerkleMapIfNotProvided(){
-		subject = new InMemoryStateImpl(ACCOUNTS_KEY, lastModifiedTime);
-		assertEquals(Optional.empty(), subject.get(num));
-	}
+    @Test
+    void initializesToEmptyMerkleMapIfNotProvided() {
+        subject = new InMemoryStateImpl(ACCOUNTS_KEY, lastModifiedTime);
+        assertEquals(Optional.empty(), subject.get(num));
+    }
 
-	@Test
-	void cachesReadKeysFromState(){
-		final var unknownKey = EntityNum.fromLong(20L);
-		given(accountsMap.get(num)).willReturn(mockAccount);
-		assertEquals(Optional.of(mockAccount), subject.get(num));
+    @Test
+    void cachesReadKeysFromState() {
+        final var unknownKey = EntityNum.fromLong(20L);
+        given(accountsMap.get(num)).willReturn(mockAccount);
+        assertEquals(Optional.of(mockAccount), subject.get(num));
 
-		verify(accountsMap).get(num);
-		assertTrue(subject.getReadKeys().containsKey(num));
+        verify(accountsMap).get(num);
+        assertTrue(subject.getReadKeys().containsKey(num));
 
-		assertEquals(Optional.of(mockAccount), subject.get(num));
-		verify(accountsMap, times(1)).get(num);
+        assertEquals(Optional.of(mockAccount), subject.get(num));
+        verify(accountsMap, times(1)).get(num);
 
-		assertEquals(Optional.empty(), subject.get(unknownKey));
-		assertFalse(subject.getReadKeys().containsKey(unknownKey));
-	}
+        assertEquals(Optional.empty(), subject.get(unknownKey));
+        assertFalse(subject.getReadKeys().containsKey(unknownKey));
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,42 +15,42 @@
  */
 package com.hedera.services.base.state;
 
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
-import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.Objects;
+import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * An implementation of {@link com.hedera.services.base.state.State} backed by a
- * {@link VirtualMap}, resulting in a state that is stored on disk.
+ * An implementation of {@link com.hedera.services.base.state.State} backed by a {@link VirtualMap},
+ * resulting in a state that is stored on disk.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends VirtualValue> extends StateBase<K, V>{
-	private final VirtualMap<K, V> virtualMap;
-	private final Instant lastModifiedTime;
+public class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends VirtualValue>
+        extends StateBase<K, V> {
+    private final VirtualMap<K, V> virtualMap;
+    private final Instant lastModifiedTime;
 
-	OnDiskStateImpl(@NotNull final String stateKey,
-			@Nonnull VirtualMap<K, V> virtualMap,
-			@NotNull final Instant lastModifiedTime) {
-		super(stateKey);
-		this.virtualMap = Objects.requireNonNull(virtualMap);
-		this.lastModifiedTime = lastModifiedTime;
-	}
+    OnDiskStateImpl(
+            @NotNull final String stateKey,
+            @Nonnull VirtualMap<K, V> virtualMap,
+            @NotNull final Instant lastModifiedTime) {
+        super(stateKey);
+        this.virtualMap = Objects.requireNonNull(virtualMap);
+        this.lastModifiedTime = lastModifiedTime;
+    }
 
-	@Override
-	public Instant getLastModifiedTime() {
-		return lastModifiedTime;
-	}
+    @Override
+    public Instant getLastModifiedTime() {
+        return lastModifiedTime;
+    }
 
-	@Override
-	protected V read(final K key) {
-		return virtualMap.get(key);
-	}
+    @Override
+    protected V read(final K key) {
+        return virtualMap.get(key);
+    }
 }

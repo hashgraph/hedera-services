@@ -1,3 +1,3 @@
-module com.hedera.hashgraph.app {
+module com.hedera.services.api.implementation {
     requires com.hedera.services.api;
 }

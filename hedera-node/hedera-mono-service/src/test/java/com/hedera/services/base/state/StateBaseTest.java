@@ -15,5 +15,4 @@
  */
 package com.hedera.services.base.state;
 
-public class StateBaseTest {
-}
+public class StateBaseTest {}

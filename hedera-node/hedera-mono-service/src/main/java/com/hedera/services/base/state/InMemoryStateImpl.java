@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,48 +18,44 @@ package com.hedera.services.base.state;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
-import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.Objects;
+import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * An implementation of {@link com.hedera.services.base.state.State} backed by a
- * {@link MerkleMap}, resulting in a state that is stored in memory.
+ * An implementation of {@link com.hedera.services.base.state.State} backed by a {@link MerkleMap},
+ * resulting in a state that is stored in memory.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
+public class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends StateBase<K, V> {
+    private final MerkleMap<K, V> merkle;
+    private final Instant lastModifiedTime;
 
-public class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends StateBase<K, V>{
-	private final MerkleMap<K, V> merkle;
-	private final Instant lastModifiedTime;
+    InMemoryStateImpl(@NotNull final String stateKey, @NotNull final Instant lastModifiedTime) {
+        super(stateKey);
+        this.merkle = new MerkleMap<>();
+        this.lastModifiedTime = lastModifiedTime;
+    }
 
-	InMemoryStateImpl(
-			@NotNull final String stateKey,
-			@NotNull final Instant lastModifiedTime) {
-		super(stateKey);
-		this.merkle = new MerkleMap<>();
-		this.lastModifiedTime = lastModifiedTime;
-	}
+    public InMemoryStateImpl(
+            @Nonnull String stateKey,
+            @Nonnull MerkleMap<K, V> merkleMap,
+            @NotNull final Instant lastModifiedTime) {
+        super(stateKey);
+        this.merkle = Objects.requireNonNull(merkleMap);
+        this.lastModifiedTime = lastModifiedTime;
+    }
 
-	public InMemoryStateImpl(
-			@Nonnull String stateKey,
-			@Nonnull MerkleMap<K, V> merkleMap,
-			@NotNull final Instant lastModifiedTime) {
-		super(stateKey);
-		this.merkle = Objects.requireNonNull(merkleMap);
-		this.lastModifiedTime = lastModifiedTime;
-	}
+    @Override
+    public Instant getLastModifiedTime() {
+        return lastModifiedTime;
+    }
 
-	@Override
-	public Instant getLastModifiedTime() {
-		return lastModifiedTime;
-	}
-
-	@Override
-	protected V read(final K key) {
-		return merkle.get(key);
-	}
+    @Override
+    protected V read(final K key) {
+        return merkle.get(key);
+    }
 }

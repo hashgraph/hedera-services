@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,6 @@
  */
 package com.hedera.services.base.state;
 
-import com.hedera.services.state.virtual.EntityNumVirtualKey;
-import com.hedera.services.state.virtual.UniqueTokenValue;
-import com.swirlds.virtualmap.VirtualMap;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,50 +22,60 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.services.state.virtual.EntityNumVirtualKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.swirlds.virtualmap.VirtualMap;
+import java.time.Instant;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 public class OnDiskStateImplTest {
-	private static final String UNIQUE_TOKENS_KEY = "UNIQUE_TOKENS_KEY";
-	private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
+    private static final String UNIQUE_TOKENS_KEY = "UNIQUE_TOKENS_KEY";
+    private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
 
-	private final EntityNumVirtualKey num = new EntityNumVirtualKey(2L);
+    private final EntityNumVirtualKey num = new EntityNumVirtualKey(2L);
 
-	@Mock private UniqueTokenValue mockNft;
-	@Mock
-	private VirtualMap<EntityNumVirtualKey, UniqueTokenValue> nftsMap;
+    @Mock private UniqueTokenValue mockNft;
+    @Mock private VirtualMap<EntityNumVirtualKey, UniqueTokenValue> nftsMap;
 
-	private OnDiskStateImpl subject;
+    private OnDiskStateImpl subject;
 
-	@BeforeEach
-	void setUp(){
-		subject = new OnDiskStateImpl<>(UNIQUE_TOKENS_KEY, nftsMap, lastModifiedTime);
-	}
+    @BeforeEach
+    void setUp() {
+        subject = new OnDiskStateImpl<>(UNIQUE_TOKENS_KEY, nftsMap, lastModifiedTime);
+    }
 
-	@Test
-	void gettersWork(){
-		assertEquals(lastModifiedTime, subject.getLastModifiedTime());
-		assertEquals(UNIQUE_TOKENS_KEY, subject.getStateKey());
-	}
+    @Test
+    void gettersWork() {
+        assertEquals(lastModifiedTime, subject.getLastModifiedTime());
+        assertEquals(UNIQUE_TOKENS_KEY, subject.getStateKey());
+    }
 
-	@Test
-	void readsValueFromMerkleMap(){
-		given(nftsMap.get(num)).willReturn(mockNft);
+    @Test
+    void readsValueFromMerkleMap() {
+        given(nftsMap.get(num)).willReturn(mockNft);
 
-		assertEquals(Optional.of(mockNft), subject.get(num));
-	}
+        assertEquals(Optional.of(mockNft), subject.get(num));
+    }
 
-	@Test
-	void cachesReadKeysFromState(){
-		final var unknownKey = new EntityNumVirtualKey(20L);
-		given(nftsMap.get(num)).willReturn(mockNft);
-		assertEquals(Optional.of(mockNft), subject.get(num));
+    @Test
+    void cachesReadKeysFromState() {
+        final var unknownKey = new EntityNumVirtualKey(20L);
+        given(nftsMap.get(num)).willReturn(mockNft);
+        assertEquals(Optional.of(mockNft), subject.get(num));
 
-		verify(nftsMap).get(num);
-		assertTrue(subject.getReadKeys().containsKey(num));
+        verify(nftsMap).get(num);
+        assertTrue(subject.getReadKeys().containsKey(num));
 
-		assertEquals(Optional.of(mockNft), subject.get(num));
-		verify(nftsMap, times(1)).get(num);
+        assertEquals(Optional.of(mockNft), subject.get(num));
+        verify(nftsMap, times(1)).get(num);
 
-		assertEquals(Optional.empty(), subject.get(unknownKey));
-		assertFalse(subject.getReadKeys().containsKey(unknownKey));
-	}
+        assertEquals(Optional.empty(), subject.get(unknownKey));
+        assertFalse(subject.getReadKeys().containsKey(unknownKey));
+    }
 }

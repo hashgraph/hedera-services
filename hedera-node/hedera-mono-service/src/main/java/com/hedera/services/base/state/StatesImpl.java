@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,40 +18,37 @@ package com.hedera.services.base.state;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.MutableStateChildren;
-import com.swirlds.common.merkle.MerkleNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.time.Instant;
-import java.util.Optional;
-
 public class StatesImpl implements States {
-	private final MutableStateChildren children = new MutableStateChildren();
-	private static final String ACCOUNTS_KEY = "ACCOUNTS";
+    private final MutableStateChildren children = new MutableStateChildren();
+    private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
-	public StatesImpl(){
-	}
+    public StatesImpl() {}
 
-	/**
-	 * Updates children (e.g., MerkleMaps and VirtualMaps) from given immutable state.
-	 * This should be called before making an attempt to expand the platform signatures
-	 * linked to the given transaction.
-	 */
-	public void updateChildren(final ServicesState sourceState){
-		children.updateFromImmutable(sourceState, sourceState.getTimeOfLastHandledTxn());
-	}
+    /**
+     * Updates children (e.g., MerkleMaps and VirtualMaps) from given immutable state. This should
+     * be called before making an attempt to expand the platform signatures linked to the given
+     * transaction.
+     */
+    public void updateChildren(final ServicesState sourceState) {
+        children.updateFromImmutable(sourceState, sourceState.getTimeOfLastHandledTxn());
+    }
 
-	@Override
-	public @NonNull <K, V> State<K, V> get(@NonNull final String stateKey) {
-		if (stateKey.equals(ACCOUNTS_KEY)){
-			final var state =  new InMemoryStateImpl<>(stateKey, children.accounts(), children.signedAt());
-			return (StateBase)state;
-		}
-		// Will be adding other keys as needed. This is the only key needed for signature verification.
-		throw new IllegalArgumentException("State key provided is not defined");
-	}
+    @Override
+    public @NonNull <K, V> State<K, V> get(@NonNull final String stateKey) {
+        if (stateKey.equals(ACCOUNTS_KEY)) {
+            final var state =
+                    new InMemoryStateImpl<>(stateKey, children.accounts(), children.signedAt());
+            return (StateBase) state;
+        }
+        // Will be adding other keys as needed. This is the only key needed for signature
+        // verification.
+        throw new IllegalArgumentException("State key provided is not defined");
+    }
 
-	@VisibleForTesting
-	public MutableStateChildren getChildren(){
-		return children;
-	}
+    @VisibleForTesting
+    public MutableStateChildren getChildren() {
+        return children;
+    }
 }
