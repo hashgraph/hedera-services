@@ -68,6 +68,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -134,6 +135,7 @@ class CryptoCreateTransitionLogicTest {
     private GlobalDynamicProperties dynamicProperties;
     private CryptoCreateTransitionLogic subject;
     private MerkleMap<EntityNum, MerkleAccount> accounts;
+    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     private NodeInfo nodeInfo;
     private UsageLimits usageLimits;
     private AliasManager aliasManager;
@@ -150,6 +152,7 @@ class CryptoCreateTransitionLogicTest {
         sigImpactHistorian = mock(SigImpactHistorian.class);
         dynamicProperties = mock(GlobalDynamicProperties.class);
         accounts = mock(MerkleMap.class);
+        accountsLedger = mock(TransactionalLedger.class);
         nodeInfo = mock(NodeInfo.class);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
         withRubberstampingValidator();
@@ -270,6 +273,18 @@ class CryptoCreateTransitionLogicTest {
         given(txnCtx.accessor()).willReturn(accessor);
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsWhenEmptyKeyAndEVMAddressAlias() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(asKeyUnchecked(new JEd25519Key(new byte[ED25519_BYTE_LENGTH - 1])))
+                        .setAlias(ByteString.copyFrom(ANOTHER_EVM_ADDRESS_BYTES));
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+
+        assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
@@ -548,6 +563,25 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
+    void followsECKeyAndECKeyAsAliasFailsECKeyBadEncoding() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(ECDSA_KEY)
+                        .setAlias(ECDSA_KEY.toByteString());
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+        given(txnCtx.activePayer()).willReturn(ourAccount());
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString()))
+                .willReturn(EntityNum.fromAccountId(PROXY));
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+
+        subject.doStateTransition();
+
+        verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
+    }
+
+    @Test
     void followsECKeyAndECKeyAsAliasFailsEVMAddressExistsInAliasMap() {
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
@@ -579,6 +613,7 @@ class CryptoCreateTransitionLogicTest {
         given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
                 .willReturn(MISSING_NUM);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);

@@ -607,8 +607,13 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                     .withAlias(evmAddressBytes)
                                                     .hasKnownStatus(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
+                                    final var op4 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
 
-                                    allRunFor(spec, op, op2, op3);
+                                    allRunFor(spec, op, op2, op3, op4);
                                     var hapiGetAccountInfo =
                                             getAccountInfo(ACCOUNT)
                                                     .has(
