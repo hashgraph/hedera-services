@@ -30,7 +30,5 @@ public interface HederaEvmOperationTracer extends OperationTracer {
      *
      * @param initialFrame the initial frame associated with this EVM execution
      */
-    default void init(final MessageFrame initialFrame) {
-
-    }
+    default void init(final MessageFrame initialFrame) {}
 }

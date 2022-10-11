@@ -23,7 +23,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * traceability.
  */
 public interface HederaOperationTracer extends HederaEvmOperationTracer {
-    
+
     /**
      * Trace the result from a precompile execution. Must be called after the result has been
      * reflected in the associated message frame.
