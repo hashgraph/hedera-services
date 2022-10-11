@@ -79,6 +79,7 @@ class PricesAndFeesTest {
     private static final ExchangeRate activeRate =
             ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(12).build();
     private static final long reasonableMultiplier = 7;
+    private static final long insaneMultiplier = Long.MAX_VALUE / 2;
     @Mock private HbarCentExchange exchange;
     @Mock private UsagePricesProvider usagePrices;
     @Mock private FeeMultiplierSource feeMultiplierSource;
@@ -120,16 +121,27 @@ class PricesAndFeesTest {
     }
 
     @Test
+    void getsExpectedSbhPriceWithInsaneMultiplier() {
+        givenCollabsWithMultiplier(insaneMultiplier);
+
+        assertEquals(Long.MAX_VALUE, subject.currentStorageByteHoursPrice(now, ContractCall));
+    }
+
+    @Test
     void getsExpectedGasPriceWithReasonableMultiplier() {
-        given(subject.rate(now)).willReturn(activeRate);
-        given(subject.defaultPricesGiven(ContractCall, now)).willReturn(providerPrices);
-        given(subject.currentMultiplier(accessor)).willReturn(reasonableMultiplier);
-        given(txnCtx.accessor()).willReturn(accessor);
+        givenCollabsWithMultiplier(reasonableMultiplier);
 
         final var expected =
                 getTinybarsFromTinyCents(activeRate, gasPriceTinybars) * reasonableMultiplier;
 
         assertEquals(
                 expected, subject.currentGasPrice(MiscUtils.timestampToInstant(now), ContractCall));
+    }
+
+    private void givenCollabsWithMultiplier(final long multiplier) {
+        given(subject.rate(now)).willReturn(activeRate);
+        given(subject.defaultPricesGiven(ContractCall, now)).willReturn(providerPrices);
+        given(subject.currentMultiplier(accessor)).willReturn(multiplier);
+        given(txnCtx.accessor()).willReturn(accessor);
     }
 }

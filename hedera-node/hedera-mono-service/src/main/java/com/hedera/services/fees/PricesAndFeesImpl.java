@@ -92,6 +92,11 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
         return currentFeeInTinycents(now, function, FeeComponents::getGas);
     }
 
+    public long currentStorageByteHoursPrice(
+            final Timestamp now, final HederaFunctionality function) {
+        return currentPrice(now, function, FeeComponents::getSbh);
+    }
+
     private long currentFeeInTinycents(
             final Timestamp now,
             final HederaFunctionality function,

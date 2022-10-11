@@ -19,8 +19,6 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.evm.contracts.execution.BlockMetaSource;
-import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
