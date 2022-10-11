@@ -50,7 +50,10 @@ public abstract class StateBase<K, V> implements State<K, V> {
     protected abstract V read(K key);
 
     @Override
-    public Optional<V> get(K key) {
+    public Optional<V> get(@Nonnull K key) {
+        if (key == null) {
+            throw new IllegalArgumentException("Provided key cannot be null");
+        }
         return Optional.ofNullable(readKeys.computeIfAbsent(key, (ignore) -> read(key)));
     }
 

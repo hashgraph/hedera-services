@@ -16,6 +16,8 @@
 package com.hedera.services.base.state;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
@@ -42,5 +44,11 @@ public class StateBaseTest {
     void cachesReadKeys() {
         final var num = EntityNum.fromLong(2L);
         assertEquals(Optional.empty(), subject.get(num));
+    }
+
+    @Test
+    void throwsIfKeyIsNull() {
+        final var ex = assertThrows(IllegalArgumentException.class, () -> subject.get(null));
+        assertTrue(ex.getMessage().contains("Provided key cannot be null"));
     }
 }

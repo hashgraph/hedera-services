@@ -48,7 +48,8 @@ public interface State<K, V> {
     Optional<V> get(K key);
 
     /**
-     * The last time current state is modified
+     * The last time current state is modified. It is needed to check if the state has changed from
+     * the last time it is read in pre-handle.
      *
      * @return last modified time
      */
