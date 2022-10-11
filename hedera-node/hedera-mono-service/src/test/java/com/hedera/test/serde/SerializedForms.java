@@ -64,14 +64,12 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
-import com.hedera.services.state.virtual.entities.OnDiskAccountSerdeTest;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

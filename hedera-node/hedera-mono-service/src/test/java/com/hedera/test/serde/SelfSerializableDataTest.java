@@ -26,12 +26,10 @@ import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.Versioned;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -39,8 +37,6 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
-
-import com.swirlds.virtualmap.VirtualValue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -175,15 +171,22 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     @ParameterizedTest
     @ArgumentsSource(GettersAndSettersArgumentsProvider.class)
     void gettersAndSettersWork(
-            final Object mutableSubject,
-            final Method getter,
-            final Method setter) {
+            final Object mutableSubject, final Method getter, final Method setter) {
         final var param = validatedSetterParam(setter);
         try {
             setter.invoke(mutableSubject, param);
             final var result = getter.invoke(mutableSubject);
-            assertEquals(param, result, "Set " + param + " via " + setter.getName()
-                    + " but got " + result + " via " + getter.getName());
+            assertEquals(
+                    param,
+                    result,
+                    "Set "
+                            + param
+                            + " via "
+                            + setter.getName()
+                            + " but got "
+                            + result
+                            + " via "
+                            + getter.getName());
         } catch (IllegalAccessException | InvocationTargetException fatal) {
             throw new RuntimeException(fatal);
         }
@@ -236,9 +239,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         return testCasesFrom(refTest, true);
     }
 
-
-    private static Stream<Arguments> getterSetterTestCasesFor(
-            final Class<?> virtualValueType) {
+    private static Stream<Arguments> getterSetterTestCasesFor(final Class<?> virtualValueType) {
         final var mutableSubject = instantiate(virtualValueType);
         return Arrays.stream(virtualValueType.getDeclaredMethods())
                 .filter(m -> m.getAnnotation(StateSetter.class) != null)
@@ -246,9 +247,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     }
 
     private static Arguments getterSetterArgs(
-            final Object subject,
-            final Class<?> virtualValueType,
-            final Method setter) {
+            final Object subject, final Class<?> virtualValueType, final Method setter) {
         var getterName = setter.getName().substring(3);
         if (getterName.startsWith("Is")) {
             getterName = "is" + getterName.substring(2);

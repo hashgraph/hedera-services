@@ -1,4 +1,28 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.virtual.entities;
+
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
+import static com.hedera.services.state.virtual.KeyPackingUtils.*;
+import static com.hedera.services.state.virtual.utils.EntityIoUtils.readBytes;
+import static com.hedera.services.state.virtual.utils.EntityIoUtils.writeBytes;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.SerializationUtils.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -13,21 +37,11 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
-
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
-import static com.hedera.services.state.virtual.KeyPackingUtils.*;
-import static com.hedera.services.state.virtual.utils.EntityIoUtils.readBytes;
-import static com.hedera.services.state.virtual.utils.EntityIoUtils.writeBytes;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.SerializationUtils.*;
 
 public class OnDiskAccount implements VirtualValue {
     private static final int CURRENT_VERSION = 1;
@@ -99,11 +113,16 @@ public class OnDiskAccount implements VirtualValue {
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serializeTo(out::writeByte, out::writeInt, out::writeLong, data -> out.write(data, 0, data.length));
+        serializeTo(
+                out::writeByte,
+                out::writeInt,
+                out::writeLong,
+                data -> out.write(data, 0, data.length));
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         deserializeFrom(in::readByte, in::readInt, in::readLong, in::readFully);
     }
 
@@ -126,7 +145,8 @@ public class OnDiskAccount implements VirtualValue {
             final CheckedConsumer<Byte> writeByteFn,
             final CheckedConsumer<Integer> writeIntFn,
             final CheckedConsumer<Long> writeLongFn,
-            final CheckedConsumer<byte[]> writeBytesFn) throws IOException {
+            final CheckedConsumer<byte[]> writeBytesFn)
+            throws IOException {
         writeByteFn.accept(flags);
         for (final var v : ints) {
             writeIntFn.accept(v);
@@ -141,7 +161,8 @@ public class OnDiskAccount implements VirtualValue {
             final CheckedSupplier<Byte> readByteFn,
             final CheckedSupplier<Integer> readIntFn,
             final CheckedSupplier<Long> readLongFn,
-            final CheckedConsumer<byte[]> readBytesFn) throws IOException {
+            final CheckedConsumer<byte[]> readBytesFn)
+            throws IOException {
         throwIfImmutable();
         flags = readByteFn.get();
         for (var i = 0; i < IntValues.COUNT; i++) {
@@ -519,7 +540,9 @@ public class OnDiskAccount implements VirtualValue {
 
     @StateSetter
     public void setStakeAtStartOfLastRewardedPeriod(final long value) {
-        throwIfImmutable("Tried to set STAKE_AT_START_OF_LAST_REWARDED_PERIOD on an immutable OnDiskAccount");
+        throwIfImmutable(
+                "Tried to set STAKE_AT_START_OF_LAST_REWARDED_PERIOD on an immutable"
+                        + " OnDiskAccount");
         longs[LongValues.STAKE_AT_START_OF_LAST_REWARDED_PERIOD] = value;
     }
 
@@ -539,14 +562,31 @@ public class OnDiskAccount implements VirtualValue {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         OnDiskAccount that = (OnDiskAccount) o;
-        return flags == that.flags && firstStorageKeyNonZeroBytes == that.firstStorageKeyNonZeroBytes
+        return flags == that.flags
+                && firstStorageKeyNonZeroBytes == that.firstStorageKeyNonZeroBytes
                 && equalUpToDecodability(this.key, that.key)
-                && memo.equals(that.memo) && alias.equals(that.alias) && hbarAllowances.equals(that.hbarAllowances) && fungibleAllowances.equals(that.fungibleAllowances) && nftOperatorApprovals.equals(that.nftOperatorApprovals) && Arrays.equals(firstStorageKey, that.firstStorageKey) && Arrays.equals(ints, that.ints) && Arrays.equals(longs, that.longs);
+                && memo.equals(that.memo)
+                && alias.equals(that.alias)
+                && hbarAllowances.equals(that.hbarAllowances)
+                && fungibleAllowances.equals(that.fungibleAllowances)
+                && nftOperatorApprovals.equals(that.nftOperatorApprovals)
+                && Arrays.equals(firstStorageKey, that.firstStorageKey)
+                && Arrays.equals(ints, that.ints)
+                && Arrays.equals(longs, that.longs);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(flags, key, memo, alias, hbarAllowances, fungibleAllowances, nftOperatorApprovals, firstStorageKeyNonZeroBytes);
+        int result =
+                Objects.hash(
+                        flags,
+                        key,
+                        memo,
+                        alias,
+                        hbarAllowances,
+                        fungibleAllowances,
+                        nftOperatorApprovals,
+                        firstStorageKeyNonZeroBytes);
         result = 31 * result + Arrays.hashCode(firstStorageKey);
         result = 31 * result + Arrays.hashCode(ints);
         result = 31 * result + Arrays.hashCode(longs);

@@ -28,12 +28,12 @@ import static com.hedera.services.state.virtual.KeyPackingUtils.readableContract
 import static com.hedera.services.state.virtual.KeyPackingUtils.serializePossiblyMissingKey;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
-import static com.hedera.services.utils.SerializationUtils.deserializeNftOperatorApprovals;
-import static com.hedera.services.utils.SerializationUtils.deserializeHbarAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeFungibleAllowances;
-import static com.hedera.services.utils.SerializationUtils.serializeNftOperatorApprovals;
-import static com.hedera.services.utils.SerializationUtils.serializeHbarAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeHbarAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeNftOperatorApprovals;
 import static com.hedera.services.utils.SerializationUtils.serializeFungibleAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeHbarAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeNftOperatorApprovals;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;

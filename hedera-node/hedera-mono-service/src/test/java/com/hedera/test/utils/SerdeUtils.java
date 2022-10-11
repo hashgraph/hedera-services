@@ -30,7 +30,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -141,7 +140,8 @@ public class SerdeUtils {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        assertEquals(serializedForm.length, buffer.position(), "No bytes should be left in the buffer");
+        assertEquals(
+                serializedForm.length, buffer.position(), "No bytes should be left in the buffer");
 
         return reconstruction;
     }
@@ -162,7 +162,8 @@ public class SerdeUtils {
         return baos.toByteArray();
     }
 
-    public static <T extends VirtualValue> byte[] serializeToBuffer(final T source, final int maxSerializedLen) {
+    public static <T extends VirtualValue> byte[] serializeToBuffer(
+            final T source, final int maxSerializedLen) {
         final var buffer = ByteBuffer.wrap(new byte[maxSerializedLen]);
         try {
             source.serialize(buffer);
