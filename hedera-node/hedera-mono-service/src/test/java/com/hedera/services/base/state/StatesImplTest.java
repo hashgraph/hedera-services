@@ -51,7 +51,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class StatesImplTest {
+class StatesImplTest {
     @Mock private ServicesState state;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;

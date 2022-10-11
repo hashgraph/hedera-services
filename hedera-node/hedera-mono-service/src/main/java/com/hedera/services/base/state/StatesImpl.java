@@ -24,7 +24,9 @@ public class StatesImpl implements States {
     private final MutableStateChildren children = new MutableStateChildren();
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
-    public StatesImpl() {}
+    public StatesImpl() {
+        /* Default constructor */
+    }
 
     /**
      * Updates children (e.g., MerkleMaps and VirtualMaps) from given immutable state. This should

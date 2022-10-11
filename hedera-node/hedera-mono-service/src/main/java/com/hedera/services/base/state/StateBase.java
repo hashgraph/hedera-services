@@ -30,9 +30,9 @@ import javax.annotation.Nonnull;
  */
 public abstract class StateBase<K, V> implements State<K, V> {
     private String stateKey;
-    private Map<K, V> readKeys = new HashMap();
+    private Map<K, V> readKeys = new HashMap<>();
 
-    public StateBase(@Nonnull String stateKey) {
+    StateBase(@Nonnull String stateKey) {
         this.stateKey = Objects.requireNonNull(stateKey);
     }
 
@@ -54,7 +54,7 @@ public abstract class StateBase<K, V> implements State<K, V> {
         if (key == null) {
             throw new IllegalArgumentException("Provided key cannot be null");
         }
-        return Optional.ofNullable(readKeys.computeIfAbsent(key, (ignore) -> read(key)));
+        return Optional.ofNullable(readKeys.computeIfAbsent(key, ignore -> read(key)));
     }
 
     @VisibleForTesting

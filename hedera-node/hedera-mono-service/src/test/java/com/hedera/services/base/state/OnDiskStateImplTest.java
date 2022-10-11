@@ -34,7 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class OnDiskStateImplTest {
+class OnDiskStateImplTest {
     private static final String UNIQUE_TOKENS_KEY = "UNIQUE_TOKENS_KEY";
     private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
 

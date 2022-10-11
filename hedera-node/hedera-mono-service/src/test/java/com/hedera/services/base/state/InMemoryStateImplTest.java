@@ -34,7 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class InMemoryStateImplTest {
+class InMemoryStateImplTest {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
     private final EntityNum num = EntityNum.fromLong(2L);
