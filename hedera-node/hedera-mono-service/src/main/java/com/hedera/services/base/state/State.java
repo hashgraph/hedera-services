@@ -43,7 +43,7 @@ public interface State<K, V> {
      *
      * @param key The key. Cannot be null, otherwise an exception is thrown.
      * @return A non-null optional. It may be empty if there is no value for this associated key.
-     * @throws IllegalArgumentException if the key is null.
+     * @throws NullPointerException if the key is null.
      */
     Optional<V> get(K key);
 
