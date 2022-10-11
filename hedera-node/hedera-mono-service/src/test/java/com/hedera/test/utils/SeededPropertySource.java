@@ -65,6 +65,7 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
@@ -715,6 +716,38 @@ public class SeededPropertySource {
         final var ids = nextInRangeLongs(numAdjustments);
         final var amounts = nextLongs(numAdjustments);
         return new CurrencyAdjustments(amounts, ids);
+    }
+
+    public OnDiskAccount nextOnDiskAccount() {
+        final var account = new OnDiskAccount();
+
+        // Boolean values
+        account.setIsDeleted(nextBoolean());
+        account.setIsContract(nextBoolean());
+        account.setIsReceiverSigRequired(nextBoolean());
+        // Int values
+        account.setNumContractKvPairs(nextInt());
+        account.setMaxAutoAssociations(nextInt());
+        account.setUsedAutoAssociations(nextInt());
+        account.setNumAssociations(nextInt());
+        account.setNumPositiveBalances(nextInt());
+        account.setNumTreasuryTitles(nextInt());
+        // Long values
+        account.setExpiry(nextLong());
+        account.setHbarBalance(nextLong());
+        account.setAutoRenewSecs(nextLong());
+        account.setNftsOwned(nextLong());
+        account.setAccountNumber(nextLong());
+        account.setHeadTokenId(nextLong());
+        account.setHeadNftId(nextLong());
+        account.setHeadNftSerialNum(nextLong());
+        account.setEthereumNonce(nextLong());
+        account.setStakedToMe(nextLong());
+        account.setStakePeriodStart(nextLong());
+        account.setStakedNum(nextLong());
+        account.setStakeAtStartOfLastRewardedPeriod(nextLong());
+
+        return account;
     }
 
     public EvmFnResult nextEvmFnResult() {

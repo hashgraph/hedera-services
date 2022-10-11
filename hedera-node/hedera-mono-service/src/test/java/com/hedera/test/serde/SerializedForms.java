@@ -62,11 +62,15 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskAccountSerdeTest;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.virtualmap.VirtualValue;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -81,10 +85,11 @@ import java.util.function.Function;
  * classes from being serialized unless you are absolutely sure they are no longer in saved signed
  * state data.
  *
- * <p>When running this file, be sure to set the hedera-services/hedera-node directory as the
- * working directory before running.
+ * <p>When running this class, be sure to set <i>hedera-services/hedera-node/hedera-mono-service</i>
+ * as the working directory before running.
  */
 public class SerializedForms {
+    private static final int MAX_SERIALIAZED_LEN = 4096;
     private static final String SERIALIZED_FORMS_LOC = "src/test/resources/serdes";
     private static final String FORM_TPL = "%s-v%d-sn%d.hex";
 
@@ -114,8 +119,20 @@ public class SerializedForms {
         assertArrayEquals(expected, actual, "Regression in serializing test case #" + testCaseNo);
     }
 
+    public static <T extends VirtualValue> void assertSameBufferSerialization(
+            final Class<T> type,
+            final Function<SeededPropertySource, T> factory,
+            final int version,
+            final int testCaseNo) {
+        final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
+        final var example = factory.apply(propertySource);
+        final var actual = SerdeUtils.serializeToBuffer(example, MAX_SERIALIAZED_LEN);
+        final var expected = loadForm(type, version, testCaseNo);
+        assertArrayEquals(expected, actual, "Regression in serializing test case #" + testCaseNo);
+    }
+
     private static void generateSerializedData() {
-        GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
+        GENERATOR_MAPPING.get(OnDiskAccount.class).run();
         //        for (var entry : GENERATOR_MAPPING.entrySet()) {
         //            entry.getValue().run();
         //        }
@@ -135,6 +152,10 @@ public class SerializedForms {
      */
     private static final Map<Class<? extends SelfSerializable>, Runnable> GENERATOR_MAPPING =
             Map.ofEntries(
+                    entry(
+                            OnDiskAccount.class,
+                            SeededPropertySource::nextOnDiskAccount,
+                            MIN_TEST_CASES_PER_VERSION),
                     entry(
                             CurrencyAdjustments.class,
                             SeededPropertySource::nextCurrencyAdjustments,
