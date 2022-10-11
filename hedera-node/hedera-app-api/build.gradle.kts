@@ -17,11 +17,4 @@ plugins {
     id("com.hedera.hashgraph.conventions")
 }
 
-description = "Hedera Application API"
-
-dependencies {
-    implementation(project(":modules:hedera-proto-api"))
-    implementation(libs.swirlds.common)
-    implementation(libs.swirlds.merkle)
-    compileOnly(libs.spotbugs)
-}
+description = "Hedera Application - API"

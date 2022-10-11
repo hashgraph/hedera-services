@@ -13,12 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+package com.hedera.services.base.state;
 
-description = "Hedera Application - Implementation"
-
-dependencies {
-    api(project(":hedera-node:hedera-app-api"))
+public class StateBaseTest {
 }

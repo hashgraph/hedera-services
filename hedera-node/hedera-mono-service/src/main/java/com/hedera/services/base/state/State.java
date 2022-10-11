@@ -1,5 +1,21 @@
-package com.hedera.hashgraph.base.state;
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.hedera.services.base.state;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -33,26 +49,8 @@ public interface State<K, V> {
     Optional<V> get(K key);
 
     /**
-     * Gets the value associated with the given key in a <strong>READ-WRITE</strong> way.
-     * The returned {@link Optional} will be empty if the key does not exist in the store. If the
-     * value did exist, but the expiration time has been exceeded, then the value will be unset in
-     * the {@link Optional}.
-     *
-     * @param key The key. Cannot be null, otherwise an exception is thrown.
-     * @return A non-null optional. It may be empty if there is no value for this associated key.
-     * @throws IllegalArgumentException if the key is null.
+     * The last time current state is modified
+     * @return last modified time
      */
-    Optional<V> getForModify(K key);
-
-    /**
-     * Puts the given value for the key.
-     * @param key The key. Cannot be null.
-     * @param value The value. Cannot be null.
-     * @throws IllegalArgumentException if the key or value is null.
-     */
-    void put(K key, V value);
-
-    void remove(K key);
-
-    Stream<K> modifiedKeys();
+    Instant getLastModifiedTime();
 }
