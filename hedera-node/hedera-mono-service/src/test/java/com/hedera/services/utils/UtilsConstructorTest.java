@@ -54,6 +54,7 @@ import com.hedera.services.state.migration.*;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.state.virtual.KeyPackingUtils;
+import com.hedera.services.state.virtual.utils.EntityIoUtils;
 import com.hedera.services.stats.*;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
@@ -90,6 +91,7 @@ class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested =
             new HashSet<>(
                     Arrays.asList(
+                            EntityIoUtils.class,
                             OrderedComparison.class,
                             RecordParsers.class,
                             Units.class,

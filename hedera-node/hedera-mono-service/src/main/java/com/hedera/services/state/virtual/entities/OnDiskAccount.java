@@ -1,22 +1,58 @@
 package com.hedera.services.state.virtual.entities;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.hedera.services.state.virtual.utils.CheckedConsumer;
 import com.hedera.services.state.virtual.utils.CheckedSupplier;
+import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
+
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
+import static com.hedera.services.state.virtual.KeyPackingUtils.*;
+import static com.hedera.services.state.virtual.utils.EntityIoUtils.readBytes;
+import static com.hedera.services.state.virtual.utils.EntityIoUtils.writeBytes;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.SerializationUtils.*;
 
 public class OnDiskAccount implements VirtualValue {
     private static final int CURRENT_VERSION = 1;
     private static final long CLASS_ID = 0xc88e3a5c7b497468L;
 
+    private static final String EMPTY_MEMO = "";
+    private static final JKey HOLLOW_KEY;
+
+    static {
+        HOLLOW_KEY =
+                asFcKeyUnchecked(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+    }
+
     private byte flags;
+    private JKey key = HOLLOW_KEY;
+    private String memo = EMPTY_MEMO;
+    private ByteString alias = ByteString.EMPTY;
+    private Map<EntityNum, Long> hbarAllowances = Collections.emptyMap();
+    private Map<FcTokenAllowanceId, Long> fungibleAllowances = Collections.emptyMap();
+    private Set<FcTokenAllowanceId> nftOperatorApprovals = Collections.emptySet();
+
+    // Null if a non-contract account, or a contract without storage
+    private int[] firstStorageKey = null;
+    // Number of the low-order bytes in firstStorageKey that contain ones
+    private byte firstStorageKeyNonZeroBytes;
     private final int[] ints = new int[IntValues.COUNT];
     private final long[] longs = new long[LongValues.COUNT];
 
@@ -27,11 +63,16 @@ public class OnDiskAccount implements VirtualValue {
     }
 
     public OnDiskAccount(final OnDiskAccount that) {
+        this.key = that.key;
+        this.memo = that.memo;
         this.flags = that.flags;
+        this.alias = that.alias;
+        this.hbarAllowances = that.hbarAllowances;
+        this.fungibleAllowances = that.fungibleAllowances;
+        this.nftOperatorApprovals = that.nftOperatorApprovals;
         System.arraycopy(that.ints, 0, this.ints, 0, IntValues.COUNT);
         System.arraycopy(that.longs, 0, this.longs, 0, LongValues.COUNT);
     }
-
 
     @Override
     public OnDiskAccount copy() {
@@ -48,22 +89,22 @@ public class OnDiskAccount implements VirtualValue {
 
     @Override
     public void serialize(final ByteBuffer to) throws IOException {
-        serializeTo(to::put, to::putInt, to::putLong);
+        serializeTo(to::put, to::putInt, to::putLong, data -> to.put(data, 0, data.length));
     }
 
     @Override
     public void deserialize(final ByteBuffer from, final int version) throws IOException {
-        deserializeFrom(from::get, from::getInt, from::getLong);
+        deserializeFrom(from::get, from::getInt, from::getLong, from::get);
     }
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serializeTo(out::writeByte, out::writeInt, out::writeLong);
+        serializeTo(out::writeByte, out::writeInt, out::writeLong, data -> out.write(data, 0, data.length));
     }
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        deserializeFrom(in::readByte, in::readInt, in::readLong);
+        deserializeFrom(in::readByte, in::readInt, in::readLong, in::readFully);
     }
 
     @Override
@@ -84,7 +125,8 @@ public class OnDiskAccount implements VirtualValue {
     private void serializeTo(
             final CheckedConsumer<Byte> writeByteFn,
             final CheckedConsumer<Integer> writeIntFn,
-            final CheckedConsumer<Long> writeLongFn) throws IOException {
+            final CheckedConsumer<Long> writeLongFn,
+            final CheckedConsumer<byte[]> writeBytesFn) throws IOException {
         writeByteFn.accept(flags);
         for (final var v : ints) {
             writeIntFn.accept(v);
@@ -92,12 +134,14 @@ public class OnDiskAccount implements VirtualValue {
         for (final var v : longs) {
             writeLongFn.accept(v);
         }
+        writeBytes(serializedVariablePart(), writeIntFn, writeBytesFn);
     }
 
     private void deserializeFrom(
             final CheckedSupplier<Byte> readByteFn,
             final CheckedSupplier<Integer> readIntFn,
-            final CheckedSupplier<Long> readLongFn) throws IOException {
+            final CheckedSupplier<Long> readLongFn,
+            final CheckedConsumer<byte[]> readBytesFn) throws IOException {
         throwIfImmutable();
         flags = readByteFn.get();
         for (var i = 0; i < IntValues.COUNT; i++) {
@@ -105,6 +149,128 @@ public class OnDiskAccount implements VirtualValue {
         }
         for (var i = 0; i < LongValues.COUNT; i++) {
             longs[i] = readLongFn.get();
+        }
+        final var variableSource = readBytes(readIntFn, readBytesFn);
+        deserializeVariablePart(variableSource);
+    }
+
+    private byte[] serializedVariablePart() throws IOException {
+        try (final var baos = new ByteArrayOutputStream()) {
+            try (final var out = new SerializableDataOutputStream(baos)) {
+                out.write(key.serialize());
+                out.writeNormalisedString(memo);
+                out.writeByteArray(unwrapUnsafelyIfPossible(alias));
+                serializeHbarAllowances(out, hbarAllowances);
+                serializeFungibleAllowances(out, fungibleAllowances);
+                serializeNftOperatorApprovals(out, nftOperatorApprovals);
+                if (isContract()) {
+                    serializePossiblyMissingKey(firstStorageKey, firstStorageKeyNonZeroBytes, out);
+                }
+                out.flush();
+            }
+            baos.flush();
+            return baos.toByteArray();
+        }
+    }
+
+    private void deserializeVariablePart(final byte[] source) throws IOException {
+        try (final var bais = new ByteArrayInputStream(source)) {
+            try (final var in = new SerializableDataInputStream(bais)) {
+                key = JKeySerializer.deserialize(in);
+                memo = in.readNormalisedString(Integer.MAX_VALUE);
+                alias = wrapUnsafely(in.readByteArray(Integer.MAX_VALUE));
+                hbarAllowances = deserializeHbarAllowances(in);
+                fungibleAllowances = deserializeFungibleAllowances(in);
+                nftOperatorApprovals = deserializeNftOperatorApprovals(in);
+                if (isContract()) {
+                    final var marker = in.readByte();
+                    if (marker != MISSING_KEY_SENTINEL) {
+                        firstStorageKeyNonZeroBytes = marker;
+                        firstStorageKey =
+                                deserializeUint256Key(
+                                        firstStorageKeyNonZeroBytes,
+                                        in,
+                                        SerializableDataInputStream::readByte);
+                    }
+                }
+            }
+        }
+    }
+
+    // Object getters and setters
+    public JKey getKey() {
+        return key;
+    }
+
+    @StateSetter
+    public void setKey(final JKey key) {
+        throwIfImmutable("Tried to set the key on an immutable OnDiskAccount");
+        this.key = key;
+    }
+
+    public String getMemo() {
+        return memo;
+    }
+
+    @StateSetter
+    public void setMemo(final String memo) {
+        throwIfImmutable("Tried to set the memo on an immutable OnDiskAccount");
+        this.memo = memo;
+    }
+
+    public ByteString getAlias() {
+        return alias;
+    }
+
+    @StateSetter
+    public void setAlias(final ByteString alias) {
+        throwIfImmutable("Tried to set the alias on an immutable OnDiskAccount");
+        this.alias = alias;
+    }
+
+    public Map<EntityNum, Long> getHbarAllowances() {
+        return hbarAllowances;
+    }
+
+    @StateSetter
+    public void setHbarAllowances(final Map<EntityNum, Long> hbarAllowances) {
+        throwIfImmutable("Tried to set the hbar allowances on an immutable OnDiskAccount");
+        this.hbarAllowances = hbarAllowances;
+    }
+
+    public Map<FcTokenAllowanceId, Long> getFungibleAllowances() {
+        return fungibleAllowances;
+    }
+
+    @StateSetter
+    public void setFungibleAllowances(final Map<FcTokenAllowanceId, Long> fungibleAllowances) {
+        throwIfImmutable("Tried to set the fungible allowances on an immutable OnDiskAccount");
+        this.fungibleAllowances = fungibleAllowances;
+    }
+
+    public Set<FcTokenAllowanceId> getNftOperatorApprovals() {
+        return nftOperatorApprovals;
+    }
+
+    @StateSetter
+    public void setNftOperatorApprovals(final Set<FcTokenAllowanceId> nftOperatorApprovals) {
+        throwIfImmutable("Tried to set the NFT operator approvals on an immutable OnDiskAccount");
+        this.nftOperatorApprovals = nftOperatorApprovals;
+    }
+
+    // Misc getters and setters
+    public int[] getFirstStorageKey() {
+        return firstStorageKey;
+    }
+
+    @StateSetter
+    public void setFirstStorageKey(final int[] firstStorageKey) {
+        throwIfImmutable("Tried to set the first storage key on an immutable OnDiskAccount");
+        this.firstStorageKey = firstStorageKey;
+        if (firstStorageKey != null) {
+            firstStorageKeyNonZeroBytes = computeNonZeroBytes(firstStorageKey);
+        } else {
+            firstStorageKeyNonZeroBytes = 0;
         }
     }
 
@@ -115,7 +281,7 @@ public class OnDiskAccount implements VirtualValue {
 
     @StateSetter
     public void setIsDeleted(final boolean flag) {
-        throwIfImmutable("Tried to setIsDeleted on an immutable OnDiskAccount");
+        throwIfImmutable("Tried to set IS_DELETED on an immutable OnDiskAccount");
         if (flag) {
             flags |= Masks.IS_DELETED;
         } else {
@@ -129,7 +295,7 @@ public class OnDiskAccount implements VirtualValue {
 
     @StateSetter
     public void setIsContract(final boolean flag) {
-        throwIfImmutable("Tried to setIsContract on an immutable OnDiskAccount");
+        throwIfImmutable("Tried to set IS_CONTRACT on an immutable OnDiskAccount");
         if (flag) {
             flags |= Masks.IS_CONTRACT;
         } else {
@@ -143,11 +309,25 @@ public class OnDiskAccount implements VirtualValue {
 
     @StateSetter
     public void setIsReceiverSigRequired(final boolean flag) {
-        throwIfImmutable("Tried to setIsReceiverSigRequired on an immutable OnDiskAccount");
+        throwIfImmutable("Tried to set IS_RECEIVER_SIG_REQUIRED on an immutable OnDiskAccount");
         if (flag) {
             flags |= Masks.IS_RECEIVER_SIG_REQUIRED;
         } else {
             flags &= ~Masks.IS_RECEIVER_SIG_REQUIRED;
+        }
+    }
+
+    public boolean isDeclineReward() {
+        return (flags & Masks.IS_DECLINE_REWARD) != 0;
+    }
+
+    @StateSetter
+    public void setIsDeclineReward(final boolean flag) {
+        throwIfImmutable("Tried to set IS_DECLINE_REWARD on an immutable OnDiskAccount");
+        if (flag) {
+            flags |= Masks.IS_DECLINE_REWARD;
+        } else {
+            flags &= ~Masks.IS_DECLINE_REWARD;
         }
     }
 
@@ -343,17 +523,31 @@ public class OnDiskAccount implements VirtualValue {
         longs[LongValues.STAKE_AT_START_OF_LAST_REWARDED_PERIOD] = value;
     }
 
+    public long getAutoRenewAccountNumber() {
+        return longs[LongValues.AUTO_RENEW_ACCOUNT_NUMBER];
+    }
+
+    @StateSetter
+    public void setAutoRenewAccountNumber(final long value) {
+        throwIfImmutable("Tried to set AUTO_RENEW_ACCOUNT_NUMBER on an immutable OnDiskAccount");
+        longs[LongValues.AUTO_RENEW_ACCOUNT_NUMBER] = value;
+    }
+
+    // Generated code
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         OnDiskAccount that = (OnDiskAccount) o;
-        return flags == that.flags && Arrays.equals(ints, that.ints) && Arrays.equals(longs, that.longs);
+        return flags == that.flags && firstStorageKeyNonZeroBytes == that.firstStorageKeyNonZeroBytes
+                && equalUpToDecodability(this.key, that.key)
+                && memo.equals(that.memo) && alias.equals(that.alias) && hbarAllowances.equals(that.hbarAllowances) && fungibleAllowances.equals(that.fungibleAllowances) && nftOperatorApprovals.equals(that.nftOperatorApprovals) && Arrays.equals(firstStorageKey, that.firstStorageKey) && Arrays.equals(ints, that.ints) && Arrays.equals(longs, that.longs);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(flags);
+        int result = Objects.hash(flags, key, memo, alias, hbarAllowances, fungibleAllowances, nftOperatorApprovals, firstStorageKeyNonZeroBytes);
+        result = 31 * result + Arrays.hashCode(firstStorageKey);
         result = 31 * result + Arrays.hashCode(ints);
         result = 31 * result + Arrays.hashCode(longs);
         return result;
@@ -361,8 +555,9 @@ public class OnDiskAccount implements VirtualValue {
 
     private static final class Masks {
         private static final byte IS_DELETED = 1;
-        private static final byte IS_CONTRACT = 2;
-        private static final byte IS_RECEIVER_SIG_REQUIRED = 3;
+        private static final byte IS_CONTRACT = 1 << 1;
+        private static final byte IS_RECEIVER_SIG_REQUIRED = 1 << 2;
+        private static final byte IS_DECLINE_REWARD = 1 << 3;
     }
 
     private static final class IntValues {
@@ -389,6 +584,7 @@ public class OnDiskAccount implements VirtualValue {
         private static final int STAKE_PERIOD_START = 10;
         private static final int STAKED_NUM = 11;
         private static final int STAKE_AT_START_OF_LAST_REWARDED_PERIOD = 12;
-        private static final int COUNT = 13;
+        private static final int AUTO_RENEW_ACCOUNT_NUMBER = 13;
+        private static final int COUNT = 14;
     }
 }

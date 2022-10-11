@@ -28,13 +28,13 @@ class SerializationUtilsTest {
     void deserializesEmptyFungibleAllowancesAsSingletonEmptyMap() throws IOException {
         final var in = mock(SerializableDataInputStream.class);
         assertSame(
-                Collections.emptyMap(), SerializationUtils.deserializeFungibleTokenAllowances(in));
+                Collections.emptyMap(), SerializationUtils.deserializeFungibleAllowances(in));
     }
 
     @Test
     void deserializesEmptyCryptoAllowancesAsSingletonEmptyMap() throws IOException {
         final var in = mock(SerializableDataInputStream.class);
-        assertSame(Collections.emptyMap(), SerializationUtils.deserializeCryptoAllowances(in));
+        assertSame(Collections.emptyMap(), SerializationUtils.deserializeHbarAllowances(in));
     }
 
     @Test
@@ -42,6 +42,6 @@ class SerializationUtilsTest {
         final var in = mock(SerializableDataInputStream.class);
         assertSame(
                 Collections.emptySet(),
-                SerializationUtils.deserializeApproveForAllNftsAllowances(in));
+                SerializationUtils.deserializeNftOperatorApprovals(in));
     }
 }

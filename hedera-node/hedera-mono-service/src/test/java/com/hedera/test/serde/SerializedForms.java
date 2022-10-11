@@ -15,6 +15,7 @@
  */
 package com.hedera.test.serde;
 
+import static com.hedera.services.state.virtual.entities.OnDiskAccountSerdeTest.NUM_ON_DISK_ACCOUNT_TEST_CASES;
 import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -155,7 +156,7 @@ public class SerializedForms {
                     entry(
                             OnDiskAccount.class,
                             SeededPropertySource::nextOnDiskAccount,
-                            MIN_TEST_CASES_PER_VERSION),
+                            NUM_ON_DISK_ACCOUNT_TEST_CASES),
                     entry(
                             CurrencyAdjustments.class,
                             SeededPropertySource::nextCurrencyAdjustments,

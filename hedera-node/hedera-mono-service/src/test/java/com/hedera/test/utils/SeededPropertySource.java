@@ -725,6 +725,7 @@ public class SeededPropertySource {
         account.setIsDeleted(nextBoolean());
         account.setIsContract(nextBoolean());
         account.setIsReceiverSigRequired(nextBoolean());
+        account.setIsDeclineReward(nextBoolean());
         // Int values
         account.setNumContractKvPairs(nextInt());
         account.setMaxAutoAssociations(nextInt());
@@ -746,6 +747,27 @@ public class SeededPropertySource {
         account.setStakePeriodStart(nextLong());
         account.setStakedNum(nextLong());
         account.setStakeAtStartOfLastRewardedPeriod(nextLong());
+        account.setAutoRenewAccountNumber(nextLong());
+        // Object values
+        account.setKey(nextKey());
+        if (nextBoolean()) {
+            account.setMemo(nextString(32));
+        }
+        if (nextBoolean()) {
+            account.setAlias(nextByteString(20));
+        }
+        if (nextBoolean()) {
+            account.setHbarAllowances(nextGrantedCryptoAllowances(nextInt(4)));
+        }
+        if (nextBoolean()) {
+            account.setFungibleAllowances(nextGrantedFungibleAllowances(nextInt(3)));
+        }
+        if (nextBoolean()) {
+            account.setNftOperatorApprovals(nextApprovedForAllAllowances(2));
+        }
+        if (account.isContract()) {
+            account.setFirstStorageKey(nextPackedInts(8));
+        }
 
         return account;
     }

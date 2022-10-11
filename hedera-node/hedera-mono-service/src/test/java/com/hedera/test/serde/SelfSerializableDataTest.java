@@ -19,6 +19,9 @@ import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.hedera.test.utils.SeededPropertySource;
@@ -311,8 +314,16 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
             return 666L;
         } else if (boolean.class.equals(type)) {
             return true;
+        } else if (JKey.class.equals(type)) {
+            return new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+        } else if (ByteString.class.equals(type)) {
+            return ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        } else if (Set.class.equals(type)) {
+            return Collections.emptySet();
+        } else if (Map.class.equals(type)) {
+            return Collections.emptyMap();
         } else if (type.isArray()) {
-            final var innerType = type.arrayType();
+            final var innerType = type.componentType();
             final var array = Array.newInstance(innerType, 1);
             final var tokenValue = typicalValueOf(innerType);
             Array.set(array, 0, tokenValue);
