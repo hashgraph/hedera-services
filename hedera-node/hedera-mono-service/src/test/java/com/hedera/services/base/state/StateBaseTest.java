@@ -15,4 +15,32 @@
  */
 package com.hedera.services.base.state;
 
-public class StateBaseTest {}
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.hedera.services.utils.EntityNum;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class StateBaseTest {
+    private final String stateKey = "ACCOUNTS_KEY";
+    private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
+
+    private StateBase subject = new InMemoryStateImpl(stateKey, lastModifiedTime);
+
+    @Test
+    void gettersWorkAsExpected() {
+        assertEquals(new HashMap<>(), subject.getReadKeys());
+        assertEquals(stateKey, subject.getStateKey());
+    }
+
+    @Test
+    void cachesReadKeys() {
+        final var num = EntityNum.fromLong(2L);
+        assertEquals(Optional.empty(), subject.get(num));
+    }
+}
