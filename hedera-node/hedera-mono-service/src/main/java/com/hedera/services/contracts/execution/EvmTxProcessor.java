@@ -124,7 +124,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                                 && ((GlobalDynamicProperties) dynamicProperties)
                                         .enabledSidecars()
                                         .contains(SidecarType.CONTRACT_ACTION));
-        hederaTracer.init(initialFrame);
+
         super.setOperationTracer(hederaTracer);
         super.execute(
                 sender,
