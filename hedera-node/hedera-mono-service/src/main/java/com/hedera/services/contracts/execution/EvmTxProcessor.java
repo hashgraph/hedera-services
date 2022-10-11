@@ -74,7 +74,14 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource) {
-        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(
+                worldState,
+                livePricesSource,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                blockMetaSource);
     }
 
     /**
@@ -112,15 +119,23 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         final Wei upfrontCost = gasCost.add(value);
 
         final HederaTracer hederaTracer =
-            new HederaTracer(
-                !isStatic
-                    && ((GlobalDynamicProperties) dynamicProperties)
-                    .enabledSidecars()
-                    .contains(SidecarType.CONTRACT_ACTION));
+                new HederaTracer(
+                        !isStatic
+                                && ((GlobalDynamicProperties) dynamicProperties)
+                                        .enabledSidecars()
+                                        .contains(SidecarType.CONTRACT_ACTION));
         hederaTracer.init(initialFrame);
         super.setOperationTracer(hederaTracer);
-        super.execute(sender, receiver, gasPrice, gasLimit, value, payload, contractCreation, isStatic,
-            mirrorReceiver);
+        super.execute(
+                sender,
+                receiver,
+                gasPrice,
+                gasLimit,
+                value,
+                payload,
+                contractCreation,
+                isStatic,
+                mirrorReceiver);
 
         final var chargingResult =
                 chargeForGas(
@@ -135,7 +150,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                         userOfferedGasPrice,
                         sender.getId().asEvmAddress(),
                         relayer == null ? null : relayer.getId().asEvmAddress(),
-                    (HederaWorldState.Updater) updater);
+                        (HederaWorldState.Updater) updater);
 
         final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
@@ -162,10 +177,13 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     chargingResult.sender().incrementBalance(refundedWei);
                 }
             }
-            sendToCoinbase(coinbase, gasLimit - refunded, gasPrice, (HederaWorldState.Updater) updater);
+            sendToCoinbase(
+                    coinbase, gasLimit - refunded, gasPrice, (HederaWorldState.Updater) updater);
             initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-            if (((GlobalDynamicProperties) dynamicProperties).enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+            if (((GlobalDynamicProperties) dynamicProperties)
+                    .enabledSidecars()
+                    .contains(SidecarType.CONTRACT_STATE_CHANGE)) {
                 stateChanges = ((HederaWorldState.Updater) updater).getFinalStateChanges();
             } else {
                 stateChanges = Map.of();
@@ -208,23 +226,23 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             return TransactionProcessingResult.successful(
-                initialFrame.getLogs(),
-                gasUsed,
-                sbhRefund,
-                gasPrice,
-                initialFrame.getOutputData(),
-                mirrorReceiver,
-                stateChanges,
-                hederaTracer.getActions());
+                    initialFrame.getLogs(),
+                    gasUsed,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getOutputData(),
+                    mirrorReceiver,
+                    stateChanges,
+                    hederaTracer.getActions());
         } else {
             return TransactionProcessingResult.failed(
-                gasUsed,
-                sbhRefund,
-                gasPrice,
-                initialFrame.getRevertReason(),
-                initialFrame.getExceptionalHaltReason(),
-                stateChanges,
-                hederaTracer.getActions());
+                    gasUsed,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getRevertReason(),
+                    initialFrame.getExceptionalHaltReason(),
+                    stateChanges,
+                    hederaTracer.getActions());
         }
     }
 
