@@ -52,6 +52,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.UsageLimits;
@@ -60,6 +61,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -144,7 +146,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             } else {
                 if (op.hasKey() && !op.getKey().getECDSASecp256K1().isEmpty()) {
                     aliasManager.link(
-                            ledger.getAccountsLedger().getImmutableRef(created).getAlias(),
+                            (ByteString)
+                                    ledger.getAccountsLedger().get(created, AccountProperty.ALIAS),
                             EntityNum.fromAccountId(created));
                 }
             }
@@ -164,7 +167,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         long expiry = consensusTime + autoRenewPeriod;
 
         var customizer = new HederaAccountCustomizer();
-        if (!op.getAlias().isEmpty() && !op.hasKey()) {
+        var validAlias = !op.getAlias().isEmpty();
+        if (validAlias && !op.hasKey()) {
             final var resolution = aliasManager.lookupIdBy(op.getAlias());
             if (!resolution.equals(MISSING_NUM)) {
                 throw new InvalidTransactionException(INVALID_ALIAS_KEY);
@@ -181,16 +185,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             } else {
                 final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
                 if (!keyFromAlias.getECDSASecp256K1().isEmpty()) {
-                    final var recoveredEvmAddress =
-                            recoverAddressFromPubKey(
-                                    keyFromAlias.getECDSASecp256K1().toByteArray());
-
-                    if (recoveredEvmAddress != null
-                            && !aliasManager
-                                    .lookupIdBy(ByteString.copyFrom(recoveredEvmAddress))
-                                    .equals(MISSING_NUM)) {
-                        throw new InvalidTransactionException(INVALID_ALIAS_KEY);
-                    }
+                    recoverAndValidateEVMAddress(keyFromAlias);
                 }
 
                 final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
@@ -203,21 +198,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                         .isSmartContract(false)
                         .alias(op.getAlias());
             }
-        } else if (!op.getAlias().isEmpty() && op.hasKey()) {
-            if (!aliasManager.lookupIdBy(op.getAlias()).equals(MISSING_NUM)) {
-                throw new InvalidTransactionException(INVALID_ALIAS_KEY);
-            }
+        } else if (validAlias) {
+            throwIfAliasUsed(op.getAlias());
             if (!op.getKey().getECDSASecp256K1().isEmpty()) {
-                final var recoveredEvmAddressFromPrimitiveKey =
-                        recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
-
-                if (recoveredEvmAddressFromPrimitiveKey != null
-                        && !aliasManager
-                                .lookupIdBy(
-                                        ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
-                                .equals(MISSING_NUM)) {
-                    throw new InvalidTransactionException(INVALID_ALIAS_KEY);
-                }
+                recoverAndValidateEVMAddress(op.getKey());
             }
             customizer
                     .key(asFcKeyUnchecked(op.getKey()))
@@ -230,21 +214,15 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         } else {
             /* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
             if (!op.getKey().getECDSASecp256K1().isEmpty()) {
-                if (!aliasManager.lookupIdBy(op.getKey().getECDSASecp256K1()).equals(MISSING_NUM)) {
-                    throw new InvalidTransactionException(INVALID_ALIAS_KEY);
-                }
+                throwIfAliasUsed(op.getKey().getECDSASecp256K1());
 
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
 
-                if (recoveredEvmAddressFromPrimitiveKey != null
-                        && !aliasManager
-                                .lookupIdBy(
-                                        ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
-                                .equals(MISSING_NUM)) {
-                    throw new InvalidTransactionException(INVALID_ALIAS_KEY);
+                if (recoveredEvmAddressFromPrimitiveKey != null) {
+                    throwIfAliasUsed(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
+                    customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
                 }
-                customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
             }
 
             final JKey key = asFcKeyUnchecked(op.getKey());
@@ -263,6 +241,21 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                     op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
         }
         return customizer;
+    }
+
+    private void recoverAndValidateEVMAddress(Key keyFromAlias) {
+        final var recoveredEvmAddress =
+                recoverAddressFromPubKey(keyFromAlias.getECDSASecp256K1().toByteArray());
+
+        if (recoveredEvmAddress != null) {
+            throwIfAliasUsed(ByteString.copyFrom(recoveredEvmAddress));
+        }
+    }
+
+    private void throwIfAliasUsed(ByteString alias) {
+        if (!aliasManager.lookupIdBy(alias).equals(MISSING_NUM)) {
+            throw new InvalidTransactionException(INVALID_ALIAS_KEY);
+        }
     }
 
     @Override

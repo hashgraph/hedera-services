@@ -64,6 +64,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
             HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
     public static final String ACCOUNT = "account";
     public static final String AUTO_CREATED_ACCOUNT = "auto-created account";
+    public static final String ED_25519_KEY = "ed25519Alias";
 
     public static void main(String... args) {
         new CryptoCreateSuite().runSuiteSync();
@@ -552,14 +553,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec createAnAccountWithED25519Alias() {
-        final var ed25519SourceKey = "ed25519Alias";
-        final var ed25519Shape = KeyShape.ED25519;
         return defaultHapiSpec("CreateAnAccountWithED25519Alias")
-                .given(newKeyNamed(ed25519SourceKey).shape(ed25519Shape))
+                .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    var ed25519Key = spec.registry().getKey(ed25519SourceKey);
+                                    var ed25519Key = spec.registry().getKey(ED_25519_KEY);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ed25519Key.toByteString())
@@ -575,7 +574,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .key(ed25519Key)
-                                                                    .alias(ed25519SourceKey)
+                                                                    .alias(ED_25519_KEY)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false)
@@ -623,13 +622,10 @@ public class CryptoCreateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec createAnAccountWithEDKeyAndNoAlias() {
-        final var ed25519SourceKey = "ed25519Alias";
-        final var ed25519Shape = KeyShape.ED25519;
-
         return defaultHapiSpec("CreateAnAccountWithEDKeyAndNoAlias")
-                .given(newKeyNamed(ed25519SourceKey).shape(ed25519Shape))
-                .when(cryptoCreate(ACCOUNT).key(ed25519SourceKey))
-                .then(getAccountInfo(ACCOUNT).has(accountWith().key(ed25519SourceKey).noAlias()));
+                .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
+                .when(cryptoCreate(ACCOUNT).key(ED_25519_KEY))
+                .then(getAccountInfo(ACCOUNT).has(accountWith().key(ED_25519_KEY).noAlias()));
     }
 
     private HapiApiSpec createAnAccountWithEVMAddressAliasAndECKey() {
@@ -691,17 +687,15 @@ public class CryptoCreateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec createAnAccountWithED25519KeyAndED25519Alias() {
-        final var ed25519SourceKey = "ed25519Alias";
-        final var ed25519Shape = KeyShape.ED25519;
         return defaultHapiSpec("CreateAnAccountWithED25519KeyAndED25519Alias")
-                .given(newKeyNamed(ed25519SourceKey).shape(ed25519Shape))
+                .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    var ed25519Key = spec.registry().getKey(ed25519SourceKey);
+                                    var ed25519Key = spec.registry().getKey(ED_25519_KEY);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .key(ed25519SourceKey)
+                                                    .key(ED_25519_KEY)
                                                     .withAlias(ed25519Key.toByteString())
                                                     .balance(1000 * ONE_HBAR);
                                     final var op2 =
@@ -714,8 +708,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             getAccountInfo(ACCOUNT)
                                                     .has(
                                                             accountWith()
-                                                                    .key(ed25519SourceKey)
-                                                                    .alias(ed25519SourceKey)
+                                                                    .key(ED_25519_KEY)
+                                                                    .alias(ED_25519_KEY)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false)
