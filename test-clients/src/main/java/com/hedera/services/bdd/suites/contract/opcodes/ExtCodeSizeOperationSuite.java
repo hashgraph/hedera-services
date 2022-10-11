@@ -30,7 +30,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
@@ -64,9 +65,9 @@ public class ExtCodeSizeOperationSuite extends HapiApiSuite {
                 .when()
                 .then(
                         contractCall(contract, sizeOf, invalidAddress)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         contractCallLocal(contract, sizeOf, invalidAddress)
-                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
+                                .hasAnswerOnlyPrecheck(OK),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var accountID =
