@@ -1,9 +1,32 @@
 # Characterization of HIP-18 fee charging
 
 In this document we present several case studies of `CryptoTransfer`s
-that involve a HTS token with a custom fee schedule. We use the 
+that involve an HTS token with a custom fee schedule. We use the 
 `TransactionRecord`s of these transfers to characterize how Services 
-charges custom fees as defined in HIP-18.
+charges custom fees as defined in HIP-18 and modified in HIP-573.
+
+## Custom Fee Exemption Conditions
+
+:free:&nbsp; There are three exemptions from the charging policy:
+1. Token treasury accounts are never charged custom fees
+2. A fee collector account is not charged any fractional fees for
+   which it is itself the collector
+3. A token's custom fee(s) is overridden with `allCollectorsAreExempt` 
+set to `true`
+
+## HIP-573
+
+HIP-573 defines a new property on a custom fee that acts as an 
+override exemption:`allCollectorsAreExempt`. When this property is 
+set to `true` on a custom fee then that custom fee will **not** be 
+assessed to any **collector** (i.e. the code responsible for 
+charging a custom fee) in a token transfer. For a fungible token* 
+this means that any custom fee collector will not be charged said 
+custom fee for exchanging any units of the fungible token.
+
+*Note: The only case the exemption property applies to for a non-
+fungible token is a royalty fallback fee, which fallback fee is 
+subject to the same three exemption conditions listed above.
 
 # Case studies
 
@@ -28,10 +51,14 @@ where the `nestedHbarFeeToken` has a custom fee of 1 unit of the
 7. Edgar transfers 10 units of the `nestedFractionalFeeToken` to
 Fern, where the `nestedFractionalFeeToken` has a custom fee of 
 50 units of the `fractionalFeeToken`.
-
-:free:&nbsp; There are two exemptions from the charging policy. First, token 
-treasury accounts are never charged custom fees. Second, a fee collector
-account is not charged any fractional fees for which it is the collector.
+8. Fern now transfers 5000 units of the 
+`fractionalCustomFeeExemptToken` to George, where the 
+`fractionalCustomFeeExemptToken` token has both Fee #1, a custom 
+fractional fee of 1/500th exchange value to Henry with a minimum 
+of 2 units, _and_ Fee #2, a custom fractional fee of 1/100th 
+exchange value to Irene with a minimum of 5 units. The 
+`fractionalCustomFeeExemptToken` has `allCollectorsAreExempt` set 
+to `true`.
 
 # Royalty fees
 
@@ -490,3 +517,152 @@ assessed_custom_fees {
   fee_collector_account_id { accountNum: 1004 }
 }
 ```
+
+## Fractional fees with exempt collectors
+The eighth case study shows that fractional fees attached to a token 
+with overridden collector exemptions do not apply to collector 
+accounts. When Fern (account `0.0.1020'`) transfers 5000 units of token 
+`fractionalCustomFeeExemptToken` to George (account `0.0.1021`), 
+collectors Henry (account `0.0.1030`) and Irene (account `0.0.1031`) 
+will receive `(1/500) * 5000 = 10 units` and `(1/100) * 5000 = 50 units`, 
+respectively, due to fractional custom fees Fee #1 and Fee #2 defined 
+on the token. Since these are fractional custom fees, Henry––who **is** 
+a collector but is **not** the receiver (George is the receiver of the 
+original transfer)––would typically be charged `(1/100) * 50 units = 5 
+units` additionally to Irene because of Fee #2, and Irene––who is also 
+a collector but not the original receiver--likewise would be charged 
+`(1/500) * 5000 = 10` additionally to Henry because of Fee #1. However, 
+because `allCollectorsAreExempt` is `true` on the 
+`fractionalCustomFeeExemptToken`, both Henry and Irene––as collectors 
+on the original token transfer from Fern to George––are exempt from the 
+fractional custom fees they also would have paid to each other.
+
+```
+tokenTransferLists {
+  token { tokenNum: 1013 }
+  transfers {
+    accountID { accountNum: 1020 }
+    amount: -5000
+  }
+  transfers {
+    accountID { accountNum: 1021 }
+    amount: 4940  <<-- George receives 5000 - (custom fees Fee #1 and Fee #2)
+  }
+  transfers {
+    accountID { accountNum: 1030 }
+    amount: 10  <<-- Henry receives (1/500) * 5000 = 10 units
+  }
+  transfers {
+    accountId { accountNum: 1031 }
+    amount: 50  <<-- Irene receives (1/100) * 5000 = 50 units
+  }
+}
+assessed_custom_fees {
+  amount: 10
+  token_id { tokenNum: 1013 }
+  fee_collector_account_id { accountNum: 1030 }
+}
+assessed_custom_fees {
+  amount: 50
+  token_id { tokenNum: 1013 }
+  fee_collector_account_id { accountNum: 1031 }
+}
+```
+
+Notably absent are the transactions that also would have applied 
+to Henry and Irene in the case where collectors were not exempt
+from custom fees. _The following transactions did not 
+happen_ because `fractionalCustomFeeExemptToken`'s 
+`allCollectorsAreExempt` field was set to `true`, but _would 
+have_ applied if `allCollectorsAreExempt` was set to `false`:
+```
+tokenTransferLists {
+  token { tokenNum: 1013 }
+  transfers {
+    accountID { accountNum: 1020 }
+    amount: -5000  <<-- Fern still transfers 5000 units
+  }
+  transfers {
+    accountID { accountNum: 1021 }
+    amount: 4940  <<-- George still receives 5000 minus (Fee #1 and Fee #2) units
+  }
+  transfers {
+    accountID { accountNum: 1030 }
+    amount: 13  <<-- see net transfer calculation below
+  }
+  transfers {
+    accountId { accountNum: 1031 }
+    amount: 47  <<-- see net transfer calculation below
+  }
+}
+assessed_custom_fees {
+  amount: 13
+  token_id { tokenNum: 1013 }
+  fee_collector_account_id { accountNum: 1030 }
+}
+assessed_custom_fees {
+  amount: 47
+  token_id { tokenNum: 1013 }
+  fee_collector_account_id { accountNum: 1031 }
+}
+```
+To explain the net calculation, let's define the following variables:
+* let `h = 1/500`, the fee fraction of any transfer that goes to Henry
+* let `i = 1/100`, the fee fraction of any transfer that goes to Irene
+* let `t_0` represent the _original_ transfer of 5000 units from Fern 
+to George
+* let `hf1 = h * 5000 = 10 units`, i.e. the portion of the _original_ 
+5000 units that will go to Henry as a result of transfer `t_0`
+* let `if1 = i * 5000 = 50 units`, i.e. the portion of the _original_ 
+5000 units that will go to Irene as a result of transfer `t_0` 
+* let `t_h->i` represent the _collector_ transfer of the amount (i.e. 
+amount `hf1`) 
+Henry owes Irene as a result of `t_0`
+* let `t_i->h` represent the _collector_ transfer of the amount (i.e. 
+amount `if1`)
+Irene owes Henry as a result of `t_0`
+* let `hf2 = h * if1`, representing the transfer due to Irene _as a 
+result of Henry's second transfer to Irene_ (this will be a fraction 
+of a fraction)
+* let `if2 = i * hf1`, representing the transfer due to Henry _as a 
+result of Irene's second transfer to Henry_ (this will also be a 
+fraction of a fraction)
+
+(Whew!) 
+
+The net transfer amount to Henry as a result of all three 
+transactions––the original transaction of 5000; the transfers to 
+Henry and Irene as a result of the _original_event; and the third 
+transfer, which is the transfers to Henry and Irene as a result 
+of the _second_ transfer event; would have then been calculated 
+as follows:
+```
+( h * original transfer amount ) - max(2, amount TO Irene as a result of t_0) + max(5, amount FROM Irene as a result of t_h->i) =
++hf1 - max(2, i * hf1)      + max(5, h * if1)      = 
++10  - max(2, (1/100) * 10) + max(5, (1/500) * 50) =
++10  - max(2, 0.1)          + max(5, 0.2)          =
++10  - 2                    + 5                    = 13 units
+```
+The net transfer amount to Irene as a result of all three 
+transactions would have been:
+```
+( i * original transfer amount ) - max(5, amount TO Henry as a result of t_0) + max(2, amount FROM Henry as a result of t_h->i) =
++if1 - max(5, h * if1)      + max(2, i * hf1)      = 
++50  - max(5, (1/500) * 50) + max(2, (1/100) * 10) = 
++50  - max(5, 0.1)          + max(2, 0.1)          =
++50  - 5                    + 2                    = 47 units
+```
+As expected, adding the net transfer results of Henry and Irene 
+together is `13 + 47 = 60 units`, which is the same fee amount 
+collected from George originally, but split out to Henry and 
+Irene according to fractions `h` and `i`, and fractions (of 
+fractions) `h * if1`, and `i * hf1`. Note that the calculation 
+would have continued with fractions of fractions...of fractions 
+if the third transfer amount had been greater than the minimum 
+required amount for both Henry and Irene, which demonstrates 
+how painful fractional amounts charged to collectors can be 
+(and why HIP 573 was created). In general, a fractional fee on 
+a token whose collectors are _not_ exempt will tunnel into 
+fractions of fractions until the minimum required amount for 
+all involved collectors drops to the minimum threshold units 
+required by each fractional fee.
