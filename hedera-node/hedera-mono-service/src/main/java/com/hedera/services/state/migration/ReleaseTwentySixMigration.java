@@ -18,15 +18,12 @@ package com.hedera.services.state.migration;
 import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
-import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;

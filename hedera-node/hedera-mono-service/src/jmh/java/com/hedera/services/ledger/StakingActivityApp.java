@@ -23,7 +23,6 @@ import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.setup.InfrastructureBundle;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;

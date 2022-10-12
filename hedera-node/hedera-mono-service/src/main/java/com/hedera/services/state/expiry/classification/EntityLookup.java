@@ -18,7 +18,6 @@ package com.hedera.services.state.expiry.classification;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;

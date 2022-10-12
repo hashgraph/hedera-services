@@ -23,26 +23,21 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.system.address.AddressBook;
-
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,9 +69,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         this.accountSupplier = accountSupplier;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void ensureSystemAccounts(
             final BackingStore<AccountID, HederaAccount> accounts, final AddressBook addressBook) {
@@ -134,9 +127,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         account.setMaxAutomaticAssociations(0);
     }
 
-    private HederaAccount accountWith(
-            final long balance,
-            final long expiry) {
+    private HederaAccount accountWith(final long balance, final long expiry) {
         var account =
                 new HederaAccountCustomizer()
                         .isReceiverSigRequired(false)

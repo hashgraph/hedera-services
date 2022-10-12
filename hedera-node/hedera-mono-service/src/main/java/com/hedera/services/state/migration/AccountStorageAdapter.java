@@ -1,21 +1,32 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.migration;
+
+import static com.swirlds.virtualmap.VirtualMapMigration.extractVirtualMapData;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualMapMigration;
-import org.apache.commons.lang3.tuple.Pair;
-
-import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.function.BiConsumer;
-
-import static com.swirlds.virtualmap.VirtualMapMigration.extractVirtualMapData;
+import javax.annotation.Nullable;
 
 public class AccountStorageAdapter {
     private static final int THREAD_COUNT = 32;
@@ -106,8 +117,10 @@ public class AccountStorageAdapter {
     public void forEach(final BiConsumer<EntityNum, HederaAccount> visitor) {
         if (accountsOnDisk) {
             try {
-                extractVirtualMapData(onDiskAccounts,
-                        entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()), THREAD_COUNT);
+                extractVirtualMapData(
+                        onDiskAccounts,
+                        entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
+                        THREAD_COUNT);
             } catch (InterruptedException e) {
                 throw new IllegalStateException(e);
             }

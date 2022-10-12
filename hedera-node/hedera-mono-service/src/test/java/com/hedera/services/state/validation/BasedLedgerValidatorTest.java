@@ -73,7 +73,9 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
         // expect:
-        assertThrows(IllegalStateException.class, () -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+        assertThrows(
+                IllegalStateException.class,
+                () -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
     }
 
     @Test
@@ -83,7 +85,9 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
         // expect:
-        assertThrows(IllegalStateException.class, () -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+        assertThrows(
+                IllegalStateException.class,
+                () -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
     }
 
     @Test
@@ -101,19 +105,22 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(0L), expectedWith(100L));
 
         // expect:
-        assertThrows(IllegalStateException.class, () -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+        assertThrows(
+                IllegalStateException.class,
+                () -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
     }
 
     private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
         MerkleAccount hAccount =
-                (MerkleAccount) new HederaAccountCustomizer()
-                        .isReceiverSigRequired(false)
-                        .proxy(MISSING_ENTITY_ID)
-                        .isDeleted(false)
-                        .expiry(1_234_567L)
-                        .memo("")
-                        .isSmartContract(false)
-                        .customizing(new MerkleAccount());
+                (MerkleAccount)
+                        new HederaAccountCustomizer()
+                                .isReceiverSigRequired(false)
+                                .proxy(MISSING_ENTITY_ID)
+                                .isDeleted(false)
+                                .expiry(1_234_567L)
+                                .memo("")
+                                .isSmartContract(false)
+                                .customizing(new MerkleAccount());
         hAccount.setBalance(balance);
         return hAccount;
     }

@@ -374,8 +374,10 @@ class GetAccountInfoAnswerTest {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId),
-                AccountStorageAdapter.fromInMemory(accounts)))
+        given(
+                        optionValidator.queryableAccountStatus(
+                                EntityNum.fromAccountId(payerId),
+                                AccountStorageAdapter.fromInMemory(accounts)))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
@@ -392,7 +394,9 @@ class GetAccountInfoAnswerTest {
 
         given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
-        given(optionValidator.queryableAccountStatus(entityNum, AccountStorageAdapter.fromInMemory(accounts)))
+        given(
+                        optionValidator.queryableAccountStatus(
+                                entityNum, AccountStorageAdapter.fromInMemory(accounts)))
                 .willReturn(INVALID_ACCOUNT_ID);
 
         ResponseCodeEnum validity = subject.checkValidity(query, view);

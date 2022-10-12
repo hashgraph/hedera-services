@@ -236,22 +236,25 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         var tokens = signedState.tokens();
         var accounts = signedState.accounts();
         var tokenAssociations = signedState.tokenAssociations();
-        accounts.forEach((id, account) -> {
-            if (!account.isDeleted()) {
-                var accountId = id.toGrpcAccountId();
-                var balance = account.getBalance();
-                if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
-                    log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, readableId(accountId), balance);
-                }
-                totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
-                SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
-                sabBuilder.setHbarBalance(balance).setAccountID(accountId);
-                if (dynamicProperties.shouldExportTokenBalances()) {
-                    addTokenBalances(account, sabBuilder, tokens, tokenAssociations);
-                }
-                accountBalances.add(sabBuilder.build());
-            }
-        });
+        accounts.forEach(
+                (id, account) -> {
+                    if (!account.isDeleted()) {
+                        var accountId = id.toGrpcAccountId();
+                        var balance = account.getBalance();
+                        if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
+                            log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, readableId(accountId), balance);
+                        }
+                        totalFloat.set(
+                                totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
+                        SingleAccountBalances.Builder sabBuilder =
+                                SingleAccountBalances.newBuilder();
+                        sabBuilder.setHbarBalance(balance).setAccountID(accountId);
+                        if (dynamicProperties.shouldExportTokenBalances()) {
+                            addTokenBalances(account, sabBuilder, tokens, tokenAssociations);
+                        }
+                        accountBalances.add(sabBuilder.build());
+                    }
+                });
         accountBalances.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
         return new BalancesSummary(totalFloat.get(), accountBalances);
     }

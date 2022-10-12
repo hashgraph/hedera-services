@@ -16,14 +16,10 @@
 package com.hedera.services.ledger.backing;
 
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.forEach;
 
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;

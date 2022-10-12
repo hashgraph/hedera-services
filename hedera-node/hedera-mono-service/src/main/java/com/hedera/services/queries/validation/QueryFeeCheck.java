@@ -26,13 +26,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -47,8 +45,7 @@ public class QueryFeeCheck {
 
     @Inject
     public QueryFeeCheck(
-            final OptionValidator validator,
-            final Supplier<AccountStorageAdapter> accounts) {
+            final OptionValidator validator, final Supplier<AccountStorageAdapter> accounts) {
         this.accounts = accounts;
         this.validator = validator;
     }

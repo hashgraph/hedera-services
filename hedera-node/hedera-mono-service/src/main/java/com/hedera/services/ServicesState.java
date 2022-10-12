@@ -70,7 +70,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -79,14 +78,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * The Merkle tree root of the Hedera Services world state.
- */
+/** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2 {
     private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -142,9 +138,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         this.accountsOnDisk = that.accountsOnDisk;
     }
 
-    /**
-     * Log out the sizes the state children.
-     */
+    /** Log out the sizes the state children. */
     private void logStateChildrenSizes() {
         log.info(
                 "  (@ {}) # NFTs               = {}",
@@ -452,8 +446,10 @@ public class ServicesState extends PartialNaryMerkleInternal
     public AccountStorageAdapter accounts() {
         final var accountsStorage = getChild(StateChildIndices.ACCOUNTS);
         return (accountsStorage instanceof VirtualMap)
-                ? AccountStorageAdapter.fromOnDisk((VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage)
-                : AccountStorageAdapter.fromInMemory((MerkleMap<EntityNum, MerkleAccount>) accountsStorage);
+                ? AccountStorageAdapter.fromOnDisk(
+                        (VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage)
+                : AccountStorageAdapter.fromInMemory(
+                        (MerkleMap<EntityNum, MerkleAccount>) accountsStorage);
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
@@ -500,9 +496,9 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var tokensMap = getChild(StateChildIndices.UNIQUE_TOKENS);
         return tokensMap.getClass() == MerkleMap.class
                 ? UniqueTokenMapAdapter.wrap(
-                (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
+                        (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
                 : UniqueTokenMapAdapter.wrap(
-                (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
+                        (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
     }
 
     public RecordsStorageAdapter payerRecords() {
@@ -606,8 +602,10 @@ public class ServicesState extends PartialNaryMerkleInternal
         }
         if (FIRST_028X_VERSION.isAfter(deserializedVersion)) {
             // These accounts were created with an (unnecessary) MerkleAccountTokens child
-            ((MerkleAccount) accounts().get(EntityNum.fromLong(800L))).forgetThirdChildIfPlaceholder();
-            ((MerkleAccount) accounts().get(EntityNum.fromLong(801L))).forgetThirdChildIfPlaceholder();
+            ((MerkleAccount) accounts().get(EntityNum.fromLong(800L)))
+                    .forgetThirdChildIfPlaceholder();
+            ((MerkleAccount) accounts().get(EntityNum.fromLong(801L)))
+                    .forgetThirdChildIfPlaceholder();
         }
         if (FIRST_030X_VERSION.isAfter(deserializedVersion)) {
             if (getBootstrapProperties().getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS)) {

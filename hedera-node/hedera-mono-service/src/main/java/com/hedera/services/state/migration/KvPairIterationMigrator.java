@@ -17,7 +17,6 @@ package com.hedera.services.state.migration;
 
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.IterableContractValue;

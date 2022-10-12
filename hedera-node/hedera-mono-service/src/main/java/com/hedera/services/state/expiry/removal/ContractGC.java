@@ -30,7 +30,6 @@ import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MapValueListUtils;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import java.util.function.Supplier;

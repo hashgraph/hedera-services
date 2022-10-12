@@ -172,7 +172,9 @@ class GetAccountRecordsAnswerTest {
     @Test
     void usesValidator() {
         final var query = validQuery(COST_ANSWER, fee, target);
-        given(optionValidator.queryableAccountStatus(asAccount(target), AccountStorageAdapter.fromInMemory(accounts)))
+        given(
+                        optionValidator.queryableAccountStatus(
+                                asAccount(target), AccountStorageAdapter.fromInMemory(accounts)))
                 .willReturn(ACCOUNT_DELETED);
 
         final var validity = subject.checkValidity(query, view);

@@ -69,7 +69,9 @@ class UniqueTokensLinkManagerTest {
         subject =
                 new UniqueTokensLinkManager(
                         () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> tokens, () -> uniqueTokens, bootstrapProperties);
+                        () -> tokens,
+                        () -> uniqueTokens,
+                        bootstrapProperties);
 
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(true);

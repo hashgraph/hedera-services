@@ -94,14 +94,15 @@ public class TreasuryClonerTest {
     }
 
     public static MerkleAccount accountWith(final long expiry, final JKey someKey) {
-        return (MerkleAccount) new HederaAccountCustomizer()
-                .isReceiverSigRequired(true)
-                .isDeleted(false)
-                .expiry(expiry)
-                .memo("123")
-                .isSmartContract(false)
-                .key(someKey)
-                .autoRenewPeriod(expiry)
-                .customizing(new MerkleAccount());
+        return (MerkleAccount)
+                new HederaAccountCustomizer()
+                        .isReceiverSigRequired(true)
+                        .isDeleted(false)
+                        .expiry(expiry)
+                        .memo("123")
+                        .isSmartContract(false)
+                        .key(someKey)
+                        .autoRenewPeriod(expiry)
+                        .customizing(new MerkleAccount());
     }
 }

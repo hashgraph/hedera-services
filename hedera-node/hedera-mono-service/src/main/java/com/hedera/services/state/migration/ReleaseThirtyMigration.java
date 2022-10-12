@@ -21,12 +21,10 @@ import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.RandomExtended;
 import java.time.Instant;
 import org.apache.logging.log4j.LogManager;

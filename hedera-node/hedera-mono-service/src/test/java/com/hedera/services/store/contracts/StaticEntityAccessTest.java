@@ -105,28 +105,30 @@ class StaticEntityAccessTest {
             ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
 
     private final MerkleAccount someNonContractAccount =
-            (MerkleAccount) new HederaAccountCustomizer()
-                    .isReceiverSigRequired(false)
-                    .key(key)
-                    .proxy(MISSING_ENTITY_ID)
-                    .isDeleted(false)
-                    .expiry(someExpiry)
-                    .memo("")
-                    .isSmartContract(false)
-                    .autoRenewPeriod(1234L)
-                    .customizing(new MerkleAccount());
+            (MerkleAccount)
+                    new HederaAccountCustomizer()
+                            .isReceiverSigRequired(false)
+                            .key(key)
+                            .proxy(MISSING_ENTITY_ID)
+                            .isDeleted(false)
+                            .expiry(someExpiry)
+                            .memo("")
+                            .isSmartContract(false)
+                            .autoRenewPeriod(1234L)
+                            .customizing(new MerkleAccount());
     private final MerkleAccount someContractAccount =
-            (MerkleAccount) new HederaAccountCustomizer()
-                    .isReceiverSigRequired(false)
-                    .alias(pretendAlias)
-                    .key(key)
-                    .proxy(MISSING_ENTITY_ID)
-                    .isDeleted(false)
-                    .expiry(someExpiry)
-                    .memo("")
-                    .isSmartContract(true)
-                    .autoRenewPeriod(1234L)
-                    .customizing(new MerkleAccount());
+            (MerkleAccount)
+                    new HederaAccountCustomizer()
+                            .isReceiverSigRequired(false)
+                            .alias(pretendAlias)
+                            .key(key)
+                            .proxy(MISSING_ENTITY_ID)
+                            .isDeleted(false)
+                            .expiry(someExpiry)
+                            .memo("")
+                            .isSmartContract(true)
+                            .autoRenewPeriod(1234L)
+                            .customizing(new MerkleAccount());
 
     @BeforeEach
     void setUp() {

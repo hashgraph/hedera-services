@@ -51,27 +51,29 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ToStringAccountsExporterTest {
     private final String testExportLoc = "accounts.txt";
     private final MerkleAccount account1 =
-            (MerkleAccount) new HederaAccountCustomizer()
-                    .isReceiverSigRequired(true)
-                    .proxy(EntityId.MISSING_ENTITY_ID)
-                    .isDeleted(false)
-                    .expiry(1_234_567L)
-                    .memo("This ecstasy doth unperplex")
-                    .isSmartContract(true)
-                    .key(new JEd25519Key("first-fake".getBytes()))
-                    .autoRenewPeriod(555_555L)
-                    .customizing(new MerkleAccount());
+            (MerkleAccount)
+                    new HederaAccountCustomizer()
+                            .isReceiverSigRequired(true)
+                            .proxy(EntityId.MISSING_ENTITY_ID)
+                            .isDeleted(false)
+                            .expiry(1_234_567L)
+                            .memo("This ecstasy doth unperplex")
+                            .isSmartContract(true)
+                            .key(new JEd25519Key("first-fake".getBytes()))
+                            .autoRenewPeriod(555_555L)
+                            .customizing(new MerkleAccount());
     private final MerkleAccount account2 =
-            (MerkleAccount) new HederaAccountCustomizer()
-                    .isReceiverSigRequired(false)
-                    .proxy(EntityId.MISSING_ENTITY_ID)
-                    .isDeleted(true)
-                    .expiry(7_654_321L)
-                    .memo("We said, and show us what we love")
-                    .isSmartContract(false)
-                    .key(new JEd25519Key("second-fake".getBytes()))
-                    .autoRenewPeriod(444_444L)
-                    .customizing(new MerkleAccount());
+            (MerkleAccount)
+                    new HederaAccountCustomizer()
+                            .isReceiverSigRequired(false)
+                            .proxy(EntityId.MISSING_ENTITY_ID)
+                            .isDeleted(true)
+                            .expiry(7_654_321L)
+                            .memo("We said, and show us what we love")
+                            .isSmartContract(false)
+                            .key(new JEd25519Key("second-fake".getBytes()))
+                            .autoRenewPeriod(444_444L)
+                            .customizing(new MerkleAccount());
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private ToStringAccountsExporter subject;
@@ -98,7 +100,8 @@ class ToStringAccountsExporterTest {
         given(nodeLocalProperties.accountsExportPath()).willReturn("/this/is/not/a/path");
 
         // expect:
-        assertDoesNotThrow(() -> subject.toFile(AccountStorageAdapter.fromInMemory(new MerkleMap<>())));
+        assertDoesNotThrow(
+                () -> subject.toFile(AccountStorageAdapter.fromInMemory(new MerkleMap<>())));
         // and:
         assertThat(
                 logCaptor.warnLogs(),

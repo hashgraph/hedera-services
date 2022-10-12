@@ -30,10 +30,8 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,7 +47,8 @@ public class MapMigrationToDisk {
         final NonAtomicReference<VirtualMap<EntityNumVirtualKey, OnDiskAccount>> onDiskAccounts =
                 new NonAtomicReference<>(virtualMapFactory.newOnDiskAccountStorage());
 
-        final var inMemoryAccounts = (MerkleMap<EntityNum, MerkleAccount>) mutableState.getChild(ACCOUNTS);
+        final var inMemoryAccounts =
+                (MerkleMap<EntityNum, MerkleAccount>) mutableState.getChild(ACCOUNTS);
         final MerkleMap<EntityNum, MerklePayerRecords> payerRecords = new MerkleMap<>();
         forEach(
                 inMemoryAccounts,

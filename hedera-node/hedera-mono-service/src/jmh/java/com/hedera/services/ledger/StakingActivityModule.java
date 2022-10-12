@@ -88,8 +88,7 @@ public interface StakingActivityModule {
 
     @Provides
     @Singleton
-    static Supplier<AccountStorageAdapter> provideAccountsSupplier(
-            InfrastructureBundle bundle) {
+    static Supplier<AccountStorageAdapter> provideAccountsSupplier(InfrastructureBundle bundle) {
         return bundle.getterFor(InfrastructureType.ACCOUNTS_MM);
     }
 
@@ -145,7 +144,8 @@ public interface StakingActivityModule {
             final AccountUsageTracking usageTracking) {
         final Supplier<HederaAccount> accountSupplier =
                 bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
-                        ? OnDiskAccount::new : MerkleAccount::new;
+                        ? OnDiskAccount::new
+                        : MerkleAccount::new;
         final var accountsLedger =
                 new TransactionalLedger<>(
                         AccountProperty.class,

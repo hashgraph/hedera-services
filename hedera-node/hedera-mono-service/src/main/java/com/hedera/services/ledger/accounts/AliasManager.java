@@ -16,7 +16,6 @@
 package com.hedera.services.ledger.accounts;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -27,12 +26,10 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -170,7 +167,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
         final var numEOAliases = new AtomicInteger();
         final var workingAliases = curAliases();
         workingAliases.clear();
-        accounts.forEach((k, v) -> {
+        accounts.forEach(
+                (k, v) -> {
                     final var alias = v.getAlias();
                     observer.accept(k, v);
                     if (!alias.isEmpty()) {

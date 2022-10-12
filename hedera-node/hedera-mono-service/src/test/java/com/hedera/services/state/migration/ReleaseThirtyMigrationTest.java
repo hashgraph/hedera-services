@@ -67,7 +67,8 @@ class ReleaseThirtyMigrationTest {
         accountsMap.put(cKey, c);
         final var instant = Instant.ofEpochSecond(123456789L);
 
-        given(initializingState.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accountsMap));
+        given(initializingState.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(accountsMap));
 
         ReleaseThirtyMigration.grantFreeAutoRenew(initializingState, instant);
 

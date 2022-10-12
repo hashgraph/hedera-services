@@ -218,7 +218,8 @@ class OpUsageCtxHelperTest {
 
     @Test
     void returnsMissingCtxWhenApproveAccountNotFound() {
-        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(new MerkleMap<>()));
+        given(workingView.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(new MerkleMap<>()));
         given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(accessor.getPayer()).willReturn(AccountID.getDefaultInstance());
 

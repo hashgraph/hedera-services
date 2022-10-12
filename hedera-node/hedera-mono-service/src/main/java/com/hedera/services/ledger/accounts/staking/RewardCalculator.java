@@ -22,12 +22,11 @@ import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.HederaAccount;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.hedera.services.state.migration.HederaAccount;
 import org.jetbrains.annotations.NotNull;
 
 @Singleton

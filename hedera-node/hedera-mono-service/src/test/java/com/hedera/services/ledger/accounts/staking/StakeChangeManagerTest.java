@@ -56,7 +56,9 @@ class StakeChangeManagerTest {
     @BeforeEach
     void setUp() {
         stakingInfo = buildsStakingInfoMap();
-        subject = new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts));
+        subject =
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts));
     }
 
     @Test
@@ -125,7 +127,9 @@ class StakeChangeManagerTest {
                 -1, accountsMap.get(EntityNum.fromAccountId(counterpartyId)).getStakePeriodStart());
         assertEquals(-1, accountsMap.get(EntityNum.fromAccountId(partyId)).getStakePeriodStart());
 
-        subject = new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accountsMap));
+        subject =
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accountsMap));
         subject.initializeAllStakingStartsTo(todayNum);
 
         assertEquals(todayNum, counterparty.getStakePeriodStart());

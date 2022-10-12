@@ -37,7 +37,9 @@ class TokenRelsLinkManagerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TokenRelsLinkManager(() -> AccountStorageAdapter.fromInMemory(accounts), () -> tokenRels);
+        subject =
+                new TokenRelsLinkManager(
+                        () -> AccountStorageAdapter.fromInMemory(accounts), () -> tokenRels);
     }
 
     @Test

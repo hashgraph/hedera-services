@@ -15,13 +15,14 @@
  */
 package com.hedera.services.store;
 
+import static com.hedera.services.context.properties.PropertyNames.*;
+
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
@@ -64,8 +65,6 @@ import dagger.Provides;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-
-import static com.hedera.services.context.properties.PropertyNames.*;
 
 @Module
 public interface StoresModule {
@@ -159,9 +158,10 @@ public interface StoresModule {
     @Provides
     @Singleton
     static Supplier<HederaAccount> provideAccountSupplier(
-        final BootstrapProperties bootstrapProperties) {
+            final BootstrapProperties bootstrapProperties) {
         return bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
-                        ? OnDiskAccount::new : MerkleAccount::new;
+                ? OnDiskAccount::new
+                : MerkleAccount::new;
     }
 
     @Provides
@@ -172,7 +172,7 @@ public interface StoresModule {
             final BootstrapProperties bootstrapProperties,
             final Supplier<MerkleNetworkContext> networkCtx,
             final GlobalDynamicProperties dynamicProperties,
-            final Supplier<HederaAccount> accountSupplier ,
+            final Supplier<HederaAccount> accountSupplier,
             final RewardCalculator rewardCalculator,
             final StakeChangeManager stakeChangeManager,
             final StakePeriodManager stakePeriodManager,

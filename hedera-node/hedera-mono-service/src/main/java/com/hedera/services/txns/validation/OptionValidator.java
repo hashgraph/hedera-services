@@ -91,8 +91,7 @@ public interface OptionValidator {
 
     JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
-    default ResponseCodeEnum queryableAccountStatus(
-            AccountID id, AccountStorageAdapter accounts) {
+    default ResponseCodeEnum queryableAccountStatus(AccountID id, AccountStorageAdapter accounts) {
         return queryableAccountStatus(EntityNum.fromAccountId(id), accounts);
     }
 

@@ -82,7 +82,8 @@ public class FeeCalcUtilsTest {
         given(account.getExpiry()).willReturn(Long.MAX_VALUE);
         given(accounts.get(key)).willReturn(account);
 
-        assertEquals(expected, lookupAccountExpiry(key, AccountStorageAdapter.fromInMemory(accounts)));
+        assertEquals(
+                expected, lookupAccountExpiry(key, AccountStorageAdapter.fromInMemory(accounts)));
     }
 
     @Test

@@ -49,7 +49,6 @@ import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.logic.NetworkCtxManager;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.MigrationRecordsManager;
 import com.hedera.services.state.tasks.TaskModule;

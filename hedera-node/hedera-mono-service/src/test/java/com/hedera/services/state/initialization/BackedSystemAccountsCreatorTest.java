@@ -123,7 +123,11 @@ class BackedSystemAccountsCreatorTest {
 
         subject =
                 new BackedSystemAccountsCreator(
-                        accountNums, properties, () -> pretendKey, MerkleAccount::new, treasuryCloner);
+                        accountNums,
+                        properties,
+                        () -> pretendKey,
+                        MerkleAccount::new,
+                        treasuryCloner);
     }
 
     @Test
@@ -268,15 +272,16 @@ class BackedSystemAccountsCreatorTest {
 
     private MerkleAccount withExpectedBalance(long balance) throws NegativeAccountBalanceException {
         MerkleAccount hAccount =
-                (MerkleAccount) new HederaAccountCustomizer()
-                        .isReceiverSigRequired(false)
-                        .isDeleted(false)
-                        .expiry(expiry)
-                        .memo("")
-                        .isSmartContract(false)
-                        .key(genesisKey)
-                        .autoRenewPeriod(expiry)
-                        .customizing(new MerkleAccount());
+                (MerkleAccount)
+                        new HederaAccountCustomizer()
+                                .isReceiverSigRequired(false)
+                                .isDeleted(false)
+                                .expiry(expiry)
+                                .memo("")
+                                .isSmartContract(false)
+                                .key(genesisKey)
+                                .autoRenewPeriod(expiry)
+                                .customizing(new MerkleAccount());
         hAccount.setBalance(balance);
         return hAccount;
     }

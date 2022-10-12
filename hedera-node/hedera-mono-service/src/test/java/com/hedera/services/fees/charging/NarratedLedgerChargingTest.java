@@ -69,7 +69,10 @@ class NarratedLedgerChargingTest {
     void setUp() {
         subject =
                 new NarratedLedgerCharging(
-                        nodeInfo, feeDistribution, feeExemptions, () -> AccountStorageAdapter.fromInMemory(accounts));
+                        nodeInfo,
+                        feeDistribution,
+                        feeExemptions,
+                        () -> AccountStorageAdapter.fromInMemory(accounts));
         subject.setLedger(ledger);
     }
 
