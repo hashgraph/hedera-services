@@ -103,6 +103,8 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.dynamicEvmVersion());
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertTrue(subject.shouldDoTraceabilityExport());
+        assertFalse(subject.isLazyCreationEnabled());
+        assertTrue(subject.isCryptoCreateWithAliasEnabled());
     }
 
     @Test
@@ -255,6 +257,8 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.areTokenAutoCreationsEnabled());
         assertTrue(subject.dynamicEvmVersion());
         assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
+        assertTrue(subject.isLazyCreationEnabled());
+        assertFalse(subject.isCryptoCreateWithAliasEnabled());
     }
 
     @Test
@@ -518,6 +522,9 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 84) % 2 == 0);
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
                 .willReturn((i + 85) % 2 == 0);
+        given(properties.getBooleanProperty(LAZY_CREATION_ENABLED)).willReturn((i + 86) % 2 == 0);
+        given(properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED))
+                .willReturn((i + 87) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {
