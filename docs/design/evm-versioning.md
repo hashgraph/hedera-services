@@ -11,7 +11,7 @@ feature of each fork is that there is a well established impact on backwards com
 security demands it.
 
 In order for off-chain evaluation of these prior EVMs to work we also need to preserve a way to re-create the EVM
-classes in such a way so that the other instances can re-create the execution at
+classes in such a way so that the other instances can re-create the execution.
 
 ## Goals
 
