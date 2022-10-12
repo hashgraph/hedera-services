@@ -284,8 +284,7 @@ class CreateEvmTxProcessorTest {
     @Test
     void throwsWhenIntrinsicGasCostExceedsGasLimit() {
         givenValidMock(-1, false);
-        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
-                .willReturn(100_000L);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(100_000L);
 
         Address receiver = this.receiver.getId().asEvmAddress();
         assertFailsWith(
@@ -340,7 +339,7 @@ class CreateEvmTxProcessorTest {
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
         given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
-                given(updater.getSbhRefund()).willReturn(0L);
+        given(updater.getSbhRefund()).willReturn(0L);
 
         given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
         given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
@@ -376,7 +375,7 @@ class CreateEvmTxProcessorTest {
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
-                given(updater.getSbhRefund()).willReturn(0L);
+        given(updater.getSbhRefund()).willReturn(0L);
 
         given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
         given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
