@@ -1,8 +1,11 @@
 package com.hedera.services.base.service.crypto;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.base.metadata.TransactionMetadata;
 import com.hedera.services.base.store.AccountStore;
-import com.hedera.services.sigs.metadata.AccountSigningMetadata;
-import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.Transaction;
+
+import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
 
 /**
  * An implementation of {@code CryptoPreTransactionHandler} for validating all transactions defined in the protobuf
@@ -15,13 +18,13 @@ public class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHand
         this.accountStore = accountStore;
     }
 
-    public AccountSigningMetadata getAccountSigningMetadata(final EntityNum accountNum){
-        final var account = accountStore.getAccount(accountNum);
-        if (account.isPresent()) {
-            final var receiverSigRequired = account.get().isReceiverSigRequired();
-            final var key = account.get().key().get();
-            return new AccountSigningMetadata(key, receiverSigRequired);
+    public TransactionMetadata cryptoCreate(final Transaction tx) {
+        try{
+            final var txnBody = extractTransactionBody(tx);
+            final var payer = txnBody.getTransactionID().getAccountID();
+            return accountStore.createAccountSigningMetadata(tx, payer);
+        } catch (InvalidProtocolBufferException ex){
+            return new TransactionMetadata(tx, true, null, null);
         }
-        throw new IllegalArgumentException("Provided account number doesn't exist");
     }
 }

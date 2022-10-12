@@ -15,18 +15,22 @@
  */
 package com.hedera.services.base.store;
 
-import com.hedera.services.base.entity.Account;
-import com.hedera.services.base.entity.AccountImpl;
+import com.google.protobuf.ByteString;
+import com.hedera.services.base.metadata.TransactionMetadata;
 import com.hedera.services.base.state.State;
 import com.hedera.services.base.state.States;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Transaction;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.base.state.StateKeys.ACCOUNT_STORE;
+import static com.hedera.services.base.state.StateKeys.ALIASES;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 /**
  * Provides methods for interacting with the underlying data storage mechanisms for working with Accounts.
@@ -38,6 +42,7 @@ public class AccountStore {
 	 * The underlying data storage class that holds the account data.
 	 */
 	private final State<EntityNum, MerkleAccount> accountState;
+	private final State<ByteString, EntityNum> aliases;
 
 	/**
 	 * Create a new {@link AccountStore} instance.
@@ -46,38 +51,20 @@ public class AccountStore {
 	 */
 	public AccountStore(@Nonnull States states) {
 		this.accountState = states.get(ACCOUNT_STORE);
+		this.aliases = states.get(ALIASES);
 		Objects.requireNonNull(accountState);
+		Objects.requireNonNull(aliases);
 	}
 
-	public Optional<Account> getAccount(EntityNum id) {
-		final var opt = getAccountLeaf(id);
-		if (opt.isPresent()) {
-			final var account = opt.get();
-			return Optional.of(new AccountImpl(
-					account.number(),
-					Optional.ofNullable(account.getAlias()),
-					Optional.ofNullable(account.getAccountKey()),
-					account.getExpiry(),
-					account.getBalance(),
-					Optional.ofNullable(account.getMemo()),
-					account.isDeleted(),
-					account.isSmartContract(),
-					account.isReceiverSigRequired(),
-					account.getProxy().num(),
-					account.getNftsOwned(),
-					account.getMaxAutomaticAssociations(),
-					account.getUsedAutoAssociations(),
-					account.getNumAssociations(),
-					account.getNumPositiveBalances(),
-					account.getEthereumNonce(),
-					account.getStakedToMe(),
-					account.getStakePeriodStart(),
-					account.getStakedId(),
-					account.isDeclinedReward(),
-					account.totalStakeAtStartOfLastRewardedPeriod(),
-					account.getAutoRenewAccount().num()));
+	public TransactionMetadata createAccountSigningMetadata(final Transaction tx, final AccountID payer){
+		final EntityNum accountNum = isAlias(payer) ? aliases.get(payer.getAlias()).get() :
+				EntityNum.fromLong(payer.getAccountNum());
+		final var merkleAccount = getAccountLeaf(accountNum);
+		if (merkleAccount.isPresent()) {
+			final var key = merkleAccount.get().getAccountKey();
+			return new TransactionMetadata(tx, false, key);
 		}
-		return Optional.empty();
+		throw new IllegalArgumentException("Provided account number doesn't exist");
 	}
 
 	/**
