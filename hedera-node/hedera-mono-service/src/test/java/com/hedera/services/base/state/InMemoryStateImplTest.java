@@ -15,6 +15,7 @@
  */
 package com.hedera.services.base.state;
 
+import static com.hedera.services.base.state.StateKeys.ACCOUNT_STORE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,7 +36,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class InMemoryStateImplTest {
-    private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
     private final EntityNum num = EntityNum.fromLong(2L);
 
@@ -46,13 +46,13 @@ class InMemoryStateImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new InMemoryStateImpl(ACCOUNTS_KEY, accountsMap, lastModifiedTime);
+        subject = new InMemoryStateImpl(ACCOUNT_STORE, accountsMap, lastModifiedTime);
     }
 
     @Test
     void gettersWork() {
         assertEquals(lastModifiedTime, subject.getLastModifiedTime());
-        assertEquals(ACCOUNTS_KEY, subject.getStateKey());
+        assertEquals(ACCOUNT_STORE, subject.getStateKey());
     }
 
     @Test
@@ -64,7 +64,7 @@ class InMemoryStateImplTest {
 
     @Test
     void initializesToEmptyMerkleMapIfNotProvided() {
-        subject = new InMemoryStateImpl(ACCOUNTS_KEY, lastModifiedTime);
+        subject = new InMemoryStateImpl(ACCOUNT_STORE, lastModifiedTime);
         assertEquals(Optional.empty(), subject.get(num));
     }
 

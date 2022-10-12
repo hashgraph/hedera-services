@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class OnDiskStateImplTest {
-    private static final String UNIQUE_TOKENS_KEY = "UNIQUE_TOKENS_KEY";
+    private static final String TOKEN_STORE = "TOKEN_STORE";
     private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
 
     private final EntityNumVirtualKey num = new EntityNumVirtualKey(2L);
@@ -47,13 +47,13 @@ class OnDiskStateImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new OnDiskStateImpl<>(UNIQUE_TOKENS_KEY, nftsMap, lastModifiedTime);
+        subject = new OnDiskStateImpl<>(TOKEN_STORE, nftsMap, lastModifiedTime);
     }
 
     @Test
     void gettersWork() {
         assertEquals(lastModifiedTime, subject.getLastModifiedTime());
-        assertEquals(UNIQUE_TOKENS_KEY, subject.getStateKey());
+        assertEquals(TOKEN_STORE, subject.getStateKey());
     }
 
     @Test

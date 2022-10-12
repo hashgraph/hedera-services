@@ -21,10 +21,10 @@ import com.hedera.services.context.MutableStateChildren;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
+import static com.hedera.services.base.state.StateKeys.ACCOUNT_STORE;
+
 public class StatesImpl implements States {
     private final MutableStateChildren children = new MutableStateChildren();
-    private static final String ACCOUNTS_KEY = "ACCOUNTS";
-
     public StatesImpl() {
         /* Default constructor */
     }
@@ -42,7 +42,7 @@ public class StatesImpl implements States {
     public @Nonnull <K, V> State<K, V> get(@Nonnull final String stateKey) {
         Objects.requireNonNull(stateKey);
 
-        if (stateKey.equals(ACCOUNTS_KEY)) {
+        if (stateKey.equals(ACCOUNT_STORE)) {
             final var state =
                     new InMemoryStateImpl<>(stateKey, children.accounts(), children.signedAt());
             return (StateBase) state;

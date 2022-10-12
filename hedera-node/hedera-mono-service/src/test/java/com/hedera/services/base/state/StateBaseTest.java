@@ -28,7 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StateBaseTest {
-    private final String stateKey = "ACCOUNTS_KEY";
+    private final String stateKey = "ACCOUNT_STORE";
     private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
 
     private StateBase subject = new InMemoryStateImpl(stateKey, lastModifiedTime);

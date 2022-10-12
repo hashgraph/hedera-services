@@ -89,8 +89,8 @@ class StatesImplTest {
 
     @Test
     void returnsAccountsMapFromChildren() {
-        final String ACCOUNTS_KEY = "ACCOUNTS";
-        final String STORAGE_KEY = "STORAGE";
+        final String ACCOUNT_STORE = "ACCOUNT_STORE";
+        final String TOKEN_STORE = "TOKEN_STORE";
 
         final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
         givenStateWithMockChildren();
@@ -99,11 +99,11 @@ class StatesImplTest {
 
         subject.updateChildren(state);
 
-        final var state = subject.get(ACCOUNTS_KEY);
+        final var state = subject.get(ACCOUNT_STORE);
 
         assertEquals(lastHandledTime, state.getLastModifiedTime());
         assertTrue(state instanceof InMemoryStateImpl);
-        assertThrows(IllegalArgumentException.class, () -> subject.get(STORAGE_KEY));
+        assertThrows(IllegalArgumentException.class, () -> subject.get(TOKEN_STORE));
     }
 
     private void givenStateWithMockChildren() {

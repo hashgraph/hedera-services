@@ -34,9 +34,7 @@ public class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends State
     private final Instant lastModifiedTime;
 
     InMemoryStateImpl(@Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
-        super(stateKey);
-        this.merkle = new MerkleMap<>();
-        this.lastModifiedTime = lastModifiedTime;
+       this(stateKey, new MerkleMap<>(), lastModifiedTime);
     }
 
     public InMemoryStateImpl(
