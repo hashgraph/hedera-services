@@ -226,9 +226,6 @@ class CryptoCreateTransitionLogicTest {
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder().setAlias(ByteString.copyFromUtf8("0"));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
@@ -240,23 +237,28 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(aPrimitiveEDKey)
                         .setAlias(ByteString.copyFromUtf8("0"));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
-    void rejectsWhenKeyAndAliasDoesNotMatch() {
+    void rejectsWhenEDKeyAndAliasDoesNotMatch() {
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
                         .setKey(aPrimitiveEDKey)
                         .setAlias(ECDSA_KEY.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsWhenECKeyAndAliasDoesNotMatch() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(ECDSA_KEY)
+                        .setAlias(aPrimitiveEDKey.toByteString());
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
@@ -268,9 +270,6 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(ECDSA_KEY)
                         .setAlias(ByteString.copyFrom(ANOTHER_EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
@@ -282,7 +281,6 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(asKeyUnchecked(new JEd25519Key(new byte[ED25519_BYTE_LENGTH - 1])))
                         .setAlias(ByteString.copyFrom(ANOTHER_EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
 
         assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
@@ -294,9 +292,6 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(aPrimitiveEDKey)
                         .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
 
         assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }

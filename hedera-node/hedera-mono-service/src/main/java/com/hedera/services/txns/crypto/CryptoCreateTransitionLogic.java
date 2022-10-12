@@ -276,7 +276,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         if (memoValidity != OK) {
             return memoValidity;
         }
-        if (op.hasKey() && !op.getAlias().isEmpty()) {
+        boolean emptyAlias = op.getAlias().isEmpty();
+        if (op.hasKey() && !emptyAlias) {
             final var validatedKeyResponse = validateKey(op);
             if (validatedKeyResponse != null) {
                 return validatedKeyResponse;
@@ -300,7 +301,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                     return INVALID_ADMIN_KEY;
                 }
             }
-        } else if (op.getAlias().isEmpty()) {
+        } else if (emptyAlias) {
             if (!op.hasKey()) {
                 return KEY_REQUIRED;
             }
@@ -308,7 +309,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             if (validatedKeyResponse != null) {
                 return validatedKeyResponse;
             }
-        } else if (!op.getAlias().isEmpty() && op.getAlias().size() < EVM_ADDRESS_SIZE) {
+        } else if (op.getAlias().size() < EVM_ADDRESS_SIZE) {
             return INVALID_ALIAS_KEY;
         }
 
