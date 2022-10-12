@@ -30,7 +30,7 @@ import java.io.IOException;
 
 public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
     private static final int CURRENT_VERSION = 1;
-    private static final long RUNTIME_CONSTRUCTABLE_ID = 0xb8b383ccd3caed5bL;
+    private static final long RUNTIME_CONSTRUCTABLE_ID = 0x0185e6fd3ab81c31L;
 
     private static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
 

@@ -77,7 +77,6 @@ import com.hedera.services.txns.util.TokenUpdateValidator;
 import com.hedera.services.txns.util.UtilLogicModule;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TokenListChecks;
-import com.hedera.services.txns.validation.TransferListChecks;
 import com.hedera.services.utils.forensics.OrderedComparison;
 import com.hedera.services.utils.forensics.RecordParsers;
 import java.lang.reflect.InvocationTargetException;
@@ -135,7 +134,6 @@ class UtilsConstructorTest {
                             PresolvencyFlaws.class,
                             PureValidation.class,
                             TokenListChecks.class,
-                            TransferListChecks.class,
                             EntityIdUtils.class,
                             HederaDateTimeFormatter.class,
                             TokenTypesMapper.class,

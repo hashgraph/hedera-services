@@ -38,6 +38,8 @@ import org.apache.logging.log4j.Logger;
 public class MapMigrationToDisk {
     private static final Logger log = LogManager.getLogger(MapMigrationToDisk.class);
 
+    public static final int INSERTIONS_PER_COPY = 10_000;
+
     public static void migrateToDiskAsApropos(
             final int insertionsPerCopy,
             final ServicesState mutableState,
@@ -54,7 +56,7 @@ public class MapMigrationToDisk {
                 inMemoryAccounts,
                 (num, account) -> {
                     final var accountRecords = new MerklePayerRecords();
-                    ((MerkleAccount) account).records().forEach(accountRecords::offer);
+                    account.records().forEach(accountRecords::offer);
                     payerRecords.put(num, accountRecords);
 
                     final var onDiskAccount = accountMigrator.apply(account.state());

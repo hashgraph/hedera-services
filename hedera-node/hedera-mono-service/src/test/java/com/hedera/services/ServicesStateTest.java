@@ -21,6 +21,7 @@ import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.context.properties.SerializableSemVers.forHapiAndHedera;
+import static com.hedera.services.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -157,6 +158,7 @@ class ServicesStateTest {
     @Mock private ServicesState.StakingInfoBuilder stakingInfoBuilder;
     @Mock private ServicesState.IterableStorageMigrator iterableStorageMigrator;
     @Mock private ServicesState.ContractAutoRenewalMigrator autoRenewalMigrator;
+    @Mock private ServicesState.MapToDiskMigration mapToDiskMigration;
     @Mock private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
     @Mock private Consumer<ServicesState> scheduledTxnsMigrator;
     @Mock private BootstrapProperties bootstrapProperties;
@@ -171,10 +173,10 @@ class ServicesStateTest {
     void setUp() {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setProto(SemanticVersion.newBuilder().setMinor(28).build());
+                .setProto(SemanticVersion.newBuilder().setMinor(32).build());
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setServices(SemanticVersion.newBuilder().setMinor(28).build());
+                .setServices(SemanticVersion.newBuilder().setMinor(32).build());
         subject = new ServicesState();
         setAllChildren();
     }
@@ -519,6 +521,8 @@ class ServicesStateTest {
         subject = new ServicesState(bootstrapProperties);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
+                .willReturn(false);
         ServicesState.setAppBuilder(() -> appBuilder);
 
         given(addressBook.getSize()).willReturn(3);
@@ -751,6 +755,11 @@ class ServicesStateTest {
         subject = new ServicesState(bootstrapProperties);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
+                .willReturn(true);
+        ServicesState.setMapToDiskMigration(mapToDiskMigration);
+        ServicesState.setVmFactory(vmf);
+        given(vmf.apply(any())).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
         setAllMmsTo(mock(MerkleMap.class));
@@ -773,6 +782,15 @@ class ServicesStateTest {
         // when:
         subject.init(platform, addressBook, dualState, RESTART, currentVersion);
         assertTrue(subject.uniqueTokens().isVirtual());
+        verify(mapToDiskMigration)
+                .migrateToDiskAsApropos(
+                        INSERTIONS_PER_COPY,
+                        subject,
+                        virtualMapFactory,
+                        ServicesState.accountMigrator);
+
+        ServicesState.setVmFactory(VirtualMapFactory::new);
+        ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
     }
 
     @Test
@@ -987,6 +1005,7 @@ class ServicesStateTest {
     }
 
     private void unmockMigrators() {
+        ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
         ServicesState.setAutoRenewalMigrator(ReleaseThirtyMigration::grantFreeAutoRenew);
         ServicesState.setIterableStorageMigrator(ReleaseTwentySixMigration::makeStorageIterable);
         ServicesState.setOwnedNftsLinkMigrator(ReleaseThirtyMigration::rebuildNftOwners);

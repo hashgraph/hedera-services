@@ -135,7 +135,9 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         onDiskAccount.setStakedNum(inMemoryAccount.getStakedNum());
         onDiskAccount.setStakeAtStartOfLastRewardedPeriod(
                 inMemoryAccount.getStakeAtStartOfLastRewardedPeriod());
-        onDiskAccount.setAutoRenewAccountNumber(inMemoryAccount.getAutoRenewAccount().num());
+        if (inMemoryAccount.hasAutoRenewAccount()) {
+            onDiskAccount.setAutoRenewAccountNumber(inMemoryAccount.getAutoRenewAccount().num());
+        }
         // Complex
         onDiskAccount.setFirstStorageKey(inMemoryAccount.getFirstUint256Key());
 
