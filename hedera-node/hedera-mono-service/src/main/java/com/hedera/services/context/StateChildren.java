@@ -63,6 +63,7 @@ public interface StateChildren {
     MerkleSpecialFiles specialFiles();
 
     UniqueTokenMapAdapter uniqueTokens();
+
     RecordsStorageAdapter payerRecords();
 
     MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo();

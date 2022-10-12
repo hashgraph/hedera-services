@@ -124,7 +124,8 @@ public class OnDiskAccount implements VirtualValue {
         onDiskAccount.setStakedToMe(inMemoryAccount.getStakedToMe());
         onDiskAccount.setStakePeriodStart(inMemoryAccount.getStakePeriodStart());
         onDiskAccount.setStakedNum(inMemoryAccount.getStakedNum());
-        onDiskAccount.setStakeAtStartOfLastRewardedPeriod(inMemoryAccount.getStakeAtStartOfLastRewardedPeriod());
+        onDiskAccount.setStakeAtStartOfLastRewardedPeriod(
+                inMemoryAccount.getStakeAtStartOfLastRewardedPeriod());
         onDiskAccount.setAutoRenewAccountNumber(inMemoryAccount.getAutoRenewAccount().num());
         // Complex
         onDiskAccount.setFirstStorageKey(inMemoryAccount.getFirstUint256Key());

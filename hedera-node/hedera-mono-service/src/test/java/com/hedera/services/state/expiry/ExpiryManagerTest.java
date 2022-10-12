@@ -70,8 +70,12 @@ class ExpiryManagerTest {
 
     @Test
     void rebuildsExpectedSchedulesFromState() {
-        subject = new ExpiryManager(nums, sigImpactHistorian, mockTxnHistories, () ->
-                RecordsStorageAdapter.fromLegacy(mockAccounts));
+        subject =
+                new ExpiryManager(
+                        nums,
+                        sigImpactHistorian,
+                        mockTxnHistories,
+                        () -> RecordsStorageAdapter.fromLegacy(mockAccounts));
 
         subject.reviewExistingShortLivedEntities();
         final var resultingExpiries = subject.getShortLivedEntityExpiries();
@@ -83,8 +87,12 @@ class ExpiryManagerTest {
 
     @Test
     void rebuildsExpectedRecordsFromState() {
-        subject = new ExpiryManager(nums, sigImpactHistorian, liveTxnHistories, () ->
-                RecordsStorageAdapter.fromLegacy(liveAccounts));
+        subject =
+                new ExpiryManager(
+                        nums,
+                        sigImpactHistorian,
+                        liveTxnHistories,
+                        () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
         liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
@@ -104,7 +112,12 @@ class ExpiryManagerTest {
 
     @Test
     void expiresRecordsAsExpected() {
-        subject = new ExpiryManager(nums, sigImpactHistorian, liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
+        subject =
+                new ExpiryManager(
+                        nums,
+                        sigImpactHistorian,
+                        liveTxnHistories,
+                        () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 
@@ -130,7 +143,12 @@ class ExpiryManagerTest {
 
     @Test
     void expiresLoneRecordAsExpected() {
-        subject = new ExpiryManager(nums, sigImpactHistorian, liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
+        subject =
+                new ExpiryManager(
+                        nums,
+                        sigImpactHistorian,
+                        liveTxnHistories,
+                        () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 

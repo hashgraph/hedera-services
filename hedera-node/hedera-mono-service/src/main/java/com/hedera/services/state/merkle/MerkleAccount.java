@@ -46,7 +46,6 @@ public class MerkleAccount extends PartialNaryMerkleInternal
 
     static Runnable stackDump = Thread::dumpStack;
 
-
     private static final int RELEASE_0240_VERSION = 4;
     static final int MERKLE_VERSION = RELEASE_0240_VERSION;
 

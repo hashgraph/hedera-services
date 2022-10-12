@@ -1,4 +1,27 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.migration;
+
+import static com.hedera.services.state.migration.ReleaseThirtyMigrationTest.registerForMerkleMap;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -14,23 +37,13 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import org.checkerframework.checker.signature.qual.SignatureUnknown;
+import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.function.Function;
-
-import static com.hedera.services.state.migration.ReleaseThirtyMigrationTest.registerForMerkleMap;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentCaptor.forClass;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class MapMigrationToDiskTest {
@@ -39,14 +52,10 @@ class MapMigrationToDiskTest {
     private final EntityNum aNum = EntityNum.fromInt(666);
     private final EntityNum bNum = EntityNum.fromInt(777);
 
-    @Mock
-    private ServicesState mutableState;
-    @Mock
-    private VirtualMapFactory virtualMapFactory;
-    @Mock
-    private VirtualMap<EntityNumVirtualKey, OnDiskAccount> accountStore;
-    @Mock
-    private Function<MerkleAccountState, OnDiskAccount> accountMigrator;
+    @Mock private ServicesState mutableState;
+    @Mock private VirtualMapFactory virtualMapFactory;
+    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskAccount> accountStore;
+    @Mock private Function<MerkleAccountState, OnDiskAccount> accountMigrator;
 
     @Test
     @SuppressWarnings("unchecked")
@@ -59,7 +68,8 @@ class MapMigrationToDiskTest {
         liveAccounts.put(aNum, aAccount);
         liveAccounts.put(bNum, bAccount);
 
-        final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor = forClass(MerkleMap.class);
+        final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor =
+                forClass(MerkleMap.class);
         final var aPretendOnDiskAccount = new OnDiskAccount();
         final var bPretendOnDiskAccount = new OnDiskAccount();
 
@@ -69,7 +79,8 @@ class MapMigrationToDiskTest {
         given(accountMigrator.apply(aAccount.state())).willReturn(aPretendOnDiskAccount);
         given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
 
-        MapMigrationToDisk.migrateToDiskAsApropos(1, mutableState, virtualMapFactory, accountMigrator);
+        MapMigrationToDisk.migrateToDiskAsApropos(
+                1, mutableState, virtualMapFactory, accountMigrator);
 
         verify(mutableState).setChild(StateChildIndices.ACCOUNTS, accountStore);
         verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS), captor.capture());

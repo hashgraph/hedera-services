@@ -15,13 +15,11 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.util.Comparator.comparing;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -29,7 +27,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -122,9 +119,12 @@ public class ExpiryManager {
         payerRecordExpiries.reset();
 
         final var payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
-        payerRecords.get().doForEach(
-                (payerNum, payerRecords) ->
-                        stageExpiringRecords(payerNum.longValue(), payerRecords, payerExpiries));
+        payerRecords
+                .get()
+                .doForEach(
+                        (payerNum, payerRecords) ->
+                                stageExpiringRecords(
+                                        payerNum.longValue(), payerRecords, payerExpiries));
         payerExpiries.sort(
                 comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
         payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));

@@ -28,7 +28,6 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;

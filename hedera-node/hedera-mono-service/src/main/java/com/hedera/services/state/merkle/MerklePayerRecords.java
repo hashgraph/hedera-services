@@ -1,4 +1,21 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.merkle;
+
+import static com.hedera.services.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
 
 import com.hedera.services.state.migration.QueryableRecords;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -9,10 +26,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
-
 import java.io.IOException;
-
-import static com.hedera.services.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
 
 public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
     private static final int CURRENT_VERSION = 1;
@@ -48,13 +62,16 @@ public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<Entit
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         throwIfImmutable();
         num = in.readInt();
         if (payerRecords != null) {
             payerRecords.clear();
         }
-        payerRecords = in.readSerializable(true, () -> (payerRecords != null) ? payerRecords : new FCQueue<>());
+        payerRecords =
+                in.readSerializable(
+                        true, () -> (payerRecords != null) ? payerRecords : new FCQueue<>());
     }
 
     @Override
@@ -79,8 +96,8 @@ public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<Entit
     }
 
     public void offer(final ExpirableTxnRecord payerRecord) {
-       ensureUsable();
-       payerRecords.offer(payerRecord);
+        ensureUsable();
+        payerRecords.offer(payerRecord);
     }
 
     public FCQueue<ExpirableTxnRecord> mutableQueue() {
