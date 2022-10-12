@@ -58,9 +58,9 @@ public class InfrastructureInitializer {
     public static void initializeStakeableAccounts(
             final SplittableRandom random,
             final Map<String, Object> config,
-            final BackingStore<AccountID, MerkleAccount> backingAccounts,
+            final BackingStore<AccountID, HederaAccount> backingAccounts,
             final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> stakingLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> stakingLedger) {
         final var numAccounts = (int) config.get("stakeableAccounts");
         final var numNodeIds = (int) config.get("nodeIds");
         final var stakeToNodeProb = (double) config.get("stakeToNodeProb");
@@ -109,7 +109,7 @@ public class InfrastructureInitializer {
     }
 
     private static void initSomeAccounts(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger,
             final int userAccounts) {
         ledger.begin();
         final var initialBalance = 50_000_000_000L * 100_000_000L / (userAccounts + 1000);

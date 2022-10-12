@@ -41,8 +41,8 @@ import com.hedera.services.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.services.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Arrays;
@@ -111,7 +111,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     @Override
     public void preview(
-            final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+            final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         if (!dynamicProperties.isStakingEnabled()) {
             super.preview(pendingChanges);
         } else {
@@ -137,7 +137,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     @Override
-    public void finish(final int i, final MerkleAccount mutableAccount) {
+    public void finish(final int i, final HederaAccount mutableAccount) {
         if (stakedToMeUpdates[i] != NA) {
             mutableAccount.setStakedToMe(stakedToMeUpdates[i]);
         }
@@ -166,7 +166,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
      * @param pendingChanges the changes to iterate, preserving the above invariants
      */
     private void updateRewardsAndElections(
-            final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+            final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         final var origN = pendingChanges.size();
         // We re-compute pendingChanges.size() in the for condition b/c stakeToMe side effects can
         // increase it
@@ -195,13 +195,13 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     private StakeChangeScenario scenarioFor(
-            @Nullable final MerkleAccount account, @NotNull Map<AccountProperty, Object> changes) {
+            @Nullable final HederaAccount account, @NotNull Map<AccountProperty, Object> changes) {
         setCurrentAndNewIds(account, changes);
         return StakeChangeScenario.forCase(curStakedId, newStakedId);
     }
 
     private void finalizeRewardBalance(
-            final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+            final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         final var rewardsPaid = rewardCalculator.rewardsPaidInThisTxn();
         if (rewardsPaid > 0) {
             final var fundingI =
@@ -212,7 +212,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     private void finalizeStakeMetadata(
-            final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+            final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         for (int i = 0, n = pendingChanges.size(); i < n; i++) {
             final var scenario = stakeChangeScenarios[i];
             final var account = pendingChanges.entity(i);
@@ -257,7 +257,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         }
     }
 
-    private long rewardableStartStakeFor(final MerkleAccount account) {
+    private long rewardableStartStakeFor(final HederaAccount account) {
         if (!rewardsActivated || account.isDeclinedReward()) {
             return 0;
         }
@@ -279,10 +279,10 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     @VisibleForTesting
     void updateStakedToMeSideEffects(
-            final MerkleAccount account,
+            final HederaAccount account,
             final StakeChangeScenario scenario,
             final Map<AccountProperty, Object> changes,
-            final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+            final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         if (scenario == FROM_ACCOUNT_TO_ACCOUNT && curStakedId == newStakedId) {
             final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
             final var roundedInitialBalance = roundedToHbar(account.getBalance());
@@ -305,7 +305,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final long accountNum,
             final long delta,
             @NotNull
-                    final EntityChangeSet<AccountID, MerkleAccount, AccountProperty>
+                    final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         if (delta != 0) {
             final var stakeeI = stakeChangeManager.findOrAdd(accountNum, pendingChanges);
@@ -321,10 +321,10 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     private void payRewardIfPending(
             final int i,
-            @Nullable MerkleAccount account,
+            @Nullable HederaAccount account,
             @NotNull Map<AccountProperty, Object> changes,
             @NotNull
-                    final EntityChangeSet<AccountID, MerkleAccount, AccountProperty>
+                    final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         if (!hasBeenRewarded(i) && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
             payReward(i, account, changes, pendingChanges);
@@ -333,10 +333,10 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     private void payReward(
             final int i,
-            @NotNull MerkleAccount account,
+            @NotNull HederaAccount account,
             @NotNull Map<AccountProperty, Object> changes,
             @NotNull
-                    final EntityChangeSet<AccountID, MerkleAccount, AccountProperty>
+                    final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         final var reward = rewardsEarned[i] = rewardCalculator.computePendingReward(account);
         if (reward > 0) {
@@ -390,7 +390,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
      */
     @VisibleForTesting
     boolean isRewardSituation(
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             final long stakedToMeUpdate,
             @NotNull final Map<AccountProperty, Object> changes) {
         return rewardsActivated
@@ -433,13 +433,13 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     private void setCurrentAndNewIds(
-            @Nullable final MerkleAccount account, @NotNull Map<AccountProperty, Object> changes) {
+            @Nullable final HederaAccount account, @NotNull Map<AccountProperty, Object> changes) {
         curStakedId = account == null ? 0L : account.getStakedId();
         newStakedId = (long) changes.getOrDefault(STAKED_ID, curStakedId);
     }
 
     private boolean shouldRememberStakeStartFor(
-            @Nullable final MerkleAccount account, final long curStakedId, final long reward) {
+            @Nullable final HederaAccount account, final long curStakedId, final long reward) {
         if (account == null || curStakedId >= 0 || account.isDeclinedReward()) {
             // Alice cannot receive a reward for today, so nothing to remember here
             return false;

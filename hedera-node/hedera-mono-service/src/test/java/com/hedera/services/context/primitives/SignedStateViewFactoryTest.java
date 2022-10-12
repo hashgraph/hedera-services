@@ -37,6 +37,7 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
@@ -227,7 +228,7 @@ class SignedStateViewFactoryTest {
     }
 
     private void givenStateWithMockChildren() {
-        given(state.accounts()).willReturn(accounts);
+        given(state.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
         given(state.storage()).willReturn(storage);
         given(state.contractStorage()).willReturn(contractStorage);
         given(state.topics()).willReturn(topics);

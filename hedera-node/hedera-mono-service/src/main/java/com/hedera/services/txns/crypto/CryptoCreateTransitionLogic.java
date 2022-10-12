@@ -44,6 +44,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -78,7 +79,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
     private final GlobalDynamicProperties dynamicProperties;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final NodeInfo nodeInfo;
 
     @Inject
@@ -89,7 +90,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
             final GlobalDynamicProperties dynamicProperties,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo) {
         this.ledger = ledger;
         this.txnCtx = txnCtx;

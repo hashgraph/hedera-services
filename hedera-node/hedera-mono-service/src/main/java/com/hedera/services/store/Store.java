@@ -19,6 +19,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.function.Consumer;
@@ -34,7 +35,7 @@ public interface Store<T, K> {
     void setHederaLedger(HederaLedger ledger);
 
     void setAccountsLedger(
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
 
     void commitCreation();
 

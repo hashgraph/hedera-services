@@ -15,36 +15,46 @@
  */
 package com.hedera.services.state.virtual.entities;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
-import static com.hedera.services.state.virtual.KeyPackingUtils.*;
-import static com.hedera.services.state.virtual.utils.EntityIoUtils.readBytes;
-import static com.hedera.services.state.virtual.utils.EntityIoUtils.writeBytes;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.SerializationUtils.*;
-
 import com.google.protobuf.ByteString;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.hedera.services.state.virtual.utils.CheckedConsumer;
 import com.hedera.services.state.virtual.utils.CheckedSupplier;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-public class OnDiskAccount implements VirtualValue {
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.virtual.KeyPackingUtils.*;
+import static com.hedera.services.state.virtual.utils.EntityIoUtils.readBytes;
+import static com.hedera.services.state.virtual.utils.EntityIoUtils.writeBytes;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.SerializationUtils.*;
+
+public class OnDiskAccount implements VirtualValue, HederaAccount {
     private static final int CURRENT_VERSION = 1;
     private static final long CLASS_ID = 0xc88e3a5c7b497468L;
 
@@ -603,6 +613,258 @@ public class OnDiskAccount implements VirtualValue {
     public void setAutoRenewAccountNumber(final long value) {
         throwIfImmutable("Tried to set AUTO_RENEW_ACCOUNT_NUMBER on an immutable OnDiskAccount");
         longs[LongValues.AUTO_RENEW_ACCOUNT_NUMBER] = value;
+    }
+
+    // Backward compatability
+    @Override
+    public boolean isTokenTreasury() {
+        return getNumTreasuryTitles() > 0;
+    }
+
+    @Override
+    public boolean isSmartContract() {
+        return isContract();
+    }
+
+    @Override
+    public void setSmartContract(final boolean smartContract) {
+        setIsContract(smartContract);
+    }
+
+    @Override
+    public long getHeadNftTokenNum() {
+        return getHeadNftId();
+    }
+
+    @Override
+    public EntityNumPair getHeadNftKey() {
+        return EntityNumPair.fromLongs(getHeadNftTokenNum(), getHeadNftSerialNum());
+    }
+
+    @Override
+    public EntityNumPair getLatestAssociation() {
+        return EntityNumPair.fromLongs(getAccountNumber(), getHeadTokenId());
+    }
+
+    @Override
+    public long getBalance() {
+        return getHbarBalance();
+    }
+
+    @Override
+    public void setBalance(final long balance) throws NegativeAccountBalanceException {
+        if (balance < 0) {
+            throw new NegativeAccountBalanceException("Illegal balance " + balance);
+        }
+        throwIfImmutable();
+        setHbarBalance(balance);
+    }
+
+    @Override
+    public void setBalanceUnchecked(final long balance) {
+        if (balance < 0) {
+            throw new IllegalArgumentException("Illegal balance " + balance);
+        }
+        throwIfImmutable();
+        setHbarBalance(balance);
+    }
+
+    @Override
+    public void setReceiverSigRequired(final boolean receiverSigRequired) {
+        setIsReceiverSigRequired(receiverSigRequired);
+    }
+
+    @Override
+    public JKey getAccountKey() {
+        return key;
+    }
+
+    @Override
+    public void setAccountKey(final JKey key) {
+        setKey(key);
+    }
+
+    @Override
+    public int number() {
+        return codeFromNum(getAccountNumber());
+    }
+
+    @Override
+    public EntityId getProxy() {
+        return MISSING_ENTITY_ID;
+    }
+
+    @Override
+    public void setProxy(EntityId proxy) {
+        // Intentional no-op
+    }
+
+    @Override
+    public void setDeleted(final boolean deleted) {
+        setIsDeleted(deleted);
+    }
+
+    @Override
+    public int getMaxAutomaticAssociations() {
+        return getMaxAutoAssociations();
+    }
+
+    @Override
+    public void setMaxAutomaticAssociations(final int maxAutomaticAssociations) {
+        setMaxAutoAssociations(maxAutomaticAssociations);
+    }
+
+    @Override
+    public void setUsedAutomaticAssociations(int usedAutoAssociations) {
+        setUsedAutoAssociations(usedAutoAssociations);
+    }
+
+    @Override
+    public ContractKey getFirstContractStorageKey() {
+        return firstStorageKey == null
+                ? null
+                : new ContractKey(getAccountNumber(), firstStorageKey);
+    }
+
+    @Override
+    public int[] getFirstUint256Key() {
+        return getFirstStorageKey();
+    }
+
+    @Override
+    public void setFirstUint256StorageKey(final int[] firstUint256Key) {
+        setFirstStorageKey(firstUint256Key);
+    }
+
+    @Override
+    public Map<EntityNum, Long> getCryptoAllowances() {
+        return getHbarAllowances();
+    }
+
+    @Override
+    public void setCryptoAllowances(final SortedMap<EntityNum, Long> cryptoAllowances) {
+        setHbarAllowances(cryptoAllowances);
+    }
+
+    @Override
+    public Map<EntityNum, Long> getCryptoAllowancesUnsafe() {
+        return getHbarAllowances();
+    }
+
+    @Override
+    public void setCryptoAllowancesUnsafe(final Map<EntityNum, Long> cryptoAllowances) {
+        setHbarAllowances(cryptoAllowances);
+    }
+
+    @Override
+    public Set<FcTokenAllowanceId> getApproveForAllNfts() {
+        return getNftOperatorApprovals();
+    }
+
+    @Override
+    public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
+        setNftOperatorApprovals(approveForAllNfts);
+    }
+
+    @Override
+    public Set<FcTokenAllowanceId> getApproveForAllNftsUnsafe() {
+        return getNftOperatorApprovals();
+    }
+
+    @Override
+    public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+        return getFungibleAllowances();
+    }
+
+    @Override
+    public void setFungibleTokenAllowances(final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        setFungibleAllowances(fungibleTokenAllowances);
+    }
+
+    @Override
+    public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowancesUnsafe() {
+        return getFungibleAllowances();
+    }
+
+    @Override
+    public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        setFungibleAllowances(fungibleTokenAllowances);
+    }
+
+    @Override
+    public boolean isDeclinedReward() {
+        return isDeclineReward();
+    }
+
+    @Override
+    public void setDeclineReward(final boolean declineReward) {
+        setIsDeclineReward(declineReward);
+    }
+
+    @Override
+    public boolean hasBeenRewardedSinceLastStakeMetaChange() {
+        return getStakeAtStartOfLastRewardedPeriod() != -1L;
+    }
+
+    @Override
+    public long totalStakeAtStartOfLastRewardedPeriod() {
+        return getStakeAtStartOfLastRewardedPeriod();
+    }
+
+    @Override
+    public long totalStake() {
+        return getHbarBalance() + getStakedToMe();
+    }
+
+    @Override
+    public long getStakedId() {
+        return getStakedNum();
+    }
+
+    @Override
+    public void setStakedId(final long stakedId) {
+        setStakedNum(stakedId);
+    }
+
+    @Override
+    public boolean mayHavePendingReward() {
+        return getStakedId() < 0 && !isDeclinedReward();
+    }
+
+    @Override
+    public long getStakedNodeAddressBookId() {
+        if (getStakedNum() >= 0) {
+            throw new IllegalStateException("Account is not staked to a node");
+        }
+        return -getStakedNum() - 1;
+    }
+
+    @Override
+    public boolean hasAlias() {
+        return !getAlias().isEmpty();
+    }
+
+    @Override
+    public boolean hasAutoRenewAccount() {
+        return getAutoRenewAccountNumber() > 0L;
+    }
+
+    @Nullable
+    @Override
+    public EntityId getAutoRenewAccount() {
+        return hasAutoRenewAccount()
+                ? STATIC_PROPERTIES.scopedEntityIdWith(getAutoRenewAccountNumber())
+                : MISSING_ENTITY_ID;
+    }
+
+    @Override
+    public void setAutoRenewAccount(final EntityId autoRenewAccount) {
+        setAutoRenewAccountNumber(autoRenewAccount.num());
+    }
+
+    @Override
+    public void setEntityNum(final EntityNum num) {
+       setAccountNumber(num.longValue());
     }
 
     // Generated code

@@ -24,6 +24,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
@@ -42,7 +43,7 @@ import java.util.Map;
 public interface StateChildren {
     Instant signedAt();
 
-    MerkleMap<EntityNum, MerkleAccount> accounts();
+    AccountStorageAdapter accounts();
 
     MerkleMap<EntityNum, MerkleTopic> topics();
 

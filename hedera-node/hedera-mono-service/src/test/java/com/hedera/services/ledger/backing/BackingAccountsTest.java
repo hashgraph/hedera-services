@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.FcLong;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -54,7 +55,7 @@ class BackingAccountsTest {
         delegate.put(aKey, aValue);
         delegate.put(bKey, bValue);
 
-        subject = new BackingAccounts(() -> delegate);
+        subject = new BackingAccounts(() -> AccountStorageAdapter.fromInMemory(delegate));
 
         subject.rebuildFromSources();
     }

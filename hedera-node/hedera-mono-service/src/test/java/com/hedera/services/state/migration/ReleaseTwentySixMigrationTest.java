@@ -41,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReleaseTwentySixMigrationTest {
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private VirtualMap<ContractKey, ContractValue> contractStorage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> iterableContractStorage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> finalContractStorage;

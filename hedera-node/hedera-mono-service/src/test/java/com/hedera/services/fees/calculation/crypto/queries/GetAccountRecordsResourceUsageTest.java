@@ -32,6 +32,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -73,7 +74,7 @@ class GetAccountRecordsResourceUsageTest {
         aValue.records().offer(recordOne());
         aValue.records().offer(recordTwo());
         final MutableStateChildren children = new MutableStateChildren();
-        children.setAccounts(accounts);
+        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
         view = new StateView(null, children, null);
 
         subject =

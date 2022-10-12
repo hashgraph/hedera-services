@@ -52,6 +52,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -96,7 +97,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
     private final CreateEvmTxProcessor evmTxProcessor;
     private final GlobalDynamicProperties properties;
     private final SigImpactHistorian sigImpactHistorian;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final NodeInfo nodeInfo;
     private final SyntheticTxnFactory syntheticTxnFactory;
 
@@ -114,7 +115,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final GlobalDynamicProperties properties,
             final SigImpactHistorian sigImpactHistorian,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo) {
         this.hfs = hfs;
         this.txnCtx = txnCtx;

@@ -51,6 +51,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -239,7 +240,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
+    static Supplier<AccountStorageAdapter> provideWorkingAccounts(
             final MutableStateChildren workingState) {
         return workingState::accounts;
     }

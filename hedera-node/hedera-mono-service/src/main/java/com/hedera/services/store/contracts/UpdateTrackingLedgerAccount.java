@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
     private final AccountID accountId;
     private final NavigableMap<UInt256, UInt256> updatedStorage;
 
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
     @Nullable private A account;
     private long nonce;
@@ -58,7 +59,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
     public UpdateTrackingLedgerAccount(
             final Address address,
             @Nullable
-                    final TransactionalLedger<AccountID, AccountProperty, MerkleAccount>
+                    final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
                             trackingAccounts) {
         Preconditions.checkNotNull(address);
         this.address = address;
@@ -76,7 +77,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
     public UpdateTrackingLedgerAccount(
             final A account,
             @Nullable
-                    final TransactionalLedger<AccountID, AccountProperty, MerkleAccount>
+                    final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
                             trackingAccounts) {
         Preconditions.checkNotNull(account);
         this.address = account.getAddress();
@@ -263,7 +264,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
     }
 
     public void updateTrackingAccounts(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts) {
         this.trackingAccounts = trackingAccounts;
     }
 }

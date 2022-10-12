@@ -81,6 +81,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
@@ -342,7 +343,7 @@ class StateViewTest {
 
         children = new MutableStateChildren();
         children.setUniqueTokens(uniqueTokens);
-        children.setAccounts(contracts);
+        children.setAccounts(AccountStorageAdapter.fromInMemory(contracts));
         children.setTokens(tokens);
         children.setTokenAssociations(tokenRels);
         children.setSpecialFiles(specialFiles);

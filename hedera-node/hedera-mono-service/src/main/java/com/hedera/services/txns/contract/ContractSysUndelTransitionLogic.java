@@ -28,6 +28,7 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -53,7 +54,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
     private final LegacySystemUndeleter delegate;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
+    private final Supplier<AccountStorageAdapter> contracts;
 
     @Inject
     public ContractSysUndelTransitionLogic(
@@ -61,7 +62,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
             final LegacySystemUndeleter delegate,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
+            final Supplier<AccountStorageAdapter> contracts,
             @CompositeProps final PropertySource properties) {
         this.validator = validator;
         this.txnCtx = txnCtx;

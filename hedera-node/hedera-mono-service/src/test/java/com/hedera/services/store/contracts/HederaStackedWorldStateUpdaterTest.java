@@ -58,6 +58,7 @@ import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -87,7 +88,7 @@ class HederaStackedWorldStateUpdaterTest {
     @Mock(extraInterfaces = {HederaWorldUpdater.class})
     private AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private HederaMutableWorldState worldState;
     @Mock private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
     @Mock private ContractCustomizer customizer;

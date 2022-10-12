@@ -75,7 +75,7 @@ class MapMigrationToDiskTest {
 
         given(virtualMapFactory.newOnDiskAccountStorage()).willReturn(accountStore);
         given(accountStore.copy()).willReturn(accountStore);
-        given(mutableState.accounts()).willReturn(liveAccounts);
+        given(mutableState.accounts()).willReturn(AccountStorageAdapter.fromInMemory(liveAccounts));
         given(accountMigrator.apply(aAccount.state())).willReturn(aPretendOnDiskAccount);
         given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
 

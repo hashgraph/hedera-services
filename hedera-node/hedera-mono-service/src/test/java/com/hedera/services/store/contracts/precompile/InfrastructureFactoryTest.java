@@ -35,6 +35,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
@@ -93,7 +94,7 @@ class InfrastructureFactoryTest {
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private BackingStore<TokenID, MerkleToken> tokens;
     @Mock private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
     @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;

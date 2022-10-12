@@ -43,6 +43,7 @@ import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -127,7 +128,7 @@ class GetAccountBalanceAnswerTest {
     void syntaxCheckValidatesCidIfPresent() {
         String contractIdLit = "0.0.12346";
         ContractID cid = asContract(contractIdLit);
-        given(optionValidator.queryableContractStatus(cid, accounts)).willReturn(CONTRACT_DELETED);
+        given(optionValidator.queryableContractStatus(cid, AccountStorageAdapter.fromInMemory(accounts))).willReturn(CONTRACT_DELETED);
 
         final var query = contractQueryWith(cid);
         final var status = subject.checkValidity(query, wellKnownView());
@@ -139,7 +140,7 @@ class GetAccountBalanceAnswerTest {
     void syntaxCheckValidatesAliasedCidIfPresent() {
         final var resolvedId = EntityNum.fromLong(666);
         given(aliasManager.lookupIdBy(evmAddress)).willReturn(resolvedId);
-        given(optionValidator.queryableContractStatus(resolvedId.toGrpcContractID(), accounts))
+        given(optionValidator.queryableContractStatus(resolvedId.toGrpcContractID(), AccountStorageAdapter.fromInMemory(accounts)))
                 .willReturn(CONTRACT_DELETED);
 
         final var query = contractQueryWith(aliasContractId);
@@ -194,7 +195,7 @@ class GetAccountBalanceAnswerTest {
                 CryptoGetAccountBalanceQuery.newBuilder().setAccountID(id).build();
         Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
         // and:
-        given(optionValidator.queryableAccountStatus(id, accounts)).willReturn(ACCOUNT_DELETED);
+        given(optionValidator.queryableAccountStatus(id, AccountStorageAdapter.fromInMemory(accounts))).willReturn(ACCOUNT_DELETED);
 
         // when:
         ResponseCodeEnum status = subject.checkValidity(query, wellKnownView());
@@ -363,7 +364,7 @@ class GetAccountBalanceAnswerTest {
 
         final MutableStateChildren children = new MutableStateChildren();
         children.setTokens(tokens);
-        children.setAccounts(accounts);
+        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
         children.setTokenAssociations(tokenRels);
         return new StateView(scheduleStore, children, null);
     }

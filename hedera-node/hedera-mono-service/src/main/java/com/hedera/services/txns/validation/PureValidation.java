@@ -30,6 +30,7 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -57,19 +58,19 @@ public final class PureValidation {
     }
 
     public static ResponseCodeEnum queryableAccountOrContractStatus(
-            final EntityNum entityNum, final MerkleMap<EntityNum, MerkleAccount> accounts) {
+            final EntityNum entityNum, final AccountStorageAdapter accounts) {
         return internalQueryableAccountStatus(true, entityNum, accounts);
     }
 
     public static ResponseCodeEnum queryableAccountStatus(
-            final EntityNum entityNum, final MerkleMap<EntityNum, MerkleAccount> accounts) {
+            final EntityNum entityNum, final AccountStorageAdapter accounts) {
         return internalQueryableAccountStatus(false, entityNum, accounts);
     }
 
     private static ResponseCodeEnum internalQueryableAccountStatus(
             final boolean contractIsOk,
             final EntityNum entityNum,
-            final MerkleMap<EntityNum, MerkleAccount> accounts) {
+            final AccountStorageAdapter accounts) {
         final var account = accounts.get(entityNum);
 
         return Optional.ofNullable(account)
@@ -84,12 +85,12 @@ public final class PureValidation {
     }
 
     public static ResponseCodeEnum queryableContractStatus(
-            final ContractID cid, final MerkleMap<EntityNum, MerkleAccount> contracts) {
+            final ContractID cid, final AccountStorageAdapter contracts) {
         return queryableContractStatus(fromContractId(cid), contracts);
     }
 
     public static ResponseCodeEnum queryableContractStatus(
-            final EntityNum contractId, final MerkleMap<EntityNum, MerkleAccount> contracts) {
+            final EntityNum contractId, final AccountStorageAdapter contracts) {
         final var contract = contracts.get(contractId);
 
         return Optional.ofNullable(contract)
@@ -151,7 +152,7 @@ public final class PureValidation {
             final String idCase,
             final AccountID stakedAccountId,
             final long stakedNodeId,
-            final MerkleMap<EntityNum, MerkleAccount> accounts,
+            final AccountStorageAdapter accounts,
             final NodeInfo nodeInfo) {
         if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
             return queryableAccountOrContractStatus(

@@ -24,6 +24,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.store.contracts.EntityAccess;
@@ -59,7 +60,7 @@ class TraceabilityExportTaskTest {
     private static final MerkleAccount AN_ACCOUNT = MerkleAccountFactory.newAccount().get();
 
     @Mock private TraceabilityRecordsHelper recordsHelper;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private EntityAccess entityAccess;
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private GlobalDynamicProperties dynamicProperties;

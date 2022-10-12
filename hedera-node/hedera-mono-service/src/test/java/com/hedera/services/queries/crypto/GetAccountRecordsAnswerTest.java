@@ -42,6 +42,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -91,7 +92,7 @@ class GetAccountRecordsAnswerTest {
         given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
         final MutableStateChildren children = new MutableStateChildren();
-        children.setAccounts(accounts);
+        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
         view = new StateView(null, children, null);
 
         optionValidator = mock(OptionValidator.class);
@@ -171,7 +172,7 @@ class GetAccountRecordsAnswerTest {
     @Test
     void usesValidator() {
         final var query = validQuery(COST_ANSWER, fee, target);
-        given(optionValidator.queryableAccountStatus(asAccount(target), accounts))
+        given(optionValidator.queryableAccountStatus(asAccount(target), AccountStorageAdapter.fromInMemory(accounts)))
                 .willReturn(ACCOUNT_DELETED);
 
         final var validity = subject.checkValidity(query, view);

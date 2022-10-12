@@ -58,9 +58,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.migration.RecordsStorageAdapter;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
-import com.hedera.services.state.migration.UniqueTokenMapAdapter;
+import com.hedera.services.state.migration.*;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.state.virtual.ContractKey;
@@ -136,7 +134,7 @@ public class StateView {
     Map<FileID, HFileMeta> fileAttrs;
 
     private BackingStore<TokenID, MerkleToken> backingTokens = null;
-    private BackingStore<AccountID, MerkleAccount> backingAccounts = null;
+    private BackingStore<AccountID, HederaAccount> backingAccounts = null;
     private BackingStore<NftId, UniqueTokenAdapter> backingNfts = null;
     private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = null;
 
@@ -498,7 +496,7 @@ public class StateView {
      * @return staking info
      */
     public StakingInfo stakingInfo(
-            final MerkleAccount account, final RewardCalculator rewardCalculator) {
+            final HederaAccount account, final RewardCalculator rewardCalculator) {
         // will be updated with pending_reward in future PR
         final var stakingInfo =
                 StakingInfo.newBuilder()
@@ -536,7 +534,7 @@ public class StateView {
 
     private void addNodeStakeMeta(
             final StakingInfo.Builder stakingInfo,
-            final MerkleAccount account,
+            final HederaAccount account,
             final RewardCalculator rewardCalculator) {
         final var startSecond =
                 rewardCalculator.epochSecondAtStartOfPeriod(account.getStakePeriodStart());
@@ -594,7 +592,7 @@ public class StateView {
 
     private void setAllowancesIfAny(
             final GetAccountDetailsResponse.AccountDetails.Builder details,
-            final MerkleAccount account) {
+            final HederaAccount account) {
         details.addAllGrantedCryptoAllowances(getCryptoGrantedAllowancesList(account));
         details.addAllGrantedTokenAllowances(getFungibleGrantedTokenAllowancesList(account));
         details.addAllGrantedNftAllowances(getNftGrantedAllowancesList(account));
@@ -664,7 +662,7 @@ public class StateView {
         return Objects.requireNonNull(stateChildren).topics();
     }
 
-    public MerkleMap<EntityNum, MerkleAccount> accounts() {
+    public AccountStorageAdapter accounts() {
         return Objects.requireNonNull(stateChildren).accounts();
     }
 
@@ -672,7 +670,7 @@ public class StateView {
         return Objects.requireNonNull(stateChildren).payerRecords();
     }
 
-    public MerkleMap<EntityNum, MerkleAccount> contracts() {
+    public AccountStorageAdapter contracts() {
         return Objects.requireNonNull(stateChildren).accounts();
     }
 
@@ -703,7 +701,7 @@ public class StateView {
         return backingTokens;
     }
 
-    public BackingStore<AccountID, MerkleAccount> asReadOnlyAccountStore() {
+    public BackingStore<AccountID, HederaAccount> asReadOnlyAccountStore() {
         if (backingAccounts == null) {
             backingAccounts = new BackingAccounts(stateChildren::accounts);
         }
@@ -747,7 +745,7 @@ public class StateView {
      * @return a list of the account's newest token relationships up to the given limit
      */
     static List<TokenRelationship> tokenRels(
-            final StateView view, final MerkleAccount account, final int maxRels) {
+            final StateView view, final HederaAccount account, final int maxRels) {
         final List<TokenRelationship> grpcRels = new ArrayList<>();
         var firstRel = account.getLatestAssociation();
         doBoundedIteration(
@@ -785,7 +783,7 @@ public class StateView {
     public static void doBoundedIteration(
             final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
             final MerkleMap<EntityNum, MerkleToken> tokens,
-            final MerkleAccount account,
+            final HederaAccount account,
             final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor) {
         final var maxRels = account.getNumAssociations();
         final var firstRel = account.getLatestAssociation();

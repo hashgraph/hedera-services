@@ -20,6 +20,7 @@ import static com.hedera.services.state.migration.StateChildIndices.PAYER_RECORD
 import static com.hedera.services.utils.MiscUtils.forEach;
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerklePayerRecords;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
@@ -29,8 +30,10 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,13 +49,13 @@ public class MapMigrationToDisk {
         final NonAtomicReference<VirtualMap<EntityNumVirtualKey, OnDiskAccount>> onDiskAccounts =
                 new NonAtomicReference<>(virtualMapFactory.newOnDiskAccountStorage());
 
-        final var inMemoryAccounts = mutableState.accounts();
+        final var inMemoryAccounts = (MerkleMap<EntityNum, MerkleAccount>) mutableState.getChild(ACCOUNTS);
         final MerkleMap<EntityNum, MerklePayerRecords> payerRecords = new MerkleMap<>();
         forEach(
                 inMemoryAccounts,
                 (num, account) -> {
                     final var accountRecords = new MerklePayerRecords();
-                    account.records().forEach(accountRecords::offer);
+                    ((MerkleAccount) account).records().forEach(accountRecords::offer);
                     payerRecords.put(num, accountRecords);
 
                     final var onDiskAccount = accountMigrator.apply(account.state());

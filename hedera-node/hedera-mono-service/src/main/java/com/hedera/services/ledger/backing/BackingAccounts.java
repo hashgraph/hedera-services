@@ -19,6 +19,8 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.forEach;
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -29,29 +31,28 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
+public class BackingAccounts implements BackingStore<AccountID, HederaAccount> {
     private Set<AccountID> existingAccounts = new HashSet<>();
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate;
+    private final Supplier<AccountStorageAdapter> delegate;
 
     @Inject
-    public BackingAccounts(Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate) {
+    public BackingAccounts(Supplier<AccountStorageAdapter> delegate) {
         this.delegate = delegate;
     }
 
     @Override
     public void rebuildFromSources() {
         existingAccounts.clear();
-        final var curAccounts = delegate.get();
-        forEach(curAccounts, (id, account) -> existingAccounts.add(id.toGrpcAccountId()));
+        delegate.get().forEach((num, account) -> existingAccounts.add(num.toGrpcAccountId()));
     }
 
     @Override
-    public MerkleAccount getRef(final AccountID id) {
+    public HederaAccount getRef(final AccountID id) {
         return delegate.get().getForModify(fromAccountId(id));
     }
 
     @Override
-    public void put(final AccountID id, final MerkleAccount account) {
+    public void put(final AccountID id, final HederaAccount account) {
         if (!existingAccounts.contains(id)) {
             delegate.get().put(fromAccountId(id), account);
             existingAccounts.add(id);
@@ -80,7 +81,7 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
     }
 
     @Override
-    public MerkleAccount getImmutableRef(AccountID id) {
+    public HederaAccount getImmutableRef(AccountID id) {
         return delegate.get().get(fromAccountId(id));
     }
 
@@ -89,7 +90,7 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
         return existingAccounts;
     }
 
-    public Supplier<MerkleMap<EntityNum, MerkleAccount>> getDelegate() {
+    public Supplier<AccountStorageAdapter> getDelegate() {
         return delegate;
     }
 }

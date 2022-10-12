@@ -55,7 +55,7 @@ public class SimpleTransfersBench {
     private int n;
     private AccountID[] ids;
     private InfrastructureBundle bundle;
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger;
 
     // --- Fixtures ---
     @Setup(Level.Trial)

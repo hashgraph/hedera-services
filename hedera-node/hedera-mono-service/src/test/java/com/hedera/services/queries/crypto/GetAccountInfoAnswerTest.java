@@ -51,6 +51,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
@@ -186,7 +187,7 @@ class GetAccountInfoAnswerTest {
                         .declineReward(false)
                         .get();
 
-        children.setAccounts(accounts);
+        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
         children.setTokenAssociations(tokenRels);
         children.setTokens(tokens);
         children.setStakingInfo(stakingInfo);
@@ -373,7 +374,8 @@ class GetAccountInfoAnswerTest {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId), accounts))
+        given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId),
+                AccountStorageAdapter.fromInMemory(accounts)))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
@@ -390,7 +392,7 @@ class GetAccountInfoAnswerTest {
 
         given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
-        given(optionValidator.queryableAccountStatus(entityNum, accounts))
+        given(optionValidator.queryableAccountStatus(entityNum, AccountStorageAdapter.fromInMemory(accounts)))
                 .willReturn(INVALID_ACCOUNT_ID);
 
         ResponseCodeEnum validity = subject.checkValidity(query, view);

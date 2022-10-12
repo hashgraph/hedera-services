@@ -78,7 +78,7 @@ public class ReleaseTwentySixMigration {
     public interface MigratorFactory {
         KvPairIterationMigrator from(
                 int insertionsPerCopy,
-                MerkleMap<EntityNum, MerkleAccount> contracts,
+                AccountStorageAdapter contracts,
                 SizeLimitedStorage.IterableStorageUpserter storageUpserter,
                 VirtualMap<ContractKey, IterableContractValue> iterableContractStorage);
     }

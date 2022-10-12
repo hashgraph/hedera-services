@@ -41,6 +41,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -96,8 +97,6 @@ class AbstractRecordingCreateOperationTest {
     @Mock private EntityCreator creator;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private ContractCustomizer contractCustomizer;
-    @Mock private WorldLedgers ledgers;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     @Mock private GlobalDynamicProperties dynamicProperties;
 
     private static final long childStipend = 1_000_000L;

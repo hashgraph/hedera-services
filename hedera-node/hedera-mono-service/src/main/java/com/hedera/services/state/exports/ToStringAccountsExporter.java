@@ -20,6 +20,7 @@ import static java.util.Comparator.comparing;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import java.io.IOException;
@@ -44,7 +45,7 @@ public class ToStringAccountsExporter implements AccountsExporter {
     }
 
     @Override
-    public void toFile(MerkleMap<EntityNum, MerkleAccount> accounts) {
+    public void toFile(final AccountStorageAdapter accounts) {
         if (!nodeLocalProperties.exportAccountsOnStartup()) {
             return;
         }

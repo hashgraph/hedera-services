@@ -19,8 +19,9 @@ import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValu
 import static com.hedera.services.utils.MapValueListUtils.removeInPlaceFromMapValueList;
 
 import com.hedera.services.state.expiry.TokenRelsListMutation;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
@@ -32,12 +33,12 @@ import javax.inject.Singleton;
 
 @Singleton
 public class TokenRelsLinkManager {
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
 
     @Inject
     public TokenRelsLinkManager(
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels) {
         this.accounts = accounts;
         this.tokenRels = tokenRels;
@@ -89,7 +90,7 @@ public class TokenRelsLinkManager {
     }
 
     @Nullable
-    private EntityNumPair rootKeyOf(final long primitiveNum, final MerkleAccount account) {
+    private EntityNumPair rootKeyOf(final long primitiveNum, final HederaAccount account) {
         final var headNum = account.getHeadTokenId();
         return headNum == 0 ? null : EntityNumPair.fromLongs(primitiveNum, headNum);
     }

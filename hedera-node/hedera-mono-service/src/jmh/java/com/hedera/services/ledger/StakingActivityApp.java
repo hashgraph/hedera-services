@@ -49,13 +49,13 @@ public interface StakingActivityApp {
 
     Supplier<MerkleNetworkContext> networkCtx();
 
-    BackingStore<AccountID, MerkleAccount> backingAccounts();
+    BackingStore<AccountID, HederaAccount> backingAccounts();
 
-    Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts();
+    Supplier<AccountStorageAdapter> accounts();
 
     Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos();
 
-    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> stakingLedger();
+    TransactionalLedger<AccountID, AccountProperty, HederaAccount> stakingLedger();
 
     @Component.Builder
     interface Builder {

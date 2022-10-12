@@ -29,6 +29,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -105,12 +106,12 @@ public class BasicTransactionContext implements TransactionContext {
     private final HbarCentExchange exchange;
     private final SideEffectsTracker sideEffectsTracker;
     private final List<ExpiringEntity> expiringEntities = new ArrayList<>();
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
     BasicTransactionContext(
             final NarratedCharging narratedCharging,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo,
             final HbarCentExchange exchange,
             final EntityCreator creator,

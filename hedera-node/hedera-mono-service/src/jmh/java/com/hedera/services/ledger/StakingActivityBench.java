@@ -91,7 +91,7 @@ public class StakingActivityBench {
     private StakingActivityApp app;
     private SideEffectsTracker sideEffects;
     private InfrastructureBundle bundle;
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger;
 
     @Setup(Level.Trial)
     public void setupInfrastructure() {

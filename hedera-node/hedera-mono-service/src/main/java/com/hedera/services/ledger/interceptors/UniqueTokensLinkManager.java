@@ -23,9 +23,10 @@ import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapVa
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.state.expiry.UniqueTokensListMutation;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.UniqueTokenValue;
@@ -42,14 +43,14 @@ import org.apache.logging.log4j.Logger;
 public class UniqueTokensLinkManager {
     private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
 
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
     private final Supplier<UniqueTokenMapAdapter> uniqueTokens;
     private final boolean enableVirtualNft;
 
     @Inject
     public UniqueTokensLinkManager(
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
             final Supplier<UniqueTokenMapAdapter> uniqueTokens,
             final BootstrapProperties bootstrapProperties) {
@@ -132,7 +133,7 @@ public class UniqueTokensLinkManager {
     }
 
     @Nullable
-    private NftId rootKeyOf(final MerkleAccount account) {
+    private NftId rootKeyOf(final HederaAccount account) {
         final var headNum = account.getHeadNftTokenNum();
         final var headSerialNum = account.getHeadNftSerialNum();
         return headNum == 0 ? null : NftId.withDefaultShardRealm(headNum, headSerialNum);

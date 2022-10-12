@@ -29,7 +29,7 @@ public class NoopStorageFeeCharging implements StorageFeeCharging {
     public void chargeStorageRent(
             long numTotalKvPairs,
             Map<Long, KvUsageInfo> newUsageInfos,
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         // Intentional no-op
     }
 }

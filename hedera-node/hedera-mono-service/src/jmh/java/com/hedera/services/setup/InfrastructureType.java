@@ -50,14 +50,14 @@ public enum InfrastructureType {
     ACCOUNTS_LEDGER {
         @Override
         @SuppressWarnings("unchecked")
-        public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> fromStorage(
+        public TransactionalLedger<AccountID, AccountProperty, HederaAccount> fromStorage(
                 final String dir, final InfrastructureBundle bundle) {
             return abInitio(dir, bundle);
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> abInitio(
+        public TransactionalLedger<AccountID, AccountProperty, HederaAccount> abInitio(
                 final String dir, final InfrastructureBundle bundle) {
             final var backingAccounts = new BackingAccounts(bundle.getterFor(ACCOUNTS_MM));
             backingAccounts.rebuildFromSources();

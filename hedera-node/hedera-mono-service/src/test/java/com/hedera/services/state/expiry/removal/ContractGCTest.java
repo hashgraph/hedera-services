@@ -27,6 +27,7 @@ import static org.mockito.Mockito.*;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractStorageListMutation;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -46,7 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ContractGCTest {
     @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
+    @Mock private AccountStorageAdapter contracts;
     @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
     @Mock private ContractGC.RemovalFacilitation removalFacilitation;

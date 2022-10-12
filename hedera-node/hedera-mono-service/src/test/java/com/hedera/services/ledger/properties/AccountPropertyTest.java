@@ -195,7 +195,7 @@ class AccountPropertyTest {
         final int[] explicitNewFirstKey = ContractKey.asPackedInts(newFirstKey);
 
         final var account =
-                new HederaAccountCustomizer()
+                (MerkleAccount) new HederaAccountCustomizer()
                         .key(JKey.mapKey(origKey))
                         .expiry(origExpiry)
                         .autoRenewPeriod(origAutoRenew)

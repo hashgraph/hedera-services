@@ -36,6 +36,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -63,7 +64,7 @@ class DeletionLogicTest {
     @Mock private AliasManager aliasManager;
     @Mock private OptionValidator validator;
     @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
+    @Mock private AccountStorageAdapter contracts;
 
     private DeletionLogic subject;
 

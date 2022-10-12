@@ -39,6 +39,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -71,7 +72,7 @@ class BackedSystemAccountsCreatorTest {
     private JKey genesisKey;
     private PropertySource properties;
     private AddressBook book;
-    private BackingStore<AccountID, MerkleAccount> backingAccounts;
+    private BackingStore<AccountID, HederaAccount> backingAccounts;
     private TreasuryCloner treasuryCloner;
     private AccountNumbers accountNums;
 
@@ -109,7 +110,7 @@ class BackedSystemAccountsCreatorTest {
         given(book.getSize()).willReturn(1);
         given(book.getAddress(0L)).willReturn(address);
 
-        backingAccounts = (BackingStore<AccountID, MerkleAccount>) mock(BackingStore.class);
+        backingAccounts = (BackingStore<AccountID, HederaAccount>) mock(BackingStore.class);
         given(backingAccounts.idSet())
                 .willReturn(Set.of(accountWith(1), accountWith(2), accountWith(3), accountWith(4)));
         given(backingAccounts.getImmutableRef(accountWith(1))).willReturn(withExpectedBalance(0));
@@ -122,7 +123,7 @@ class BackedSystemAccountsCreatorTest {
 
         subject =
                 new BackedSystemAccountsCreator(
-                        accountNums, properties, () -> pretendKey, treasuryCloner);
+                        accountNums, properties, () -> pretendKey, MerkleAccount::new, treasuryCloner);
     }
 
     @Test
@@ -267,7 +268,7 @@ class BackedSystemAccountsCreatorTest {
 
     private MerkleAccount withExpectedBalance(long balance) throws NegativeAccountBalanceException {
         MerkleAccount hAccount =
-                new HederaAccountCustomizer()
+                (MerkleAccount) new HederaAccountCustomizer()
                         .isReceiverSigRequired(false)
                         .isDeleted(false)
                         .expiry(expiry)

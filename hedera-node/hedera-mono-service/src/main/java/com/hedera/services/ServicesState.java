@@ -41,14 +41,9 @@ import com.hedera.services.state.migration.*;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.state.virtual.UniqueTokenKey;
-import com.hedera.services.state.virtual.UniqueTokenValue;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.state.virtual.VirtualMapFactory;
+import com.hedera.services.state.virtual.*;
 import com.hedera.services.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -75,6 +70,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -83,11 +79,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-/** The Merkle tree root of the Hedera Services world state. */
+/**
+ * The Merkle tree root of the Hedera Services world state.
+ */
 public class ServicesState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2 {
     private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -143,7 +142,9 @@ public class ServicesState extends PartialNaryMerkleInternal
         this.accountsOnDisk = that.accountsOnDisk;
     }
 
-    /** Log out the sizes the state children. */
+    /**
+     * Log out the sizes the state children.
+     */
     private void logStateChildrenSizes() {
         log.info(
                 "  (@ {}) # NFTs               = {}",
@@ -447,8 +448,12 @@ public class ServicesState extends PartialNaryMerkleInternal
         return metadata.aliases();
     }
 
-    public MerkleMap<EntityNum, MerkleAccount> accounts() {
-        return getChild(StateChildIndices.ACCOUNTS);
+    @SuppressWarnings("unchecked")
+    public AccountStorageAdapter accounts() {
+        final var accountsStorage = getChild(StateChildIndices.ACCOUNTS);
+        return (accountsStorage instanceof VirtualMap)
+                ? AccountStorageAdapter.fromOnDisk((VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage)
+                : AccountStorageAdapter.fromInMemory((MerkleMap<EntityNum, MerkleAccount>) accountsStorage);
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
@@ -495,13 +500,13 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var tokensMap = getChild(StateChildIndices.UNIQUE_TOKENS);
         return tokensMap.getClass() == MerkleMap.class
                 ? UniqueTokenMapAdapter.wrap(
-                        (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
+                (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
                 : UniqueTokenMapAdapter.wrap(
-                        (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
+                (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
     }
 
     public RecordsStorageAdapter payerRecords() {
-        return accountsOnDisk
+        return getNumberOfChildren() == StateChildIndices.NUM_032X_CHILDREN
                 ? RecordsStorageAdapter.fromDedicated(getChild(StateChildIndices.PAYER_RECORDS))
                 : RecordsStorageAdapter.fromLegacy(getChild(StateChildIndices.ACCOUNTS));
     }
@@ -534,7 +539,11 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
         setChild(StateChildIndices.TOPICS, new MerkleMap<>());
         setChild(StateChildIndices.STORAGE, virtualMapFactory.newVirtualizedBlobs());
-        setChild(StateChildIndices.ACCOUNTS, new MerkleMap<>());
+        if (accountsOnDisk) {
+            setChild(StateChildIndices.ACCOUNTS, virtualMapFactory.newOnDiskAccountStorage());
+        } else {
+            setChild(StateChildIndices.ACCOUNTS, new MerkleMap<>());
+        }
         setChild(StateChildIndices.TOKENS, new MerkleMap<>());
         setChild(StateChildIndices.NETWORK_CTX, genesisNetworkCtxWith(seqStart));
         setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
@@ -547,6 +556,9 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(
                 StateChildIndices.STAKING_INFO,
                 stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties));
+        if (accountsOnDisk) {
+            setChild(StateChildIndices.PAYER_RECORDS, new MerkleMap<>());
+        }
     }
 
     private RecordsRunningHashLeaf genesisRunningHashLeaf() {
@@ -594,8 +606,8 @@ public class ServicesState extends PartialNaryMerkleInternal
         }
         if (FIRST_028X_VERSION.isAfter(deserializedVersion)) {
             // These accounts were created with an (unnecessary) MerkleAccountTokens child
-            accounts().get(EntityNum.fromLong(800L)).forgetThirdChildIfPlaceholder();
-            accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
+            ((MerkleAccount) accounts().get(EntityNum.fromLong(800L))).forgetThirdChildIfPlaceholder();
+            ((MerkleAccount) accounts().get(EntityNum.fromLong(801L))).forgetThirdChildIfPlaceholder();
         }
         if (FIRST_030X_VERSION.isAfter(deserializedVersion)) {
             if (getBootstrapProperties().getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS)) {
@@ -623,7 +635,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     @FunctionalInterface
     interface NftLinksRepair {
         void rebuildOwnershipLists(
-                MerkleMap<EntityNum, MerkleAccount> accounts, UniqueTokenMapAdapter uniqueTokens);
+                AccountStorageAdapter accounts, UniqueTokenMapAdapter uniqueTokens);
     }
 
     @FunctionalInterface

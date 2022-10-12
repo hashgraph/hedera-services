@@ -80,7 +80,7 @@ public class MigrationRecordsManager {
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final ConsensusTimeTracker consensusTimeTracker;
     private final SyntheticTxnFactory syntheticTxnFactory;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final AccountNumbers accountNumbers;
     private final BootstrapProperties bootstrapProperties;
     private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
@@ -93,7 +93,7 @@ public class MigrationRecordsManager {
             final RecordsHistorian recordsHistorian,
             final Supplier<MerkleNetworkContext> networkCtx,
             final ConsensusTimeTracker consensusTimeTracker,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final SyntheticTxnFactory syntheticTxnFactory,
             final AccountNumbers accountNumbers,
             final BootstrapProperties bootstrapProperties) {
@@ -141,7 +141,7 @@ public class MigrationRecordsManager {
                 .forEach(
                         account ->
                                 publishSyntheticCreation(
-                                        account.getKey(),
+                                        EntityNum.fromInt(account.number()),
                                         account.getExpiry() - now.getEpochSecond(),
                                         account.isReceiverSigRequired(),
                                         account.isDeclinedReward(),

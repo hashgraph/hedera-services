@@ -110,7 +110,7 @@ public class SizeLimitedStorageBench {
     // --- Benchmarks ---
     @Benchmark
     public void simulateContractTransaction() {
-        final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger =
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger =
                 bundle.get(ACCOUNTS_LEDGER);
         ledger.begin();
 

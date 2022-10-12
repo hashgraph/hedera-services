@@ -34,6 +34,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper;
@@ -170,7 +171,7 @@ class AnswerFunctionsTest {
 
     private void setupAccountsView() {
         final var children = new MutableStateChildren();
-        children.setAccounts(accounts);
+        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
         children.setPayerRecords(RecordsStorageAdapter.fromLegacy(accounts));
 
         view = new StateView(null, children, null);

@@ -20,6 +20,7 @@ import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.merkle.map.MerkleMap;
@@ -38,11 +39,9 @@ public class BasedLedgerValidator implements LedgerValidator {
     }
 
     @Override
-    public void validate(MerkleMap<EntityNum, MerkleAccount> accounts) {
+    public void validate(AccountStorageAdapter accounts) {
         var totalFloat = new AtomicReference<>(BigInteger.ZERO);
-        MiscUtils.forEach(
-                accounts,
-                (id, account) -> {
+        accounts.forEach((id, account) -> {
                     final var num = id.longValue();
                     if (num < 1) {
                         throw new IllegalStateException(

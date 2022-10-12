@@ -19,6 +19,7 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,7 +43,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
     private final NodeInfo nodeInfo;
     private final FeeExemptions feeExemptions;
     private final FeeDistribution feeDistribution;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
 
     private long effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
     private long nodeFee;
@@ -62,7 +63,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
             final NodeInfo nodeInfo,
             final FeeDistribution feeDistribution,
             final FeeExemptions feeExemptions,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+            final Supplier<AccountStorageAdapter> accounts) {
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
         this.feeDistribution = feeDistribution;

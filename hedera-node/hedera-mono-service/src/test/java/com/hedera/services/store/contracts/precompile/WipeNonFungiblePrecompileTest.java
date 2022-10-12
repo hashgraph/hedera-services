@@ -63,6 +63,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
@@ -132,7 +133,7 @@ class WipeNonFungiblePrecompileTest {
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRels;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;

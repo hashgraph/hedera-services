@@ -33,6 +33,7 @@ import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
@@ -73,7 +74,7 @@ class ServicesMainTest {
     @Mock private ServicesApp app;
     @Mock private NamedDigestFactory namedDigestFactory;
     @Mock private MutableStateChildren workingState;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private LedgerValidator ledgerValidator;
     @Mock private NodeInfo nodeInfo;
     @Mock private ReconnectCompleteListener reconnectListener;
