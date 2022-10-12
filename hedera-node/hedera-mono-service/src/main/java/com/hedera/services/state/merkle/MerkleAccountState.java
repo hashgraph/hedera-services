@@ -751,6 +751,10 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         }
     }
 
+    public byte getFirstUint256KeyNonZeroBytes() {
+        return firstUint256KeyNonZeroBytes;
+    }
+
     public boolean hasAutoRenewAccount() {
         return autoRenewAccount != null && !autoRenewAccount.equals(MISSING_ENTITY_ID);
     }

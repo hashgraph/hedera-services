@@ -120,7 +120,7 @@ class UtilsConstructorTest {
                             PrecheckUtils.class,
                             MerkleAccount.ChildIndices.class,
                             BitPackUtils.class,
-                            LegacyStateChildIndices.class,
+                            MapMigrationToDisk.class,
                             ReleaseThirtyMigration.class,
                             ReleaseTwentySixMigration.class,
                             StateChildIndices.class,

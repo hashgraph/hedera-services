@@ -58,6 +58,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
@@ -665,6 +666,10 @@ public class StateView {
 
     public MerkleMap<EntityNum, MerkleAccount> accounts() {
         return Objects.requireNonNull(stateChildren).accounts();
+    }
+
+    public RecordsStorageAdapter payerRecords() {
+        return Objects.requireNonNull(stateChildren).payerRecords();
     }
 
     public MerkleMap<EntityNum, MerkleAccount> contracts() {

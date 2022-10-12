@@ -16,8 +16,7 @@
 package com.hedera.services;
 
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_FIRST_USER_ENTITY;
+import static com.hedera.services.context.properties.PropertyNames.*;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.*;
@@ -142,6 +141,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         this.deserializedStateVersion = that.deserializedStateVersion;
         this.metadata = (that.metadata == null) ? null : that.metadata.copy();
         this.bootstrapProperties = that.bootstrapProperties;
+        this.accountsOnDisk = that.accountsOnDisk;
     }
 
     /** Log out the sizes the state children. */
@@ -261,8 +261,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                             ((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
         }
         final var bootstrapProps = getBootstrapProperties();
-        enabledVirtualNft =
-                bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
+        accountsOnDisk = bootstrapProps.getBooleanProperty(ACCOUNTS_STORE_ON_DISK);
+        enabledVirtualNft = bootstrapProps.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
     }
 
@@ -276,8 +276,8 @@ public class ServicesState extends PartialNaryMerkleInternal
         // Create the top-level children in the Merkle tree
         final var bootstrapProps = getBootstrapProperties();
         final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
-        enabledVirtualNft =
-                bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
+        accountsOnDisk = bootstrapProps.getBooleanProperty(ACCOUNTS_STORE_ON_DISK);
+        enabledVirtualNft = bootstrapProps.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         createGenesisChildren(addressBook, seqStart, bootstrapProps);
 
         internalInit(platform, bootstrapProps, dualState, GENESIS, null);
@@ -504,7 +504,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     public RecordsStorageAdapter payerRecords() {
         return accountsOnDisk
                 ? RecordsStorageAdapter.fromDedicated(getChild(StateChildIndices.PAYER_RECORDS))
-                : RecordsStorageAdapter.fromLegacy(accounts());
+                : RecordsStorageAdapter.fromLegacy(getChild(StateChildIndices.ACCOUNTS));
     }
 
     public VirtualMap<ContractKey, IterableContractValue> contractStorage() {

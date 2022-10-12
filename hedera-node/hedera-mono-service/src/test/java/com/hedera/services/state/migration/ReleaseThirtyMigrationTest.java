@@ -143,7 +143,7 @@ class ReleaseThirtyMigrationTest {
         assertEquals(nftId2.asNftNumPair(), uniqueTokens.merkleMap().get(nftId4).getNext());
     }
 
-    private static void registerForMerkleMap() throws ConstructableRegistryException {
+    static void registerForMerkleMap() throws ConstructableRegistryException {
         ConstructableRegistry.registerConstructable(
                 new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
         ConstructableRegistry.registerConstructable(

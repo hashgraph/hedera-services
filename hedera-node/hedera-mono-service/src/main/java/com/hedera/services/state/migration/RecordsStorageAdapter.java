@@ -8,8 +8,10 @@ import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.function.BiConsumer;
 
+import static com.hedera.services.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
 import static com.hedera.services.utils.MiscUtils.forEach;
 
 public class RecordsStorageAdapter {
@@ -56,6 +58,20 @@ public class RecordsStorageAdapter {
         } else {
             final var mutableAccount = legacyAccounts.getForModify(payerNum);
             return mutableAccount.records();
+        }
+    }
+
+    public QueryableRecords getReadOnlyPayerRecords(final EntityNum payerNum) {
+        if (accountsOnDisk) {
+            final var payerRecordsView = payerRecords.get(payerNum);
+            return (payerRecordsView == null)
+                    ? NO_QUERYABLE_RECORDS
+                    : payerRecordsView.asQueryableRecords();
+        } else {
+            final var payerAccountView = legacyAccounts.get(payerNum);
+            return (payerAccountView == null)
+                    ? NO_QUERYABLE_RECORDS
+                    : new QueryableRecords(payerAccountView.numRecords(), payerAccountView.recordIterator());
         }
     }
 

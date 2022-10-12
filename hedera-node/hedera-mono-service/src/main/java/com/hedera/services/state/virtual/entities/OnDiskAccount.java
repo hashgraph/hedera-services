@@ -27,6 +27,7 @@ import static com.hedera.services.utils.SerializationUtils.*;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
+import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.hedera.services.state.virtual.utils.CheckedConsumer;
@@ -86,6 +87,49 @@ public class OnDiskAccount implements VirtualValue {
         this.nftOperatorApprovals = that.nftOperatorApprovals;
         System.arraycopy(that.ints, 0, this.ints, 0, IntValues.COUNT);
         System.arraycopy(that.longs, 0, this.longs, 0, LongValues.COUNT);
+    }
+
+    public static OnDiskAccount from(final MerkleAccountState inMemoryAccount) {
+        final var onDiskAccount = new OnDiskAccount();
+
+        // Objects
+        onDiskAccount.setMemo(inMemoryAccount.memo());
+        onDiskAccount.setAlias(inMemoryAccount.getAlias());
+        onDiskAccount.setHbarAllowances(inMemoryAccount.getCryptoAllowances());
+        onDiskAccount.setFungibleAllowances(inMemoryAccount.getFungibleTokenAllowances());
+        onDiskAccount.setNftOperatorApprovals(inMemoryAccount.getApproveForAllNftsUnsafe());
+        onDiskAccount.setKey(inMemoryAccount.key());
+        // Flags
+        onDiskAccount.setIsDeleted(inMemoryAccount.isDeleted());
+        onDiskAccount.setIsContract(inMemoryAccount.isSmartContract());
+        onDiskAccount.setIsDeclineReward(inMemoryAccount.isDeclineReward());
+        onDiskAccount.setIsReceiverSigRequired(inMemoryAccount.isReceiverSigRequired());
+        // Ints
+        onDiskAccount.setNumContractKvPairs(inMemoryAccount.getNumContractKvPairs());
+        onDiskAccount.setMaxAutoAssociations(inMemoryAccount.getMaxAutomaticAssociations());
+        onDiskAccount.setUsedAutoAssociations(inMemoryAccount.getUsedAutomaticAssociations());
+        onDiskAccount.setNumAssociations(inMemoryAccount.getNumAssociations());
+        onDiskAccount.setNumPositiveBalances(inMemoryAccount.getNumPositiveBalances());
+        onDiskAccount.setNumTreasuryTitles(inMemoryAccount.getNumTreasuryTitles());
+        // Longs
+        onDiskAccount.setExpiry(inMemoryAccount.expiry());
+        onDiskAccount.setHbarBalance(inMemoryAccount.balance());
+        onDiskAccount.setAutoRenewSecs(inMemoryAccount.autoRenewSecs());
+        onDiskAccount.setNftsOwned(inMemoryAccount.nftsOwned());
+        onDiskAccount.setAccountNumber(inMemoryAccount.number());
+        onDiskAccount.setHeadTokenId(inMemoryAccount.getHeadTokenId());
+        onDiskAccount.setHeadNftId(inMemoryAccount.getHeadNftId());
+        onDiskAccount.setHeadNftSerialNum(inMemoryAccount.getHeadNftSerialNum());
+        onDiskAccount.setEthereumNonce(inMemoryAccount.ethereumNonce());
+        onDiskAccount.setStakedToMe(inMemoryAccount.getStakedToMe());
+        onDiskAccount.setStakePeriodStart(inMemoryAccount.getStakePeriodStart());
+        onDiskAccount.setStakedNum(inMemoryAccount.getStakedNum());
+        onDiskAccount.setStakeAtStartOfLastRewardedPeriod(inMemoryAccount.getStakeAtStartOfLastRewardedPeriod());
+        onDiskAccount.setAutoRenewAccountNumber(inMemoryAccount.getAutoRenewAccount().num());
+        // Complex
+        onDiskAccount.setFirstStorageKey(inMemoryAccount.getFirstUint256Key());
+
+        return onDiskAccount;
     }
 
     @Override
@@ -293,6 +337,10 @@ public class OnDiskAccount implements VirtualValue {
         } else {
             firstStorageKeyNonZeroBytes = 0;
         }
+    }
+
+    public byte getFirstStorageKeyNonZeroBytes() {
+        return firstStorageKeyNonZeroBytes;
     }
 
     // Boolean getters and setters
