@@ -18,10 +18,17 @@ package com.hedera.services.evm.contracts.execution.traceability;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-public class HederaEvmTracer implements OperationTracer {
+public interface HederaEvmOperationTracer extends OperationTracer {
 
     @Override
-    public void traceExecution(MessageFrame currentFrame, ExecuteOperation executeOperation) {
+    default void traceExecution(MessageFrame currentFrame, ExecuteOperation executeOperation) {
         executeOperation.execute();
     }
+
+    /**
+     * Perform initialization logic before EVM execution begins.
+     *
+     * @param initialFrame the initial frame associated with this EVM execution
+     */
+    default void init(final MessageFrame initialFrame) {}
 }

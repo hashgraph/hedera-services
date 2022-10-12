@@ -119,13 +119,15 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
         final Wei upfrontCost = gasCost.add(value);
 
+        // Enable tracing of contract actions if action sidecars are enabled and this is not a
+        // static call
         final HederaTracer hederaTracer =
                 new HederaTracer(
                         !isStatic
                                 && ((GlobalDynamicProperties) dynamicProperties)
                                         .enabledSidecars()
                                         .contains(SidecarType.CONTRACT_ACTION));
-        hederaTracer.init(initialFrame);
+
         super.setOperationTracer(hederaTracer);
         super.execute(
                 sender,
@@ -182,9 +184,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     coinbase, gasLimit - refunded, gasPrice, (HederaWorldState.Updater) updater);
             initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-            if (((GlobalDynamicProperties) dynamicProperties)
-                    .enabledSidecars()
-                    .contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+            if (isSideCarTypeEnabled(SidecarType.CONTRACT_STATE_CHANGE)) {
                 stateChanges = ((HederaWorldState.Updater) updater).getFinalStateChanges();
             } else {
                 stateChanges = Map.of();
@@ -245,6 +245,12 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     stateChanges,
                     hederaTracer.getActions());
         }
+    }
+
+    private boolean isSideCarTypeEnabled(final SidecarType sidecarType) {
+        return ((GlobalDynamicProperties) dynamicProperties)
+                .enabledSidecars()
+                .contains(sidecarType);
     }
 
     private void sendToCoinbase(

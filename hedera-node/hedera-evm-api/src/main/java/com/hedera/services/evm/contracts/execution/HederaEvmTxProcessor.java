@@ -15,6 +15,7 @@
  */
 package com.hedera.services.evm.contracts.execution;
 
+import com.hedera.services.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.services.evm.store.models.HederaEvmAccount;
@@ -55,7 +56,7 @@ public abstract class HederaEvmTxProcessor {
     protected final Map<String, Provider<ContractCreationProcessor>> ccps;
     protected AbstractMessageProcessor messageCallProcessor;
     protected AbstractMessageProcessor contractCreationProcessor;
-    protected OperationTracer tracer;
+    protected HederaEvmOperationTracer tracer;
     protected EvmProperties dynamicProperties;
     protected Address coinbase;
     protected HederaEvmWorldUpdater updater;
@@ -81,7 +82,7 @@ public abstract class HederaEvmTxProcessor {
         this.worldState = worldState;
     }
 
-    public void setOperationTracer(final OperationTracer tracer) {
+    public void setOperationTracer(final HederaEvmOperationTracer tracer) {
         this.tracer = tracer;
     }
 
@@ -164,6 +165,8 @@ public abstract class HederaEvmTxProcessor {
 
         this.initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
         messageFrameStack.addFirst(initialFrame);
+
+        tracer.init(initialFrame);
 
         if (dynamicProperties.dynamicEvmVersion()) {
             String evmVersion = dynamicProperties.evmVersion();
