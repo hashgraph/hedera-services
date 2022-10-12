@@ -4,21 +4,18 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 
 import javax.annotation.Nonnull;
-import java.security.Key;
 import java.util.Optional;
 
 public interface Account {
 	long accountNumber();
-	ByteString alias();
-	@Nonnull
-	Optional<JKey> key();
+	Optional<ByteString> alias();
+	@Nonnull Optional<JKey> key();
 	long expiry();
 	long balance();
-	String memo();
+	@Nonnull Optional<String> memo();
 	boolean isDeleted();
 	boolean isSmartContract();
 	boolean isReceiverSigRequired();
-
 	int maxAutoAssociations();
 	int numAssociations();
 	int numPositiveBalances();

@@ -1,4 +1,4 @@
-package com.hedera.services.base.service;
+package com.hedera.services.base.service.crypto;
 
 import com.hedera.services.base.store.AccountStore;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
@@ -15,9 +15,13 @@ public class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHand
         this.accountStore = accountStore;
     }
 
-    public AccountSigningMetadata getAccountSigningMetadata(EntityNum accountNum){
-        final var key = accountStore.getAccountKey(accountNum);
-        final var receiverSigRequired = accountStore.isReceiverSigRequired(accountNum);
-        return new AccountSigningMetadata(key, receiverSigRequired);
+    public AccountSigningMetadata getAccountSigningMetadata(final EntityNum accountNum){
+        final var account = accountStore.getAccount(accountNum);
+        if (account.isPresent()) {
+            final var receiverSigRequired = account.get().isReceiverSigRequired();
+            final var key = account.get().key().get();
+            return new AccountSigningMetadata(key, receiverSigRequired);
+        }
+        throw new IllegalArgumentException("Provided account number doesn't exist");
     }
 }

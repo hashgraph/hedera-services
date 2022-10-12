@@ -19,7 +19,6 @@ import com.hedera.services.base.entity.Account;
 import com.hedera.services.base.entity.AccountImpl;
 import com.hedera.services.base.state.State;
 import com.hedera.services.base.state.States;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 
@@ -50,25 +49,17 @@ public class AccountStore {
 		Objects.requireNonNull(accountState);
 	}
 
-	public JKey getAccountKey(final EntityNum num) {
-		return getAccountLeaf(num).getAccountKey();
-	}
-
-	public boolean isReceiverSigRequired(final EntityNum num) {
-		return getAccountLeaf(num).isReceiverSigRequired();
-	}
-
 	public Optional<Account> getAccount(EntityNum id) {
-		final var opt = accountState.get(id);
+		final var opt = getAccountLeaf(id);
 		if (opt.isPresent()) {
 			final var account = opt.get();
 			return Optional.of(new AccountImpl(
 					account.number(),
-					account.getAlias(),
-					Optional.of(account.getAccountKey()),
+					Optional.ofNullable(account.getAlias()),
+					Optional.ofNullable(account.getAccountKey()),
 					account.getExpiry(),
 					account.getBalance(),
-					account.getMemo(),
+					Optional.ofNullable(account.getMemo()),
 					account.isDeleted(),
 					account.isSmartContract(),
 					account.isReceiverSigRequired(),
@@ -85,9 +76,8 @@ public class AccountStore {
 					account.isDeclinedReward(),
 					account.totalStakeAtStartOfLastRewardedPeriod(),
 					account.getAutoRenewAccount().num()));
-		} else {
-			return Optional.empty();
 		}
+		return Optional.empty();
 	}
 
 	/**
@@ -96,9 +86,7 @@ public class AccountStore {
 	 * @param accountNumber given account number
 	 * @return merkle leaf for the given account number
 	 */
-	private MerkleAccount getAccountLeaf(final EntityNum accountNumber) {
-		final var opt = accountState.get(accountNumber);
-		final var account = opt.get();
-		return account;
+	private Optional<MerkleAccount> getAccountLeaf(final EntityNum accountNumber) {
+		return accountState.get(accountNumber);
 	}
 }

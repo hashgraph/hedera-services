@@ -3,16 +3,15 @@ package com.hedera.services.base.entity;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 
-import java.security.Key;
 import java.util.Objects;
 import java.util.Optional;
 
 public record AccountImpl(long accountNumber,
-						  ByteString alias,
+						  Optional<ByteString> alias,
 						  Optional<JKey> key,
 						  long expiry,
 						  long balance,
-						  String memo,
+						  Optional<String> memo,
 						  boolean isDeleted,
 						  boolean isSmartContract,
 						  boolean isReceiverSigRequired,
