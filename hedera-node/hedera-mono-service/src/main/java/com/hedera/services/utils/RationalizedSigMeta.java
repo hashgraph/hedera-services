@@ -15,23 +15,22 @@
  */
 package com.hedera.services.utils;
 
-import com.hedera.services.evm.store.contracts.utils.BytesKey;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
-import com.swirlds.common.crypto.TransactionSignature;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.keys.HederaKeyActivation.VALID_IMPLICIT_SIG;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+
+import com.hedera.services.evm.store.contracts.utils.BytesKey;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
+import com.swirlds.common.crypto.TransactionSignature;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
 
 /**
  * A simple wrapper around the three outputs of the {@code Rationalization#execute()} process.

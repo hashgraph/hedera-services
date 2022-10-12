@@ -15,41 +15,7 @@
  */
 package com.hedera.services.store.contracts;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.operation.HederaOperationUtil;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.SidecarUtils;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayDeque;
-import java.util.Map;
-import java.util.Optional;
-
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -69,6 +35,38 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
+
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.operation.HederaOperationUtil;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.SidecarUtils;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.ArrayDeque;
+import java.util.Map;
+import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaWorldStateTest {
@@ -328,24 +326,24 @@ class HederaWorldStateTest {
     void updaterGetsHederaAccount() {
         givenNonNullWorldLedgers();
 
-        final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
+        final var zeroAddress = Address.ZERO;
         final var updater = subject.updater();
         // and:
         given(entityAccess.isUsable(zeroAddress)).willReturn(true);
-        given(entityAccess.getBalance(asTypedEvmAddress(zeroAddress))).willReturn(balance);
+        given(entityAccess.getBalance(zeroAddress)).willReturn(balance);
         // and:
         final var expected =
-                new WorldStateAccount(Address.ZERO, Wei.of(balance), codeCache, entityAccess);
+                new WorldStateAccount(zeroAddress, Wei.of(balance), codeCache, entityAccess);
 
         // when:
-        final var result = updater.getAccount(Address.ZERO);
+        final var result = updater.getAccount(zeroAddress);
 
         // then:
         assertEquals(expected.getAddress(), result.getAddress());
         assertEquals(expected.getBalance(), result.getBalance());
         // and:
         verify(entityAccess).isUsable(zeroAddress);
-        verify(entityAccess).getBalance(asTypedEvmAddress(zeroAddress));
+        verify(entityAccess).getBalance(zeroAddress);
     }
 
     @Test
@@ -355,8 +353,7 @@ class HederaWorldStateTest {
         final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
         final var updater = subject.updater();
         // and:
-        given(entityAccess.isTokenAccount(asTypedEvmAddress(zeroAddress)))
-                .willReturn(true);
+        given(entityAccess.isTokenAccount(asTypedEvmAddress(zeroAddress))).willReturn(true);
         given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
         // and:
         final var expected =
@@ -506,9 +503,7 @@ class HederaWorldStateTest {
         final var allStateChanges = stateChangesGrpc.getStateChanges();
         // first state changes should be for the smallest address
         final var contractStateChanges0 = allStateChanges.getContractStateChanges(0);
-        assertEquals(
-                smallestAddress,
-                asTypedEvmAddress(contractStateChanges0.getContractId()));
+        assertEquals(smallestAddress, asTypedEvmAddress(contractStateChanges0.getContractId()));
         final var storageChanges0 = contractStateChanges0.getStorageChangesList();
         assertEquals(3, storageChanges0.size());
         // slot order should also be from smallest to biggest
@@ -523,9 +518,7 @@ class HederaWorldStateTest {
                 storageChanges0.get(2).getSlot().toByteArray());
         // second state changes should be for the intermediate address
         final var contractStateChanges1 = allStateChanges.getContractStateChanges(1);
-        assertEquals(
-                intermediateAddress,
-                asTypedEvmAddress(contractStateChanges1.getContractId()));
+        assertEquals(intermediateAddress, asTypedEvmAddress(contractStateChanges1.getContractId()));
         final var storageChanges1 = contractStateChanges1.getStorageChangesList();
         assertEquals(3, storageChanges1.size());
         // slot order should also be from smallest to biggest
@@ -540,9 +533,7 @@ class HederaWorldStateTest {
                 storageChanges1.get(2).getSlot().toByteArray());
         // last state changes should be for the biggest address
         final var contractStateChanges2 = allStateChanges.getContractStateChanges(2);
-        assertEquals(
-                biggestAddress,
-                asTypedEvmAddress(contractStateChanges2.getContractId()));
+        assertEquals(biggestAddress, asTypedEvmAddress(contractStateChanges2.getContractId()));
         final var storageChanges2 = contractStateChanges2.getStorageChangesList();
         assertEquals(3, storageChanges2.size());
         // slot order should also be from smallest to biggest
@@ -643,9 +634,8 @@ class HederaWorldStateTest {
 
         final var actualSubject = subject.updater();
 
-        final var accountId = accountIdFromEvmAddress(someAddress);
-        given(entityAccess.isUsable(accountId)).willReturn(true);
-        given(entityAccess.getBalance(asTypedEvmAddress(accountId))).willReturn(balance);
+        given(entityAccess.isUsable(someAddress)).willReturn(true);
+        given(entityAccess.getBalance(someAddress)).willReturn(balance);
 
         actualSubject.getAccount(someAddress);
         actualSubject.commit();

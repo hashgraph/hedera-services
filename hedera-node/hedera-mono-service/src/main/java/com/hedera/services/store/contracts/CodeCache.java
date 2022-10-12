@@ -17,7 +17,6 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.evm.store.contracts.AbstractCodeCache;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -37,18 +36,17 @@ public class CodeCache extends AbstractCodeCache {
     public CodeCache(final NodeLocalProperties properties, final EntityAccess entityAccess) {
         this(properties.prefetchCodeCacheTtlSecs(), entityAccess);
     }
-    //temporary constructor for the test cases
+    // temporary constructor for the test cases
     public CodeCache(final int cacheTTL, final EntityAccess entityAccess) {
         super(cacheTTL, entityAccess);
     }
 
-
     /* --- Only used by unit tests --- */
-//    Cache<BytesKey, Code> getCache() {
-//        return cache;
-//    }
-//
-//    void cacheValue(BytesKey key, Code value) {
-//        cache.put(key, value);
-//    }
+    //    Cache<BytesKey, Code> getCache() {
+    //        return cache;
+    //    }
+    //
+    //    void cacheValue(BytesKey key, Code value) {
+    //        cache.put(key, value);
+    //    }
 }

@@ -21,7 +21,6 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNu
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromEvmAddress;
 import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -118,8 +117,8 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isUsable(AccountID id) {
-        final var account = accounts.get(fromAccountId(id));
+    public boolean isUsable(Address address) {
+        final var account = accounts.get(fromEvmAddress(address));
         if (account == null || account.isDeleted()) {
             return false;
         }

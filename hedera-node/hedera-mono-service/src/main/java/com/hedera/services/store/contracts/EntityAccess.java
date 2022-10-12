@@ -15,7 +15,6 @@
  */
 package com.hedera.services.store.contracts;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -44,7 +43,7 @@ public interface EntityAccess extends HederaEvmEntityAccess {
     /* --- Account access --- */
     void customize(AccountID id, HederaAccountCustomizer customizer);
 
-    boolean isUsable(AccountID id);
+    boolean isUsable(Address address);
 
     /* --- Storage access --- */
     void recordNewKvUsageTo(
@@ -52,11 +51,9 @@ public interface EntityAccess extends HederaEvmEntityAccess {
 
     void putStorage(AccountID id, UInt256 key, UInt256 value);
 
-
     void flushStorage(
             TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 
     /* --- Bytecode access --- */
     void storeCode(AccountID id, Bytes code);
-
 }

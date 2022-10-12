@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts;
 
 import com.hedera.services.evm.store.contracts.utils.TokenAccountUtils;
+import java.util.NavigableMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -25,8 +26,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
-
-import java.util.NavigableMap;
 
 public class WorldStateTokenAccount implements Account {
     public static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;

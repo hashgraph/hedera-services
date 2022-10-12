@@ -37,16 +37,6 @@ package com.hedera.services.utils;
  *
  */
 
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
-import com.hedera.services.evm.store.contracts.utils.BytesKey;
-import com.hedera.services.exceptions.ResourceLimitException;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-
-import java.util.Map;
-import java.util.stream.Stream;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
@@ -55,6 +45,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static java.util.stream.Collectors.toMap;
+
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
+import com.hedera.services.evm.store.contracts.utils.BytesKey;
+import com.hedera.services.exceptions.ResourceLimitException;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 public final class ResponseCodeUtil {
     static final Map<BytesKey, ResponseCodeEnum> RESOURCE_EXHAUSTION_REVERSIONS =

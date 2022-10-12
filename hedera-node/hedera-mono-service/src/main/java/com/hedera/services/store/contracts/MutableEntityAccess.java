@@ -15,6 +15,14 @@
  */
 package com.hedera.services.store.contracts;
 
+import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
@@ -30,22 +38,12 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.function.Supplier;
-
-import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class MutableEntityAccess implements EntityAccess {
@@ -114,8 +112,8 @@ public class MutableEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isUsable(AccountID id) {
-        return ledger.usabilityOf(id) == OK;
+    public boolean isUsable(Address address) {
+        return ledger.usabilityOf(accountIdFromEvmAddress(address)) == OK;
     }
 
     @Override
