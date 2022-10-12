@@ -1,0 +1,97 @@
+package com.hedera.services.state.merkle;
+
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.fcqueue.FCQueue;
+
+import java.io.IOException;
+
+public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
+    private static final int CURRENT_VERSION = 1;
+    private static final long RUNTIME_CONSTRUCTABLE_ID = 0xb8b383ccd3caed5bL;
+
+    private static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
+
+    static {
+        IMMUTABLE_EMPTY_FCQ.copy();
+    }
+
+    private int num;
+    private FCQueue<ExpirableTxnRecord> payerRecords = null;
+
+    public MerklePayerRecords() {
+        // RuntimeConstructable
+    }
+
+    public MerklePayerRecords(final MerklePayerRecords that) {
+        this.num = that.num;
+        this.payerRecords = (that.payerRecords == null) ? null : that.payerRecords.copy();
+    }
+
+    @Override
+    public MerklePayerRecords copy() {
+        setImmutable(true);
+        return new MerklePayerRecords(this);
+    }
+
+    @Override
+    public long getClassId() {
+        return RUNTIME_CONSTRUCTABLE_ID;
+    }
+
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        throwIfImmutable();
+        num = in.readInt();
+        if (payerRecords != null) {
+            payerRecords.clear();
+        }
+        payerRecords = in.readSerializable(true, () -> (payerRecords != null) ? payerRecords : new FCQueue<>());
+    }
+
+    @Override
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeInt(num);
+        out.writeSerializable(payerRecords, true);
+    }
+
+    @Override
+    public int getVersion() {
+        return CURRENT_VERSION;
+    }
+
+    @Override
+    public EntityNum getKey() {
+        return EntityNum.fromInt(num);
+    }
+
+    @Override
+    public void setKey(final EntityNum num) {
+        this.num = num.intValue();
+    }
+
+    public void offer(final ExpirableTxnRecord payerRecord) {
+       ensureUsable();
+       payerRecords.offer(payerRecord);
+    }
+
+    public FCQueue<ExpirableTxnRecord> mutableQueue() {
+        ensureUsable();
+        return payerRecords;
+    }
+
+    public FCQueue<ExpirableTxnRecord> readOnlyQueue() {
+        return (payerRecords == null) ? IMMUTABLE_EMPTY_FCQ : payerRecords;
+    }
+
+    private void ensureUsable() {
+        if (payerRecords == null) {
+            payerRecords = new FCQueue<>();
+        }
+    }
+}

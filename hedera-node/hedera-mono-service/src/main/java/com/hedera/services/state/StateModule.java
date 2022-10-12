@@ -51,6 +51,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -304,6 +305,13 @@ public interface StateModule {
     static Supplier<VirtualMap<ContractKey, IterableContractValue>> provideWorkingContractStorage(
             final MutableStateChildren workingState) {
         return workingState::contractStorage;
+    }
+
+    @Provides
+    @Singleton
+    static Supplier<RecordsStorageAdapter> provideRecordStorageAdapter(
+            final MutableStateChildren workingState) {
+        return workingState::payerRecords;
     }
 
     @Provides

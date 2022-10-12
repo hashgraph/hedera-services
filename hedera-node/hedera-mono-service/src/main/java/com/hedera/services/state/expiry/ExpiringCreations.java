@@ -26,6 +26,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
@@ -54,15 +55,15 @@ public class ExpiringCreations implements EntityCreator {
     private final ExpiryManager expiries;
     private final NarratedCharging narratedCharging;
     private final GlobalDynamicProperties dynamicProperties;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<RecordsStorageAdapter> payerRecords;
 
     @Inject
     public ExpiringCreations(
             final ExpiryManager expiries,
             final NarratedCharging narratedCharging,
             final GlobalDynamicProperties dynamicProperties,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
-        this.accounts = accounts;
+            final Supplier<RecordsStorageAdapter> payerRecords) {
+        this.payerRecords = payerRecords;
         this.expiries = expiries;
         this.narratedCharging = narratedCharging;
         this.dynamicProperties = dynamicProperties;
@@ -229,8 +230,6 @@ public class ExpiringCreations implements EntityCreator {
     }
 
     private void addToState(final EntityNum key, final ExpirableTxnRecord expirableTxnRecord) {
-        final var currentAccounts = accounts.get();
-        final var mutableAccount = currentAccounts.getForModify(key);
-        mutableAccount.records().offer(expirableTxnRecord);
+        payerRecords.get().addPayerRecord(key, expirableTxnRecord);
     }
 }

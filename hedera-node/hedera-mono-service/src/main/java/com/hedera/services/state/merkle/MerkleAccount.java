@@ -46,11 +46,6 @@ public class MerkleAccount extends PartialNaryMerkleInternal
 
     static Runnable stackDump = Thread::dumpStack;
 
-    static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
-
-    static {
-        IMMUTABLE_EMPTY_FCQ.copy();
-    }
 
     private static final int RELEASE_0240_VERSION = 4;
     static final int MERKLE_VERSION = RELEASE_0240_VERSION;

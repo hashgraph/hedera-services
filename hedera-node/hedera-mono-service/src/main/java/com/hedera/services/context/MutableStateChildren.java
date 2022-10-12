@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -55,6 +56,7 @@ public class MutableStateChildren implements StateChildren {
     private WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
     // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
     private NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
+    private NonAtomicReference<RecordsStorageAdapter> payerRecords;
     private WeakReference<MerkleScheduledTransactions> schedules;
     private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
     private WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
@@ -198,6 +200,15 @@ public class MutableStateChildren implements StateChildren {
     }
 
     @Override
+    public RecordsStorageAdapter payerRecords() {
+        return Objects.requireNonNull(payerRecords.get());
+    }
+
+    public void setPayerRecords(final RecordsStorageAdapter payerRecords) {
+        this.payerRecords = new NonAtomicReference<>(payerRecords);
+    }
+
+    @Override
     public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
         return Objects.requireNonNull(stakingInfo.get());
     }
@@ -242,6 +253,7 @@ public class MutableStateChildren implements StateChildren {
         addressBook = new WeakReference<>(state.addressBook());
         specialFiles = new WeakReference<>(state.specialFiles());
         uniqueTokens = new NonAtomicReference<>(state.uniqueTokens());
+        payerRecords = new NonAtomicReference<>(state.payerRecords());
         runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
         aliases = new WeakReference<>(state.aliases());
         stakingInfo = new WeakReference<>(state.stakingInfo());

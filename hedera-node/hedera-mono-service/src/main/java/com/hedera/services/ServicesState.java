@@ -104,6 +104,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     private StateMetadata metadata;
     /* Set to true if virtual NFTs are enabled. */
     private boolean enabledVirtualNft;
+    private boolean accountsOnDisk = true;
 
     /**
      * For scheduled transaction migration we need to initialize the new scheduled transactions'
@@ -498,6 +499,12 @@ public class ServicesState extends PartialNaryMerkleInternal
                         (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
                 : UniqueTokenMapAdapter.wrap(
                         (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
+    }
+
+    public RecordsStorageAdapter payerRecords() {
+        return accountsOnDisk
+                ? RecordsStorageAdapter.fromDedicated(getChild(StateChildIndices.PAYER_RECORDS))
+                : RecordsStorageAdapter.fromLegacy(accounts());
     }
 
     public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
