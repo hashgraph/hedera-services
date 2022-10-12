@@ -15,9 +15,6 @@
  */
 package com.hedera.services.state.tasks;
 
-import static com.hedera.services.state.tasks.SystemTaskResult.*;
-import static com.hedera.services.throttling.MapAccessType.*;
-
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -36,14 +33,22 @@ import com.hedera.services.utils.SidecarUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.services.state.tasks.SystemTaskResult.DONE;
+import static com.hedera.services.state.tasks.SystemTaskResult.NEEDS_DIFFERENT_CONTEXT;
+import static com.hedera.services.state.tasks.SystemTaskResult.NOTHING_TO_DO;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.services.throttling.MapAccessType.BLOBS_GET;
+import static com.hedera.services.throttling.MapAccessType.STORAGE_GET;
 
 /**
  * A {@link SystemTask} added in release 0.31 that exports the bytecode and storage slots of all
@@ -142,7 +147,7 @@ public class TraceabilityExportTask implements SystemTask {
             final ContractID contractId) {
         expiryThrottle.allowOne(BLOBS_GET);
         final var runtimeCode =
-                entityAccess.fetchCodeIfPresent(EntityIdUtils.asAccount(contractId));
+                entityAccess.fetchCodeIfPresent(EntityIdUtils.asTypedEvmAddress(contractId));
         if (runtimeCode == null) {
             return null;
         }

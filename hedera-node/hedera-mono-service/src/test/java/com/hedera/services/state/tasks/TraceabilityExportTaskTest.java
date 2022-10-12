@@ -15,11 +15,6 @@
  */
 package com.hedera.services.state.tasks;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentCaptor.forClass;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
-
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -38,8 +33,6 @@ import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import java.time.Instant;
-import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +41,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -163,7 +171,7 @@ class TraceabilityExportTaskTest {
         given(contractStorage.get(contract1Key4)).willReturn(contract1Value4);
         final var entityNum1 = EntityNum.fromLong(contract1Num);
         final var runtimeBytes = "runtime".getBytes();
-        given(entityAccess.fetchCodeIfPresent(entityNum1.toGrpcAccountId()))
+        given(entityAccess.fetchCodeIfPresent(entityNum1.toEvmAddress()))
                 .willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum1)).willReturn(contract1);
 
@@ -248,7 +256,7 @@ class TraceabilityExportTaskTest {
         given(contractStorage.get(contract2Key1)).willReturn(contract2Value1);
         final var entityNum2 = EntityNum.fromLong(contract2Num);
         final var runtimeBytes2 = "runtime2".getBytes();
-        given(entityAccess.fetchCodeIfPresent(entityNum2.toGrpcAccountId()))
+        given(entityAccess.fetchCodeIfPresent(entityNum2.toEvmAddress()))
                 .willReturn(Bytes.of(runtimeBytes2));
         given(accounts.get(entityNum2)).willReturn(contract2);
 
@@ -312,7 +320,7 @@ class TraceabilityExportTaskTest {
         given(contractStorage.get(contract1Key1)).willReturn(contract1Value1);
         final var entityNum1 = EntityNum.fromLong(contract1Num);
         final var runtimeBytes = "runtime".getBytes();
-        given(entityAccess.fetchCodeIfPresent(entityNum1.toGrpcAccountId()))
+        given(entityAccess.fetchCodeIfPresent(entityNum1.toEvmAddress()))
                 .willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum1)).willReturn(contract1);
 
@@ -366,7 +374,7 @@ class TraceabilityExportTaskTest {
         given(contract.getFirstContractStorageKey()).willReturn(null);
         final var entityNum = EntityNum.fromLong(1L);
         final var runtimeBytes = "runtime".getBytes();
-        given(entityAccess.fetchCodeIfPresent(entityNum.toGrpcAccountId()))
+        given(entityAccess.fetchCodeIfPresent(entityNum.toEvmAddress()))
                 .willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum)).willReturn(contract);
 

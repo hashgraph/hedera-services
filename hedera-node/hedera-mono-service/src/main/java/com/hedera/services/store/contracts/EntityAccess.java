@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -25,7 +26,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
-public interface EntityAccess {
+public interface EntityAccess extends HederaEvmEntityAccess {
     /**
      * Provides a {@link WorldLedgers} whose {@link com.hedera.services.ledger.TransactionalLedger}
      * instances commit directly to the Hedera world state. Only makes sense to return
@@ -43,15 +44,7 @@ public interface EntityAccess {
     /* --- Account access --- */
     void customize(AccountID id, HederaAccountCustomizer customizer);
 
-    long getBalance(AccountID id);
-
-    boolean isExtant(AccountID id);
-
     boolean isUsable(AccountID id);
-
-    boolean isTokenAccount(Address address);
-
-    ByteString alias(AccountID id);
 
     /* --- Storage access --- */
     void recordNewKvUsageTo(
@@ -59,7 +52,6 @@ public interface EntityAccess {
 
     void putStorage(AccountID id, UInt256 key, UInt256 value);
 
-    UInt256 getStorage(AccountID id, UInt256 key);
 
     void flushStorage(
             TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
@@ -67,12 +59,4 @@ public interface EntityAccess {
     /* --- Bytecode access --- */
     void storeCode(AccountID id, Bytes code);
 
-    /**
-     * Returns the bytecode for the contract with the given account id; or null if there is no byte
-     * present for this contract.
-     *
-     * @param id the account id of the target contract
-     * @return the target contract's bytecode, or null if it is not present
-     */
-    Bytes fetchCodeIfPresent(AccountID id);
 }

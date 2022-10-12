@@ -15,12 +15,6 @@
  */
 package com.hedera.services.store.contracts;
 
-import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
@@ -33,16 +27,25 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
-import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.function.Supplier;
+
+import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class MutableEntityAccess implements EntityAccess {
@@ -101,13 +104,13 @@ public class MutableEntityAccess implements EntityAccess {
     }
 
     @Override
-    public long getBalance(final AccountID id) {
-        return ledger.getBalance(id);
+    public long getBalance(final Address address) {
+        return ledger.getBalance(accountIdFromEvmAddress(address));
     }
 
     @Override
-    public boolean isExtant(final AccountID id) {
-        return ledger.exists(id);
+    public boolean isExtant(final Address address) {
+        return ledger.exists(accountIdFromEvmAddress(address));
     }
 
     @Override
@@ -117,12 +120,12 @@ public class MutableEntityAccess implements EntityAccess {
 
     @Override
     public boolean isTokenAccount(Address address) {
-        return tokensLedger.exists(EntityIdUtils.tokenIdFromEvmAddress(address));
+        return tokensLedger.exists(tokenIdFromEvmAddress(address));
     }
 
     @Override
-    public ByteString alias(AccountID id) {
-        return ledger.alias(id);
+    public ByteString alias(final Address address) {
+        return ledger.alias(accountIdFromEvmAddress(address));
     }
 
     @Override
@@ -131,8 +134,8 @@ public class MutableEntityAccess implements EntityAccess {
     }
 
     @Override
-    public UInt256 getStorage(final AccountID id, final UInt256 key) {
-        return sizeLimitedStorage.getStorage(id, key);
+    public UInt256 getStorage(final Address address, final UInt256 key) {
+        return sizeLimitedStorage.getStorage(accountIdFromEvmAddress(address), key);
     }
 
     @Override
@@ -150,8 +153,8 @@ public class MutableEntityAccess implements EntityAccess {
     }
 
     @Override
-    public Bytes fetchCodeIfPresent(final AccountID id) {
-        return explicitCodeFetch(bytecode.get(), id);
+    public Bytes fetchCodeIfPresent(final Address address) {
+        return explicitCodeFetch(bytecode.get(), accountIdFromEvmAddress(address));
     }
 
     @Override

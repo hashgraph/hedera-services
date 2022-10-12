@@ -15,14 +15,6 @@
  */
 package com.hedera.services.store.contracts;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -40,6 +32,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class UpdateTrackingLedgerAccountTest {
@@ -128,7 +128,7 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void getsWrappedCodeHashIfConstructedWithAccount() {
         final var mockCode = Bytes.minimalBytes(4321L);
-        given(entityAccess.fetchCodeIfPresent(targetId)).willReturn(mockCode);
+        given(entityAccess.fetchCodeIfPresent(targetAddress)).willReturn(mockCode);
 
         final var account =
                 new WorldStateAccount(
@@ -158,7 +158,7 @@ class UpdateTrackingLedgerAccountTest {
 
     @Test
     void hasCodeDelegatesToWrappedIfNotUpdated() {
-        given(entityAccess.fetchCodeIfPresent(targetId)).willReturn(Bytes.EMPTY);
+        given(entityAccess.fetchCodeIfPresent(targetAddress)).willReturn(Bytes.EMPTY);
 
         final var account =
                 new WorldStateAccount(
@@ -262,7 +262,7 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void trackingAccountDelegatesToNonUpdatedStorage() {
         final var mockValue = UInt256.valueOf(1_234_567L);
-        given(entityAccess.getStorage(targetId, UInt256.ONE)).willReturn(mockValue);
+        given(entityAccess.getStorage(targetAddress, UInt256.ONE)).willReturn(mockValue);
 
         final var account =
                 new WorldStateAccount(
@@ -275,7 +275,7 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void trackingAccountDelegatesToGetOriginalStorage() {
         final var mockValue = UInt256.valueOf(1_234_567L);
-        given(entityAccess.getStorage(targetId, UInt256.ONE)).willReturn(mockValue);
+        given(entityAccess.getStorage(targetAddress, UInt256.ONE)).willReturn(mockValue);
 
         final var account =
                 new WorldStateAccount(

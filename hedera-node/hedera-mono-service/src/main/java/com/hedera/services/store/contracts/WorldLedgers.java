@@ -278,10 +278,10 @@ public class WorldLedgers {
         } else {
             Objects.requireNonNull(
                     staticEntityAccess, "Null ledgers must imply non-null static access");
-            if (!staticEntityAccess.isExtant(sourceId)) {
+            if (!staticEntityAccess.isExtant(address)) {
                 return address;
             }
-            alias = staticEntityAccess.alias(sourceId);
+            alias = staticEntityAccess.alias(address);
         }
         if (!alias.isEmpty()) {
             if (alias.size() == EVM_ADDRESS_SIZE) {

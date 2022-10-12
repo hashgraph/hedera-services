@@ -29,4 +29,5 @@ dependencies {
     api(libs.swirlds.common)
     api(project(":hedera-node:javax-inject"))
     implementation(libs.hapi)
+    implementation(libs.caffeine)
 }
