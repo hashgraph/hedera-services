@@ -50,8 +50,9 @@ public class TransactionMetadata {
         this.otherSigs = Collections.emptyList();
     }
 
-    public TransactionMetadata(final Transaction tx, final boolean failed, final JKey payerSig) {
-        this(tx, failed, payerSig, Collections.emptyList());
+    public TransactionMetadata(
+            final Transaction tx, final boolean failed, final List<JKey> otherSigs) {
+        this(tx, failed, null, otherSigs);
     }
 
     public Transaction transaction() {

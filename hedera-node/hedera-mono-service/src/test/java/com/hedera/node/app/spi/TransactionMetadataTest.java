@@ -47,7 +47,7 @@ public class TransactionMetadataTest {
     void gettersWorkAsExpectedWhenOtherSigsDoesntExist() throws DecoderException {
         final var txn = createAccountTransaction();
         final var payerKey = JKey.mapKey(key);
-        subject = new TransactionMetadata(txn, false, payerKey);
+        subject = new TransactionMetadata(txn, false, List.of(payerKey));
 
         assertFalse(subject.failed());
         assertEquals(txn, subject.transaction());

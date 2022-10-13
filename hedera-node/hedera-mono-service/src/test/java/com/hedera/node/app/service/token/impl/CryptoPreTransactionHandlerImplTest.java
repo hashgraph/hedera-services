@@ -15,12 +15,20 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.TransactionMetadata;
+import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
+import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -30,7 +38,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.Optional;
+import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,14 +49,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CryptoPreTransactionHandlerImplTest {
     private Key key = KeyUtils.A_COMPLEX_KEY;
+    private Key malformedKey = KeyUtils.A_COMPLEX_KEY;
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private AccountID payer = asAccount("0.0.3");
 
-    @Mock private AccountStore store;
+    @Mock private RebuiltStateImpl aliases;
+    @Mock private InMemoryStateImpl accounts;
+    @Mock private States states;
+    private AccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
     public void setUp() {
+        given(states.get(ACCOUNT_STORE)).willReturn(accounts);
+        given(states.get(ALIASES_STORE)).willReturn(aliases);
+        store = new AccountStore(states);
+
         subject = new CryptoPreTransactionHandlerImpl(store);
     }
 
@@ -56,31 +72,46 @@ public class CryptoPreTransactionHandlerImplTest {
     void preHandlesCryptoCreate() throws DecoderException {
         final var jkey = JKey.mapKey(key);
 
-        final var txn = createAccountTransaction(payer);
-        final var expectedMeta = new TransactionMetadata(txn, false, jkey);
-        given(store.createAccountSigningMetadata(txn, Optional.of(jkey), true))
-                .willReturn(expectedMeta);
+        final var txn = createAccountTransaction(true);
+        final var expectedMeta = new TransactionMetadata(txn, false, List.of(jkey));
 
         final var meta = subject.cryptoCreate(txn);
 
-        assertEquals(expectedMeta, meta);
+        assertEquals(expectedMeta.transaction(), meta.transaction());
+        assertNull(meta.getPayerSig());
+        assertEquals(expectedMeta.getOthersSigs().size(), meta.getOthersSigs().size());
+        assertEquals(expectedMeta.failed(), meta.failed());
     }
 
     @Test
-    void preHandlesCryptoCreateFailure() throws DecoderException {
-        final var jkey = JKey.mapKey(key);
+    void preHandlesCryptoCreateFailure() {
+        final var txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
+                        .build();
+        final var expectedMeta = new TransactionMetadata(txn, true);
+        final var meta = subject.cryptoCreate(txn);
 
-        final var txn = createAccountTransaction(payer);
-        final var expectedMeta = new TransactionMetadata(txn, false, jkey);
-        given(store.createAccountSigningMetadata(txn, Optional.of(jkey), true))
-                .willReturn(expectedMeta);
+        assertEquals(expectedMeta.transaction(), meta.transaction());
+        assertNull(meta.getPayerSig());
+        assertEquals(expectedMeta.getOthersSigs().size(), meta.getOthersSigs().size());
+        assertEquals(expectedMeta.failed(), meta.failed());
+    }
+
+    @Test
+    void noReceiverSigRequiredPreHandleCreate() {
+        final var txn = createAccountTransaction(false);
+        final var expectedMeta = new TransactionMetadata(txn, false);
 
         final var meta = subject.cryptoCreate(txn);
 
-        assertEquals(expectedMeta, meta);
+        assertEquals(expectedMeta.transaction(), meta.transaction());
+        assertSame(expectedMeta.getPayerSig(), meta.getPayerSig());
+        assertEquals(expectedMeta.getOthersSigs().size(), meta.getOthersSigs().size());
+        assertEquals(expectedMeta.failed(), meta.failed());
     }
 
-    private Transaction createAccountTransaction(final AccountID payer) {
+    private Transaction createAccountTransaction(final boolean receiverSigReq) {
         final var transactionID =
                 TransactionID.newBuilder()
                         .setAccountID(payer)
@@ -88,7 +119,7 @@ public class CryptoPreTransactionHandlerImplTest {
         final var createTxnBody =
                 CryptoCreateTransactionBody.newBuilder()
                         .setKey(key)
-                        .setReceiverSigRequired(true)
+                        .setReceiverSigRequired(receiverSigReq)
                         .setMemo("Create Account")
                         .build();
         final var transactionBody =
