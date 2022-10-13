@@ -1,7 +1,7 @@
-package com.hedera.services.base.service.crypto;
+package com.hedera.node.app.service.token;
 
-import com.hedera.services.base.metadata.TransactionMetadata;
-import com.hedera.services.base.service.PreTransactionHandler;
+import com.hedera.node.app.spi.TransactionMetadata;
+import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hederahashgraph.api.proto.java.Transaction;
 
 /**

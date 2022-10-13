@@ -13,16 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.base.state;
+package com.hedera.node.app.spi.state.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ServicesState;
+import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.States;
 import com.hedera.services.context.MutableStateChildren;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
-import static com.hedera.services.base.state.StateKeys.ACCOUNT_STORE;
-import static com.hedera.services.base.state.StateKeys.ALIASES;
+import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKeys.ALIASES;
 
 public class StatesImpl implements States {
     private final MutableStateChildren children = new MutableStateChildren();

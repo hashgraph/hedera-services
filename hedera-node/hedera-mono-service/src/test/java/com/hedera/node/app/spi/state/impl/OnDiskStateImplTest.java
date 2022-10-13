@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.base.state;
+package com.hedera.node.app.spi.state.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.spi.state.impl.OnDiskStateImpl;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.swirlds.virtualmap.VirtualMap;

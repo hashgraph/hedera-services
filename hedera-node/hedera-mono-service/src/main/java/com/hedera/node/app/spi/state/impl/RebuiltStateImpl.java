@@ -1,4 +1,4 @@
-package com.hedera.services.base.state;
+package com.hedera.node.app.spi.state.impl;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityNum;
@@ -13,7 +13,7 @@ public class RebuiltStateImpl<K, V> extends StateBase<K, V> {
 	private Map<ByteString, EntityNum> aliases;
 	private final Instant lastModifiedTime;
 
-	RebuiltStateImpl(
+	public RebuiltStateImpl(
 			@Nonnull final String stateKey,
 			@Nonnull Map<ByteString, EntityNum> aliases,
 			@Nonnull final Instant lastModifiedTime) {

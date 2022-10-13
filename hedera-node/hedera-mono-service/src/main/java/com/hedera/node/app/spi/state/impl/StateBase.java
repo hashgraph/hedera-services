@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.base.state;
+package com.hedera.node.app.spi.state.impl;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.spi.state.State;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

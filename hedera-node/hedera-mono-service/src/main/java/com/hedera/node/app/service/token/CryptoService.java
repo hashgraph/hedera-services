@@ -1,7 +1,7 @@
-package com.hedera.services.base.service.crypto;
+package com.hedera.node.app.service.token;
 
-import com.hedera.services.base.service.Service;
-import com.hedera.services.base.state.States;
+import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.state.States;
 
 import javax.annotation.Nonnull;
 

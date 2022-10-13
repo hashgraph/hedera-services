@@ -1,4 +1,4 @@
-package com.hedera.services.base.state;
+package com.hedera.node.app.spi.state;
 
 public class StateKeys {
 	/**

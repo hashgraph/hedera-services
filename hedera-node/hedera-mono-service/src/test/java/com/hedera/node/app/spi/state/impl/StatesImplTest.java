@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.base.state;
+package com.hedera.node.app.spi.state.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -23,6 +23,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
+import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
+import com.hedera.node.app.spi.state.impl.StatesImpl;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;

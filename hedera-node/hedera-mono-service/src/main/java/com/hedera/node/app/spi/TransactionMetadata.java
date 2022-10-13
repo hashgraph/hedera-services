@@ -1,4 +1,4 @@
-package com.hedera.services.base.metadata;
+package com.hedera.node.app.spi;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -38,11 +38,11 @@ public class TransactionMetadata {
 		return failed;
 	}
 
-	public JKey getPayerReqSig() {
+	public JKey getPayerSig() {
 		return payerSig;
 	}
 
-	public List<JKey> getOthersReqSigs() {
+	public List<JKey> getOthersSigs() {
 		return otherSigs;
 	}
 }

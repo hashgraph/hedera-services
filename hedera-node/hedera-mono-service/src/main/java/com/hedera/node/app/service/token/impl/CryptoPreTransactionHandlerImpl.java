@@ -1,8 +1,8 @@
-package com.hedera.services.base.service.crypto;
+package com.hedera.node.app.service.token.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.base.metadata.TransactionMetadata;
-import com.hedera.services.base.store.AccountStore;
+import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
+import com.hedera.node.app.spi.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.Transaction;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;

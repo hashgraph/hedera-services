@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.base.store;
+package com.hedera.node.app.service.token.impl;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.base.metadata.TransactionMetadata;
-import com.hedera.services.base.state.State;
-import com.hedera.services.base.state.States;
+import com.hedera.node.app.spi.TransactionMetadata;
+import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.States;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -26,10 +26,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
-import java.util.Optional;
-
-import static com.hedera.services.base.state.StateKeys.ACCOUNT_STORE;
-import static com.hedera.services.base.state.StateKeys.ALIASES;
+import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKeys.ALIASES;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 /**
@@ -57,23 +55,27 @@ public class AccountStore {
 	}
 
 	public TransactionMetadata createAccountSigningMetadata(final Transaction tx, final AccountID payer){
-		final EntityNum accountNum = isAlias(payer) ? aliases.get(payer.getAlias()).get() :
-				EntityNum.fromLong(payer.getAccountNum());
-		final var merkleAccount = getAccountLeaf(accountNum);
-		if (merkleAccount.isPresent()) {
-			final var key = merkleAccount.get().getAccountKey();
-			return new TransactionMetadata(tx, false, key);
-		}
-		throw new IllegalArgumentException("Provided account number doesn't exist");
+		final var payerNum = getAccountNum(payer);
+		final var merkleAccount = getAccountLeaf(payerNum);
+		final var key = merkleAccount.getAccountKey();
+		return new TransactionMetadata(tx, false, key);
 	}
 
 	/**
 	 * Returns the account leaf for the given account number. If the account doesn't
-	 * exist throws {@code NoSuchElementException}
+	 * exist throws {@link IllegalArgumentException}
 	 * @param accountNumber given account number
 	 * @return merkle leaf for the given account number
 	 */
-	private Optional<MerkleAccount> getAccountLeaf(final EntityNum accountNumber) {
-		return accountState.get(accountNumber);
+	private MerkleAccount getAccountLeaf(final EntityNum accountNumber) {
+		final var account = accountState.get(accountNumber);
+		if(!account.isPresent()){
+			throw new IllegalArgumentException("Provided account doesn't exist");
+		}
+		return account.get();
+	}
+
+	private EntityNum getAccountNum(final AccountID id){
+		return isAlias(id) ? aliases.get(id.getAlias()).get() : EntityNum.fromLong(id.getAccountNum());
 	}
 }
