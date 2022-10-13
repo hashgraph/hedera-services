@@ -22,6 +22,9 @@ import org.hyperledger.besu.datatypes.Address;
 public abstract class HederaEvmContractAliases {
 
     public static final int EVM_ADDRESS_LEN = 20;
+
+    /* A placeholder to store the 12-byte prefix (4-byte shard and 8-byte realm) that marks an EVM
+     * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
     private static byte[] mirrorPrefix = null;
 
     public abstract Address resolveForEvm(Address addressOrAlias);
