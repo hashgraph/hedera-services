@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import javax.annotation.Nonnull;
 import java.util.Objects;
 import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKeys.ALIASES;
+import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 /**
@@ -52,7 +52,7 @@ public class AccountStore {
 	 */
 	public AccountStore(@Nonnull States states) {
 		this.accountState = states.get(ACCOUNT_STORE);
-		this.aliases = states.get(ALIASES);
+		this.aliases = states.get(ALIASES_STORE);
 		Objects.requireNonNull(accountState);
 		Objects.requireNonNull(aliases);
 	}

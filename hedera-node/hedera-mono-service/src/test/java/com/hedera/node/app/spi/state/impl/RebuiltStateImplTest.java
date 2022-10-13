@@ -16,7 +16,6 @@
 package com.hedera.node.app.spi.state.impl;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.fchashmap.FCHashMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Optional;
 
-import static com.hedera.node.app.spi.state.StateKeys.ALIASES;
+import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -49,13 +48,13 @@ class RebuiltStateImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new RebuiltStateImpl<>(ALIASES, aliases, lastModifiedTime);
+        subject = new RebuiltStateImpl<>(ALIASES_STORE, aliases, lastModifiedTime);
     }
 
     @Test
     void gettersWork() {
         assertEquals(lastModifiedTime, subject.getLastModifiedTime());
-        assertEquals(ALIASES, subject.getStateKey());
+        assertEquals(ALIASES_STORE, subject.getStateKey());
     }
 
     @Test

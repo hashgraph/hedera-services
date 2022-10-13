@@ -11,7 +11,6 @@ import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -27,9 +26,10 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKeys.ALIASES;
+import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
+import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
@@ -51,7 +51,7 @@ public class AccountStoreTest {
 	@BeforeEach
 	public void setUp(){
 		given(states.get(ACCOUNT_STORE)).willReturn(accounts);
-		given(states.get(ALIASES)).willReturn(aliases);
+		given(states.get(ALIASES_STORE)).willReturn(aliases);
 		subject = new AccountStore(states);
 	}
 
@@ -95,14 +95,10 @@ public class AccountStoreTest {
 				.setReceiverSigRequired(true)
 				.setMemo("Create Account")
 				.build();
-
 		final var transactionBody = TransactionBody.newBuilder()
 				.setTransactionID(transactionID)
-				.setCryptoCreateAccount(createTxnBody);
-		final var signedTransaction = SignedTransaction.newBuilder()
-				.setBodyBytes(transactionBody.build().toByteString());
-		return Transaction.newBuilder()
-						.setSignedTransactionBytes(signedTransaction.getBodyBytes())
-						.build();
+				.setCryptoCreateAccount(createTxnBody)
+				.build();
+		return buildTransactionFrom(transactionBody);
 	}
 }

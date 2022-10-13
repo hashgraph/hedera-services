@@ -9,5 +9,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
  * in pre-handle including signature verification.
  */
 public interface CryptoPreTransactionHandler extends PreTransactionHandler {
+    /**
+     * pre-handle {@link com.hederahashgraph.api.proto.java.CryptoCreate} transaction
+     * @param txn crypto create transaction
+     * @return metadata accumulated from pre-handling the transaction
+     */
     TransactionMetadata cryptoCreate(final Transaction txn);
 }

@@ -1,61 +1,64 @@
-package com.hedera.node.app.spi;
+package com.hedera.node.app.service.token.impl;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.spi.TransactionMetadata;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.codec.DecoderException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Collections;
-import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class TransactionMetadataTest {
-	private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
+public class CryptoPreTransactionHandlerImplTest {
 	private Key key = KeyUtils.A_COMPLEX_KEY;
+	private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
 	private AccountID payer = asAccount("0.0.3");
-	private TransactionMetadata subject;
+	private final SignatureMap expectedMap =
+			SignatureMap.newBuilder()
+					.addSigPair(
+							SignaturePair.newBuilder()
+									.setPubKeyPrefix(ByteString.copyFromUtf8("f"))
+									.setEd25519(ByteString.copyFromUtf8("irst")))
+					.build();
 
-	@Test
-	void gettersWorkAsExpectedWhenOtherSigsDoesntExist() throws DecoderException {
-		final var txn = createAccountTransaction();
-		final var payerKey = JKey.mapKey(key);
-		subject = new TransactionMetadata(txn, false, payerKey);
+	@Mock private AccountStore store;
+	private CryptoPreTransactionHandlerImpl subject;
 
-		assertFalse(subject.failed());
-		assertEquals(txn, subject.transaction());
-		assertEquals(payerKey, subject.getPayerSig());
-		assertEquals(Collections.emptyList(), subject.getOthersSigs());
+	@BeforeEach
+	public void setUp(){
+		subject = new CryptoPreTransactionHandlerImpl(store);
 	}
 
 	@Test
-	void gettersWorkAsExpectedWhenOtherSigsExist() throws DecoderException {
-		final var txn = createAccountTransaction();
-		final var payerKey = JKey.mapKey(key);
-		subject = new TransactionMetadata(txn, false, payerKey, List.of(payerKey));
+	void preHandlesCryptoCreate() throws DecoderException {
+		final var jkey = JKey.mapKey(key);
 
-		assertFalse(subject.failed());
-		assertEquals(txn, subject.transaction());
-		assertEquals(payerKey, subject.getPayerSig());
-		assertEquals(List.of(payerKey), subject.getOthersSigs());
+		final var txn = createAccountTransaction(payer);
+		final var expectedMeta = new TransactionMetadata(txn, false, jkey);
+		given(store.createAccountSigningMetadata(txn, payer)).willReturn(expectedMeta);
+
+		final var meta = subject.cryptoCreate(txn);
+
+		assertEquals(expectedMeta, meta);
 	}
-
-
-	private Transaction createAccountTransaction(){
+	private Transaction createAccountTransaction(final AccountID payer){
 		final var transactionID = TransactionID.newBuilder()
 				.setAccountID(payer)
 				.setTransactionValidStart(consensusTimestamp);

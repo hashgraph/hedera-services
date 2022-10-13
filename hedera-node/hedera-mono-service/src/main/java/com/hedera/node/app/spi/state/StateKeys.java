@@ -8,5 +8,5 @@ public class StateKeys {
 	/**
 	 * The ID for representing the aliases state.
 	 */
-	public static final String ALIASES = "ALIASES";
+	public static final String ALIASES_STORE = "ALIASES_STORE";
 }

@@ -24,7 +24,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKeys.ALIASES;
+import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
 
 public class StatesImpl implements States {
     private final MutableStateChildren children = new MutableStateChildren();
@@ -49,7 +49,7 @@ public class StatesImpl implements States {
             final var state =
                     new InMemoryStateImpl<>(stateKey, children.accounts(), children.signedAt());
             return (StateBase) state;
-        } else if(stateKey.equals(ALIASES)){
+        } else if(stateKey.equals(ALIASES_STORE)){
             final var state =
                     new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
             return (StateBase) state;
