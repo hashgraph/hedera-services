@@ -52,19 +52,22 @@ public class LivePricesSource {
 
     public long currentGasPriceInTinycents(
             final Timestamp now, final HederaFunctionality function) {
-        return currentFeeInTinycents(MiscUtils.timestampToInstant(now), function, FeeComponents::getGas);
+        return currentFeeInTinycents(
+                MiscUtils.timestampToInstant(now), function, FeeComponents::getGas);
     }
 
     public long currentStorageByteHoursPrice(
             final Timestamp now, final HederaFunctionality function) {
         return currentPrice(now, function, FeeComponents::getSbh);
     }
+
     public long currentPrice(
             final Timestamp now,
             final HederaFunctionality function,
             final ToLongFunction<FeeComponents> resourcePriceFn) {
         final var timestamp = Timestamp.newBuilder().setSeconds(now.getSeconds()).build();
-        long feeInTinyCents = currentFeeInTinycents(MiscUtils.timestampToInstant(now), function, resourcePriceFn);
+        long feeInTinyCents =
+                currentFeeInTinycents(MiscUtils.timestampToInstant(now), function, resourcePriceFn);
         long feeInTinyBars = getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
         final var unscaledPrice = Math.max(1L, feeInTinyBars);
 

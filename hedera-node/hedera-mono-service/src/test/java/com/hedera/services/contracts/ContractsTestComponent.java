@@ -25,7 +25,6 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.LivePricesSource;
-import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.RecordsHistorian;

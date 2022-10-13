@@ -61,6 +61,7 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
 
     @Override
     public long currentGasPrice(Instant now, HederaFunctionality function) {
-        return livePricesSource.currentPrice(MiscUtils.asTimestamp(now), function, FeeComponents::getGas);
+        return livePricesSource.currentPrice(
+                MiscUtils.asTimestamp(now), function, FeeComponents::getGas);
     }
 }

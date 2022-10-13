@@ -15,7 +15,6 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
@@ -36,10 +35,8 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-
 import java.time.Instant;
 import java.util.Map;
-import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -40,7 +40,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.LivePricesSource;
-import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.submerkle.EntityId;
@@ -129,7 +128,7 @@ class PrngSystemPrecompiledContractTest {
     void calculatesGasCorrectly() {
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
         given(
-                livePricesSource.currentGasPriceInTinycents(
+                        livePricesSource.currentGasPriceInTinycents(
                                 consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(800L);
         assertEquals(
@@ -357,7 +356,7 @@ class PrngSystemPrecompiledContractTest {
                 .willReturn(ALTBN128_ADD.toArray());
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
         given(
-                livePricesSource.currentGasPriceInTinycents(
+                        livePricesSource.currentGasPriceInTinycents(
                                 consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(830L);
         given(frame.getRemainingGas()).willReturn(400_000L);
