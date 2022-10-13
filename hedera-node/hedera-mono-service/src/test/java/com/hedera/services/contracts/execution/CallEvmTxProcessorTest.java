@@ -16,7 +16,7 @@
 package com.hedera.services.contracts.execution;
 
 import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.services.contracts.ContractsV_0_31Module.EVM_VERSION_0_31;
+import static com.hedera.services.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
 import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
@@ -147,9 +147,9 @@ class CallEvmTxProcessorTest {
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         },
-                        EVM_VERSION_0_31,
+                        EVM_VERSION_0_32,
                         () -> {
-                            mcpVersion = EVM_VERSION_0_31;
+                            mcpVersion = EVM_VERSION_0_32;
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         });
@@ -162,9 +162,9 @@ class CallEvmTxProcessorTest {
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         },
-                        EVM_VERSION_0_31,
+                        EVM_VERSION_0_32,
                         () -> {
-                            ccpVersion = EVM_VERSION_0_31;
+                            ccpVersion = EVM_VERSION_0_32;
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         });
@@ -1156,7 +1156,7 @@ class CallEvmTxProcessorTest {
 
     @Test
     void testEvmVersionLoading() {
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_31, "vDoesn'tExist");
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_32, "vDoesn'tExist");
         given(globalDynamicProperties.dynamicEvmVersion()).willReturn(false, false, true, true);
 
         givenValidMock();
@@ -1180,8 +1180,8 @@ class CallEvmTxProcessorTest {
         // version changes, dynamic set
         callEvmTxProcessor.execute(
                 sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
-        assertEquals(EVM_VERSION_0_31, mcpVersion);
-        assertEquals(EVM_VERSION_0_31, ccpVersion);
+        assertEquals(EVM_VERSION_0_32, mcpVersion);
+        assertEquals(EVM_VERSION_0_32, ccpVersion);
 
         // bad version
         assertThrows(
