@@ -24,6 +24,7 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.LivePricesSource;
 import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -104,7 +105,7 @@ public interface ContractsTestComponent {
         Builder prngLogic(PrngLogic prngLogic);
 
         @BindsInstance
-        Builder pricesAndFeesSource(PricesAndFeesImpl pricesAndFees);
+        Builder livePricesSource(LivePricesSource livePricesSource);
 
         @BindsInstance
         Builder transactionContext(TransactionContext transactionContext);

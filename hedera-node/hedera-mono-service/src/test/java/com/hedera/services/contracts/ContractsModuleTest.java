@@ -29,6 +29,7 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.LivePricesSource;
 import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -72,7 +73,7 @@ class ContractsModuleTest {
     @Mock InfrastructureFactory InfrastructureFactory;
     @Mock Supplier<Instant> now;
     @Mock PrngLogic prngLogic;
-    @Mock PricesAndFeesImpl pricesAndFees;
+    @Mock LivePricesSource livePricesSource;
     @Mock TransactionContext transactionContext;
     @Mock EntityCreator entityCreator;
     @Mock MessageFrame messageFrame;
@@ -97,7 +98,7 @@ class ContractsModuleTest {
                         .InfrastructureFactory(InfrastructureFactory)
                         .now(now)
                         .prngLogic(prngLogic)
-                        .pricesAndFeesSource(pricesAndFees)
+                        .livePricesSource(livePricesSource)
                         .transactionContext(transactionContext)
                         .entityCreator(entityCreator)
                         .build();

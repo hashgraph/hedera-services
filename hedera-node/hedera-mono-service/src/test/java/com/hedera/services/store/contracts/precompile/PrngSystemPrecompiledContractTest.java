@@ -39,6 +39,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.LivePricesSource;
 import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -85,7 +86,7 @@ class PrngSystemPrecompiledContractTest {
     @Mock private PrecompilePricingUtils pricingUtils;
 
     private final Timestamp consensusNow = Timestamp.newBuilder().setSeconds(123456789L).build();
-    @Mock private PricesAndFeesImpl pricesAndFees;
+    @Mock private LivePricesSource livePricesSource;
     @Mock private HederaStackedWorldStateUpdater updater;
 
     private PrngSystemPrecompiledContract subject;
@@ -104,7 +105,7 @@ class PrngSystemPrecompiledContractTest {
                         creator,
                         recordsHistorian,
                         pricingUtils,
-                        pricesAndFees,
+                        livePricesSource,
                         dynamicProperties);
     }
 
@@ -128,7 +129,7 @@ class PrngSystemPrecompiledContractTest {
     void calculatesGasCorrectly() {
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
         given(
-                        pricesAndFees.currentGasPriceInTinycents(
+                livePricesSource.currentGasPriceInTinycents(
                                 consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(800L);
         assertEquals(
@@ -201,7 +202,7 @@ class PrngSystemPrecompiledContractTest {
                         creator,
                         recordsHistorian,
                         pricingUtils,
-                        pricesAndFees,
+                        livePricesSource,
                         dynamicProperties);
         given(logic.getNMinus3RunningHashBytes()).willThrow(IndexOutOfBoundsException.class);
 
@@ -356,7 +357,7 @@ class PrngSystemPrecompiledContractTest {
                 .willReturn(ALTBN128_ADD.toArray());
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
         given(
-                        pricesAndFees.currentGasPriceInTinycents(
+                livePricesSource.currentGasPriceInTinycents(
                                 consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(830L);
         given(frame.getRemainingGas()).willReturn(400_000L);

@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.LivePricesSource;
 import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
@@ -35,6 +36,9 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+
+import java.time.Instant;
+import java.util.Map;
 import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,15 +48,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PricesAndFeesTest {
-    private final Timestamp now = Timestamp.newBuilder().setSeconds(1_234_567L).build();
+    private static final Instant now = Instant.ofEpochSecond(1_234_567L);
+    private static final Timestamp timeNow = MiscUtils.asTimestamp(now);
     private static final long gasPriceTinybars = 123;
     private static final long sbhPriceTinybars = 456;
+    private static final long reasonableMultiplier = 7;
+
     private static final FeeComponents servicePrices =
             FeeComponents.newBuilder()
                     .setGas(gasPriceTinybars * 1000)
                     .setSbh(sbhPriceTinybars * 1000)
                     .build();
 
+    private static final FeeData providerPrices =
+            FeeData.newBuilder().setServicedata(servicePrices).build();
+    private static final ExchangeRate activeRate =
+            ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(12).build();
     private final FeeComponents mockFees =
             FeeComponents.newBuilder()
                     .setMax(1_234_567L)
@@ -62,7 +73,6 @@ class PricesAndFeesTest {
                     .setRbh(3_000_000L)
                     .setSbh(4_000_000L)
                     .build();
-
     private final FeeData mockFeeData =
             FeeData.newBuilder()
                     .setNetworkdata(mockFees)
@@ -70,18 +80,18 @@ class PricesAndFeesTest {
                     .setServicedata(mockFees)
                     .setSubType(SubType.DEFAULT)
                     .build();
+    private final Map<SubType, FeeData> currentPrices =
+            Map.of(
+                    SubType.DEFAULT, mockFeeData,
+                    SubType.TOKEN_FUNGIBLE_COMMON, mockFeeData,
+                    SubType.TOKEN_NON_FUNGIBLE_UNIQUE, mockFeeData);
     private final FeeData defaultCurrentPrices = mockFeeData;
-
     private final ExchangeRate currentRate =
             ExchangeRate.newBuilder().setCentEquiv(22).setHbarEquiv(1).build();
-    private static final FeeData providerPrices =
-            FeeData.newBuilder().setServicedata(servicePrices).build();
-    private static final ExchangeRate activeRate =
-            ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(12).build();
-    private static final long reasonableMultiplier = 7;
-    private static final long insaneMultiplier = Long.MAX_VALUE / 2;
+
     @Mock private HbarCentExchange exchange;
     @Mock private UsagePricesProvider usagePrices;
+    @Mock private LivePricesSource livePricesSource;
     @Mock private FeeMultiplierSource feeMultiplierSource;
     @Mock private TransactionContext txnCtx;
     @Mock private TxnAccessor accessor;
@@ -91,57 +101,21 @@ class PricesAndFeesTest {
     void setUp() {
         usagePrices = mock(UsagePricesProvider.class);
         exchange = mock(HbarCentExchange.class);
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
-        subject = new PricesAndFeesImpl(exchange, usagePrices, feeMultiplierSource, txnCtx);
-    }
-
-    @Test
-    void getsCurrentGasPriceInTinyCents() {
-        given(subject.defaultPricesGiven(ContractCall, now)).willReturn(providerPrices);
-
-        ToLongFunction<FeeComponents> resourcePriceFn = FeeComponents::getGas;
-        final var expected = resourcePriceFn.applyAsLong(providerPrices.getServicedata()) / 1000;
-
-        assertEquals(expected, subject.currentGasPriceInTinycents(now, ContractCall));
+        subject = new PricesAndFeesImpl(exchange, usagePrices, livePricesSource);
     }
 
     @Test
     void estimatesFutureGasPriceInTinybars() {
-        given(exchange.rate(now)).willReturn(currentRate);
-        given(usagePrices.defaultPricesGiven(CryptoCreate, now)).willReturn(defaultCurrentPrices);
+        given(livePricesSource.estimatedGasPrice(CryptoCreate, timeNow)).willReturn(227L);
+
         // and:
         long expected =
                 getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
         // when:
-        long actual = subject.estimatedGasPriceInTinybars(CryptoCreate, now);
+        long actual = subject.estimatedGasPriceInTinybars(CryptoCreate, timeNow);
 
         // then:
         assertEquals(expected, actual);
-    }
-
-    @Test
-    void getsExpectedSbhPriceWithInsaneMultiplier() {
-        givenCollabsWithMultiplier(insaneMultiplier);
-
-        assertEquals(Long.MAX_VALUE, subject.currentStorageByteHoursPrice(now, ContractCall));
-    }
-
-    @Test
-    void getsExpectedGasPriceWithReasonableMultiplier() {
-        givenCollabsWithMultiplier(reasonableMultiplier);
-
-        final var expected =
-                getTinybarsFromTinyCents(activeRate, gasPriceTinybars) * reasonableMultiplier;
-
-        assertEquals(
-                expected, subject.currentGasPrice(MiscUtils.timestampToInstant(now), ContractCall));
-    }
-
-    private void givenCollabsWithMultiplier(final long multiplier) {
-        given(subject.rate(now)).willReturn(activeRate);
-        given(subject.defaultPricesGiven(ContractCall, now)).willReturn(providerPrices);
-        given(subject.currentMultiplier(accessor)).willReturn(multiplier);
-        given(txnCtx.accessor()).willReturn(accessor);
     }
 }

@@ -26,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.LivePricesSource;
 import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -73,7 +74,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     private HederaStackedWorldStateUpdater updater;
     private final RecordsHistorian recordsHistorian;
     private final PrecompilePricingUtils pricingUtils;
-    private final PricesAndFeesImpl pricesAndFees;
+    private final LivePricesSource livePricesSource;
     private final GlobalDynamicProperties properties;
     private long gasRequirement;
 
@@ -84,14 +85,14 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
             final ExpiringCreations creator,
             final RecordsHistorian recordsHistorian,
             final PrecompilePricingUtils pricingUtils,
-            final PricesAndFeesImpl pricesAndFees,
+            final LivePricesSource livePricesSource,
             final GlobalDynamicProperties properties) {
         super(PRECOMPILE_NAME, gasCalculator);
         this.prngLogic = prngLogic;
         this.creator = creator;
         this.recordsHistorian = recordsHistorian;
         this.pricingUtils = pricingUtils;
-        this.pricesAndFees = pricesAndFees;
+        this.livePricesSource = livePricesSource;
         this.properties = properties;
     }
 
@@ -179,7 +180,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     long calculateGas(final Instant now) {
         final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
         final var currentGasPriceInTinyCents =
-                pricesAndFees.currentGasPriceInTinycents(MiscUtils.asTimestamp(now), ContractCall);
+                livePricesSource.currentGasPriceInTinycents(MiscUtils.asTimestamp(now), ContractCall);
         return feesInTinyCents / currentGasPriceInTinyCents;
     }
 
