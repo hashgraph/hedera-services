@@ -18,8 +18,6 @@ package com.hedera.node.app.spi.state.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.spi.state.impl.StateBase;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
 import java.util.HashMap;

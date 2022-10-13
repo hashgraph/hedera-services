@@ -24,8 +24,8 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 /**
- * An implementation of {@link State} backed by a {@link VirtualMap},
- * resulting in a state that is stored on disk.
+ * An implementation of {@link State} backed by a {@link VirtualMap}, resulting in a state that is
+ * stored on disk.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state

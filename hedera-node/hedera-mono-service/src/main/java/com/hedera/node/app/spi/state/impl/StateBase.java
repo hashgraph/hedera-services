@@ -17,7 +17,6 @@ package com.hedera.node.app.spi.state.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.state.State;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

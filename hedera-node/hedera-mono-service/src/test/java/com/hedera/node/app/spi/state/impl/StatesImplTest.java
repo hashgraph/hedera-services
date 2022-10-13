@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
-import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.spi.state.impl.StatesImpl;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;

@@ -24,8 +24,8 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 /**
- * An implementation of {@link State} backed by a {@link MerkleMap},
- * resulting in a state that is stored in memory.
+ * An implementation of {@link State} backed by a {@link MerkleMap}, resulting in a state that is
+ * stored in memory.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
@@ -34,8 +34,9 @@ public class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends State
     private final MerkleMap<K, V> merkle;
     private final Instant lastModifiedTime;
 
-    public InMemoryStateImpl(@Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
-       this(stateKey, new MerkleMap<>(), lastModifiedTime);
+    public InMemoryStateImpl(
+            @Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
+        this(stateKey, new MerkleMap<>(), lastModifiedTime);
     }
 
     public InMemoryStateImpl(

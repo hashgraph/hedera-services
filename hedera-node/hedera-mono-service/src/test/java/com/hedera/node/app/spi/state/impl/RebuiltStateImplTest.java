@@ -15,18 +15,6 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.fchashmap.FCHashMap;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.Optional;
-
 import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,6 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.fchashmap.FCHashMap;
+import java.time.Instant;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RebuiltStateImplTest {
