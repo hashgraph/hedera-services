@@ -121,11 +121,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         // Enable tracing of contract actions if action sidecars are enabled and this is not a
         // static call
         final HederaTracer hederaTracer =
-                new HederaTracer(
-                        !isStatic
-                                && ((GlobalDynamicProperties) dynamicProperties)
-                                        .enabledSidecars()
-                                        .contains(SidecarType.CONTRACT_ACTION));
+                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
 
         super.setOperationTracer(hederaTracer);
         super.execute(
