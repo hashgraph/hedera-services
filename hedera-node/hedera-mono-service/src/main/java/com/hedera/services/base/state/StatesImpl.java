@@ -39,17 +39,18 @@ public class StatesImpl implements States {
     }
 
     @Override
-    public @Nonnull State<?, ?> get(@Nonnull final String stateKey) {
+    @SuppressWarnings("unchecked")
+    public @Nonnull <K, V> State<K, V> get(@Nonnull final String stateKey) {
         Objects.requireNonNull(stateKey);
 
         if (stateKey.equals(ACCOUNTS_KEY)) {
             final var accounts = children.accounts();
 
-            return accounts.areOnDisk()
+            return (State<K, V>) (accounts.areOnDisk()
                     ? new OnDiskStateImpl<>(
                             stateKey, accounts.getOnDiskAccounts(), children.signedAt())
                     : new InMemoryStateImpl<>(
-                            stateKey, accounts.getInMemoryAccounts(), children.signedAt());
+                            stateKey, accounts.getInMemoryAccounts(), children.signedAt()));
         }
         // Will be adding other keys as needed. This is the only key needed for signature
         // verification.

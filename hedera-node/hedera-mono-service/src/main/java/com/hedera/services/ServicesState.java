@@ -454,6 +454,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var accountsStorage = getChild(StateChildIndices.ACCOUNTS);
         return (accountsStorage instanceof VirtualMap)
                 ? AccountStorageAdapter.fromOnDisk(
+                        getChild(StateChildIndices.PAYER_RECORDS),
                         (VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage)
                 : AccountStorageAdapter.fromInMemory(
                         (MerkleMap<EntityNum, MerkleAccount>) accountsStorage);

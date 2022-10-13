@@ -857,12 +857,13 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     public EntityId getAutoRenewAccount() {
         return hasAutoRenewAccount()
                 ? STATIC_PROPERTIES.scopedEntityIdWith(getAutoRenewAccountNumber())
-                : MISSING_ENTITY_ID;
+                : null;
     }
 
     @Override
-    public void setAutoRenewAccount(final EntityId autoRenewAccount) {
-        setAutoRenewAccountNumber(autoRenewAccount.num());
+    public void setAutoRenewAccount(@Nullable final EntityId autoRenewAccount) {
+        final var effNum = (autoRenewAccount == null) ? 0L : autoRenewAccount.num();
+        setAutoRenewAccountNumber(effNum);
     }
 
     @Override

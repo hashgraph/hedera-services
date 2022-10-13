@@ -29,9 +29,11 @@ public interface States {
      *
      * @param stateKey The key used for looking up state
      * @return The State for that key. This will never be null.
+     * @param <K> The key type in the State.
+     * @param <V> The value type in the State.
      * @throws NullPointerException if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @Nonnull
-    State<?, ?> get(@Nonnull String stateKey);
+    <K, V> State<K, V> get(@Nonnull String stateKey);
 }
