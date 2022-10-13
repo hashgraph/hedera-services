@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.LivePricesSource;
 import com.hedera.services.fees.PricesAndFeesImpl;
@@ -36,7 +34,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 import java.util.function.ToLongFunction;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,7 +92,9 @@ class PricesAndFeesTest {
 
         ToLongFunction<FeeComponents> resourcePriceFn = FeeComponents::getGas;
         final var expected = resourcePriceFn.applyAsLong(providerPrices.getServicedata());
-        assertEquals(expected, subject.defaultPricesGiven(ContractCall, timeNow).getServicedata().getGas());
+        assertEquals(
+                expected,
+                subject.defaultPricesGiven(ContractCall, timeNow).getServicedata().getGas());
     }
 
     @Test
@@ -103,8 +102,7 @@ class PricesAndFeesTest {
         given(subject.rate(timeNow)).willReturn(currentRate);
 
         // and:
-        long expected =
-                currentRate.getCentEquiv();
+        long expected = currentRate.getCentEquiv();
 
         // when:
         long actual = subject.rate(timeNow).getCentEquiv();

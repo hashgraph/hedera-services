@@ -26,7 +26,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.LivePricesSource;
-import com.hedera.services.fees.PricesAndFeesImpl;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -140,7 +139,8 @@ class LivePricesSourceTest {
     @Test
     void estimatesFutureGasPriceInTinybars() {
         given(exchange.rate(timeNow)).willReturn(currentRate);
-        given(usagePrices.defaultPricesGiven(CryptoCreate, timeNow)).willReturn(defaultCurrentPrices);
+        given(usagePrices.defaultPricesGiven(CryptoCreate, timeNow))
+                .willReturn(defaultCurrentPrices);
 
         // and:
         long expected =
