@@ -20,10 +20,19 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CustomFeeMetaTest {
+    @Test
+    void allowsConstructingUsefulMissingCustomFeeMeta() {
+        final var usableMissingMeta = CustomFeeMeta.forMissingLookupOf(aToken);
+        assertEquals(aToken, usableMissingMeta.tokenId());
+        assertEquals(Id.MISSING_ID, usableMissingMeta.treasuryId());
+        assertEquals(Collections.emptyList(), usableMissingMeta.customFees());
+    }
+
     @Test
     void objectContractWorks() {
         // setup:
