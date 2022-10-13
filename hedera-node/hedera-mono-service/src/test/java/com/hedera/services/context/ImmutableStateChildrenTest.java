@@ -21,7 +21,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -52,7 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ImmutableStateChildrenTest {
     @Mock private ServicesState state;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
@@ -84,7 +83,7 @@ class ImmutableStateChildrenTest {
     }
 
     private void givenStateWithMockChildren() {
-        given(state.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
+        given(state.accounts()).willReturn(accounts);
         given(state.storage()).willReturn(storage);
         given(state.contractStorage()).willReturn(contractStorage);
         given(state.topics()).willReturn(topics);

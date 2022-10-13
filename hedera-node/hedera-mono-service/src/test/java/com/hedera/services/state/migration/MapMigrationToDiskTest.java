@@ -16,6 +16,7 @@
 package com.hedera.services.state.migration;
 
 import static com.hedera.services.state.migration.ReleaseThirtyMigrationTest.registerForMerkleMap;
+import static com.hedera.services.state.migration.StateChildIndices.ACCOUNTS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.eq;
@@ -75,14 +76,14 @@ class MapMigrationToDiskTest {
 
         given(virtualMapFactory.newOnDiskAccountStorage()).willReturn(accountStore);
         given(accountStore.copy()).willReturn(accountStore);
-        given(mutableState.accounts()).willReturn(AccountStorageAdapter.fromInMemory(liveAccounts));
+        given(mutableState.getChild(ACCOUNTS)).willReturn(liveAccounts);
         given(accountMigrator.apply(aAccount.state())).willReturn(aPretendOnDiskAccount);
         given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
 
         MapMigrationToDisk.migrateToDiskAsApropos(
                 1, mutableState, virtualMapFactory, accountMigrator);
 
-        verify(mutableState).setChild(StateChildIndices.ACCOUNTS, accountStore);
+        verify(mutableState).setChild(ACCOUNTS, accountStore);
         verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS), captor.capture());
         final var payerRecords = captor.getValue();
         final var aRecords = payerRecords.get(aNum);

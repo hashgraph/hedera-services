@@ -18,6 +18,10 @@ package com.hedera.services.state.virtual.utils;
 import java.io.IOException;
 
 public class EntityIoUtils {
+    private EntityIoUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static void writeBytes(
             final byte[] data,
             final CheckedConsumer<Integer> writeIntFn,

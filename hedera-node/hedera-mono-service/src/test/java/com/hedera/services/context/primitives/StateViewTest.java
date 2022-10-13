@@ -188,7 +188,7 @@ class StateViewTest {
 
     private MerkleMap<EntityNum, MerkleToken> tokens;
     private MerkleMap<EntityNum, MerkleTopic> topics;
-    private MerkleMap<EntityNum, MerkleAccount> contracts;
+    private AccountStorageAdapter contracts;
     private UniqueTokenMapAdapter uniqueTokens;
     private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
     private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
@@ -266,7 +266,7 @@ class StateViewTest {
                         .autoRenewAccount(asAccount("0.0.4"))
                         .maxAutomaticAssociations(10)
                         .get();
-        contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
+        contracts = mock(AccountStorageAdapter.class);
         topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
         stakingInfo = (MerkleMap<EntityNum, MerkleStakingInfo>) mock(MerkleMap.class);
         networkContext = mock(MerkleNetworkContext.class);
@@ -343,7 +343,7 @@ class StateViewTest {
 
         children = new MutableStateChildren();
         children.setUniqueTokens(uniqueTokens);
-        children.setAccounts(AccountStorageAdapter.fromInMemory(contracts));
+        children.setAccounts(contracts);
         children.setTokens(tokens);
         children.setTokenAssociations(tokenRels);
         children.setSpecialFiles(specialFiles);

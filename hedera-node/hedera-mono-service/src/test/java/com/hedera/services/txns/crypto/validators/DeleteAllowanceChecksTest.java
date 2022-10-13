@@ -398,7 +398,6 @@ class DeleteAllowanceChecksTest {
         given(rels.contains(Pair.of(ownerId, nftToken))).willReturn(true);
 
         given(merkleToken.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
-        given(ownerMerkleAccount.state()).willReturn(new MerkleAccountState());
         given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
     }
 }

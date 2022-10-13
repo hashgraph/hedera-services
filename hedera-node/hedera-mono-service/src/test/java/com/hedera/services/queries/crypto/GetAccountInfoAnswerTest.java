@@ -87,7 +87,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class GetAccountInfoAnswerTest {
     private StateView view;
     @Mock private ScheduleStore scheduleStore;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
     @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
@@ -187,7 +187,7 @@ class GetAccountInfoAnswerTest {
                         .declineReward(false)
                         .get();
 
-        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
+        children.setAccounts(accounts);
         children.setTokenAssociations(tokenRels);
         children.setTokens(tokens);
         children.setStakingInfo(stakingInfo);
@@ -377,7 +377,7 @@ class GetAccountInfoAnswerTest {
         given(
                         optionValidator.queryableAccountStatus(
                                 EntityNum.fromAccountId(payerId),
-                                AccountStorageAdapter.fromInMemory(accounts)))
+                                accounts))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
@@ -396,7 +396,7 @@ class GetAccountInfoAnswerTest {
 
         given(
                         optionValidator.queryableAccountStatus(
-                                entityNum, AccountStorageAdapter.fromInMemory(accounts)))
+                                entityNum, accounts))
                 .willReturn(INVALID_ACCOUNT_ID);
 
         ResponseCodeEnum validity = subject.checkValidity(query, view);

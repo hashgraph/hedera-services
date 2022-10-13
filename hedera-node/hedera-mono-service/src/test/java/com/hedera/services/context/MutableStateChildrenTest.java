@@ -52,7 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MutableStateChildrenTest {
     @Mock private ServicesState state;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
@@ -92,7 +92,7 @@ class MutableStateChildrenTest {
         given(state.isInitialized()).willReturn(true);
         subject.updateFromImmutable(state, signedAt);
 
-        given(accounts.size()).willReturn(1);
+        given(accounts.size()).willReturn(1L);
         given(storage.size()).willReturn(2L);
         given(contractStorage.size()).willReturn(3L);
         given(scheduleTxs.getNumSchedules()).willReturn(4L);
@@ -112,7 +112,7 @@ class MutableStateChildrenTest {
     }
 
     private void givenStateWithMockChildren() {
-        given(state.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
+        given(state.accounts()).willReturn(accounts);
         given(state.storage()).willReturn(storage);
         given(state.contractStorage()).willReturn(contractStorage);
         given(state.topics()).willReturn(topics);

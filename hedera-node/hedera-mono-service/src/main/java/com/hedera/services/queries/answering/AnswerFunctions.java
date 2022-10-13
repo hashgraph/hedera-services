@@ -60,10 +60,6 @@ public class AnswerFunctions {
             final StateView view, final CryptoGetAccountRecordsQuery op) {
         final var payerNum = EntityNum.fromAccountId(op.getAccountID());
         final var queryableRecords = view.payerRecords().getReadOnlyPayerRecords(payerNum);
-        final var targetAccount = view.accounts().get(payerNum);
-        if (targetAccount == null) {
-            return Collections.emptyList();
-        }
         return mostRecentFrom(queryableRecords, dynamicProperties.maxNumQueryableRecords());
     }
 

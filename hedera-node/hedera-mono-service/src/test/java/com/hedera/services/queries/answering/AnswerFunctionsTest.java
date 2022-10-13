@@ -78,7 +78,7 @@ class AnswerFunctionsTest {
                         .build();
         setupAccountsView();
 
-        assertSame(Collections.emptyList(), subject.mostRecentRecords(view, op));
+        assertEquals(Collections.emptyList(), subject.mostRecentRecords(view, op));
     }
 
     @Test

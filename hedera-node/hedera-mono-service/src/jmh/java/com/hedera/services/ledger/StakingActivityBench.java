@@ -36,6 +36,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.setup.Constructables;
 import com.hedera.services.setup.InfrastructureBundle;
 import com.hedera.services.setup.InfrastructureType;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashMap;

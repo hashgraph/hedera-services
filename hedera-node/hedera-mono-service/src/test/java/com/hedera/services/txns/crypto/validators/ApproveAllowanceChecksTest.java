@@ -226,7 +226,6 @@ class ApproveAllowanceChecksTest {
 
         given(merkleTokenFungible.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
         given(merkleTokenNFT.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
-        given(ownerAccount.state()).willReturn(new MerkleAccountState());
     }
 
     @Test
@@ -495,7 +494,6 @@ class ApproveAllowanceChecksTest {
         given(merkleTokenFungible.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
         given(merkleTokenNFT.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
         given(store.getImmutableRef(payer)).willReturn(ownerAccount);
-        given(ownerAccount.state()).willReturn(new MerkleAccountState());
 
         cryptoApproveAllowanceTxn =
                 TransactionBody.newBuilder()

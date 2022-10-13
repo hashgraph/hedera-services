@@ -70,7 +70,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GetAccountBalanceAnswerTest {
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private OptionValidator optionValidator;
     @Mock private AliasManager aliasManager;
@@ -130,7 +130,7 @@ class GetAccountBalanceAnswerTest {
         ContractID cid = asContract(contractIdLit);
         given(
                         optionValidator.queryableContractStatus(
-                                cid, AccountStorageAdapter.fromInMemory(accounts)))
+                                cid, accounts))
                 .willReturn(CONTRACT_DELETED);
 
         final var query = contractQueryWith(cid);
@@ -146,7 +146,7 @@ class GetAccountBalanceAnswerTest {
         given(
                         optionValidator.queryableContractStatus(
                                 resolvedId.toGrpcContractID(),
-                                AccountStorageAdapter.fromInMemory(accounts)))
+                                accounts))
                 .willReturn(CONTRACT_DELETED);
 
         final var query = contractQueryWith(aliasContractId);
@@ -202,8 +202,7 @@ class GetAccountBalanceAnswerTest {
         Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
         // and:
         given(
-                        optionValidator.queryableAccountStatus(
-                                id, AccountStorageAdapter.fromInMemory(accounts)))
+                        optionValidator.queryableAccountStatus(id, accounts))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
@@ -373,7 +372,7 @@ class GetAccountBalanceAnswerTest {
 
         final MutableStateChildren children = new MutableStateChildren();
         children.setTokens(tokens);
-        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
+        children.setAccounts(accounts);
         children.setTokenAssociations(tokenRels);
         return new StateView(scheduleStore, children, null);
     }

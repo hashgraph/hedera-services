@@ -18,6 +18,7 @@ package com.hedera.services.mocks;
 import com.hedera.services.fees.charging.StorageFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;

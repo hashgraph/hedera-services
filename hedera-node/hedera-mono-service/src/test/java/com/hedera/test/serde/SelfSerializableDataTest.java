@@ -45,6 +45,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import javax.annotation.Nullable;
+
 /**
  * Implementation support for a JUnit5 test that validates a {@link SelfSerializable} type is still
  * able to deserialize itself from serialized forms from versions between {@link
@@ -171,7 +173,10 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     @ParameterizedTest
     @ArgumentsSource(GettersAndSettersArgumentsProvider.class)
     void gettersAndSettersWork(
-            final Object mutableSubject, final Method getter, final Method setter) {
+            final Object mutableSubject, @Nullable final Method getter, @Nullable final Method setter) {
+        if (getter == null || setter == null) {
+            return;
+        }
         final var param = validatedSetterParam(setter);
         try {
             setter.invoke(mutableSubject, param);
@@ -241,9 +246,10 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 
     private static Stream<Arguments> getterSetterTestCasesFor(final Class<?> virtualValueType) {
         final var mutableSubject = instantiate(virtualValueType);
-        return Arrays.stream(virtualValueType.getDeclaredMethods())
+        return Stream.concat(Arrays.stream(virtualValueType.getDeclaredMethods())
                 .filter(m -> m.getAnnotation(StateSetter.class) != null)
-                .map(m -> getterSetterArgs(mutableSubject, virtualValueType, m));
+                .map(m -> getterSetterArgs(mutableSubject, virtualValueType, m)),
+                Stream.of(Arguments.of(mutableSubject, null, null)));
     }
 
     private static Arguments getterSetterArgs(
@@ -307,7 +313,9 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     }
 
     private Object typicalValueOf(final Class<?> type) {
-        if (int.class.equals(type)) {
+        if (byte.class.equals(type)) {
+            return (byte) 32;
+        } else if (int.class.equals(type)) {
             return 666;
         } else if (long.class.equals(type)) {
             return 666L;
