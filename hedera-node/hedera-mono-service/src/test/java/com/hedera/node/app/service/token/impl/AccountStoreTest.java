@@ -46,7 +46,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class AccountStoreTest {
+class AccountStoreTest {
     private Key key = KeyUtils.A_COMPLEX_KEY;
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));

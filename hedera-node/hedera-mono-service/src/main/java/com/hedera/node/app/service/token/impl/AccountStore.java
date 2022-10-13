@@ -88,8 +88,13 @@ public class AccountStore {
      * @return account number
      */
     private EntityNum getAccountNum(final AccountID id) {
-        return isAlias(id)
-                ? aliases.get(id.getAlias()).get()
-                : EntityNum.fromLong(id.getAccountNum());
+        if (isAlias(id)) {
+            final var num = aliases.get(id.getAlias());
+            if (num.isPresent()) {
+                return num.get();
+            }
+            return EntityNum.MISSING_NUM;
+        }
+        return EntityNum.fromLong(id.getAccountNum());
     }
 }

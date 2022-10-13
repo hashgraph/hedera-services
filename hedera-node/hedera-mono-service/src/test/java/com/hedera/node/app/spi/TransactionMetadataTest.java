@@ -37,7 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class TransactionMetadataTest {
+class TransactionMetadataTest {
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private Key key = KeyUtils.A_COMPLEX_KEY;
     private AccountID payer = asAccount("0.0.3");

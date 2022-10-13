@@ -47,7 +47,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CryptoPreTransactionHandlerImplTest {
+class CryptoPreTransactionHandlerImplTest {
     private Key key = KeyUtils.A_COMPLEX_KEY;
     private Key malformedKey = KeyUtils.A_COMPLEX_KEY;
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
