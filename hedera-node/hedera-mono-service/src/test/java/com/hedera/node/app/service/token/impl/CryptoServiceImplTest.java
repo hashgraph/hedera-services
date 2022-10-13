@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;
@@ -23,29 +28,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 public class CryptoServiceImplTest {
-	@Mock private RebuiltStateImpl aliases;
-	@Mock private InMemoryStateImpl accounts;
-	@Mock
-	States states;
+    @Mock private RebuiltStateImpl aliases;
+    @Mock private InMemoryStateImpl accounts;
+    @Mock States states;
 
-	private CryptoServiceImpl subject;
+    private CryptoServiceImpl subject;
 
-	@Test
-	void createsNewInstance(){
-		subject = new CryptoServiceImpl();
+    @Test
+    void createsNewInstance() {
+        subject = new CryptoServiceImpl();
 
-		given(states.get(ACCOUNT_STORE)).willReturn(accounts);
-		given(states.get(ALIASES_STORE)).willReturn(aliases);
+        given(states.get(ACCOUNT_STORE)).willReturn(accounts);
+        given(states.get(ALIASES_STORE)).willReturn(aliases);
 
-		final var serviceImpl = subject.createPreTransactionHandler(states);
-		final var serviceImpl1 = subject.createPreTransactionHandler(states);
-		assertNotEquals(serviceImpl1, serviceImpl);
-	}
+        final var serviceImpl = subject.createPreTransactionHandler(states);
+        final var serviceImpl1 = subject.createPreTransactionHandler(states);
+        assertNotEquals(serviceImpl1, serviceImpl);
+    }
 }

@@ -110,13 +110,17 @@ class AccountStoreTest {
         final var jkey = JKey.mapKey(key);
         given(accounts.get(payerNum)).willReturn(Optional.empty());
         final var txn = createAccountTransaction(payer);
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> subject.createAccountSigningMetadata(txn, Optional.of(jkey), true, payer));
 
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
         final var aliasedTxn = createAccountTransaction(payerAlias);
-        assertThrows(IllegalArgumentException.class,
-                () -> subject.createAccountSigningMetadata(aliasedTxn, Optional.of(jkey), true, payerAlias));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        subject.createAccountSigningMetadata(
+                                aliasedTxn, Optional.of(jkey), true, payerAlias));
     }
 
     private Transaction createAccountTransaction(final AccountID payer) {
