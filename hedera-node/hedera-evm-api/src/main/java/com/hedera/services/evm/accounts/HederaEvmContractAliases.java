@@ -20,24 +20,24 @@ import org.hyperledger.besu.datatypes.Address;
 
 public abstract class HederaEvmContractAliases {
 
-  public static final int EVM_ADDRESS_LEN = 20;
-  private static byte[] mirrorPrefix = null;
+    public static final int EVM_ADDRESS_LEN = 20;
+    private static byte[] mirrorPrefix = null;
 
-  public abstract Address resolveForEvm(Address addressOrAlias);
+    public abstract Address resolveForEvm(Address addressOrAlias);
 
-  public boolean isMirror(final Address address) {
-    return isMirror(address.toArrayUnsafe());
-  }
-
-  public boolean isMirror(final byte[] address) {
-    if (address.length != EVM_ADDRESS_LEN) {
-      return false;
+    public boolean isMirror(final Address address) {
+        return isMirror(address.toArrayUnsafe());
     }
-    if (mirrorPrefix == null) {
-      mirrorPrefix = new byte[12];
-      System.arraycopy(0L, 4, mirrorPrefix, 0, 4);
-      System.arraycopy(0L, 0, mirrorPrefix, 4, 8);
+
+    public boolean isMirror(final byte[] address) {
+        if (address.length != EVM_ADDRESS_LEN) {
+            return false;
+        }
+        if (mirrorPrefix == null) {
+            mirrorPrefix = new byte[12];
+            System.arraycopy(0L, 4, mirrorPrefix, 0, 4);
+            System.arraycopy(0L, 0, mirrorPrefix, 4, 8);
+        }
+        return Arrays.equals(mirrorPrefix, 0, 12, address, 0, 12);
     }
-    return Arrays.equals(mirrorPrefix, 0, 12, address, 0, 12);
-  }
 }
