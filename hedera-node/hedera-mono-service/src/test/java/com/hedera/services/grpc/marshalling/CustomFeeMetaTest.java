@@ -20,10 +20,19 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CustomFeeMetaTest {
+    @Test
+    void allowsConstructingUsefulMissingCustomFeeMeta() {
+        final var usableMissingMeta = CustomFeeMeta.forMissingLookupOf(aToken);
+        assertEquals(aToken, usableMissingMeta.tokenId());
+        assertEquals(Id.MISSING_ID, usableMissingMeta.treasuryId());
+        assertEquals(Collections.emptyList(), usableMissingMeta.customFees());
+    }
+
     @Test
     void objectContractWorks() {
         // setup:
@@ -58,11 +67,10 @@ class CustomFeeMetaTest {
                 "CustomFeeMeta[tokenId=1.1.1, treasuryId=9.9.9,"
                         + " customFees=[FcCustomFee{feeType=FIXED_FEE,"
                         + " fixedFee=FixedFeeSpec{unitsToCollect=100000, tokenDenomination=ℏ},"
-                        + " feeCollector=EntityId{shard=2, realm=3, num=4},"
-                        + " allCollectorsAreExempt=false}, FcCustomFee{feeType=FIXED_FEE,"
-                        + " fixedFee=FixedFeeSpec{unitsToCollect=10, tokenDenomination=6.6.6},"
-                        + " feeCollector=EntityId{shard=3, realm=4, num=5},"
-                        + " allCollectorsAreExempt=false}]]";
+                        + " feeCollector=EntityId{shard=2, realm=3, num=4}},"
+                        + " FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=10,"
+                        + " tokenDenomination=6.6.6}, feeCollector=EntityId{shard=3, realm=4,"
+                        + " num=5}}]]";
 
         // expect:
         assertEquals(desired, subject.toString());
@@ -78,8 +86,8 @@ class CustomFeeMetaTest {
     private final Id hbarFeeCollector = new Id(2, 3, 4);
     private final Id htsFeeCollector = new Id(3, 4, 5);
     private final FcCustomFee hbarFee =
-            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector.asEntityId(), false);
+            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector.asEntityId());
     private final FcCustomFee htsFee =
             FcCustomFee.fixedFee(
-                    amountOfHtsFee, feeDenom.asEntityId(), htsFeeCollector.asEntityId(), false);
+                    amountOfHtsFee, feeDenom.asEntityId(), htsFeeCollector.asEntityId());
 }

@@ -17,14 +17,13 @@ package com.hedera.services.txns.customfees;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,10 +48,8 @@ class FcmCustomFeeSchedulesTest {
     @BeforeEach
     void setUp() {
         // setup:
-        final var tokenAFees =
-                List.of(FcCustomFee.fixedFee(20L, tokenA, feeCollector, false).asGrpc());
-        final var tokenBFees =
-                List.of(FcCustomFee.fixedFee(40L, tokenB, feeCollector, false).asGrpc());
+        final var tokenAFees = List.of(FcCustomFee.fixedFee(20L, tokenA, feeCollector).asGrpc());
+        final var tokenBFees = List.of(FcCustomFee.fixedFee(40L, tokenB, feeCollector).asGrpc());
         aToken.setFeeScheduleFrom(tokenAFees);
         aToken.setTreasury(aTreasury);
         bToken.setFeeScheduleFrom(tokenBFees);
@@ -75,7 +72,8 @@ class FcmCustomFeeSchedulesTest {
         assertEquals(aTreasury, tokenAFees.treasuryId().asEntityId());
         assertEquals(bToken.customFeeSchedule(), tokenBFees.customFees());
         assertEquals(bTreasury, tokenBFees.treasuryId().asEntityId());
-        assertSame(Collections.emptyList(), missingTokenFees.customFees());
+        final var missingId = missingToken.asId();
+        assertEquals(CustomFeeMeta.forMissingLookupOf(missingId), missingTokenFees);
     }
 
     @Test
@@ -89,7 +87,7 @@ class FcmCustomFeeSchedulesTest {
         MerkleMap<EntityNum, MerkleToken> secondMerkleMap = new MerkleMap<>();
         MerkleToken token = new MerkleToken();
         final var missingFees =
-                List.of(FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
+                List.of(FcCustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
 
         token.setFeeScheduleFrom(missingFees);
         secondMerkleMap.put(EntityNum.fromLong(missingToken.num()), new MerkleToken());
