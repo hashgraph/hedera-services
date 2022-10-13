@@ -6,7 +6,7 @@ import com.hedera.node.app.spi.state.States;
 import javax.annotation.Nonnull;
 
 /**
- * The {@code CryptoService} is responsible for working with {@link com.hedera.services.base.entity.Account}s.
+ * The {@code CryptoService} is responsible for working with {Account}s.
  * It implements all transactions and queries defined in the "CryptoService" protobuf
  * service. The {@code CryptoService} is used extensively by the core application workflows
  * to implement transaction handling, since all transactions and most queries involve payments
