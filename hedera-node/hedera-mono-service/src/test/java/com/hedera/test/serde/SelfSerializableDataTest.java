@@ -37,6 +37,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -44,8 +45,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import javax.annotation.Nullable;
 
 /**
  * Implementation support for a JUnit5 test that validates a {@link SelfSerializable} type is still
@@ -173,7 +172,9 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     @ParameterizedTest
     @ArgumentsSource(GettersAndSettersArgumentsProvider.class)
     void gettersAndSettersWork(
-            final Object mutableSubject, @Nullable final Method getter, @Nullable final Method setter) {
+            final Object mutableSubject,
+            @Nullable final Method getter,
+            @Nullable final Method setter) {
         if (getter == null || setter == null) {
             return;
         }
@@ -246,9 +247,10 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 
     private static Stream<Arguments> getterSetterTestCasesFor(final Class<?> virtualValueType) {
         final var mutableSubject = instantiate(virtualValueType);
-        return Stream.concat(Arrays.stream(virtualValueType.getDeclaredMethods())
-                .filter(m -> m.getAnnotation(StateSetter.class) != null)
-                .map(m -> getterSetterArgs(mutableSubject, virtualValueType, m)),
+        return Stream.concat(
+                Arrays.stream(virtualValueType.getDeclaredMethods())
+                        .filter(m -> m.getAnnotation(StateSetter.class) != null)
+                        .map(m -> getterSetterArgs(mutableSubject, virtualValueType, m)),
                 Stream.of(Arguments.of(mutableSubject, null, null)));
     }
 

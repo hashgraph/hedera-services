@@ -15,7 +15,6 @@
  */
 package com.hedera.services.state.virtual;
 
-import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;

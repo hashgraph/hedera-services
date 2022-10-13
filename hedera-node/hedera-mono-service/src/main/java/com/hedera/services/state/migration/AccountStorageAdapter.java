@@ -128,4 +128,18 @@ public class AccountStorageAdapter {
             inMemoryAccounts.forEach(visitor);
         }
     }
+
+    public boolean areOnDisk() {
+        return accountsOnDisk;
+    }
+
+    @Nullable
+    public MerkleMap<EntityNum, MerkleAccount> getInMemoryAccounts() {
+        return inMemoryAccounts;
+    }
+
+    @Nullable
+    public VirtualMap<EntityNumVirtualKey, OnDiskAccount> getOnDiskAccounts() {
+        return onDiskAccounts;
+    }
 }

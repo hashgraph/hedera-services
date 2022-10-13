@@ -43,8 +43,14 @@ public class StatesImpl implements States {
         Objects.requireNonNull(stateKey);
 
         if (stateKey.equals(ACCOUNTS_KEY)) {
+            final var accounts = children.accounts();
+
             final var state =
-                    new InMemoryStateImpl<>(stateKey, children.accounts(), children.signedAt());
+                    accounts.areOnDisk()
+                            ? new OnDiskStateImpl(
+                                    stateKey, accounts.getOnDiskAccounts(), children.signedAt())
+                            : new InMemoryStateImpl<>(
+                                    stateKey, accounts.getInMemoryAccounts(), children.signedAt());
             return (StateBase) state;
         }
         // Will be adding other keys as needed. This is the only key needed for signature

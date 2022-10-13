@@ -63,8 +63,7 @@ class GetAccountRecordsResourceUsageTest {
     private StateView view;
     private MerkleAccount aValue;
 
-    @Mock
-    private CryptoFeeBuilder usageEstimator;
+    @Mock private CryptoFeeBuilder usageEstimator;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private AccountStorageAdapter accounts;
     @Mock private RecordsStorageAdapter payerRecords;

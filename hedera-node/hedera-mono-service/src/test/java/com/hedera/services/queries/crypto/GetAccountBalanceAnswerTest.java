@@ -128,10 +128,7 @@ class GetAccountBalanceAnswerTest {
     void syntaxCheckValidatesCidIfPresent() {
         String contractIdLit = "0.0.12346";
         ContractID cid = asContract(contractIdLit);
-        given(
-                        optionValidator.queryableContractStatus(
-                                cid, accounts))
-                .willReturn(CONTRACT_DELETED);
+        given(optionValidator.queryableContractStatus(cid, accounts)).willReturn(CONTRACT_DELETED);
 
         final var query = contractQueryWith(cid);
         final var status = subject.checkValidity(query, wellKnownView());
@@ -143,10 +140,7 @@ class GetAccountBalanceAnswerTest {
     void syntaxCheckValidatesAliasedCidIfPresent() {
         final var resolvedId = EntityNum.fromLong(666);
         given(aliasManager.lookupIdBy(evmAddress)).willReturn(resolvedId);
-        given(
-                        optionValidator.queryableContractStatus(
-                                resolvedId.toGrpcContractID(),
-                                accounts))
+        given(optionValidator.queryableContractStatus(resolvedId.toGrpcContractID(), accounts))
                 .willReturn(CONTRACT_DELETED);
 
         final var query = contractQueryWith(aliasContractId);
@@ -201,9 +195,7 @@ class GetAccountBalanceAnswerTest {
                 CryptoGetAccountBalanceQuery.newBuilder().setAccountID(id).build();
         Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
         // and:
-        given(
-                        optionValidator.queryableAccountStatus(id, accounts))
-                .willReturn(ACCOUNT_DELETED);
+        given(optionValidator.queryableAccountStatus(id, accounts)).willReturn(ACCOUNT_DELETED);
 
         // when:
         ResponseCodeEnum status = subject.checkValidity(query, wellKnownView());

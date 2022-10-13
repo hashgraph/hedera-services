@@ -56,7 +56,6 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -95,8 +94,10 @@ class GetAccountRecordsAnswerTest {
         accounts = mock(AccountStorageAdapter.class);
         final var targetNum = EntityNum.fromAccountId(asAccount(target));
         given(accounts.containsKey(targetNum)).willReturn(true);
-        given(payerRecords.getReadOnlyPayerRecords(targetNum)).willReturn(
-                new QueryableRecords(payerAccount.numRecords(), payerAccount.recordIterator()));
+        given(payerRecords.getReadOnlyPayerRecords(targetNum))
+                .willReturn(
+                        new QueryableRecords(
+                                payerAccount.numRecords(), payerAccount.recordIterator()));
 
         final MutableStateChildren children = new MutableStateChildren();
         children.setAccounts(accounts);
@@ -180,9 +181,7 @@ class GetAccountRecordsAnswerTest {
     @Test
     void usesValidator() {
         final var query = validQuery(COST_ANSWER, fee, target);
-        given(
-                        optionValidator.queryableAccountStatus(
-                                asAccount(target), accounts))
+        given(optionValidator.queryableAccountStatus(asAccount(target), accounts))
                 .willReturn(ACCOUNT_DELETED);
 
         final var validity = subject.checkValidity(query, view);
