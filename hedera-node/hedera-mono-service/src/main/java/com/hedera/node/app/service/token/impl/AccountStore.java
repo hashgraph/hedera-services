@@ -40,6 +40,9 @@ public class AccountStore {
 	 * The underlying data storage class that holds the account data.
 	 */
 	private final State<EntityNum, MerkleAccount> accountState;
+	/**
+	 * The underlying data storage class that holds the aliases data built from the state.
+	 */
 	private final State<ByteString, EntityNum> aliases;
 
 	/**
@@ -75,6 +78,11 @@ public class AccountStore {
 		return account.get();
 	}
 
+	/**
+	 * Get account number if the provided account id is an alias. If not, returns the account's number
+	 * @param id provided account id
+	 * @return account number
+	 */
 	private EntityNum getAccountNum(final AccountID id){
 		return isAlias(id) ? aliases.get(id.getAlias()).get() : EntityNum.fromLong(id.getAccountNum());
 	}

@@ -6,6 +6,11 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Metadata collected when transactions are handled as part of "pre-handle". This happens with multiple background threads.
+ * Any state read or computed as part of this pre-handle, including any errors, are captured in the TransactionMetadata.
+ * This is then made available to the transaction during the "handle" phase as part of the HandleContext.
+ */
 public class TransactionMetadata {
 	private final boolean failed;
 	private final Transaction tx;
