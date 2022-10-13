@@ -29,7 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CryptoServiceImplTest {
+class CryptoServiceImplTest {
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
     @Mock States states;
