@@ -93,9 +93,7 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void preHandlesCryptoCreateFailure() throws DecoderException {
-        final var jkey = JKey.mapKey(key);
-
+    void preHandlesCryptoCreateFailure() {
         final var txn =
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))

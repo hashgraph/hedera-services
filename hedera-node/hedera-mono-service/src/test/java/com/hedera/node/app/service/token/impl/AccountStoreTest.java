@@ -22,6 +22,7 @@ import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
@@ -102,6 +103,20 @@ class AccountStoreTest {
         assertEquals(txn, meta.transaction());
         assertEquals(payerJkey, meta.getPayerSig());
         assertEquals(List.of(jkey), meta.getOthersSigs());
+    }
+
+    @Test
+    void fetchingNonExistingLeafThrows() throws DecoderException {
+        final var jkey = JKey.mapKey(key);
+        given(accounts.get(payerNum)).willReturn(Optional.empty());
+        final var txn = createAccountTransaction(payer);
+        assertThrows(IllegalArgumentException.class,
+                () -> subject.createAccountSigningMetadata(txn, Optional.of(jkey), true, payer));
+
+        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
+        final var aliasedTxn = createAccountTransaction(payerAlias);
+        assertThrows(IllegalArgumentException.class,
+                () -> subject.createAccountSigningMetadata(aliasedTxn, Optional.of(jkey), true, payerAlias));
     }
 
     private Transaction createAccountTransaction(final AccountID payer) {

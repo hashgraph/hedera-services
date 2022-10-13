@@ -57,6 +57,13 @@ class RebuiltStateImplTest {
     }
 
     @Test
+    void constructorsWork() {
+        subject = new RebuiltStateImpl<>(ALIASES_STORE, lastModifiedTime);
+        assertEquals(lastModifiedTime, subject.getLastModifiedTime());
+        assertEquals(ALIASES_STORE, subject.getStateKey());
+    }
+
+    @Test
     void readsValueFromAliasesFcHashMap() {
         given(aliases.get(alias)).willReturn(account);
 
