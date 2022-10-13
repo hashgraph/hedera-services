@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,11 +59,16 @@ public class AccountStore {
     }
 
     public TransactionMetadata createAccountSigningMetadata(
-            final Transaction tx, final Optional<JKey> key, final boolean receiverSigReq) {
+            final Transaction tx,
+            final Optional<JKey> key,
+            final boolean receiverSigReq,
+            final AccountID payer) {
+        final var payerNum = getAccountNum(payer);
+        final var payerKey = getAccountLeaf(payerNum).getAccountKey();
         if (receiverSigReq && key.isPresent()) {
-            return new TransactionMetadata(tx, false, List.of(key.get()));
+            return new TransactionMetadata(tx, false, payerKey, List.of(key.get()));
         }
-        return new TransactionMetadata(tx, false);
+        return new TransactionMetadata(tx, false, payerKey, Collections.emptyList());
     }
 
     /**

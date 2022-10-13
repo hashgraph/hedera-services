@@ -37,10 +37,12 @@ public class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHand
 
     public TransactionMetadata cryptoCreate(final Transaction tx) {
         try {
-            final var op = extractTransactionBody(tx).getCryptoCreateAccount();
+            final var txn = extractTransactionBody(tx);
+            final var op = txn.getCryptoCreateAccount();
             final var key = asUsableFcKey(op.getKey());
             final var receiverSigReq = op.getReceiverSigRequired();
-            return accountStore.createAccountSigningMetadata(tx, key, receiverSigReq);
+            final var payer = txn.getTransactionID().getAccountID();
+            return accountStore.createAccountSigningMetadata(tx, key, receiverSigReq, payer);
         } catch (InvalidProtocolBufferException ex) {
             return new TransactionMetadata(tx, true);
         }

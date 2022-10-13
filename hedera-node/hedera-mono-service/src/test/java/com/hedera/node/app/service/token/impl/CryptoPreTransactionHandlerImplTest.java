@@ -30,6 +30,8 @@ import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -38,7 +40,9 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,13 +53,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerImplTest {
     private Key key = KeyUtils.A_COMPLEX_KEY;
-    private Key malformedKey = KeyUtils.A_COMPLEX_KEY;
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private AccountID payer = asAccount("0.0.3");
+    private EntityNum payerNum = EntityNum.fromInt(3);
 
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
     @Mock private States states;
+    @Mock private MerkleAccount account;
     private AccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
 
@@ -63,6 +68,7 @@ class CryptoPreTransactionHandlerImplTest {
     public void setUp() {
         given(states.get(ACCOUNT_STORE)).willReturn(accounts);
         given(states.get(ALIASES_STORE)).willReturn(aliases);
+
         store = new AccountStore(states);
 
         subject = new CryptoPreTransactionHandlerImpl(store);
@@ -72,19 +78,24 @@ class CryptoPreTransactionHandlerImplTest {
     void preHandlesCryptoCreate() throws DecoderException {
         final var jkey = JKey.mapKey(key);
 
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(jkey);
+
         final var txn = createAccountTransaction(true);
-        final var expectedMeta = new TransactionMetadata(txn, false, List.of(jkey));
+        final var expectedMeta = new TransactionMetadata(txn, false, jkey, List.of(jkey));
 
         final var meta = subject.cryptoCreate(txn);
 
         assertEquals(expectedMeta.transaction(), meta.transaction());
-        assertNull(meta.getPayerSig());
+        assertEquals(expectedMeta.getPayerSig(), meta.getPayerSig());
         assertEquals(expectedMeta.getOthersSigs().size(), meta.getOthersSigs().size());
         assertEquals(expectedMeta.failed(), meta.failed());
     }
 
     @Test
-    void preHandlesCryptoCreateFailure() {
+    void preHandlesCryptoCreateFailure() throws DecoderException {
+        final var jkey = JKey.mapKey(key);
+
         final var txn =
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
@@ -99,9 +110,13 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void noReceiverSigRequiredPreHandleCreate() {
+    void noReceiverSigRequiredPreHandleCreate() throws DecoderException {
+        final var jkey = JKey.mapKey(key);
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(jkey);
+
         final var txn = createAccountTransaction(false);
-        final var expectedMeta = new TransactionMetadata(txn, false);
+        final var expectedMeta = new TransactionMetadata(txn, false, jkey, Collections.emptyList());
 
         final var meta = subject.cryptoCreate(txn);
 
