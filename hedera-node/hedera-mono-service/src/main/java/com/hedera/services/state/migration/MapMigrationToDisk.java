@@ -18,6 +18,7 @@ package com.hedera.services.state.migration;
 import static com.hedera.services.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.services.state.migration.StateChildIndices.PAYER_RECORDS;
 import static com.hedera.services.utils.MiscUtils.forEach;
+import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -52,22 +53,30 @@ public class MapMigrationToDisk {
         final var inMemoryAccounts =
                 (MerkleMap<EntityNum, MerkleAccount>) mutableState.getChild(ACCOUNTS);
         final MerkleMap<EntityNum, MerklePayerRecords> payerRecords = new MerkleMap<>();
-        forEach(
-                inMemoryAccounts,
-                (num, account) -> {
-                    final var accountRecords = new MerklePayerRecords();
-                    account.records().forEach(accountRecords::offer);
-                    payerRecords.put(num, accountRecords);
+        withLoggedDuration(
+                () ->
+                        forEach(
+                                inMemoryAccounts,
+                                (num, account) -> {
+                                    final var accountRecords = new MerklePayerRecords();
+                                    account.records().forEach(accountRecords::offer);
+                                    payerRecords.put(num, accountRecords);
 
-                    final var onDiskAccount = accountMigrator.apply(account.state());
-                    onDiskAccounts
-                            .get()
-                            .put(new EntityNumVirtualKey(num.longValue()), onDiskAccount);
-                    if (insertionsSoFar.incrementAndGet() % insertionsPerCopy == 0) {
-                        final var onDiskAccountsCopy = onDiskAccounts.get().copy();
-                        onDiskAccounts.set(onDiskAccountsCopy);
-                    }
-                });
+                                    final var onDiskAccount =
+                                            accountMigrator.apply(account.state());
+                                    onDiskAccounts
+                                            .get()
+                                            .put(
+                                                    new EntityNumVirtualKey(num.longValue()),
+                                                    onDiskAccount);
+                                    if (insertionsSoFar.incrementAndGet() % insertionsPerCopy
+                                            == 0) {
+                                        final var onDiskAccountsCopy = onDiskAccounts.get().copy();
+                                        onDiskAccounts.set(onDiskAccountsCopy);
+                                    }
+                                }),
+                log,
+                "accounts-to-disk migration");
         mutableState.setChild(ACCOUNTS, onDiskAccounts.get());
         mutableState.setChild(PAYER_RECORDS, payerRecords);
     }

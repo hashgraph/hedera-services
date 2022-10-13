@@ -246,6 +246,13 @@ public interface StateModule {
 
     @Provides
     @Singleton
+    static Supplier<RecordsStorageAdapter> providePayerRecords(
+            final MutableStateChildren workingState) {
+        return workingState::payerRecords;
+    }
+
+    @Provides
+    @Singleton
     static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
             final MutableStateChildren workingState) {
         return workingState::stakingInfo;
@@ -305,13 +312,6 @@ public interface StateModule {
     static Supplier<VirtualMap<ContractKey, IterableContractValue>> provideWorkingContractStorage(
             final MutableStateChildren workingState) {
         return workingState::contractStorage;
-    }
-
-    @Provides
-    @Singleton
-    static Supplier<RecordsStorageAdapter> provideRecordStorageAdapter(
-            final MutableStateChildren workingState) {
-        return workingState::payerRecords;
     }
 
     @Provides

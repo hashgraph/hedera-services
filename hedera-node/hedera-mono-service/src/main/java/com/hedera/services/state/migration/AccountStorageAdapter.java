@@ -72,6 +72,7 @@ public class AccountStorageAdapter {
 
     public void put(final EntityNum num, final HederaAccount wrapper) {
         if (accountsOnDisk) {
+            wrapper.setEntityNum(num);
             onDiskAccounts.put(EntityNumVirtualKey.from(num), (OnDiskAccount) wrapper);
         } else {
             inMemoryAccounts.put(num, (MerkleAccount) wrapper);
@@ -121,7 +122,8 @@ public class AccountStorageAdapter {
                         onDiskAccounts,
                         entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
                         THREAD_COUNT);
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
                 throw new IllegalStateException(e);
             }
         } else {

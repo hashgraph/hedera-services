@@ -72,10 +72,9 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         // expect:
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+        assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
 
     @Test
@@ -84,10 +83,9 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(1L), expectedWith(Long.MAX_VALUE));
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         // expect:
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+        assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
 
     @Test
@@ -95,8 +93,9 @@ class BasedLedgerValidatorTest {
         // given:
         accounts.put(EntityNum.fromLong(3L), expectedWith(100L));
 
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         // expect:
-        assertDoesNotThrow(() -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+        assertDoesNotThrow(() -> subject.validate(adapter));
     }
 
     @Test
@@ -104,10 +103,9 @@ class BasedLedgerValidatorTest {
         // given:
         accounts.put(EntityNum.fromLong(0L), expectedWith(100L));
 
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         // expect:
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+        assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
 
     private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {

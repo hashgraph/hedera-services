@@ -677,7 +677,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
 
     @Override
     public JKey getAccountKey() {
-        return key;
+        return getKey();
     }
 
     @Override

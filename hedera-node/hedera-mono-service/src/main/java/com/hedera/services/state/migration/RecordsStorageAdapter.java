@@ -56,6 +56,22 @@ public class RecordsStorageAdapter {
         }
     }
 
+    public void createPayer(final EntityNum payerNum) {
+        if (accountsOnDisk) {
+            payerRecords.put(payerNum, new MerklePayerRecords());
+        } else {
+            // No-op
+        }
+    }
+
+    public void removePayer(final EntityNum payerNum) {
+        if (accountsOnDisk) {
+            payerRecords.remove(payerNum);
+        } else {
+            // No-op
+        }
+    }
+
     public void addPayerRecord(final EntityNum payerNum, final ExpirableTxnRecord payerRecord) {
         if (accountsOnDisk) {
             final var mutableRecords = payerRecords.getForModify(payerNum);
@@ -95,8 +111,8 @@ public class RecordsStorageAdapter {
         if (accountsOnDisk) {
             forEach(
                     payerRecords,
-                    (payerNum, payerRecords) ->
-                            observer.accept(payerNum, payerRecords.readOnlyQueue()));
+                    (payerNum, accountRecords) ->
+                            observer.accept(payerNum, accountRecords.readOnlyQueue()));
         } else {
             forEach(
                     legacyAccounts,

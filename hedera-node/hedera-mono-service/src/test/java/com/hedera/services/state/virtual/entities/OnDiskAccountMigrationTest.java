@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class OnDiskAccountMigrationTest {
     @CsvSource({"1", "2", "3", "4", "5", "6", "7", "8", "9"})
     @ParameterizedTest
+    @SuppressWarnings("java:S5961")
     void allFieldsAreSet(final int testCaseNo) {
         final var source = SeededPropertySource.forSerdeTest(14, testCaseNo);
         final var inMemoryAccount = source.nextAccountState();

@@ -15,6 +15,30 @@
  */
 package com.hedera.services.state.merkle;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class MerklePayerRecordsSerdeTest {}
+import com.hedera.test.serde.SelfSerializableDataTest;
+import com.hedera.test.utils.SeededPropertySource;
+import java.util.Optional;
+import java.util.function.BiConsumer;
+
+public class MerklePayerRecordsSerdeTest extends SelfSerializableDataTest<MerklePayerRecords> {
+    @Override
+    protected Class<MerklePayerRecords> getType() {
+        return MerklePayerRecords.class;
+    }
+
+    @Override
+    protected MerklePayerRecords getExpectedObject(final SeededPropertySource propertySource) {
+        return propertySource.nextPayerRecords();
+    }
+
+    @Override
+    protected Optional<BiConsumer<MerklePayerRecords, MerklePayerRecords>> customAssertEquals() {
+        return Optional.of(
+                (a, b) -> {
+                    assertEquals(a.getKey(), b.getKey());
+                    assertEquals(a.readOnlyQueue(), b.readOnlyQueue());
+                });
+    }
+}

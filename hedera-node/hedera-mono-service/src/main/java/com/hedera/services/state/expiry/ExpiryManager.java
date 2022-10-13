@@ -122,9 +122,9 @@ public class ExpiryManager {
         payerRecords
                 .get()
                 .doForEach(
-                        (payerNum, payerRecords) ->
+                        (payerNum, accountRecords) ->
                                 stageExpiringRecords(
-                                        payerNum.longValue(), payerRecords, payerExpiries));
+                                        payerNum.longValue(), accountRecords, payerExpiries));
         payerExpiries.sort(
                 comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
         payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));

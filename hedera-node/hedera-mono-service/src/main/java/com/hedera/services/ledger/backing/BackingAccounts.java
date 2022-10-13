@@ -19,6 +19,7 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,10 +31,14 @@ import javax.inject.Singleton;
 public class BackingAccounts implements BackingStore<AccountID, HederaAccount> {
     private Set<AccountID> existingAccounts = new HashSet<>();
     private final Supplier<AccountStorageAdapter> delegate;
+    private final Supplier<RecordsStorageAdapter> payerRecords;
 
     @Inject
-    public BackingAccounts(Supplier<AccountStorageAdapter> delegate) {
+    public BackingAccounts(
+            final Supplier<AccountStorageAdapter> delegate,
+            final Supplier<RecordsStorageAdapter> payerRecords) {
         this.delegate = delegate;
+        this.payerRecords = payerRecords;
     }
 
     @Override
@@ -50,8 +55,10 @@ public class BackingAccounts implements BackingStore<AccountID, HederaAccount> {
     @Override
     public void put(final AccountID id, final HederaAccount account) {
         if (!existingAccounts.contains(id)) {
-            delegate.get().put(fromAccountId(id), account);
+            final var num = fromAccountId(id);
+            delegate.get().put(num, account);
             existingAccounts.add(id);
+            payerRecords.get().createPayer(num);
         }
     }
 
@@ -63,7 +70,9 @@ public class BackingAccounts implements BackingStore<AccountID, HederaAccount> {
     @Override
     public void remove(final AccountID id) {
         existingAccounts.remove(id);
-        delegate.get().remove(fromAccountId(id));
+        final var num = fromAccountId(id);
+        delegate.get().remove(num);
+        payerRecords.get().removePayer(num);
     }
 
     @Override

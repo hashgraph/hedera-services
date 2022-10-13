@@ -702,7 +702,8 @@ public class StateView {
 
     public BackingStore<AccountID, HederaAccount> asReadOnlyAccountStore() {
         if (backingAccounts == null) {
-            backingAccounts = new BackingAccounts(stateChildren::accounts);
+            backingAccounts =
+                    new BackingAccounts(stateChildren::accounts, stateChildren::payerRecords);
         }
         return backingAccounts;
     }

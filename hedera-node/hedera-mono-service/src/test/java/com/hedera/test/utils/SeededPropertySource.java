@@ -33,16 +33,7 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
-import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.*;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -394,6 +385,15 @@ public class SeededPropertySource {
         misorderedState.setNftsOwned(nextUnsignedLong());
         misorderedState.setNumTreasuryTitles(nextUnsignedInt());
         return misorderedState;
+    }
+
+    public MerklePayerRecords nextPayerRecords() {
+        final var payerRecords = new MerklePayerRecords();
+        payerRecords.setKey(nextNum());
+        for (int i = 0, n = nextInt(3); i < n; i++) {
+            payerRecords.offer(nextRecord());
+        }
+        return payerRecords;
     }
 
     public MerkleAccountState nextAccountState() {

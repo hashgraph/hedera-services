@@ -50,6 +50,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.utils.EntityNum;
@@ -89,8 +90,23 @@ public interface StakingActivityModule {
 
     @Provides
     @Singleton
+    @SuppressWarnings("unchecked")
     static Supplier<AccountStorageAdapter> provideAccountsSupplier(InfrastructureBundle bundle) {
-        return bundle.getterFor(InfrastructureType.ACCOUNTS_MM);
+        return () ->
+                AccountStorageAdapter.fromInMemory(
+                        (MerkleMap<EntityNum, MerkleAccount>)
+                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
+    }
+
+    @Provides
+    @Singleton
+    @SuppressWarnings("unchecked")
+    static Supplier<RecordsStorageAdapter> providePayerRecordsSupplier(
+            InfrastructureBundle bundle) {
+        return () ->
+                RecordsStorageAdapter.fromLegacy(
+                        (MerkleMap<EntityNum, MerkleAccount>)
+                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
     }
 
     @Provides
