@@ -165,6 +165,7 @@ class ImpliedTransfersTest {
     private final int maxBalanceChanges = 20;
     private final boolean areNftsEnabled = true;
     private final boolean autoCreationEnabled = true;
+    private final boolean lazyCreationEnabled = true;
     private final boolean areAllowancesEnabled = true;
     private final ImpliedTransfersMeta.ValidationProps props =
             new ImpliedTransfersMeta.ValidationProps(
@@ -175,6 +176,7 @@ class ImpliedTransfersTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     autoCreationEnabled,
+                    lazyCreationEnabled,
                     areAllowancesEnabled);
     private final EntityId customFeeToken = new EntityId(0, 0, 123);
     private final EntityId customFeeCollector = new EntityId(0, 0, 124);

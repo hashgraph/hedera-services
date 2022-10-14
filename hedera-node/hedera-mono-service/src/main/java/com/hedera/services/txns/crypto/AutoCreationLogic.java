@@ -199,7 +199,7 @@ public class AutoCreationLogic {
 
         TransactionBody.Builder syntheticCreation;
         HederaAccountCustomizer customizer;
-        if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
+        if (properties.isLazyCreationEnabled() && alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             customizer =
                     new HederaAccountCustomizer()

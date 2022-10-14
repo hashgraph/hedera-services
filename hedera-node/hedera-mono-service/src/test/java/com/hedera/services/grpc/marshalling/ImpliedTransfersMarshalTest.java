@@ -496,6 +496,7 @@ class ImpliedTransfersMarshalTest {
         given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
         given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(flag);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(lazyCreationEnabled);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
     }
 
@@ -579,6 +580,7 @@ class ImpliedTransfersMarshalTest {
     private final int maxBalanceChanges = 20;
     private final boolean areNftsEnabled = true;
     private boolean areAllowancesEnabled = true;
+    private boolean lazyCreationEnabled = true;
     private final ImpliedTransfersMeta.ValidationProps propsWithAutoCreation =
             new ImpliedTransfersMeta.ValidationProps(
                     maxExplicitHbarAdjusts,
@@ -588,6 +590,7 @@ class ImpliedTransfersMarshalTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     true,
+                    lazyCreationEnabled,
                     areAllowancesEnabled);
     private final ImpliedTransfersMeta.ValidationProps propsNoAutoCreation =
             new ImpliedTransfersMeta.ValidationProps(
@@ -598,6 +601,7 @@ class ImpliedTransfersMarshalTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     false,
+                    lazyCreationEnabled,
                     areAllowancesEnabled);
 
     private final AccountID aModel = asAccount("1.2.3");

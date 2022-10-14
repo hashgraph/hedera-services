@@ -164,5 +164,6 @@ public class ImpliedTransfersMeta {
             int maxXferBalanceChanges,
             boolean areNftsEnabled,
             boolean isAutoCreationEnabled,
+            boolean isLazyCreationEnabled,
             boolean areAllowancesEnabled) {}
 }

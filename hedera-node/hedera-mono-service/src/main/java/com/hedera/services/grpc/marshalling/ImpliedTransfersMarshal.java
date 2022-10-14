@@ -89,7 +89,8 @@ public class ImpliedTransfersMarshal {
             final var aliasResolver = aliasResolverFactory.get();
             op = aliasResolver.resolve(op, aliasManager);
             numAutoCreations = aliasResolver.perceivedAutoCreations();
-            if (numAutoCreations > 0 && !props.isAutoCreationEnabled()) {
+            if (numAutoCreations > 0
+                    && (!props.isAutoCreationEnabled() || !props.isLazyCreationEnabled())) {
                 return ImpliedTransfers.invalid(props, NOT_SUPPORTED);
             }
             if (aliasResolver.perceivedMissingAliases() > 0) {
@@ -241,6 +242,7 @@ public class ImpliedTransfersMarshal {
                 dynamicProperties.maxXferBalanceChanges(),
                 dynamicProperties.areNftsEnabled(),
                 dynamicProperties.isAutoCreationEnabled(),
+                dynamicProperties.isLazyCreationEnabled(),
                 dynamicProperties.areAllowancesEnabled());
     }
 
