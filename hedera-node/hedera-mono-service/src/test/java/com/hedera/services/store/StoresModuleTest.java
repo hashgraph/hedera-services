@@ -23,7 +23,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;

@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.migration;
 
+import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
+
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
@@ -22,13 +24,10 @@ import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.concurrent.TimeUnit;
-
-import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
 
 public class ReleaseTwentySixMigration {
     private static final Logger log = LogManager.getLogger(ReleaseTwentySixMigration.class);

@@ -15,6 +15,11 @@
  */
 package com.hedera.test.serde;
 
+import static com.hedera.services.state.virtual.entities.OnDiskAccountSerdeTest.NUM_ON_DISK_ACCOUNT_TEST_CASES;
+import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
+import static com.hedera.test.utils.SerdeUtils.serializeToHex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
@@ -32,7 +37,6 @@ import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -40,11 +44,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.function.Function;
-
-import static com.hedera.services.state.virtual.entities.OnDiskAccountSerdeTest.NUM_ON_DISK_ACCOUNT_TEST_CASES;
-import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
-import static com.hedera.test.utils.SerdeUtils.serializeToHex;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * The purpose of this executable is to generate the latest serialized bytes for the

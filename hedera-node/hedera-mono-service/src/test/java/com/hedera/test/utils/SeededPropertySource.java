@@ -15,6 +15,11 @@
  */
 package com.hedera.test.utils;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
+import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
+
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.EntityType;
@@ -40,19 +45,13 @@ import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.CommonUtils;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
-
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.IntStream;
-
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
-import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 
 public class SeededPropertySource {
     private static final long BASE_SEED = 4_242_424L;

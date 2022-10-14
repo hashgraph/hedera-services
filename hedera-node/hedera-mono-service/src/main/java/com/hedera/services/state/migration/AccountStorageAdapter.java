@@ -23,12 +23,11 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AccountStorageAdapter {
     private static final Logger log = LogManager.getLogger(AccountStorageAdapter.class);

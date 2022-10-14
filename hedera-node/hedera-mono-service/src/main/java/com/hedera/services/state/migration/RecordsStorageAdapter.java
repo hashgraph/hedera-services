@@ -28,22 +28,23 @@ import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 
 /**
- * Encapsulates storage of <i>payer records</i>, which summarize the results of a transaction
- * and are kept in state for 180 consensus seconds. They are called "payer" records because of
- * the {@code getAccountRecords} HAPI query, whose contract is to return the latest records in
- * in state whose fees were paid by a given {@link com.hederahashgraph.api.proto.java.AccountID}.
+ * Encapsulates storage of <i>payer records</i>, which summarize the results of a transaction and
+ * are kept in state for 180 consensus seconds. They are called "payer" records because of the
+ * {@code getAccountRecords} HAPI query, whose contract is to return the latest records in in state
+ * whose fees were paid by a given {@link com.hederahashgraph.api.proto.java.AccountID}.
  *
  * <p>Without the {@code getAccountRecords} query, we could store all records in a single huge
- * {@link FCQueue} in state. But with the query, that would entail an auxiliary data structure;
- * so we use an in-state representation that explicitly maps from payer id to an {@link FCQueue}
- * with that payer's records.
+ * {@link FCQueue} in state. But with the query, that would entail an auxiliary data structure; so
+ * we use an in-state representation that explicitly maps from payer id to an {@link FCQueue} with
+ * that payer's records.
+ *
  * <ul>
- *     <li>When accounts are in memory, each account is an internal node of a {@link MerkleMap};
- *     we can just use a {@link FCQueue} child for the records of each such internal node.</li>
- *     <li>When accounts are on disk, each account's {@link FCQueue} is wrapped in a
- *     {@link MerklePayerRecords} leaf of a <b>record-specific</b> {@link MerkleMap}.</li>
+ *   <li>When accounts are in memory, each account is an internal node of a {@link MerkleMap}; we
+ *       can just use a {@link FCQueue} child for the records of each such internal node.
+ *   <li>When accounts are on disk, each account's {@link FCQueue} is wrapped in a {@link
+ *       MerklePayerRecords} leaf of a <b>record-specific</b> {@link MerkleMap}.
  * </ul>
-  */
+ */
 public class RecordsStorageAdapter {
     private final boolean accountsOnDisk;
     private final @Nullable MerkleMap<EntityNum, MerkleAccount> legacyAccounts;

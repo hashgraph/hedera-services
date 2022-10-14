@@ -1,4 +1,27 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.migration;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerklePayerRecords;
@@ -9,23 +32,14 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Set;
-import java.util.function.BiConsumer;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class AccountStorageAdapterTest {
@@ -36,16 +50,11 @@ class AccountStorageAdapterTest {
     private static final MerkleAccount IN_MEMORY_STAND_IN = new MerkleAccount();
     private final OnDiskAccount onDiskStandIn = new OnDiskAccount();
 
-    @Mock
-    private MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
-    @Mock
-    private MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
-    @Mock
-    private VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
-    @Mock
-    private BiConsumer<EntityNum, HederaAccount> visitor;
-    @Mock
-    private VirtualMapDataAccess virtualMapDataAccess;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
+    @Mock private MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
+    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
+    @Mock private BiConsumer<EntityNum, HederaAccount> visitor;
+    @Mock private VirtualMapDataAccess virtualMapDataAccess;
 
     private AccountStorageAdapter subject;
 
@@ -78,7 +87,6 @@ class AccountStorageAdapterTest {
         given(inMemoryAccounts.getForModify(SOME_NUM)).willReturn(IN_MEMORY_STAND_IN);
         assertSame(IN_MEMORY_STAND_IN, subject.getForModify(SOME_NUM));
     }
-
 
     @Test
     void getIdentifiesOnDisk() {
@@ -189,14 +197,12 @@ class AccountStorageAdapterTest {
     @Test
     @SuppressWarnings("unchecked")
     void onDiskForEachDelegates() throws InterruptedException {
-        final ArgumentCaptor<InterruptableConsumer<Pair<EntityNumVirtualKey, OnDiskAccount>>> captor =
-                ArgumentCaptor.forClass(InterruptableConsumer.class);
+        final ArgumentCaptor<InterruptableConsumer<Pair<EntityNumVirtualKey, OnDiskAccount>>>
+                captor = ArgumentCaptor.forClass(InterruptableConsumer.class);
         withOnDiskSubject();
         subject.forEach(visitor);
-        verify(virtualMapDataAccess).extractVirtualMapData(
-                eq(onDiskAccounts),
-                captor.capture(),
-                eq(32));
+        verify(virtualMapDataAccess)
+                .extractVirtualMapData(eq(onDiskAccounts), captor.capture(), eq(32));
         captor.getValue().accept(Pair.of(SOME_KEY, onDiskStandIn));
         verify(visitor).accept(SOME_NUM, onDiskStandIn);
     }
@@ -205,10 +211,10 @@ class AccountStorageAdapterTest {
     @SuppressWarnings("unchecked")
     void onDiskPropagatesInterruption() throws InterruptedException {
         withOnDiskSubject();
-        willThrow(InterruptedException.class).given(virtualMapDataAccess).extractVirtualMapData(
-                eq(onDiskAccounts),
-                any(InterruptableConsumer.class),
-                eq(32));
+        willThrow(InterruptedException.class)
+                .given(virtualMapDataAccess)
+                .extractVirtualMapData(
+                        eq(onDiskAccounts), any(InterruptableConsumer.class), eq(32));
         assertThrows(IllegalStateException.class, () -> subject.forEach(visitor));
     }
 
@@ -217,6 +223,8 @@ class AccountStorageAdapterTest {
     }
 
     private void withOnDiskSubject() {
-        subject = AccountStorageAdapter.fromOnDisk(virtualMapDataAccess, payerRecords, onDiskAccounts);
+        subject =
+                AccountStorageAdapter.fromOnDisk(
+                        virtualMapDataAccess, payerRecords, onDiskAccounts);
     }
 }

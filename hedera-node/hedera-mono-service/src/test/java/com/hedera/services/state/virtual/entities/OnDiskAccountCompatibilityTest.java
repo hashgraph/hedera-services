@@ -1,4 +1,21 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.virtual.entities;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
@@ -7,11 +24,8 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.SeededPropertySource;
-import org.junit.jupiter.api.Test;
-
 import java.util.SortedMap;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class OnDiskAccountCompatibilityTest {
     private final OnDiskAccount subject = new OnDiskAccount();
@@ -93,8 +107,8 @@ class OnDiskAccountCompatibilityTest {
 
     @Test
     void firstStorageKeyIsNullTilSet() {
-        final var pretend = new int[] { 1, 2, 3, 4, 5, 6, 7, 8};
-        final var alsoPretend = new int[] { 6, 6, 6, 6, 6, 6, 6, 6};
+        final var pretend = new int[] {1, 2, 3, 4, 5, 6, 7, 8};
+        final var alsoPretend = new int[] {6, 6, 6, 6, 6, 6, 6, 6};
         assertNull(subject.getFirstContractStorageKey());
         subject.setFirstStorageKey(pretend);
         assertArrayEquals(pretend, subject.getFirstContractStorageKey().getKey());
@@ -105,25 +119,26 @@ class OnDiskAccountCompatibilityTest {
 
     @Test
     void approvalsManageableViaHederaInterface() {
-        final var firstSubject = SeededPropertySource
-                .forSerdeTest(1, 1)
-                .nextOnDiskAccount();
-        final var secondSubject = SeededPropertySource
-                .forSerdeTest(1, 3)
-                .nextOnDiskAccount();
+        final var firstSubject = SeededPropertySource.forSerdeTest(1, 1).nextOnDiskAccount();
+        final var secondSubject = SeededPropertySource.forSerdeTest(1, 3).nextOnDiskAccount();
 
         assertSame(firstSubject.getHbarAllowances(), firstSubject.getCryptoAllowances());
         assertSame(firstSubject.getHbarAllowances(), firstSubject.getCryptoAllowancesUnsafe());
         assertSame(firstSubject.getFungibleAllowances(), firstSubject.getFungibleTokenAllowances());
-        assertSame(firstSubject.getFungibleAllowances(), firstSubject.getFungibleTokenAllowancesUnsafe());
+        assertSame(
+                firstSubject.getFungibleAllowances(),
+                firstSubject.getFungibleTokenAllowancesUnsafe());
         assertSame(firstSubject.getNftOperatorApprovals(), firstSubject.getApproveForAllNfts());
-        assertSame(firstSubject.getNftOperatorApprovals(), firstSubject.getApproveForAllNftsUnsafe());
+        assertSame(
+                firstSubject.getNftOperatorApprovals(), firstSubject.getApproveForAllNftsUnsafe());
 
-        firstSubject.setCryptoAllowances((SortedMap<EntityNum, Long>) secondSubject.getHbarAllowances());
+        firstSubject.setCryptoAllowances(
+                (SortedMap<EntityNum, Long>) secondSubject.getHbarAllowances());
         firstSubject.setCryptoAllowancesUnsafe(secondSubject.getHbarAllowances());
         assertSame(secondSubject.getHbarAllowances(), firstSubject.getCryptoAllowances());
 
-        firstSubject.setFungibleTokenAllowances((SortedMap<FcTokenAllowanceId, Long>) secondSubject.getFungibleAllowances());
+        firstSubject.setFungibleTokenAllowances(
+                (SortedMap<FcTokenAllowanceId, Long>) secondSubject.getFungibleAllowances());
         firstSubject.setFungibleTokenAllowancesUnsafe(secondSubject.getFungibleAllowances());
         assertSame(secondSubject.getFungibleAllowances(), firstSubject.getFungibleAllowances());
 
@@ -132,7 +147,5 @@ class OnDiskAccountCompatibilityTest {
     }
 
     @Test
-    void stakingMetaAvailableFromHederaInterface() {
-
-    }
+    void stakingMetaAvailableFromHederaInterface() {}
 }
