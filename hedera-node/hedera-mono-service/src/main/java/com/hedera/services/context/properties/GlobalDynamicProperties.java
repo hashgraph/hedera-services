@@ -149,6 +149,8 @@ public class GlobalDynamicProperties {
     private boolean tokenAutoCreationsEnabled;
     private boolean doTraceabilityExport;
     private boolean compressAccountBalanceFilesOnCreation;
+    private long traceabilityMaxExportsPerConsSec;
+    private long traceabilityMinFreeToUsedGasThrottleRatio;
     private boolean lazyCreationEnabled;
     private boolean cryptoCreateWithAliasEnabled;
 
@@ -306,6 +308,10 @@ public class GlobalDynamicProperties {
                 properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
         doTraceabilityExport =
                 properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
+        traceabilityMaxExportsPerConsSec =
+                properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC);
+        traceabilityMinFreeToUsedGasThrottleRatio =
+                properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
         cryptoCreateWithAliasEnabled =
                 properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
@@ -737,6 +743,14 @@ public class GlobalDynamicProperties {
 
     public boolean shouldDoTraceabilityExport() {
         return doTraceabilityExport;
+    }
+
+    public long traceabilityMinFreeToUsedGasThrottleRatio() {
+        return traceabilityMinFreeToUsedGasThrottleRatio;
+    }
+
+    public long traceabilityMaxExportsPerConsSec() {
+        return traceabilityMaxExportsPerConsSec;
     }
 
     public boolean isLazyCreationEnabled() {
