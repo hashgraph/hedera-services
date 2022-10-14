@@ -257,6 +257,8 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(ECDSA_KEY)
                         .setAlias(aPrimitiveEDKey.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+
+        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
                 .willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(aPrimitiveEDKey.toByteString())).willReturn(MISSING_NUM);
@@ -271,6 +273,7 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(ECDSA_KEY)
                         .setAlias(ByteString.copyFrom(ANOTHER_EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
                 .willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(ANOTHER_EVM_ADDRESS_BYTES)))
@@ -333,10 +336,10 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(ECDSA_KEY)
                         .setAlias(ECDSA_KEY.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1()))
+                .willReturn(EntityNum.fromAccountId(PROXY));
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
                 .willReturn(MISSING_NUM);
-        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString()))
-                .willReturn(EntityNum.fromAccountId(PROXY));
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
@@ -348,6 +351,7 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(ECDSA_KEY)
                         .setAlias(ECDSA_KEY.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
                 .willReturn(EntityNum.fromAccountId(PROXY));
 
@@ -358,7 +362,18 @@ class CryptoCreateTransitionLogicTest {
     void rejectsECKeyWhenExtractedEVMAddressIsNotUnique() {
         final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(EntityNum.fromAccountId(PROXY));
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsECKeyWhenECKeyIsNotUnique() {
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1()))
                 .willReturn(EntityNum.fromAccountId(PROXY));
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
