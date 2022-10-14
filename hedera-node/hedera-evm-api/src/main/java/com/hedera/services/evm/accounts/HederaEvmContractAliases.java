@@ -39,8 +39,10 @@ public abstract class HederaEvmContractAliases {
         }
         if (mirrorPrefix == null) {
             mirrorPrefix = new byte[12];
-            System.arraycopy(Longs.toByteArray(0), 4, mirrorPrefix, 0, 4);
-            System.arraycopy(Longs.toByteArray(0), 0, mirrorPrefix, 4, 8);
+            long shard = 0;
+            long realm = 0;
+            System.arraycopy(Longs.toByteArray(shard), 4, mirrorPrefix, 0, 4);
+            System.arraycopy(Longs.toByteArray(realm), 0, mirrorPrefix, 4, 8);
         }
         return Arrays.equals(mirrorPrefix, 0, 12, address, 0, 12);
     }
