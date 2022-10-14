@@ -102,18 +102,6 @@ class TraceabilityExportTaskTest {
     }
 
     @Test
-    void activeWhenExpected() {
-        given(dynamicProperties.shouldDoTraceabilityExport()).willReturn(true);
-        given(networkCtx.seqNoPostUpgrade()).willReturn(ENTITY_NUM + 1);
-        assertTrue(subject.isActive(ENTITY_NUM, networkCtx));
-    }
-
-    @Test
-    void requiresContextForProcess() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.process(ENTITY_NUM, NOW));
-    }
-
-    @Test
     void needsDifferentContextIfCannotExportRecords() {
         assertEquals(
                 SystemTaskResult.NEEDS_DIFFERENT_CONTEXT,
@@ -216,7 +204,6 @@ class TraceabilityExportTaskTest {
                 .willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum1)).willReturn(contract1);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
-        subject.setExportsCompleted(999);
 
         // when:
         final var result = subject.process(entityNum1.longValue(), NOW, networkCtx);

@@ -115,12 +115,14 @@ class StandardProcessLogicTest {
                         sigImpactHistorian,
                         recordStreaming);
 
+        final var postProcessTime = allocatedConsensusTime.plusNanos(123);
         given(expandHandleSpan.accessorFor(txn)).willReturn(accessor);
         given(invariantChecks.holdFor(accessor, allocatedConsensusTime, member)).willReturn(true);
         given(consensusTimeTracker.firstTransactionTime()).willReturn(allocatedConsensusTime);
         given(scheduleProcessing.shouldProcessScheduledTransactions(allocatedConsensusTime))
                 .willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
+        given(consensusTimeTracker.getCurrentTxnTime()).willReturn(postProcessTime);
 
         txn.add(HederaKeyActivation.VALID_IMPLICIT_SIG);
 
@@ -140,7 +142,7 @@ class StandardProcessLogicTest {
         inOrder.verify(executionTimeTracker).stop();
         inOrder.verify(scheduleProcessing)
                 .triggerNextTransactionExpiringAsNeeded(allocatedConsensusTime, null, true);
-        inOrder.verify(autoRenewal).execute(allocatedConsensusTime);
+        inOrder.verify(autoRenewal).execute(postProcessTime);
         assertTrue(txn.getSignatures().isEmpty());
     }
 
@@ -160,6 +162,7 @@ class StandardProcessLogicTest {
         given(expandHandleSpan.accessorFor(txn)).willReturn(accessor);
         given(invariantChecks.holdFor(accessor, allocatedConsensusTime, member)).willReturn(true);
         given(consensusTimeTracker.firstTransactionTime()).willReturn(allocatedConsensusTime);
+        given(consensusTimeTracker.getCurrentTxnTime()).willReturn(allocatedConsensusTime);
 
         // when:
         subject.incorporateConsensusTxn(txn, consensusNow, member);
@@ -203,6 +206,7 @@ class StandardProcessLogicTest {
         given(scheduleProcessing.shouldProcessScheduledTransactions(allocatedConsensusTime))
                 .willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
+        given(consensusTimeTracker.getCurrentTxnTime()).willReturn(allocatedConsensusTime);
 
         subject.incorporateConsensusTxn(txn, consensusNow, member);
 
@@ -289,6 +293,7 @@ class StandardProcessLogicTest {
         given(scheduleProcessing.shouldProcessScheduledTransactions(allocatedConsensusTime))
                 .willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
+        given(consensusTimeTracker.getCurrentTxnTime()).willReturn(allocatedConsensusTime);
 
         subject.incorporateConsensusTxn(txn, consensusNow, member);
 
@@ -340,6 +345,7 @@ class StandardProcessLogicTest {
         given(scheduleProcessing.shouldProcessScheduledTransactions(allocatedConsensusTime))
                 .willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(4L);
+        given(consensusTimeTracker.getCurrentTxnTime()).willReturn(allocatedConsensusTime);
 
         subject.incorporateConsensusTxn(txn, consensusNow, member);
 

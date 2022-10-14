@@ -117,7 +117,7 @@ public class StandardProcessLogic implements ProcessLogic {
                 processScheduledTransactions(consensusTime, submittingMember);
             }
 
-            autoRenewal.execute(consensusTime);
+            autoRenewal.execute(consensusTimeTracker.getCurrentTxnTime());
             platformTxn.clearSignatures();
         } catch (InvalidProtocolBufferException e) {
             log.warn("Consensus platform txn was not gRPC!", e);
