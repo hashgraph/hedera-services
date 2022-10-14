@@ -142,19 +142,19 @@ class CallLocalEvmTxProcessorTest {
         verify(globalDynamicProperties, never()).enabledSidecars();
     }
 
-        @Test
-        void throwsWhenCodeCacheFailsLoading() {
-            given(worldState.updater()).willReturn(updater);
-            given(worldState.updater().updater()).willReturn(updater);
-            given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-            given(worldState.updater()).willReturn(updater);
+    @Test
+    void throwsWhenCodeCacheFailsLoading() {
+        given(worldState.updater()).willReturn(updater);
+        given(worldState.updater().updater()).willReturn(updater);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(worldState.updater()).willReturn(updater);
 
-            assertFailsWith(
-                    () ->
-                            callLocalEvmTxProcessor.execute(
-                                    sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY),
-                    INVALID_CONTRACT_ID);
-        }
+        assertFailsWith(
+                () ->
+                        callLocalEvmTxProcessor.execute(
+                                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY),
+                INVALID_CONTRACT_ID);
+    }
 
     @Test
     void assertIsContractCallFunctionality() {

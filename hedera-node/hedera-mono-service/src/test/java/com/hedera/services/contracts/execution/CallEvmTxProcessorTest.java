@@ -1074,39 +1074,36 @@ class CallEvmTxProcessorTest {
         verify(mutableRelayerAccount, never()).decrementBalance(Wei.of(gasPrice * gasLimit));
     }
 
-        @Test
-        void
-     assertThrowsEthereumTransactionWhenSenderGasPriceBiggerThanGasPriceButBalanceNotEnough() {
-            given(worldState.updater()).willReturn(updater);
+    @Test
+    void assertThrowsEthereumTransactionWhenSenderGasPriceBiggerThanGasPriceButBalanceNotEnough() {
+        given(worldState.updater()).willReturn(updater);
 
-            given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-            given(worldState.updater()).willReturn(updater);
-            final long gasPrice = 40L;
-            given(
-                    pricesAndFees.currentGasPrice(
-                                    consensusTime, HederaFunctionality.EthereumTransaction))
-                    .willReturn(gasPrice);
-            final var receiverAddress = receiver.getId().asEvmAddress();
-            given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-            final long offeredGasPrice = 50L;
-            final int gasLimit = 1000;
-            final var userOfferedGasPrice =
-                    BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(worldState.updater()).willReturn(updater);
+        final long gasPrice = 40L;
+        given(pricesAndFees.currentGasPrice(consensusTime, HederaFunctionality.EthereumTransaction))
+                .willReturn(gasPrice);
+        final var receiverAddress = receiver.getId().asEvmAddress();
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        final long offeredGasPrice = 50L;
+        final int gasLimit = 1000;
+        final var userOfferedGasPrice =
+                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
 
-            assertThrows(
-                    IllegalStateException.class,
-                    () ->
-                            callEvmTxProcessor.executeEth(
-                                    sender,
-                                    receiverAddress,
-                                    gasLimit,
-                                    1234L,
-                                    Bytes.EMPTY,
-                                    consensusTime,
-                                    userOfferedGasPrice,
-                                    relayer,
-                                    10 * ONE_HBAR));
-        }
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        callEvmTxProcessor.executeEth(
+                                sender,
+                                receiverAddress,
+                                gasLimit,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime,
+                                userOfferedGasPrice,
+                                relayer,
+                                10 * ONE_HBAR));
+    }
 
     @Test
     void assertSuccessExecutionWithRefund() {
