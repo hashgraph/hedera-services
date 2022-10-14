@@ -19,7 +19,6 @@ import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.spi.state.StateKey;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
 import java.util.HashMap;

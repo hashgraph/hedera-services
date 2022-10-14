@@ -20,7 +20,8 @@ import com.hedera.node.app.spi.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.Transaction;
 
 /**
- * Computes the pre-handle {@link TransactionMetadata} for each operation in the {@link CryptoService}.
+ * Computes the pre-handle {@link TransactionMetadata} for each operation in the {@link
+ * CryptoService}.
  */
 public interface CryptoPreTransactionHandler extends PreTransactionHandler {
     /**
