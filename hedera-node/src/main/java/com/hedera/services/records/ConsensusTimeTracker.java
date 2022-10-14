@@ -327,6 +327,10 @@ public class ConsensusTimeTracker {
                 + '}';
     }
 
+    public Instant getCurrentTxnTime() {
+        return minConsensusTime.plusNanos(currentTxnTime);
+    }
+
     @VisibleForTesting
     Instant getMinConsensusTime() {
         return minConsensusTime;
@@ -335,11 +339,6 @@ public class ConsensusTimeTracker {
     @VisibleForTesting
     Instant getCurrentTxnMinTime() {
         return minConsensusTime.plusNanos(currentTxnMinTime);
-    }
-
-    @VisibleForTesting
-    Instant getCurrentTxnTime() {
-        return minConsensusTime.plusNanos(currentTxnTime);
     }
 
     @VisibleForTesting
