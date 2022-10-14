@@ -426,6 +426,32 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
+    void cantExtractEVMAddressFromInvalidECDSAKey() {
+        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+        final var invalidEcdsaBytes =
+                unhex("03af80b11d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
+        final var invalidEcdsaKey =
+                Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(invalidEcdsaBytes)).build();
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(invalidEcdsaKey);
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+        given(txnCtx.activePayer()).willReturn(ourAccount());
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+
+        subject.doStateTransition();
+
+        verify(ledger)
+                .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
+
+        final var changes = captor.getValue().getChanges();
+        assertNull(changes.get(AccountProperty.ALIAS));
+    }
+
+    @Test
     void rejectsECKeyWhenECKeyIsNotUnique() {
         final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
