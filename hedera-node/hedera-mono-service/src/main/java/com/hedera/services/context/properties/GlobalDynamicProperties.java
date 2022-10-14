@@ -151,6 +151,8 @@ public class GlobalDynamicProperties {
     private boolean compressAccountBalanceFilesOnCreation;
     private long traceabilityMaxExportsPerConsSec;
     private long traceabilityMinFreeToUsedGasThrottleRatio;
+    private boolean lazyCreationEnabled;
+    private boolean cryptoCreateWithAliasEnabled;
 
     @Inject
     public GlobalDynamicProperties(
@@ -310,6 +312,9 @@ public class GlobalDynamicProperties {
                 properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC);
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
+        lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
+        cryptoCreateWithAliasEnabled =
+                properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
     }
 
     public int maxTokensPerAccount() {
@@ -746,5 +751,13 @@ public class GlobalDynamicProperties {
 
     public long traceabilityMaxExportsPerConsSec() {
         return traceabilityMaxExportsPerConsSec;
+    }
+
+    public boolean isLazyCreationEnabled() {
+        return lazyCreationEnabled;
+    }
+
+    public boolean isCryptoCreateWithAliasEnabled() {
+        return cryptoCreateWithAliasEnabled;
     }
 }
