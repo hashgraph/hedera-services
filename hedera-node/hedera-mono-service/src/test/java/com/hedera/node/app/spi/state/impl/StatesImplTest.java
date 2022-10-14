@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
+import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
+import static com.hedera.node.app.spi.state.StateKey.TOKEN_STORE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -89,10 +92,6 @@ class StatesImplTest {
 
     @Test
     void returnsAccountsMapFromChildren() {
-        final String ACCOUNT_STORE = "ACCOUNT_STORE";
-        final String ALIASES_STORE = "ALIASES_STORE";
-        final String TOKEN_STORE = "TOKEN_STORE";
-
         final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
         givenStateWithMockChildren();
         given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
@@ -110,8 +109,6 @@ class StatesImplTest {
 
     @Test
     void returnsAliasesFromChildren() {
-        final String ALIASES_STORE = "ALIASES_STORE";
-
         final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
         givenStateWithMockChildren();
         given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);

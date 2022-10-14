@@ -20,8 +20,7 @@ import com.hedera.node.app.spi.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.Transaction;
 
 /**
- * A definition of an interface for validating all transactions defined in the protobuf
- * "CryptoService" in pre-handle including signature verification.
+ * Computes the pre-handle {@link TransactionMetadata} for each operation in the {@link CryptoService}.
  */
 public interface CryptoPreTransactionHandler extends PreTransactionHandler {
     /**

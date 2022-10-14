@@ -17,6 +17,8 @@ package com.hedera.node.app.spi.state.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.StateKey;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -30,15 +32,15 @@ import javax.annotation.Nonnull;
  * @param <V> The value type
  */
 public abstract class StateBase<K, V> implements State<K, V> {
-    private String stateKey;
+    private StateKey stateKey;
     private Map<K, V> readKeys = new HashMap<>();
 
-    StateBase(@Nonnull String stateKey) {
+    StateBase(@Nonnull StateKey stateKey) {
         this.stateKey = Objects.requireNonNull(stateKey);
     }
 
     @Override
-    public String getStateKey() {
+    public StateKey getStateKey() {
         return stateKey;
     }
 

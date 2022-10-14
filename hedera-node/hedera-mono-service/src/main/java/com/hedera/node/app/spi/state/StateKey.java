@@ -15,13 +15,9 @@
  */
 package com.hedera.node.app.spi.state;
 
-public class StateKeys {
-    private StateKeys() {
-        throw new UnsupportedOperationException("Utility Class");
-    }
-
-    /** The ID for representing the account state. */
-    public static final String ACCOUNT_STORE = "ACCOUNT_STORE";
-    /** The ID for representing the aliases state. */
-    public static final String ALIASES_STORE = "ALIASES_STORE";
+/** IDs for representing different state's keys. */
+public enum StateKey {
+    ACCOUNT_STORE,
+    ALIASES_STORE,
+    TOKEN_STORE
 }

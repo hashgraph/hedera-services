@@ -16,6 +16,7 @@
 package com.hedera.node.app.spi.state.impl;
 
 import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.StateKey;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
@@ -35,12 +36,12 @@ public class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends State
     private final Instant lastModifiedTime;
 
     public InMemoryStateImpl(
-            @Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
+            @Nonnull final StateKey stateKey, @Nonnull final Instant lastModifiedTime) {
         this(stateKey, new MerkleMap<>(), lastModifiedTime);
     }
 
     public InMemoryStateImpl(
-            @Nonnull String stateKey,
+            @Nonnull StateKey stateKey,
             @Nonnull MerkleMap<K, V> merkleMap,
             @Nonnull final Instant lastModifiedTime) {
         super(stateKey);

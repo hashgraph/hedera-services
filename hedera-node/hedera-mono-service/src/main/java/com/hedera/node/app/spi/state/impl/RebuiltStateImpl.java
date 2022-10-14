@@ -15,8 +15,7 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.spi.state.StateKey;
 import com.swirlds.fchashmap.FCHashMap;
 import java.time.Instant;
 import java.util.Map;
@@ -24,19 +23,19 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 public class RebuiltStateImpl<K, V> extends StateBase<K, V> {
-    private Map<ByteString, EntityNum> aliases;
+    private Map<K, V> aliases;
     private final Instant lastModifiedTime;
 
     public RebuiltStateImpl(
-            @Nonnull final String stateKey,
-            @Nonnull Map<ByteString, EntityNum> aliases,
+            @Nonnull final StateKey stateKey,
+            @Nonnull Map<K, V> aliases,
             @Nonnull final Instant lastModifiedTime) {
         super(stateKey);
         this.aliases = Objects.requireNonNull(aliases);
         this.lastModifiedTime = lastModifiedTime;
     }
 
-    RebuiltStateImpl(@Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
+    RebuiltStateImpl(@Nonnull final StateKey stateKey, @Nonnull final Instant lastModifiedTime) {
         this(stateKey, new FCHashMap<>(), lastModifiedTime);
     }
 
@@ -47,6 +46,6 @@ public class RebuiltStateImpl<K, V> extends StateBase<K, V> {
 
     @Override
     protected V read(final K key) {
-        return (V) aliases.get(key);
+        return aliases.get(key);
     }
 }

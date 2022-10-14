@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 import com.google.protobuf.ByteString;

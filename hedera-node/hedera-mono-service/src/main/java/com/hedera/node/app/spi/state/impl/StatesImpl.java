@@ -15,11 +15,12 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKeys.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKeys.ALIASES_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.StateKey;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.MutableStateChildren;
@@ -43,7 +44,7 @@ public class StatesImpl implements States {
     }
 
     @Override
-    public @Nonnull <K, V> State<K, V> get(@Nonnull final String stateKey) {
+    public @Nonnull <K, V> State<K, V> get(@Nonnull final StateKey stateKey) {
         Objects.requireNonNull(stateKey);
 
         if (stateKey.equals(ACCOUNT_STORE)) {

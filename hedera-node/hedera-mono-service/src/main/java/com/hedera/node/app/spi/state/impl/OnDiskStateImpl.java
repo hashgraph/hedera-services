@@ -16,6 +16,7 @@
 package com.hedera.node.app.spi.state.impl;
 
 import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.StateKey;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -36,7 +37,7 @@ public class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends VirtualV
     private final Instant lastModifiedTime;
 
     public OnDiskStateImpl(
-            @Nonnull final String stateKey,
+            @Nonnull final StateKey stateKey,
             @Nonnull VirtualMap<K, V> virtualMap,
             @Nonnull final Instant lastModifiedTime) {
         super(stateKey);

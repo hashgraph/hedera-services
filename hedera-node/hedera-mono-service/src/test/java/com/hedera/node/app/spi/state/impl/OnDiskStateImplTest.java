@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
+import static com.hedera.node.app.spi.state.StateKey.TOKEN_STORE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.spi.state.StateKey;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -35,7 +37,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class OnDiskStateImplTest {
-    private static final String TOKEN_STORE = "TOKEN_STORE";
     private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
 
     private final EntityNumVirtualKey num = new EntityNumVirtualKey(2L);

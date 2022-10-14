@@ -15,7 +15,7 @@
  */
 package com.hedera.services.utils;
 
-import com.hedera.node.app.spi.state.StateKeys;
+import com.hedera.node.app.spi.state.StateKey;
 import com.hedera.services.context.domain.security.PermissionFileUtils;
 import com.hedera.services.context.properties.PropUtils;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
@@ -176,7 +176,7 @@ class UtilsConstructorTest {
                             UtilLogicModule.class,
                             PrecompileUtils.class,
                             TokenUpdateValidator.class,
-                            StateKeys.class));
+                            StateKey.class));
 
     @Test
     void throwsInConstructor() {

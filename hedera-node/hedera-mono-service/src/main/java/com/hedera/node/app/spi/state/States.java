@@ -35,5 +35,5 @@ public interface States {
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @Nonnull
-    <K, V> State<K, V> get(@Nonnull String stateKey);
+    <K, V> State<K, V> get(@Nonnull StateKey stateKey);
 }
