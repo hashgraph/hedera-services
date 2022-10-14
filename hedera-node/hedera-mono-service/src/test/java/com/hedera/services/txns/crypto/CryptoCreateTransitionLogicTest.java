@@ -330,6 +330,17 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
+    void rejectsECKeyAsAliasWhenKeyIsNotUnique() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder().setAlias(ECDSA_KEY.toByteString());
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString()))
+                .willReturn(EntityNum.fromAccountId(PROXY));
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
     void rejectsECKeyAndECKeyAsAliasWhenEcKeyIsnNotUnique() {
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
