@@ -106,6 +106,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
             Key.newBuilder().setEd25519(ALIAS_CONTENT).build();
     private static final ByteString VALID_25519_ALIAS = VALID_ED_25519_KEY.toByteString();
     private static final String AUTO_MEMO = "auto-created account";
+    private static final String LAZY_MEMO = "lazy-created account";
     private static final String VALID_ALIAS = "validAlias";
     private static final String PAYER = "payer";
     private static final String TRANSFER_TXN = "transferTxn";
@@ -781,7 +782,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false)
-                                                                    .memo(AUTO_MEMO));
+                                                                    .memo(LAZY_MEMO));
 
                                     allRunFor(spec, op, op2);
                                 }));

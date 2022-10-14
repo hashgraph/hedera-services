@@ -18,6 +18,7 @@ package com.hedera.services.txns.crypto;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -159,7 +160,7 @@ class AutoCreationLogicTest {
 
     @Test
     void happyPathWithHbarChangeWorks() {
-        givenCollaborators(mockBuilder);
+        givenCollaborators(mockBuilder, AUTO_MEMO);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 0))
                 .willReturn(mockSyntheticCreation);
 
@@ -201,7 +202,7 @@ class AutoCreationLogicTest {
                                 TxnReceipt.newBuilder()
                                         .setAccountId(new EntityId(0, 0, createdNum.longValue())));
 
-        givenCollaborators(mockBuilderWithEVMAlias);
+        givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
         given(properties.isLazyCreationEnabled()).willReturn(true);
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L))
                 .willReturn(mockSyntheticCreation);
@@ -237,7 +238,7 @@ class AutoCreationLogicTest {
 
     @Test
     void happyPathWithFungibleTokenChangeWorks() {
-        givenCollaborators(mockBuilder);
+        givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
@@ -278,7 +279,7 @@ class AutoCreationLogicTest {
 
     @Test
     void happyPathWithNonFungibleTokenChangeWorks() {
-        givenCollaborators(mockBuilder);
+        givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
@@ -324,7 +325,7 @@ class AutoCreationLogicTest {
 
     @Test
     void analyzesTokenTransfersInChangesForAutoCreation() {
-        givenCollaborators(mockBuilder);
+        givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 2))
                 .willReturn(mockSyntheticCreation);
@@ -362,14 +363,12 @@ class AutoCreationLogicTest {
         assertFalse(subject.reclaimPendingAliases());
     }
 
-    private void givenCollaborators(ExpirableTxnRecord.Builder mockBuilder) {
+    private void givenCollaborators(ExpirableTxnRecord.Builder mockBuilder, String memo) {
         given(txnCtx.consensusTime()).willReturn(consensusNow);
         given(ids.newAccountId(any())).willReturn(created);
         given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
                 .willReturn(fees);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                eq(Collections.emptyList()), any(), eq(AUTO_MEMO)))
+        given(creator.createSuccessfulSyntheticRecord(eq(Collections.emptyList()), any(), eq(memo)))
                 .willReturn(mockBuilder);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
     }

@@ -93,6 +93,7 @@ public class AutoCreationLogic {
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     public static final String AUTO_MEMO = "auto-created account";
+    public static final String LAZY_MEMO = "lazy-created account";
 
     @Inject
     public AutoCreationLogic(
@@ -198,19 +199,11 @@ public class AutoCreationLogic {
         }
 
         TransactionBody.Builder syntheticCreation;
-        HederaAccountCustomizer customizer;
+        String memo;
+        HederaAccountCustomizer customizer = new HederaAccountCustomizer();
         if (properties.isLazyCreationEnabled() && alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
-            customizer =
-                    new HederaAccountCustomizer()
-                            .memo(AUTO_MEMO)
-                            .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                            .expiry(
-                                    txnCtx.consensusTime().getEpochSecond()
-                                            + THREE_MONTHS_IN_SECONDS)
-                            .isReceiverSigRequired(false)
-                            .isSmartContract(false)
-                            .alias(alias);
+            memo = LAZY_MEMO;
         } else {
             // checks tokenAliasMap if the change consists an alias that is already used in previous
             // iteration of the token transfer list. This map is used to count number of
@@ -223,19 +216,17 @@ public class AutoCreationLogic {
             final var key = asPrimitiveKeyUnchecked(alias);
             syntheticCreation = syntheticTxnFactory.createAccount(key, 0L, maxAutoAssociations);
             JKey jKey = asFcKeyUnchecked(key);
-            customizer =
-                    new HederaAccountCustomizer()
-                            .key(jKey)
-                            .memo(AUTO_MEMO)
-                            .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                            .expiry(
-                                    txnCtx.consensusTime().getEpochSecond()
-                                            + THREE_MONTHS_IN_SECONDS)
-                            .isReceiverSigRequired(false)
-                            .isSmartContract(false)
-                            .alias(alias)
-                            .maxAutomaticAssociations(maxAutoAssociations);
+            customizer.key(jKey).maxAutomaticAssociations(maxAutoAssociations);
+            memo = AUTO_MEMO;
         }
+
+        customizer
+                .memo(memo)
+                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                .isReceiverSigRequired(false)
+                .isSmartContract(false)
+                .alias(alias);
 
         final var fee = autoCreationFeeFor(syntheticCreation);
 
@@ -249,7 +240,7 @@ public class AutoCreationLogic {
         sideEffects.trackAutoCreation(newId, alias);
 
         final var childRecord =
-                creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
+                creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, memo);
         childRecord.setFee(fee);
 
         final var inProgress =
