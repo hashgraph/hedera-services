@@ -1074,50 +1074,39 @@ class CallEvmTxProcessorTest {
         verify(mutableRelayerAccount, never()).decrementBalance(Wei.of(gasPrice * gasLimit));
     }
 
-    //    @Test
-    //    void
-    // assertThrowsEthereumTransactionWhenSenderGasPriceBiggerThanGasPriceButBalanceNotEnough() {
-    //        given(worldState.updater()).willReturn(updater);
-    //
-    //        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-    //        given(worldState.updater()).willReturn(updater);
-    //        final var wrappedSenderAccount = mock(EvmAccount.class);
-    //        final var mutableSenderAccount = mock(MutableAccount.class);
-    //        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-    //        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-    //                .willReturn(wrappedSenderAccount);
-    //        given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
-    //        final var wrappedRelayerAccount = mock(EvmAccount.class);
-    //        final var mutableRelayerAccount = mock(MutableAccount.class);
-    //        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
-    //        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
-    //                .willReturn(wrappedRelayerAccount);
-    //        final long gasPrice = 40L;
-    //        given(
-    //                pricesAndFees.currentGasPrice(
-    //                                consensusTime, HederaFunctionality.EthereumTransaction))
-    //                .willReturn(gasPrice);
-    //        final var receiverAddress = receiver.getId().asEvmAddress();
-    //        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-    //        final long offeredGasPrice = 50L;
-    //        final int gasLimit = 1000;
-    //        final var userOfferedGasPrice =
-    //                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
-    //
-    //        assertThrows(
-    //                InvalidTransactionException.class,
-    //                () ->
-    //                        callEvmTxProcessor.executeEth(
-    //                                sender,
-    //                                receiverAddress,
-    //                                gasLimit,
-    //                                1234L,
-    //                                Bytes.EMPTY,
-    //                                consensusTime,
-    //                                userOfferedGasPrice,
-    //                                relayer,
-    //                                10 * ONE_HBAR));
-    //    }
+        @Test
+        void
+     assertThrowsEthereumTransactionWhenSenderGasPriceBiggerThanGasPriceButBalanceNotEnough() {
+            given(worldState.updater()).willReturn(updater);
+
+            given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+            given(worldState.updater()).willReturn(updater);
+            final long gasPrice = 40L;
+            given(
+                    pricesAndFees.currentGasPrice(
+                                    consensusTime, HederaFunctionality.EthereumTransaction))
+                    .willReturn(gasPrice);
+            final var receiverAddress = receiver.getId().asEvmAddress();
+            given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+            final long offeredGasPrice = 50L;
+            final int gasLimit = 1000;
+            final var userOfferedGasPrice =
+                    BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+
+            assertThrows(
+                    IllegalStateException.class,
+                    () ->
+                            callEvmTxProcessor.executeEth(
+                                    sender,
+                                    receiverAddress,
+                                    gasLimit,
+                                    1234L,
+                                    Bytes.EMPTY,
+                                    consensusTime,
+                                    userOfferedGasPrice,
+                                    relayer,
+                                    10 * ONE_HBAR));
+        }
 
     @Test
     void assertSuccessExecutionWithRefund() {

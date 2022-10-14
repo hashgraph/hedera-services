@@ -62,6 +62,7 @@ class LivePricesSourceTest {
     @Mock private FeeMultiplierSource feeMultiplierSource;
     @Mock private TransactionContext txnCtx;
     @Mock private TxnAccessor accessor;
+
     private LivePricesSource subject;
 
     @BeforeEach
