@@ -102,7 +102,7 @@ class OnDiskAccountCompatibilityTest {
     @Test
     void canSetUsedAutoAssociationsViaHederaInterface() {
         subject.setUsedAutomaticAssociations(123);
-        assertEquals(123, subject.getMaxAutomaticAssociations());
+        assertEquals(123, subject.getUsedAutoAssociations());
     }
 
     @Test
