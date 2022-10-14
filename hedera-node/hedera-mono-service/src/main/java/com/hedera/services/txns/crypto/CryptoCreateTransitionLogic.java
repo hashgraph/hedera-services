@@ -17,8 +17,6 @@ package com.hedera.services.txns.crypto;
 
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -47,7 +45,6 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -61,7 +58,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -73,7 +69,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoCreate transaction, and the conditions
@@ -153,8 +148,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             }
         } catch (InsufficientFundsException ife) {
             txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
-        } catch (InvalidTransactionException ite) {
-            txnCtx.setStatus(ite.getResponseCode());
         } catch (Exception e) {
             log.warn("Avoidable exception!", e);
             txnCtx.setStatus(FAIL_INVALID);
@@ -167,73 +160,40 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         long expiry = consensusTime + autoRenewPeriod;
 
         var customizer = new HederaAccountCustomizer();
-        var validAlias = !op.getAlias().isEmpty();
-        if (validAlias && !op.hasKey()) {
-            final var resolution = aliasManager.lookupIdBy(op.getAlias());
-            if (!resolution.equals(MISSING_NUM)) {
-                throw new InvalidTransactionException(INVALID_ALIAS_KEY);
-            }
+        customizer
+                .memo(op.getMemo())
+                .expiry(expiry)
+                .autoRenewPeriod(autoRenewPeriod)
+                .isReceiverSigRequired(op.getReceiverSigRequired())
+                .maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
+                .isDeclinedReward(op.getDeclineReward());
 
+        var emptyAlias = op.getAlias().isEmpty();
+        if (!emptyAlias && !op.hasKey()) {
             if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
-                customizer
-                        .memo(AUTO_MEMO)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                        .isReceiverSigRequired(false)
-                        .isSmartContract(false)
-                        .alias(op.getAlias());
+                customizer.alias(op.getAlias());
             } else {
                 final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
-                if (!keyFromAlias.getECDSASecp256K1().isEmpty()) {
-                    recoverAndValidateEVMAddress(keyFromAlias);
-                }
 
                 final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
-                customizer
-                        .key(jKeyFromAlias)
-                        .memo(AUTO_MEMO)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                        .isReceiverSigRequired(false)
-                        .isSmartContract(false)
-                        .alias(op.getAlias());
+                customizer.key(jKeyFromAlias).alias(op.getAlias());
             }
-        } else if (validAlias) {
-            throwIfAliasUsed(op.getAlias());
-            if (!op.getKey().getECDSASecp256K1().isEmpty()) {
-                recoverAndValidateEVMAddress(op.getKey());
-            }
-            customizer
-                    .key(asFcKeyUnchecked(op.getKey()))
-                    .memo(AUTO_MEMO)
-                    .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                    .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                    .isReceiverSigRequired(false)
-                    .isSmartContract(false)
-                    .alias(op.getAlias());
+        } else if (!emptyAlias) {
+            customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getAlias());
         } else {
             /* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
             if (!op.getKey().getECDSASecp256K1().isEmpty()) {
-                throwIfAliasUsed(op.getKey().getECDSASecp256K1());
 
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
 
                 if (recoveredEvmAddressFromPrimitiveKey != null) {
-                    throwIfAliasUsed(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
                     customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
                 }
             }
 
             final JKey key = asFcKeyUnchecked(op.getKey());
-            customizer
-                    .key(key)
-                    .memo(op.getMemo())
-                    .expiry(expiry)
-                    .autoRenewPeriod(autoRenewPeriod)
-                    .isReceiverSigRequired(op.getReceiverSigRequired())
-                    .maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
-                    .isDeclinedReward(op.getDeclineReward());
+            customizer.key(key);
         }
 
         if (hasStakedId(op.getStakedIdCase().name())) {
@@ -243,19 +203,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         return customizer;
     }
 
-    private void recoverAndValidateEVMAddress(Key keyFromAlias) {
-        final var recoveredEvmAddress =
-                recoverAddressFromPubKey(keyFromAlias.getECDSASecp256K1().toByteArray());
-
-        if (recoveredEvmAddress != null) {
-            throwIfAliasUsed(ByteString.copyFrom(recoveredEvmAddress));
-        }
-    }
-
-    private void throwIfAliasUsed(ByteString alias) {
+    private ResponseCodeEnum isAliasUsedCheck(ByteString alias) {
         if (!aliasManager.lookupIdBy(alias).equals(MISSING_NUM)) {
-            throw new InvalidTransactionException(INVALID_ALIAS_KEY);
+            return INVALID_ALIAS_KEY;
         }
+        return OK;
     }
 
     @Override
@@ -277,40 +229,84 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             return memoValidity;
         }
         boolean emptyAlias = op.getAlias().isEmpty();
-        if (op.hasKey() && !emptyAlias) {
-            final var validatedKeyResponse = validateKey(op);
-            if (validatedKeyResponse != null) {
-                return validatedKeyResponse;
-            }
-            if (op.getAlias().size() < EVM_ADDRESS_SIZE) {
-                return INVALID_ALIAS_KEY;
-            } else if (op.getAlias().size() > EVM_ADDRESS_SIZE) {
-                if ((!op.getKey().getEd25519().isEmpty()
-                                || !op.getKey().getECDSASecp256K1().isEmpty())
-                        && !op.getKey().equals(asPrimitiveKeyUnchecked(op.getAlias()))) {
-                    return INVALID_ALIAS_KEY;
-                }
-            } else {
-                if (!op.getKey().getECDSASecp256K1().isEmpty()) {
-                    final var recoveredEvmAddress =
-                            recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
-                    if (!Arrays.equals(recoveredEvmAddress, op.getAlias().toByteArray())) {
-                        return INVALID_ALIAS_KEY;
-                    }
-                } else {
-                    return INVALID_ADMIN_KEY;
-                }
-            }
-        } else if (emptyAlias) {
+        if (!emptyAlias && op.getAlias().size() < EVM_ADDRESS_SIZE) {
+            return INVALID_ALIAS_KEY;
+        }
+
+        if (emptyAlias || op.hasKey()) {
             if (!op.hasKey()) {
                 return KEY_REQUIRED;
             }
-            final var validatedKeyResponse = validateKey(op);
-            if (validatedKeyResponse != null) {
-                return validatedKeyResponse;
+
+            final var keyValidity = validateKey(op);
+            if (keyValidity != OK) {
+                return keyValidity;
             }
-        } else if (op.getAlias().size() < EVM_ADDRESS_SIZE) {
-            return INVALID_ALIAS_KEY;
+
+            if (!op.getKey().getECDSASecp256K1().isEmpty()) {
+                var evmAddressValidity =
+                        tryToRecoverEVMAddressAndCheckValidity(
+                                op.getKey().getECDSASecp256K1().toByteArray());
+
+                if (evmAddressValidity != OK) {
+                    return evmAddressValidity;
+                }
+            }
+        }
+
+        if (!emptyAlias && op.getAlias().size() > EVM_ADDRESS_SIZE) {
+            var isAliasUsedCheck = isAliasUsedCheck(op.getAlias());
+
+            if (isAliasUsedCheck != OK) {
+                return isAliasUsedCheck;
+            }
+
+            if ((!op.getKey().getEd25519().isEmpty() || !op.getKey().getECDSASecp256K1().isEmpty())
+                    && !op.getKey().equals(asPrimitiveKeyUnchecked(op.getAlias()))) {
+                return INVALID_ALIAS_KEY;
+            }
+
+            if (!op.getKey().getECDSASecp256K1().isEmpty()) {
+                var evmAddressValidity =
+                        tryToRecoverEVMAddressAndCheckValidity(
+                                op.getKey().getECDSASecp256K1().toByteArray());
+
+                if (evmAddressValidity != OK) {
+                    return evmAddressValidity;
+                }
+            }
+
+            if (!asPrimitiveKeyUnchecked(op.getAlias()).getECDSASecp256K1().isEmpty()) {
+                var evmAddressValidity =
+                        tryToRecoverEVMAddressAndCheckValidity(
+                                asPrimitiveKeyUnchecked(op.getAlias())
+                                        .getECDSASecp256K1()
+                                        .toByteArray());
+
+                if (evmAddressValidity != OK) {
+                    return evmAddressValidity;
+                }
+            }
+        }
+
+        if (!emptyAlias && op.getAlias().size() == EVM_ADDRESS_SIZE) {
+            var isAliasUsedCheck = isAliasUsedCheck(op.getAlias());
+
+            if (isAliasUsedCheck != OK) {
+                return isAliasUsedCheck;
+            }
+
+            if (op.hasKey() && op.getKey().getECDSASecp256K1().isEmpty()) {
+                return INVALID_ADMIN_KEY;
+            }
+
+            if (!op.getKey().getECDSASecp256K1().isEmpty()) {
+                final var recoveredEvmAddress =
+                        recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
+                if (!Arrays.equals(recoveredEvmAddress, op.getAlias().toByteArray())) {
+                    return INVALID_ALIAS_KEY;
+                }
+            }
         }
 
         if (op.getInitialBalance() < 0L) {
@@ -352,7 +348,14 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         return OK;
     }
 
-    @Nullable
+    private ResponseCodeEnum tryToRecoverEVMAddressAndCheckValidity(byte[] key) {
+        var recoveredEVMAddress = recoverAddressFromPubKey(key);
+        if (recoveredEVMAddress != null) {
+            return isAliasUsedCheck(ByteString.copyFrom(recoveredEVMAddress));
+        }
+        return OK;
+    }
+
     private ResponseCodeEnum validateKey(CryptoCreateTransactionBody op) {
         if (!validator.hasGoodEncoding(op.getKey())) {
             return BAD_ENCODING;
@@ -364,7 +367,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         if (!fcKey.isValid()) {
             return INVALID_ADMIN_KEY;
         }
-        return null;
+        return OK;
     }
 
     private boolean tooManyAutoAssociations(final int n) {

@@ -19,12 +19,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_P
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.legacy.core.jproto.JEd25519Key.ED25519_BYTE_LENGTH;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.txns.crypto.CryptoCreateTransitionLogic.MAX_CHARGEABLE_AUTO_ASSOCIATIONS;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -248,6 +245,7 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(aPrimitiveEDKey)
                         .setAlias(ECDSA_KEY.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString())).willReturn(MISSING_NUM);
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
@@ -259,6 +257,9 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(ECDSA_KEY)
                         .setAlias(aPrimitiveEDKey.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(MISSING_NUM);
+        given(aliasManager.lookupIdBy(aPrimitiveEDKey.toByteString())).willReturn(MISSING_NUM);
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
@@ -270,6 +271,10 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(ECDSA_KEY)
                         .setAlias(ByteString.copyFrom(ANOTHER_EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(MISSING_NUM);
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(ANOTHER_EVM_ADDRESS_BYTES)))
+                .willReturn(MISSING_NUM);
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
@@ -292,8 +297,71 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(aPrimitiveEDKey)
                         .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(MISSING_NUM);
 
         assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsWhenEVMAddressAsAliasIsNotUnique() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(PROXY));
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsECKeyAsAliasWhenExtractedEVMAddressIsNotUnique() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder().setAlias(ECDSA_KEY.toByteString());
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString())).willReturn(MISSING_NUM);
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(EntityNum.fromAccountId(PROXY));
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsECKeyAndECKeyAsAliasWhenEcKeyIsnNotUnique() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(ECDSA_KEY)
+                        .setAlias(ECDSA_KEY.toByteString());
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(MISSING_NUM);
+        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString()))
+                .willReturn(EntityNum.fromAccountId(PROXY));
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsECKeyAndECKeyAsAliasWhenExtractedEVMAddressIsNotUnique() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(ECDSA_KEY)
+                        .setAlias(ECDSA_KEY.toByteString());
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(EntityNum.fromAccountId(PROXY));
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsECKeyWhenExtractedEVMAddressIsNotUnique() {
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(EntityNum.fromAccountId(PROXY));
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
@@ -393,6 +461,10 @@ class CryptoCreateTransitionLogicTest {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
+                        .setMemo(MEMO)
+                        .setReceiverSigRequired(false)
+                        .setDeclineReward(false)
+                        .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
                         .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
@@ -413,31 +485,14 @@ class CryptoCreateTransitionLogicTest {
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
-        assertEquals(6, changes.size());
-        assertEquals(THREE_MONTHS_IN_SECONDS, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(
-                txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS,
-                (long) changes.get(EXPIRY));
+        assertEquals(7, changes.size());
+        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
+        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
         assertEquals(ByteString.copyFrom(EVM_ADDRESS_BYTES), changes.get(AccountProperty.ALIAS));
         assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(false, changes.get(IS_SMART_CONTRACT));
-        assertEquals(AUTO_MEMO, changes.get(AccountProperty.MEMO));
-    }
-
-    @Test
-    void followsEVMAddressAsAliasFails() {
-        final var opBuilder =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(PROXY));
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-
-        subject.doStateTransition();
-        verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
+        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
+        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+        assertEquals(false, changes.get(DECLINE_REWARD));
     }
 
     @Test
@@ -445,7 +500,12 @@ class CryptoCreateTransitionLogicTest {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
         final var opBuilder =
-                CryptoCreateTransactionBody.newBuilder().setAlias(ECDSA_KEY.toByteString());
+                CryptoCreateTransactionBody.newBuilder()
+                        .setMemo(MEMO)
+                        .setReceiverSigRequired(false)
+                        .setDeclineReward(false)
+                        .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
+                        .setAlias(ECDSA_KEY.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -467,16 +527,15 @@ class CryptoCreateTransitionLogicTest {
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
-        assertEquals(7, changes.size());
+        assertEquals(8, changes.size());
         assertEquals(ECDSA_KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
-        assertEquals(THREE_MONTHS_IN_SECONDS, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(
-                txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS,
-                (long) changes.get(EXPIRY));
-        assertEquals(ECDSA_KEY.toByteString(), changes.get(AccountProperty.ALIAS));
+        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
+        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
         assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(false, changes.get(IS_SMART_CONTRACT));
-        assertEquals(AUTO_MEMO, changes.get(AccountProperty.MEMO));
+        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
+        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+        assertEquals(false, changes.get(DECLINE_REWARD));
+        assertEquals(ECDSA_KEY.toByteString(), changes.get(AccountProperty.ALIAS));
     }
 
     @Test
@@ -484,7 +543,12 @@ class CryptoCreateTransitionLogicTest {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
         final var opBuilder =
-                CryptoCreateTransactionBody.newBuilder().setAlias(aPrimitiveEDKey.toByteString());
+                CryptoCreateTransactionBody.newBuilder()
+                        .setMemo(MEMO)
+                        .setReceiverSigRequired(false)
+                        .setDeclineReward(false)
+                        .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
+                        .setAlias(aPrimitiveEDKey.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -504,34 +568,15 @@ class CryptoCreateTransitionLogicTest {
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
-        assertEquals(7, changes.size());
+        assertEquals(8, changes.size());
         assertEquals(aPrimitiveEDKey, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
-        assertEquals(THREE_MONTHS_IN_SECONDS, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(
-                txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS,
-                (long) changes.get(EXPIRY));
-        assertEquals(aPrimitiveEDKey.toByteString(), changes.get(AccountProperty.ALIAS));
+        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
+        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
         assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(false, changes.get(IS_SMART_CONTRACT));
-        assertEquals(AUTO_MEMO, changes.get(AccountProperty.MEMO));
-    }
-
-    @Test
-    void followsECKeyAsAliasFails() {
-        final var opBuilder =
-                CryptoCreateTransactionBody.newBuilder().setAlias(ECDSA_KEY.toByteString());
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString())).willReturn(MISSING_NUM);
-        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
-                .willReturn(EntityNum.fromAccountId(PROXY));
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-
-        subject.doStateTransition();
-
-        verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
+        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
+        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+        assertEquals(false, changes.get(DECLINE_REWARD));
+        assertEquals(aPrimitiveEDKey.toByteString(), changes.get(AccountProperty.ALIAS));
     }
 
     @Test
@@ -540,6 +585,10 @@ class CryptoCreateTransitionLogicTest {
 
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
+                        .setMemo(MEMO)
+                        .setReceiverSigRequired(false)
+                        .setDeclineReward(false)
+                        .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
                         .setKey(ECDSA_KEY)
                         .setAlias(ECDSA_KEY.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
@@ -563,16 +612,15 @@ class CryptoCreateTransitionLogicTest {
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
-        assertEquals(7, changes.size());
+        assertEquals(8, changes.size());
         assertEquals(ECDSA_KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
-        assertEquals(THREE_MONTHS_IN_SECONDS, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(
-                txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS,
-                (long) changes.get(EXPIRY));
-        assertEquals(ECDSA_KEY.toByteString(), changes.get(AccountProperty.ALIAS));
+        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
+        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
         assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(false, changes.get(IS_SMART_CONTRACT));
-        assertEquals(AUTO_MEMO, changes.get(AccountProperty.MEMO));
+        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
+        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+        assertEquals(false, changes.get(DECLINE_REWARD));
+        assertEquals(ECDSA_KEY.toByteString(), changes.get(AccountProperty.ALIAS));
     }
 
     @Test
@@ -581,6 +629,10 @@ class CryptoCreateTransitionLogicTest {
 
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
+                        .setMemo(MEMO)
+                        .setReceiverSigRequired(false)
+                        .setDeclineReward(false)
+                        .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
                         .setKey(aPrimitiveEDKey)
                         .setAlias(aPrimitiveEDKey.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
@@ -602,74 +654,15 @@ class CryptoCreateTransitionLogicTest {
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
-        assertEquals(7, changes.size());
+        assertEquals(8, changes.size());
         assertEquals(aPrimitiveEDKey, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
-        assertEquals(THREE_MONTHS_IN_SECONDS, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(
-                txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS,
-                (long) changes.get(EXPIRY));
-        assertEquals(aPrimitiveEDKey.toByteString(), changes.get(AccountProperty.ALIAS));
+        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
+        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
         assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(false, changes.get(IS_SMART_CONTRACT));
-        assertEquals(AUTO_MEMO, changes.get(AccountProperty.MEMO));
-    }
-
-    @Test
-    void followsECKeyAndECKeyAsAliasFailsECKeyExistsInAliasMap() {
-        final var opBuilder =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(ECDSA_KEY)
-                        .setAlias(ECDSA_KEY.toByteString());
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString()))
-                .willReturn(EntityNum.fromAccountId(PROXY));
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-
-        subject.doStateTransition();
-
-        verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
-    }
-
-    @Test
-    void followsECKeyAndECKeyAsAliasFailsECKeyBadEncoding() {
-        final var opBuilder =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(ECDSA_KEY)
-                        .setAlias(ECDSA_KEY.toByteString());
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString()))
-                .willReturn(EntityNum.fromAccountId(PROXY));
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-
-        subject.doStateTransition();
-
-        verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
-    }
-
-    @Test
-    void followsECKeyAndECKeyAsAliasFailsEVMAddressExistsInAliasMap() {
-        final var opBuilder =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(ECDSA_KEY)
-                        .setAlias(ECDSA_KEY.toByteString());
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString())).willReturn(MISSING_NUM);
-        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
-                .willReturn(EntityNum.fromAccountId(PROXY));
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-
-        subject.doStateTransition();
-
-        verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
+        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
+        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+        assertEquals(false, changes.get(DECLINE_REWARD));
+        assertEquals(aPrimitiveEDKey.toByteString(), changes.get(AccountProperty.ALIAS));
     }
 
     @Test
@@ -743,39 +736,6 @@ class CryptoCreateTransitionLogicTest {
         assertEquals(false, changes.get(DECLINE_REWARD));
         assertEquals("", changes.get(AccountProperty.MEMO));
         assertEquals(0, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
-    }
-
-    @Test
-    void followsECKeyFailsECKeyExistsInAliasMap() {
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1()))
-                .willReturn(EntityNum.fromAccountId(PROXY));
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-
-        subject.doStateTransition();
-
-        verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
-    }
-
-    @Test
-    void followsECKeyFailsEVMAddressExistsInAliasMap() {
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
-        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
-                .willReturn(EntityNum.fromAccountId(PROXY));
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-
-        subject.doStateTransition();
-
-        verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
     }
 
     @Test

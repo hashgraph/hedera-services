@@ -490,7 +490,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2);
@@ -502,8 +502,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .alias(SECP_256K1_SOURCE_KEY)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(AUTO_CREATED_ACCOUNT));
+                                                                    .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
                 .then();
@@ -528,12 +527,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(evmAddressBytes)
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2, op3);
@@ -545,8 +544,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                             evmAddressBytes)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(AUTO_CREATED_ACCOUNT));
+                                                                    .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
                 .then();
@@ -566,7 +564,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ed25519Key.toByteString())
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY);
+                                                    .hasPrecheck(INVALID_ALIAS_KEY);
 
                                     allRunFor(spec, op, op2);
                                     var hapiGetAccountInfo =
@@ -577,8 +575,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .alias(ED_25519_KEY)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(AUTO_CREATED_ACCOUNT));
+                                                                    .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
                 .then();
@@ -600,17 +597,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(evmAddressBytes)
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2, op3, op4);
@@ -653,17 +650,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(evmAddressBytes)
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op5 =
                                             cryptoCreate(ACCOUNT)
@@ -684,8 +681,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                             evmAddressBytes)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(AUTO_CREATED_ACCOUNT));
+                                                                    .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
                 .then();
@@ -706,7 +702,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ed25519Key.toByteString())
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY);
+                                                    .hasPrecheck(INVALID_ALIAS_KEY);
 
                                     allRunFor(spec, op, op2);
                                     var hapiGetAccountInfo =
@@ -717,8 +713,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .alias(ED_25519_KEY)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(AUTO_CREATED_ACCOUNT));
+                                                                    .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
                 .then();
@@ -745,17 +740,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(ecdsaKey.toByteString())
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
                                             cryptoCreate(ACCOUNT)
                                                     .withAlias(evmAddressBytes)
-                                                    .hasKnownStatus(INVALID_ALIAS_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2, op3, op4);
@@ -767,8 +762,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .alias(SECP_256K1_SOURCE_KEY)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(AUTO_CREATED_ACCOUNT));
+                                                                    .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
                 .then();
