@@ -941,7 +941,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                     ctxLog.info("symbol: [{}]", symbol);
 
                                     Assertions.assertEquals(
-                                            "",
+                                            "OCT",
                                             symbol,
                                             "TokenIssuer's symbol should be fixed value"); // should
                                     // be
