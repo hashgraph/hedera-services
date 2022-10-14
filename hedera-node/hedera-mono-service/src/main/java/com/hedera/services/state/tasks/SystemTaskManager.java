@@ -72,7 +72,7 @@ public class SystemTaskManager {
             if (!tasks[i].isActive(literalNum, curNetworkCtx)) {
                 continue;
             }
-            final var result = tasks[i].process(literalNum, now);
+            final var result = tasks[i].process(literalNum, now, curNetworkCtx);
             if (result == NOTHING_TO_DO || result == DONE) {
                 didSomething |= (result == DONE);
             } else if (result == NEEDS_DIFFERENT_CONTEXT || result == NO_CAPACITY_LEFT) {
