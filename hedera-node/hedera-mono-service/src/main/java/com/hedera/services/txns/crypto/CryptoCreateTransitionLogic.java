@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_R
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -315,6 +316,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     private ResponseCodeEnum validateAliasBiggerThanEVMAddressSizeCase(
             final CryptoCreateTransactionBody op) {
         if (!op.getAlias().isEmpty() && op.getAlias().size() > EVM_ADDRESS_SIZE) {
+            if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+                return NOT_SUPPORTED;
+            }
+
             var isAliasUsedCheck = isUsedAsAliasCheck(op.getAlias());
 
             if (isAliasUsedCheck != OK) {
@@ -337,6 +342,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
     private ResponseCodeEnum validateAliasIsEVMAddressCase(final CryptoCreateTransactionBody op) {
         if (!op.getAlias().isEmpty() && op.getAlias().size() == EVM_ADDRESS_SIZE) {
+            if (!dynamicProperties.isCryptoCreateWithAliasEnabled()
+                    || !dynamicProperties.isLazyCreationEnabled()) {
+                return NOT_SUPPORTED;
+            }
+
             var isAliasUsedCheck = isUsedAsAliasCheck(op.getAlias());
 
             if (isAliasUsedCheck != OK) {

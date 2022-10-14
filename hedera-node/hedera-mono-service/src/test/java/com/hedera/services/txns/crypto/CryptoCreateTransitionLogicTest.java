@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -245,6 +246,7 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(aPrimitiveEDKey)
                         .setAlias(ECDSA_KEY.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString())).willReturn(MISSING_NUM);
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
@@ -258,6 +260,7 @@ class CryptoCreateTransitionLogicTest {
                         .setAlias(aPrimitiveEDKey.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
 
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
                 .willReturn(MISSING_NUM);
@@ -272,6 +275,8 @@ class CryptoCreateTransitionLogicTest {
                 CryptoCreateTransactionBody.newBuilder()
                         .setKey(ECDSA_KEY)
                         .setAlias(ByteString.copyFrom(ANOTHER_EVM_ADDRESS_BYTES));
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
@@ -300,6 +305,8 @@ class CryptoCreateTransitionLogicTest {
                         .setKey(aPrimitiveEDKey)
                         .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
                 .willReturn(MISSING_NUM);
 
@@ -312,9 +319,45 @@ class CryptoCreateTransitionLogicTest {
                 CryptoCreateTransactionBody.newBuilder()
                         .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(PROXY));
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsEVMAddressAsAliasWhenCreateWithAliasIsDisabled() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(false);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+
+        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsEVMAddressAsAliasWhenLazyCreateIsDisabled() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(false);
+
+        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsECKeyAsAliasWhenCreateWithAliasIsDisabled() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder().setAlias(ECDSA_KEY.toByteString());
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(false);
+
+        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
@@ -322,6 +365,7 @@ class CryptoCreateTransitionLogicTest {
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder().setAlias(ECDSA_KEY.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString())).willReturn(MISSING_NUM);
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
                 .willReturn(EntityNum.fromAccountId(PROXY));
@@ -334,6 +378,7 @@ class CryptoCreateTransitionLogicTest {
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder().setAlias(ECDSA_KEY.toByteString());
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString()))
                 .willReturn(EntityNum.fromAccountId(PROXY));
 
