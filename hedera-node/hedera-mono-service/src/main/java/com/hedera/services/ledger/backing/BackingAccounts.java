@@ -58,7 +58,7 @@ public class BackingAccounts implements BackingStore<AccountID, HederaAccount> {
             final var num = fromAccountId(id);
             delegate.get().put(num, account);
             existingAccounts.add(id);
-            payerRecords.get().createPayer(num);
+            payerRecords.get().prepForPayer(num);
         }
     }
 
@@ -72,7 +72,7 @@ public class BackingAccounts implements BackingStore<AccountID, HederaAccount> {
         existingAccounts.remove(id);
         final var num = fromAccountId(id);
         delegate.get().remove(num);
-        payerRecords.get().removePayer(num);
+        payerRecords.get().forgetPayer(num);
     }
 
     @Override

@@ -19,7 +19,7 @@ import com.hedera.test.serde.VirtualValueDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
 public class OnDiskAccountSerdeTest extends VirtualValueDataTest<OnDiskAccount> {
-    public static final int NUM_ON_DISK_ACCOUNT_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
+    public static final int NUM_ON_DISK_ACCOUNT_TEST_CASES = 3 * MIN_TEST_CASES_PER_VERSION;
 
     @Override
     protected int getNumTestCasesFor(final int version) {

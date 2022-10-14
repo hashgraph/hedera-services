@@ -15,8 +15,6 @@
  */
 package com.hedera.services.state.migration;
 
-import static com.swirlds.virtualmap.VirtualMapMigration.extractVirtualMapData;
-
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerklePayerRecords;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
@@ -25,30 +23,37 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import javax.annotation.Nullable;
 
 public class AccountStorageAdapter {
+    private static final Logger log = LogManager.getLogger(AccountStorageAdapter.class);
     private static final int THREAD_COUNT = 32;
     private final boolean accountsOnDisk;
+    private final @Nullable VirtualMapDataAccess virtualMapDataAccess;
     private final @Nullable MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
     private final @Nullable MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
     private final @Nullable VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
 
     public static AccountStorageAdapter fromInMemory(
             final MerkleMap<EntityNum, MerkleAccount> accounts) {
-        return new AccountStorageAdapter(accounts, null, null);
+        return new AccountStorageAdapter(accounts, null, null, null);
     }
 
     public static AccountStorageAdapter fromOnDisk(
+            final VirtualMapDataAccess virtualMapDataAccess,
             final MerkleMap<EntityNum, MerklePayerRecords> payerRecords,
             final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts) {
-        return new AccountStorageAdapter(null, payerRecords, accounts);
+        return new AccountStorageAdapter(null, virtualMapDataAccess, payerRecords, accounts);
     }
 
     private AccountStorageAdapter(
             @Nullable final MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts,
+            final @Nullable VirtualMapDataAccess virtualMapDataAccess,
             @Nullable final MerkleMap<EntityNum, MerklePayerRecords> payerRecords,
             @Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts) {
         if (inMemoryAccounts != null) {
@@ -56,11 +61,13 @@ public class AccountStorageAdapter {
             this.inMemoryAccounts = inMemoryAccounts;
             this.onDiskAccounts = null;
             this.payerRecords = null;
+            this.virtualMapDataAccess = null;
         } else {
             this.accountsOnDisk = true;
             this.inMemoryAccounts = null;
             this.onDiskAccounts = onDiskAccounts;
             this.payerRecords = payerRecords;
+            this.virtualMapDataAccess = virtualMapDataAccess;
         }
     }
 
@@ -124,11 +131,12 @@ public class AccountStorageAdapter {
     public void forEach(final BiConsumer<EntityNum, HederaAccount> visitor) {
         if (accountsOnDisk) {
             try {
-                extractVirtualMapData(
+                virtualMapDataAccess.extractVirtualMapData(
                         onDiskAccounts,
                         entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
                         THREAD_COUNT);
             } catch (final InterruptedException e) {
+                log.error("Interrupted while extracting VM data", e);
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(e);
             }

@@ -15,8 +15,6 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
-
 import com.hedera.services.state.migration.QueryableRecords;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
@@ -26,7 +24,10 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
+
 import java.io.IOException;
+
+import static com.hedera.services.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
 
 public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
     private static final int CURRENT_VERSION = 1;
@@ -66,12 +67,7 @@ public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<Entit
             throws IOException {
         throwIfImmutable();
         num = in.readInt();
-        if (payerRecords != null) {
-            payerRecords.clear();
-        }
-        payerRecords =
-                in.readSerializable(
-                        true, () -> (payerRecords != null) ? payerRecords : new FCQueue<>());
+        payerRecords = in.readSerializable( true, FCQueue::new);
     }
 
     @Override

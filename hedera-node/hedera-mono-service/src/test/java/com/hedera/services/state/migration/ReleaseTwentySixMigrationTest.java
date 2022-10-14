@@ -45,7 +45,7 @@ class ReleaseTwentySixMigrationTest {
     @Mock private ServicesState initializingState;
     @Mock private KvPairIterationMigrator migrator;
     @Mock private ReleaseTwentySixMigration.MigratorFactory migratorFactory;
-    @Mock private ReleaseTwentySixMigration.MigrationUtility migrationUtility;
+    @Mock private VirtualMapDataAccess virtualMapDataAccess;
 
     @Test
     void migratesToIterableStorageAsExpected() throws InterruptedException {
@@ -62,9 +62,9 @@ class ReleaseTwentySixMigrationTest {
         given(migrator.getMigratedStorage()).willReturn(finalContractStorage);
 
         makeStorageIterable(
-                initializingState, migratorFactory, migrationUtility, iterableContractStorage);
+                initializingState, migratorFactory, virtualMapDataAccess, iterableContractStorage);
 
-        verify(migrationUtility).extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
+        verify(virtualMapDataAccess).extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
         verify(migrator).finish();
         verify(initializingState)
                 .setChild(StateChildIndices.CONTRACT_STORAGE, finalContractStorage);
@@ -83,7 +83,7 @@ class ReleaseTwentySixMigrationTest {
                                 eq(iterableContractStorage)))
                 .willReturn(migrator);
         willThrow(InterruptedException.class)
-                .given(migrationUtility)
+                .given(virtualMapDataAccess)
                 .extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
 
         Assertions.assertThrows(
@@ -92,7 +92,7 @@ class ReleaseTwentySixMigrationTest {
                         makeStorageIterable(
                                 initializingState,
                                 migratorFactory,
-                                migrationUtility,
+                                virtualMapDataAccess,
                                 iterableContractStorage));
     }
 }

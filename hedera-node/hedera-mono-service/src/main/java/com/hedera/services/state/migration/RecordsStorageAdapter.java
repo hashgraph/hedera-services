@@ -27,6 +27,23 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 
+/**
+ * Encapsulates storage of <i>payer records</i>, which summarize the results of a transaction
+ * and are kept in state for 180 consensus seconds. They are called "payer" records because of
+ * the {@code getAccountRecords} HAPI query, whose contract is to return the latest records in
+ * in state whose fees were paid by a given {@link com.hederahashgraph.api.proto.java.AccountID}.
+ *
+ * <p>Without the {@code getAccountRecords} query, we could store all records in a single huge
+ * {@link FCQueue} in state. But with the query, that would entail an auxiliary data structure;
+ * so we use an in-state representation that explicitly maps from payer id to an {@link FCQueue}
+ * with that payer's records.
+ * <ul>
+ *     <li>When accounts are in memory, each account is an internal node of a {@link MerkleMap};
+ *     we can just use a {@link FCQueue} child for the records of each such internal node.</li>
+ *     <li>When accounts are on disk, each account's {@link FCQueue} is wrapped in a
+ *     {@link MerklePayerRecords} leaf of a <b>record-specific</b> {@link MerkleMap}.</li>
+ * </ul>
+  */
 public class RecordsStorageAdapter {
     private final boolean accountsOnDisk;
     private final @Nullable MerkleMap<EntityNum, MerkleAccount> legacyAccounts;
@@ -56,19 +73,24 @@ public class RecordsStorageAdapter {
         }
     }
 
-    public void createPayer(final EntityNum payerNum) {
+    /**
+     * Performs any work needed to track records for a given payer account.
+     *
+     * @param payerNum the new payer number
+     */
+    public void prepForPayer(final EntityNum payerNum) {
+        // If accounts are in memory, the needed FCQ was created as a
+        // side-effect of creating the account itself
         if (accountsOnDisk) {
             payerRecords.put(payerNum, new MerklePayerRecords());
-        } else {
-            // No-op
         }
     }
 
-    public void removePayer(final EntityNum payerNum) {
+    public void forgetPayer(final EntityNum payerNum) {
+        // If accounts are in memory, the needed FCQ was removed as a
+        // side-effect of removing the account itself
         if (accountsOnDisk) {
             payerRecords.remove(payerNum);
-        } else {
-            // No-op
         }
     }
 

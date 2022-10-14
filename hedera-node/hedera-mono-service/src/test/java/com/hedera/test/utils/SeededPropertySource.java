@@ -15,43 +15,17 @@
  */
 package com.hedera.test.utils;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
-import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
-
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.EntityType;
 import com.hedera.services.context.properties.SerializableSemVers;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.core.jproto.*;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.*;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.merkle.internals.BytesElement;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.state.submerkle.EvmLog;
-import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
-import com.hedera.services.state.submerkle.FixedFeeSpec;
-import com.hedera.services.state.submerkle.NftAdjustments;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.submerkle.*;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -62,30 +36,23 @@ import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.CommonUtils;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SplittableRandom;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
+
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.IntStream;
+
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
+import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 
 public class SeededPropertySource {
     private static final long BASE_SEED = 4_242_424L;
@@ -765,7 +732,7 @@ public class SeededPropertySource {
         if (nextBoolean()) {
             account.setNftOperatorApprovals(nextApprovedForAllAllowances(2));
         }
-        if (account.isContract()) {
+        if (account.isContract() && nextBoolean()) {
             account.setFirstStorageKey(nextPackedInts(8));
         }
 

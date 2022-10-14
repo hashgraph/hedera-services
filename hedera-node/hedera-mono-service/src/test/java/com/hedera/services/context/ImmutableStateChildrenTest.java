@@ -29,11 +29,13 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -52,6 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ImmutableStateChildrenTest {
     @Mock private ServicesState state;
     @Mock private AccountStorageAdapter accounts;
+    @Mock private RecordsStorageAdapter payerRecords;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
@@ -97,6 +100,7 @@ class ImmutableStateChildrenTest {
         given(state.runningHashLeaf()).willReturn(runningHashLeaf);
         given(state.aliases()).willReturn(aliases);
         given(state.stakingInfo()).willReturn(stakingInfo);
+        given(state.payerRecords()).willReturn(payerRecords);
     }
 
     private void assertChildrenAreExpectedMocks() {
@@ -114,6 +118,7 @@ class ImmutableStateChildrenTest {
         assertSame(runningHashLeaf, subject.runningHashLeaf());
         assertSame(aliases, subject.aliases());
         assertSame(stakingInfo, subject.stakingInfo());
+        assertSame(payerRecords, subject.payerRecords());
     }
 
     private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
