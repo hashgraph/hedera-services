@@ -226,6 +226,10 @@ public class PropertyNames {
     public static final String UTIL_PRNG_IS_ENABLED = "utilPrng.isEnabled";
     public static final String HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION =
             "hedera.recordStream.enableTraceabilityMigration";
+    public static final String TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC =
+            "traceability.maxExportsPerConsSec";
+    public static final String TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO =
+            "traceability.minFreeToUsedGasThrottleRatio";
     public static final String HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION =
             "hedera.recordStream.compressFilesOnCreation";
 

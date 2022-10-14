@@ -105,7 +105,7 @@ class ContractsModuleTest {
 
     @Test
     void logOperationsAreProvided() {
-        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_31())) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
             Bytes testCode = Bytes.fromHexString("0xA0A1A2A3A4");
             Code legacyCode = Code.createLegacyCode(testCode, Hash.hash(testCode));
             final var log0 = evm.operationAtOffset(legacyCode, 0);
@@ -124,7 +124,7 @@ class ContractsModuleTest {
 
     @Test
     void prngSeedOverwritesDifficulty() {
-        var evm = subject.evmV_0_31();
+        var evm = subject.evmV_0_32();
         var prngOperation =
                 evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
 
@@ -149,7 +149,7 @@ class ContractsModuleTest {
 
     @Test
     void largePrngSeedTrimsAsExpected() {
-        var evm = subject.evmV_0_31();
+        var evm = subject.evmV_0_32();
         var prngOperation =
                 evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
 
@@ -179,7 +179,7 @@ class ContractsModuleTest {
 
     @Test
     void prngSeedOutOfGas() {
-        var evm = subject.evmV_0_31();
+        var evm = subject.evmV_0_32();
         var prngOperation =
                 evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
 
@@ -219,7 +219,7 @@ class ContractsModuleTest {
     @Test
     void chainId() {
         Bytes32 chainIdBytes = Bytes32.fromHexStringLenient("0x12345678");
-        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_31())) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
             var chainIdOperation =
                     evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x46), Hash.ZERO), 0);
 
@@ -240,7 +240,7 @@ class ContractsModuleTest {
 
     @Test
     void chainIdOutOfGas() {
-        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_31())) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
             var chainIdOperation =
                     evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x46), Hash.ZERO), 0);
             given(messageFrame.getRemainingGas()).willReturn(0L);
@@ -266,7 +266,7 @@ class ContractsModuleTest {
 
     @Test
     void balanceGoodAddress() {
-        var evm = subject.evmV_0_31();
+        var evm = subject.evmV_0_32();
         var balanceOperation =
                 evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x31), Hash.ZERO), 0);
         given(messageFrame.getRemainingGas()).willReturn(3000L);

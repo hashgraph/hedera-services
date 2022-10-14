@@ -40,6 +40,23 @@ class GasLimitBucketThrottleTest {
     }
 
     @Test
+    void hasExpectedUsageRatio() {
+        final var capacity = 1_000_000;
+        var subject = new GasLimitBucketThrottle(capacity);
+        subject.bucket().useCapacity(capacity / 4);
+
+        assertEquals(3, subject.freeToUsedRatio());
+    }
+
+    @Test
+    void hasExpectedUsageRatioIfAllFree() {
+        final var capacity = 1_000_000;
+        var subject = new GasLimitBucketThrottle(capacity);
+
+        assertEquals(Long.MAX_VALUE, subject.freeToUsedRatio());
+    }
+
+    @Test
     void rejectsUnsupportedTXGasLimit() {
         assertFalse(subject.allow(BEYOND_CAPACITY, 0));
     }
