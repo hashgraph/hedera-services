@@ -16,7 +16,7 @@
 package com.hedera.services.contracts;
 
 import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.services.contracts.ContractsV_0_31Module.EVM_VERSION_0_31;
+import static com.hedera.services.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
@@ -69,14 +69,14 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-@Module(includes = {StoresModule.class, ContractsV_0_30Module.class, ContractsV_0_31Module.class})
+@Module(includes = {StoresModule.class, ContractsV_0_30Module.class, ContractsV_0_32Module.class})
 public interface ContractsModule {
 
     @Qualifier
     @interface V_0_30 {}
 
     @Qualifier
-    @interface V_0_31 {}
+    @interface V_0_32 {}
 
     @Binds
     @Singleton
@@ -180,10 +180,10 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey(EVM_VERSION_0_31)
-    static MessageCallProcessor provideV_0_31MessageCallProcessor(
-            final @V_0_31 EVM evm,
-            final @V_0_31 PrecompileContractRegistry precompiles,
+    @StringKey(EVM_VERSION_0_32)
+    static MessageCallProcessor provideV_0_32MessageCallProcessor(
+            final @V_0_32 EVM evm,
+            final @V_0_32 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList) {
         return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
     }
@@ -191,10 +191,10 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey(EVM_VERSION_0_31)
-    static ContractCreationProcessor provideV_0_31ContractCreateProcessor(
+    @StringKey(EVM_VERSION_0_32)
+    static ContractCreationProcessor provideV_0_32ContractCreateProcessor(
             final GasCalculator gasCalculator,
-            final @V_0_31 EVM evm,
+            final @V_0_32 EVM evm,
             Set<ContractValidationRule> validationRules) {
         return new ContractCreationProcessor(
                 gasCalculator, evm, true, List.copyOf(validationRules), 1);
