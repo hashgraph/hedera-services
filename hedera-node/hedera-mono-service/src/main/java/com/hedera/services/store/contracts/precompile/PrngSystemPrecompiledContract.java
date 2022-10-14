@@ -36,7 +36,6 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.txns.util.PrngLogic;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
@@ -179,8 +178,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     long calculateGas(final Instant now) {
         final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
         final var currentGasPriceInTinyCents =
-                livePricesSource.currentGasPriceInTinycents(
-                        MiscUtils.asTimestamp(now), ContractCall);
+                livePricesSource.currentGasPriceInTinycents(now, ContractCall);
         return feesInTinyCents / currentGasPriceInTinyCents;
     }
 

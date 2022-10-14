@@ -15,15 +15,11 @@
  */
 package com.hedera.services.fees;
 
-import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
@@ -50,24 +46,25 @@ public class LivePricesSource {
         this.txnCtx = txnCtx;
     }
 
-    public long currentGasPriceInTinycents(
-            final Timestamp now, final HederaFunctionality function) {
-        return currentFeeInTinycents(
-                MiscUtils.timestampToInstant(now), function, FeeComponents::getGas);
+    public long currentGasPrice(final Instant now, final HederaFunctionality function) {
+        return currentPrice(now, function, FeeComponents::getGas);
     }
 
     public long currentStorageByteHoursPrice(
-            final Timestamp now, final HederaFunctionality function) {
+            final Instant now, final HederaFunctionality function) {
         return currentPrice(now, function, FeeComponents::getSbh);
     }
 
-    public long currentPrice(
-            final Timestamp now,
+    public long currentGasPriceInTinycents(final Instant now, final HederaFunctionality function) {
+        return currentFeeInTinycents(now, function, FeeComponents::getGas);
+    }
+
+    long currentPrice(
+            final Instant now,
             final HederaFunctionality function,
             final ToLongFunction<FeeComponents> resourcePriceFn) {
-        final var timestamp = Timestamp.newBuilder().setSeconds(now.getSeconds()).build();
-        long feeInTinyCents =
-                currentFeeInTinycents(MiscUtils.timestampToInstant(now), function, resourcePriceFn);
+        final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
+        long feeInTinyCents = currentFeeInTinycents(now, function, resourcePriceFn);
         long feeInTinyBars = getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
         final var unscaledPrice = Math.max(1L, feeInTinyBars);
 
@@ -78,18 +75,6 @@ public class LivePricesSource {
         } else {
             return unscaledPrice * curMultiplier;
         }
-    }
-
-    public long estimatedGasPrice(HederaFunctionality function, Timestamp at) {
-        var rates = exchange.rate(at);
-        var prices = usagePrices.defaultPricesGiven(function, at);
-        return gasPriceInTinybars(prices, rates);
-    }
-
-    private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
-        long priceInTinyCents = prices.getServicedata().getGas() / FEE_DIVISOR_FACTOR;
-        long priceInTinyBars = getTinybarsFromTinyCents(rates, priceInTinyCents);
-        return Math.max(priceInTinyBars, 1L);
     }
 
     private long currentFeeInTinycents(

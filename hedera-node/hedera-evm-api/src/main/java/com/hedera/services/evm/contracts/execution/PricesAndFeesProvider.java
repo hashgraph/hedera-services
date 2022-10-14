@@ -28,9 +28,5 @@ public interface PricesAndFeesProvider {
 
     long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
-    //    FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at,
-    // ResponseType type);
-
-    //    long gasFeeInTinybars(final Instant consensusTime, final Precompile precompile);
     long currentGasPrice(final Instant now, final HederaFunctionality function);
 }

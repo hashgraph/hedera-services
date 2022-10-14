@@ -15,9 +15,11 @@
  */
 package com.hedera.services.fees;
 
+import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
+
 import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -56,12 +58,19 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
 
     @Override
     public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
-        return livePricesSource.estimatedGasPrice(function, at);
+        var rates = exchange.rate(at);
+        var prices = usagePrices.defaultPricesGiven(function, at);
+        return gasPriceInTinybars(prices, rates);
+    }
+
+    private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
+        long priceInTinyCents = prices.getServicedata().getGas() / FEE_DIVISOR_FACTOR;
+        long priceInTinyBars = getTinybarsFromTinyCents(rates, priceInTinyCents);
+        return Math.max(priceInTinyBars, 1L);
     }
 
     @Override
     public long currentGasPrice(Instant now, HederaFunctionality function) {
-        return livePricesSource.currentPrice(
-                MiscUtils.asTimestamp(now), function, FeeComponents::getGas);
+        return livePricesSource.currentPrice(now, function, FeeComponents::getGas);
     }
 }

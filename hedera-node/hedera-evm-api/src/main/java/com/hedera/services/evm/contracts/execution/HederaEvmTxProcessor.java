@@ -50,7 +50,6 @@ public abstract class HederaEvmTxProcessor {
     protected HederaEvmMutableWorldState worldState;
 
     protected final GasCalculator gasCalculator;
-    // FEATURE WORK add implementation that provides logic for multiple price related methods
     protected final PricesAndFeesProvider pricesAndFeesProvider;
     protected final Map<String, Provider<MessageCallProcessor>> mcps;
     protected final Map<String, Provider<ContractCreationProcessor>> ccps;

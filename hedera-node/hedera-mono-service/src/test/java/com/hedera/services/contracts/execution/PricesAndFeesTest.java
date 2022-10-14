@@ -31,6 +31,7 @@ import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 import java.util.function.ToLongFunction;
@@ -62,6 +63,14 @@ class PricesAndFeesTest {
                     .setRbh(3_000_000L)
                     .setSbh(4_000_000L)
                     .build();
+    private final FeeData mockFeeData =
+            FeeData.newBuilder()
+                    .setNetworkdata(mockFees)
+                    .setNodedata(mockFees)
+                    .setServicedata(mockFees)
+                    .setSubType(SubType.DEFAULT)
+                    .build();
+    private final FeeData defaultCurrentPrices = mockFeeData;
     private final ExchangeRate currentRate =
             ExchangeRate.newBuilder().setCentEquiv(22).setHbarEquiv(1).build();
 
@@ -87,6 +96,23 @@ class PricesAndFeesTest {
     }
 
     @Test
+    void estimatesFutureGasPriceInTinybars() {
+        given(exchange.rate(timeNow)).willReturn(currentRate);
+        given(usagePrices.defaultPricesGiven(CryptoCreate, timeNow))
+                .willReturn(defaultCurrentPrices);
+
+        // and:
+        long expected =
+                getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
+
+        // when:
+        long actual = subject.estimatedGasPriceInTinybars(CryptoCreate, timeNow);
+
+        // then:
+        assertEquals(expected, actual);
+    }
+
+    @Test
     void getsCurrentFutureGasPriceInTinyCents() {
         given(subject.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
 
@@ -106,21 +132,6 @@ class PricesAndFeesTest {
 
         // when:
         long actual = subject.rate(timeNow).getCentEquiv();
-
-        // then:
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    void estimatesFutureGasPriceInTinybars() {
-        given(livePricesSource.estimatedGasPrice(CryptoCreate, timeNow)).willReturn(227L);
-
-        // and:
-        long expected =
-                getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
-
-        // when:
-        long actual = subject.estimatedGasPriceInTinybars(CryptoCreate, timeNow);
 
         // then:
         assertEquals(expected, actual);

@@ -48,12 +48,11 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.util.PrngLogic;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
@@ -83,8 +82,7 @@ class PrngSystemPrecompiledContractTest {
     @Mock private ExpiringCreations creator;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private PrecompilePricingUtils pricingUtils;
-
-    private final Timestamp consensusNow = Timestamp.newBuilder().setSeconds(123456789L).build();
+    private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
     @Mock private LivePricesSource livePricesSource;
     @Mock private HederaStackedWorldStateUpdater updater;
 
@@ -131,9 +129,7 @@ class PrngSystemPrecompiledContractTest {
                         livePricesSource.currentGasPriceInTinycents(
                                 consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(800L);
-        assertEquals(
-                100000000L / 800L,
-                subject.calculateGas(MiscUtils.timestampToInstant(consensusNow)));
+        assertEquals(100000000L / 800L, subject.calculateGas(consensusNow));
     }
 
     @Test
@@ -142,10 +138,7 @@ class PrngSystemPrecompiledContractTest {
         initialSetUp();
         given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
         given(frame.getRemainingGas()).willReturn(0L);
-        given(frame.getBlockValues())
-                .willReturn(
-                        new HederaBlockValues(
-                                10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
         final var response = subject.computePrngResult(10L, input, frame);
         assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
@@ -165,10 +158,7 @@ class PrngSystemPrecompiledContractTest {
         given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString()))
                 .willReturn(childRecord);
         given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
-        given(frame.getBlockValues())
-                .willReturn(
-                        new HederaBlockValues(
-                                10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
         final var response = subject.computePrngResult(10L, input, frame);
         assertEquals(Optional.empty(), response.getLeft().getHaltReason());
@@ -189,10 +179,7 @@ class PrngSystemPrecompiledContractTest {
     void unknownExceptionFailsTheCall() {
         final var input = random256BitGeneratorInput();
         initialSetUp();
-        given(frame.getBlockValues())
-                .willReturn(
-                        new HederaBlockValues(
-                                10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
         final var logic = mock(PrngLogic.class);
         subject =
                 new PrngSystemPrecompiledContract(
@@ -318,10 +305,7 @@ class PrngSystemPrecompiledContractTest {
         given(updater.parentUpdater()).willReturn(Optional.empty());
         given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
                 .willReturn(childRecord);
-        given(frame.getBlockValues())
-                .willReturn(
-                        new HederaBlockValues(
-                                10L, 123L, MiscUtils.timestampToInstant(consensusNow)));
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
         given(runningHashLeaf.nMinusThreeRunningHash())
                 .willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
