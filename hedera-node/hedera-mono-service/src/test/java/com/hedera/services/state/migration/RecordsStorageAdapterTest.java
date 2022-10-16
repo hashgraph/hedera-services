@@ -15,14 +15,19 @@
  */
 package com.hedera.services.state.migration;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerklePayerRecords;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.test.utils.SeededPropertySource;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.Test;
@@ -36,6 +41,8 @@ class RecordsStorageAdapterTest {
 
     @Mock private @Nullable MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private @Nullable MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
+    @Mock private MerkleAccount account;
+    @Mock private MerklePayerRecords accountRecords;
 
     private RecordsStorageAdapter subject;
 
@@ -65,6 +72,51 @@ class RecordsStorageAdapterTest {
         withDedicatedSubject();
         subject.prepForPayer(SOME_NUM);
         verify(payerRecords).put(eq(SOME_NUM), any());
+    }
+
+    @Test
+    void addingWithDedicatedPayerWorks() {
+        withDedicatedSubject();
+        given(payerRecords.getForModify(SOME_NUM)).willReturn(accountRecords);
+
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        subject.addPayerRecord(SOME_NUM, aRecord);
+
+        verify(accountRecords).offer(aRecord);
+    }
+
+    @Test
+    void gettingMutableWithDedicatedPayerWorks() {
+        withDedicatedSubject();
+        final FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
+        given(payerRecords.getForModify(SOME_NUM)).willReturn(accountRecords);
+        given(accountRecords.mutableQueue()).willReturn(records);
+
+        assertSame(records, subject.getMutablePayerRecords(SOME_NUM));
+    }
+
+    @Test
+    void gettingMutableWithLegacyPayerWorks() {
+        withLegacySubject();
+        final FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
+        given(accounts.getForModify(SOME_NUM)).willReturn(account);
+        given(account.records()).willReturn(records);
+
+        assertSame(records, subject.getMutablePayerRecords(SOME_NUM));
+    }
+
+    @Test
+    void addingWithLegacyPayerWorks() {
+        withLegacySubject();
+        final FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
+        given(accounts.getForModify(SOME_NUM)).willReturn(account);
+        given(account.records()).willReturn(records);
+
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        subject.addPayerRecord(SOME_NUM, aRecord);
+
+        final var added = records.poll();
+        assertSame(aRecord, added);
     }
 
     private void withLegacySubject() {

@@ -17,6 +17,7 @@ package com.hedera.services.state.virtual.entities;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
@@ -147,5 +148,33 @@ class OnDiskAccountCompatibilityTest {
     }
 
     @Test
-    void stakingMetaAvailableFromHederaInterface() {}
+    void stakingMetaAvailableFromHederaInterface() {
+        assertFalse(subject.hasBeenRewardedSinceLastStakeMetaChange());
+        subject.setStakeAtStartOfLastRewardedPeriod(123L);
+        assertTrue(subject.hasBeenRewardedSinceLastStakeMetaChange());
+
+        assertEquals(123L, subject.totalStakeAtStartOfLastRewardedPeriod());
+
+        subject.setBalanceUnchecked(100L);
+        subject.setStakedToMe(200L);
+        assertEquals(300L, subject.totalStake());
+
+        assertFalse(subject.mayHavePendingReward());
+        subject.setStakedId(-6L);
+        assertEquals(-6L, subject.getStakedId());
+        assertTrue(subject.mayHavePendingReward());
+        assertEquals(5L, subject.getStakedNodeAddressBookId());
+        subject.setStakedId(+6L);
+        assertThrows(IllegalStateException.class, subject::getStakedNodeAddressBookId);
+
+        subject.setDeclineReward(true);
+        assertFalse(subject.mayHavePendingReward());
+    }
+
+    @Test
+    void canManageAlias() {
+        assertFalse(subject.hasAlias());
+        subject.setAlias(ByteString.copyFromUtf8("PRETEND"));
+        assertTrue(subject.hasAlias());
+    }
 }

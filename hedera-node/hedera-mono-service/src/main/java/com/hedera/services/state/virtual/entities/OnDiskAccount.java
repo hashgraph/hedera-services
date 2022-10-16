@@ -83,7 +83,9 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     private boolean immutable = false;
 
     public OnDiskAccount() {
-        // Intentional no-op
+        // Some non-zero default values
+        longs[LongValues.STAKE_PERIOD_START] = -1;
+        longs[LongValues.STAKE_AT_START_OF_LAST_REWARDED_PERIOD] = -1;
     }
 
     public OnDiskAccount(final OnDiskAccount that) {

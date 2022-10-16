@@ -18,7 +18,11 @@ package com.hedera.services.state.merkle;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.state.migration.QueryableRecords;
+import com.hedera.services.utils.BytesKey;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.SeededPropertySource;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class MerklePayerRecordsTest {
@@ -37,5 +41,42 @@ class MerklePayerRecordsTest {
         subject.offer(someRecord);
         final var queryable = subject.asQueryableRecords();
         assertEquals(1, queryable.expectedSize());
+    }
+
+    @Test
+    void isSelfHashing() {
+        final var subject = new MerklePayerRecords();
+
+        assertTrue(subject.isSelfHashing());
+    }
+
+    @Test
+    void hashDependsOnNumberAndRecords() {
+        final var subject = new MerklePayerRecords();
+        final var emptyHash = subject.getHash();
+
+        final var aNum = EntityNum.fromInt(123);
+        subject.setKey(aNum);
+        final var justNumHash = subject.getHash();
+
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        subject.offer(aRecord);
+        final var oneRecordHash = subject.getHash();
+        final var bRecord = SeededPropertySource.forSerdeTest(11, 2).nextRecord();
+        subject.offer(bRecord);
+        final var twoRecordHash = subject.getHash();
+
+        subject.mutableQueue().poll();
+        subject.mutableQueue().poll();
+        subject.offer(aRecord);
+        final var secondOneRecordHash = subject.getHash();
+        assertEquals(oneRecordHash, secondOneRecordHash);
+
+        final Set<BytesKey> uniqueHashes = new HashSet<>();
+        uniqueHashes.add(new BytesKey(emptyHash.getValue()));
+        uniqueHashes.add(new BytesKey(justNumHash.getValue()));
+        uniqueHashes.add(new BytesKey(oneRecordHash.getValue()));
+        uniqueHashes.add(new BytesKey(twoRecordHash.getValue()));
+        assertEquals(4, uniqueHashes.size());
     }
 }

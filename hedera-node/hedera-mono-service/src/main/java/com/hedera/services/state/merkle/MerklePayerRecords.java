@@ -15,11 +15,15 @@
  */
 package com.hedera.services.state.merkle;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
 
+import com.google.common.primitives.Ints;
 import com.hedera.services.state.migration.QueryableRecords;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -48,6 +52,21 @@ public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<Entit
     public MerklePayerRecords(final MerklePayerRecords that) {
         this.num = that.num;
         this.payerRecords = (that.payerRecords == null) ? null : that.payerRecords.copy();
+    }
+
+    @Override
+    public boolean isSelfHashing() {
+        return true;
+    }
+
+    @Override
+    public Hash getHash() {
+        final var recordsHash = readOnlyQueue().getHash();
+        final var recordsHashLen = recordsHash.getValue().length;
+        final byte[] bytes = new byte[recordsHashLen + 4];
+        System.arraycopy(Ints.toByteArray(num), 0, bytes, 0, 4);
+        System.arraycopy(recordsHash.getValue(), 0, bytes, 4, recordsHashLen);
+        return new Hash(noThrowSha384HashOf(bytes), DigestType.SHA_384);
     }
 
     @Override
