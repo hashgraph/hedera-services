@@ -1283,9 +1283,9 @@ class TransferPrecompilesTest {
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getMessageFrameStack()).willReturn(frameDeque);
-        given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
-        given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
-        given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
+        given(frame.getMessageFrameStack().iterator().hasNext()).willReturn(true);
+        given(frame.getMessageFrameStack().iterator().next()).willReturn(parentFrame);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
