@@ -15,6 +15,9 @@
  */
 package com.hedera.services.throttles;
 
+import static com.hedera.services.throttles.DeterministicThrottle.elapsedNanosBetween;
+
+import com.google.common.annotations.VisibleForTesting;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -24,8 +27,6 @@ import java.time.Instant;
  * GasLimitBucketThrottle} under the hood.
  */
 public class GasLimitDeterministicThrottle {
-    private static final Instant NEVER = null;
-
     private final GasLimitBucketThrottle delegate;
     private Instant lastDecisionTime;
     private final long capacity;
@@ -51,22 +52,23 @@ public class GasLimitDeterministicThrottle {
      *     throttled.
      */
     public boolean allow(Instant now, long txGasLimit) {
-        long elapsedNanos = 0L;
-        if (lastDecisionTime != NEVER) {
-            elapsedNanos = Duration.between(lastDecisionTime, now).toNanos();
-            if (elapsedNanos < 0L) {
-                throw new IllegalArgumentException(
-                        "Throttle timeline must advance, but "
-                                + now
-                                + " is not after "
-                                + lastDecisionTime
-                                + "!");
-            }
-        }
-
+        final var elapsedNanos = elapsedNanosBetween(lastDecisionTime, now);
         var decision = delegate.allow(txGasLimit, elapsedNanos);
         lastDecisionTime = now;
         return decision;
+    }
+
+    /**
+     * Given a time which must not be before the {@code lastDecisionTime} of this throttle, leaks
+     * until that time and returns the resulting free-to-used ratio.
+     *
+     * @param now the time at which the free-to-used ratio must be computed
+     * @return the free-to-used ratio at that time
+     */
+    public long freeToUsedRatio(final Instant now) {
+        delegate.leakFor(elapsedNanosBetween(lastDecisionTime, now));
+        lastDecisionTime = now;
+        return delegate.freeToUsedRatio();
     }
 
     /**
@@ -145,5 +147,10 @@ public class GasLimitDeterministicThrottle {
 
     public void resetLastAllowedUse() {
         delegate.resetLastAllowedUse();
+    }
+
+    @VisibleForTesting
+    Instant getLastDecisionTime() {
+        return lastDecisionTime;
     }
 }
