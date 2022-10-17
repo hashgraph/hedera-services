@@ -11,7 +11,7 @@ feature of each fork is that there is a well established impact on backwards com
 security demands it.
 
 In order for off-chain evaluation of these prior EVMs to work we also need to preserve a way to re-create the EVM
-classes in such a way so that the other instances can re-create the execution at
+classes in such a way so that the other instances can re-create the execution.
 
 ## Goals
 
@@ -42,18 +42,18 @@ A standard dynamic property will be used to configure the EVM at startup (`contr
 to the last activated version on mainnet in the event the value is not set.
 
 EVM versions will follow the format `v&lt;major>.&lt;minor>`, corresponding to the released version of hedera. for
-example, the earliest version supported by this regime is `v0.30` with a planned update for `v0.31`. Not every hedera
+example, the earliest version supported by this regime is `v0.30` with a planned update for `v0.32`. Not every hedera
 version will have a new EVM version. Only when EVM compatability is impacted for object replay will a new version be
 set.
 
 It is expected that there will be a new version for each major Ethereum Mainnet hard fork. A table will be kept here to
 document which major hardfork corresponds to each internal version.
 
-|  Hedera Version | Ethereum Fork                                                                                                     | Comments                                                                              |
-|----------------:|:------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------|
-|         `v0.30` | [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md)     |                                                                                       |
-|         `v0.31` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses   |
-|               ? | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Expected Q2 2023 or later                                                             |
+| Hedera Version | Ethereum Fork                                                                                                     | Comments                                                                              |
+|---------------:|:------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------|
+|        `v0.30` | [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md)     |                                                                                       |
+|        `v0.32` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses   |
+|              ? | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Expected Q2 2023 or later                                                             |
 
 ## Open Questions
 
@@ -65,5 +65,5 @@ Acceptance tests use the Paris re-definition of `DIFFICULTY` as the test for act
 * Test that when dynamic is set to false that changing the version has no effect
 * Test when dynamic is set to true the evm version can change at each transaction
 * verify 0.30 still returns zeros for difficulty
-* verify 0.31 returns prng values
+* verify 0.32 returns prng values
 * verify that prng behaviors are reflected in the opcode (use same tests as PRNG contract)
