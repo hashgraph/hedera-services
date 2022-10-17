@@ -20,6 +20,7 @@ import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.spi.SigTransactionMetadata;
 import com.hedera.node.app.spi.TransactionMetadata;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
@@ -27,9 +28,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-import java.util.Collections;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -64,16 +64,11 @@ public class AccountStore {
             final Optional<JKey> key,
             final boolean receiverSigReq,
             final AccountID payer) {
-        final var payerAccount = getAccountLeaf(payer);
-        if (payerAccount.isEmpty()){
-            return new TransactionMetadata(tx, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
-        }
-
-        final var payerKey = payerAccount.get().getAccountKey();
+        final var payerMeta = new SigTransactionMetadata(this, tx, payer);
         if (receiverSigReq && key.isPresent()) {
-            return new TransactionMetadata(tx, payerKey, List.of(key.get()));
+            return new SigTransactionMetadata(this, tx, payer, List.of(key.get()));
         }
-        return new TransactionMetadata(tx, payerKey, Collections.emptyList());
+        return payerMeta;
     }
 
     /**
@@ -83,8 +78,8 @@ public class AccountStore {
      * @param id given account number
      * @return merkle leaf for the given account number
      */
-    private Optional<MerkleAccount> getAccountLeaf(final AccountID id) {
-        final var accountNum = getAccount(id);
+    public Optional<MerkleAccount> getAccountLeaf(final AccountID id) {
+        final var accountNum = getAccountNum(id);
         if(accountNum == EntityNum.MISSING_NUM){
             return Optional.empty();
         }
@@ -99,7 +94,7 @@ public class AccountStore {
      * @param id provided account id
      * @return account number
      */
-    private EntityNum getAccount(final AccountID id) {
+    private EntityNum getAccountNum(final AccountID id) {
         if (isAlias(id)) {
             final var num = aliases.get(id.getAlias());
             if (num.isPresent()) {

@@ -15,12 +15,21 @@
  */
 package com.hedera.node.app.spi;
 
+import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.token.impl.AccountStore;
+import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
+import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -31,40 +40,65 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+
 import org.apache.commons.codec.DecoderException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TransactionMetadataTest {
+class SigTransactionMetadataTest {
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private Key key = KeyUtils.A_COMPLEX_KEY;
     private AccountID payer = asAccount("0.0.3");
-    private TransactionMetadata subject;
+    private EntityNum payerNum = EntityNum.fromInt(3);
+
+    @Mock
+    private RebuiltStateImpl aliases;
+    @Mock private InMemoryStateImpl accounts;
+    @Mock private States states;
+    @Mock private MerkleAccount account;
+
+    private AccountStore store;
+    private SigTransactionMetadata subject;
+
+    @BeforeEach
+    void setUp(){
+        given(states.get(ACCOUNT_STORE)).willReturn(accounts);
+        given(states.get(ALIASES_STORE)).willReturn(aliases);
+        store = new AccountStore(states);
+    }
 
     @Test
-    void gettersWorkAsExpectedWhenOtherSigsDoesntExist() throws DecoderException {
+    void gettersWorkAsExpectedWhenOnlyPayerKeyExist() throws DecoderException {
         final var txn = createAccountTransaction();
         final var payerKey = JKey.mapKey(key);
-        subject = new TransactionMetadata(txn, payerKey, Collections.emptyList());
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(payerKey);
+
+        subject = new SigTransactionMetadata(store, txn, payer, List.of());
 
         assertFalse(subject.failed());
-        assertEquals(txn, subject.transaction());
-        assertEquals(payerKey, subject.getPayerSig());
-        assertEquals(Collections.emptyList(), subject.getOthersSigs());
+        assertEquals(txn, subject.getTxn());
+        assertEquals(List.of(payerKey), subject.getReqKeys());
     }
 
     @Test
     void gettersWorkAsExpectedWhenOtherSigsExist() throws DecoderException {
         final var txn = createAccountTransaction();
         final var payerKey = JKey.mapKey(key);
-        subject = new TransactionMetadata(txn, payerKey, List.of(payerKey));
+
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(payerKey);
+
+        subject = new SigTransactionMetadata(store, txn, payer, List.of(payerKey));
 
         assertFalse(subject.failed());
-        assertEquals(txn, subject.transaction());
-        assertEquals(payerKey, subject.getPayerSig());
-        assertEquals(List.of(payerKey), subject.getOthersSigs());
+        assertEquals(txn, subject.getTxn());
+        assertEquals(List.of(payerKey, payerKey), subject.getReqKeys());
     }
 
     private Transaction createAccountTransaction() {

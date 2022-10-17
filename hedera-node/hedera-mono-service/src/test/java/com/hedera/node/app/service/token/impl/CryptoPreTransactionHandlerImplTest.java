@@ -15,17 +15,9 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.given;
-
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.TransactionMetadata;
+import com.hedera.node.app.spi.InvalidTransactionMetadata;
+import com.hedera.node.app.spi.SigTransactionMetadata;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;
@@ -36,20 +28,29 @@ import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
+
+import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerImplTest {
@@ -83,14 +84,14 @@ class CryptoPreTransactionHandlerImplTest {
         given(account.getAccountKey()).willReturn(jkey);
 
         final var txn = createAccountTransaction(true);
-        final var expectedMeta = new TransactionMetadata(txn, jkey, List.of(jkey));
 
         final var meta = subject.cryptoCreate(txn);
 
-        assertEquals(expectedMeta.transaction(), meta.transaction());
-        assertEquals(expectedMeta.getPayerSig(), meta.getPayerSig());
-        assertEquals(expectedMeta.getOthersSigs().size(), meta.getOthersSigs().size());
-        assertEquals(expectedMeta.failed(), meta.failed());
+        assertEquals(txn, meta.getTxn());
+        assertEquals(2, meta.getReqKeys().size());
+        assertTrue(meta.getReqKeys().contains(jkey));
+        assertEquals(false, meta.failed());
+        assertEquals(OK, meta.failureStatus());
     }
 
     @Test
@@ -99,12 +100,11 @@ class CryptoPreTransactionHandlerImplTest {
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
                         .build();
-        final var expectedMeta = new TransactionMetadata(txn, ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        final var expectedMeta = new InvalidTransactionMetadata(txn, INVALID_TRANSACTION_BODY);
         final var meta = subject.cryptoCreate(txn);
 
-        assertEquals(expectedMeta.transaction(), meta.transaction());
-        assertNull(meta.getPayerSig());
-        assertEquals(expectedMeta.getOthersSigs().size(), meta.getOthersSigs().size());
+        assertEquals(expectedMeta.getTxn(), meta.getTxn());
+        assertEquals(0, meta.getReqKeys().size());
         assertEquals(expectedMeta.failed(), meta.failed());
     }
 
@@ -115,13 +115,12 @@ class CryptoPreTransactionHandlerImplTest {
         given(account.getAccountKey()).willReturn(jkey);
 
         final var txn = createAccountTransaction(false);
-        final var expectedMeta = new TransactionMetadata(txn, jkey, Collections.emptyList());
+        final var expectedMeta = new SigTransactionMetadata(store, txn, payer);
 
         final var meta = subject.cryptoCreate(txn);
 
-        assertEquals(expectedMeta.transaction(), meta.transaction());
-        assertSame(expectedMeta.getPayerSig(), meta.getPayerSig());
-        assertEquals(expectedMeta.getOthersSigs().size(), meta.getOthersSigs().size());
+        assertEquals(expectedMeta.getTxn(), meta.getTxn());
+        assertTrue(meta.getReqKeys().contains(jkey));
         assertEquals(expectedMeta.failed(), meta.failed());
     }
 

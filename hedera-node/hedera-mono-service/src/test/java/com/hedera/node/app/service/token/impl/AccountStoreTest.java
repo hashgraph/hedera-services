@@ -83,9 +83,8 @@ class AccountStoreTest {
         final var meta = subject.createAccountSigningMetadata(txn, Optional.of(jkey), true, payer);
 
         assertFalse(meta.failed());
-        assertEquals(txn, meta.transaction());
-        assertEquals(payerJkey, meta.getPayerSig());
-        assertEquals(List.of(jkey), meta.getOthersSigs());
+        assertEquals(txn, meta.getTxn());
+        assertEquals(List.of(payerJkey, jkey), meta.getReqKeys());
     }
 
     @Test
@@ -101,13 +100,12 @@ class AccountStoreTest {
                 subject.createAccountSigningMetadata(txn, Optional.of(jkey), true, payerAlias);
 
         assertFalse(meta.failed());
-        assertEquals(txn, meta.transaction());
-        assertEquals(payerJkey, meta.getPayerSig());
-        assertEquals(List.of(jkey), meta.getOthersSigs());
+        assertEquals(txn, meta.getTxn());
+        assertEquals(List.of(payerJkey, jkey), meta.getReqKeys());
     }
 
     @Test
-    void fetchingNonExistingLeafThrows() throws DecoderException {
+    void fetchingNonExistingLeafFails() throws DecoderException {
         final var jkey = JKey.mapKey(key);
         given(accounts.get(payerNum)).willReturn(Optional.empty());
         final var txn = createAccountTransaction(payer);

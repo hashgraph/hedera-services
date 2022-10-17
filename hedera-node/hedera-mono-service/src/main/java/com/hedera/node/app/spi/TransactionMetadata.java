@@ -18,10 +18,8 @@ package com.hedera.node.app.spi;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-import java.util.Collections;
-import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import java.util.List;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
@@ -29,45 +27,28 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * errors, are captured in the TransactionMetadata. This is then made available to the transaction
  * during the "handle" phase as part of the HandleContext.
  */
-public class TransactionMetadata {
-    private ResponseCodeEnum failureStatus = OK;
-    private final Transaction tx;
-    private final JKey payerSig;
-    private final List<JKey> otherSigs;
+public interface TransactionMetadata {
+    /**
+     * Checks the failure by validating the status is not {@link ResponseCodeEnum OK}
+     * @return returns true if status is not OK
+     */
+    boolean failed();
 
-    public TransactionMetadata(
-            final Transaction tx,
-            final JKey payerSig,
-            final List<JKey> otherSigs) {
-        this.tx = tx;
-        this.payerSig = payerSig;
-        this.otherSigs = otherSigs;
-    }
+    /**
+     * Returns the failure {@link ResponseCodeEnum}, which gives more information on the failure
+     * @return response code of the failure
+     */
+    ResponseCodeEnum failureStatus();
 
-    public TransactionMetadata(final Transaction tx, final ResponseCodeEnum failureStatus) {
-        this.tx = tx;
-        this.failureStatus = failureStatus;
-        this.payerSig = null;
-        this.otherSigs = Collections.emptyList();
-    }
+    /**
+     * Transaction that is being pre-handled
+     * @return transaction that is being pre-handled
+     */
+    Transaction getTxn();
 
-    public Transaction transaction() {
-        return tx;
-    }
-
-    public boolean failed() {
-        return !failureStatus.equals(OK);
-    }
-
-    public ResponseCodeEnum failureStatus() {
-        return failureStatus;
-    }
-
-    public JKey getPayerSig() {
-        return payerSig;
-    }
-
-    public List<JKey> getOthersSigs() {
-        return otherSigs;
-    }
+    /**
+     * All the keys required for validation signing requirements in pre-handle. This list includes payer key as well.
+     * @return keys needed for validating signing requirements
+     */
+    List<JKey> getReqKeys();
 }
