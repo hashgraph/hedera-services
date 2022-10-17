@@ -24,8 +24,8 @@ import java.util.List;
 
 /** Transaction metadata returned in case of any failure during pre-handle. */
 public class InvalidTransactionMetadata implements TransactionMetadata {
-    protected ResponseCodeEnum status;
-    protected Transaction txn;
+    private ResponseCodeEnum status;
+    private Transaction txn;
 
     public InvalidTransactionMetadata(final Transaction txn, final ResponseCodeEnum failure) {
         this.txn = txn;

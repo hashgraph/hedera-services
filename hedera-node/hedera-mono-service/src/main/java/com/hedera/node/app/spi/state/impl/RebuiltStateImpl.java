@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
+import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.StateKey;
 import com.swirlds.fchashmap.FCHashMap;
 import java.time.Instant;
@@ -22,6 +23,13 @@ import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
+/**
+ * An implementation of {@link State} backed by a {@link FCHashMap} for aliases, that needs to be
+ * rebuilt from the {@link com.hedera.services.ServicesState}.
+ *
+ * @param <K> The type of key for the state
+ * @param <V> The type of value for the state
+ */
 public class RebuiltStateImpl<K, V> extends StateBase<K, V> {
     private Map<K, V> aliases;
     private final Instant lastModifiedTime;

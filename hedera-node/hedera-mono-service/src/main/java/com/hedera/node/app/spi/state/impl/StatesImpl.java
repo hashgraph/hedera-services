@@ -26,6 +26,7 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.context.MutableStateChildren;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import org.apache.commons.lang3.NotImplementedException;
 
 public class StatesImpl implements States {
     private final MutableStateChildren children = new MutableStateChildren();
@@ -55,10 +56,10 @@ public class StatesImpl implements States {
             final var state =
                     new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
             return (StateBase) state;
+        } else {
+            throw new NotImplementedException(
+                    String.format("State key %s not supported", stateKey));
         }
-        // Will be adding other keys as needed. This is the only key needed for signature
-        // verification.
-        throw new IllegalArgumentException("State key provided is not defined");
     }
 
     @VisibleForTesting

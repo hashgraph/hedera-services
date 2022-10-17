@@ -47,6 +47,8 @@ import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
+
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -104,7 +106,7 @@ class StatesImplTest {
         assertEquals(lastHandledTime, state.getLastModifiedTime());
         assertTrue(state instanceof InMemoryStateImpl);
 
-        assertThrows(IllegalArgumentException.class, () -> subject.get(TOKEN_STORE));
+        assertThrows(NotImplementedException.class, () -> subject.get(TOKEN_STORE));
     }
 
     @Test
