@@ -75,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -746,6 +747,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         final var hollowAccountCreateSponsor = "hollowAccountCreateSponsor";
         return defaultHapiSpec("HollowAccountCreationWithCryptoTransfer")
                 .given(
+                        UtilVerbs.overriding("lazyCreation.enabled", "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(hollowAccountCreateSponsor)
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
@@ -785,6 +787,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                     .memo(LAZY_MEMO));
 
                                     allRunFor(spec, op, op2);
+                                    UtilVerbs.resetToDefault("lazyCreation.enabled");
                                 }));
     }
 
