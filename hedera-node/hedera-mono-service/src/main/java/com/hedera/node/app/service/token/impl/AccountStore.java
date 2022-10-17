@@ -82,8 +82,7 @@ public class AccountStore {
         if (accountNum == EntityNum.MISSING_NUM) {
             return Optional.empty();
         }
-        final var account = accountState.get(accountNum);
-        return account;
+        return accountState.get(accountNum);
     }
 
     /**
