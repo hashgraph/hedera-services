@@ -90,7 +90,8 @@ public class ImpliedTransfersMarshal {
             op = aliasResolver.resolve(op, aliasManager);
             numAutoCreations = aliasResolver.perceivedAutoCreations();
             if (numAutoCreations > 0
-                    && (!props.isAutoCreationEnabled() || !props.isLazyCreationEnabled())) {
+                    && !props.isAutoCreationEnabled()
+                    && !props.isLazyCreationEnabled()) {
                 return ImpliedTransfers.invalid(props, NOT_SUPPORTED);
             }
             if (aliasResolver.perceivedMissingAliases() > 0) {
