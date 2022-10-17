@@ -151,7 +151,12 @@ public class UpgradeActions {
         return runAsync(
                 () -> {
                     try {
-                        FileUtils.cleanDirectory(new File(artifactsLoc));
+                        var artifactsLocFile = new File(artifactsLoc);
+                        if (artifactsLocFile.exists()) {
+                            FileUtils.cleanDirectory(new File(artifactsLoc));
+                        } else {
+                            artifactsLocFile.mkdirs();
+                        }
                         unzipAction.unzip(archiveData, artifactsLoc);
                         log.info(
                                 "Finished unzipping {} bytes for {} update into {}",

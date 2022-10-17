@@ -85,10 +85,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -99,8 +96,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class RecordStreamFileWriterTest {
-    RecordStreamFileWriterTest() {}
-
     @BeforeEach
     void setUp() throws NoSuchAlgorithmException {
         subject =
@@ -1166,7 +1161,7 @@ class RecordStreamFileWriterTest {
     static void beforeAll() {
         final var file = new File(expectedExportDir());
         if (!file.exists()) {
-            assertTrue(file.mkdir());
+            assertTrue(file.mkdirs());
         }
     }
 
@@ -1176,9 +1171,8 @@ class RecordStreamFileWriterTest {
     }
 
     private static String expectedExportDir() {
-        return dynamicProperties.pathToBalancesExportDir()
-                + File.separator
-                + "recordStreamWriterTest";
+        return TestFileUtils.toPath(
+                dynamicProperties.pathToBalancesExportDir(), "recordStreamWriterTest");
     }
 
     private List<TransactionSidecarRecord.Builder> transformToExpectedSidecars(

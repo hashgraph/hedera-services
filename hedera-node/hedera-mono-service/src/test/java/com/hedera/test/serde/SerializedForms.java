@@ -67,6 +67,7 @@ import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -293,7 +294,7 @@ public class SerializedForms {
             final Class<T> type, final int version, final int testCaseNo) {
         return Paths.get(
                 SERIALIZED_FORMS_LOC
-                        + "/"
+                        + File.separator
                         + String.format(FORM_TPL, type.getSimpleName(), version, testCaseNo));
     }
 }
