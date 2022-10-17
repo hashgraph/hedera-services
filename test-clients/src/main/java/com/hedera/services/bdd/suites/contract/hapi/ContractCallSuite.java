@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -293,7 +294,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WHITELISTER,
                                                                 "addToWhitelist",
-                                                                childEip1014.get())
+                                                                convertAliasToAddress(
+                                                                        childEip1014.get()))
                                                         .payingWith(DEFAULT_PAYER),
                                                 contractCallWithFunctionAbi(
                                                                 asContractString(
@@ -303,15 +305,17 @@ public class ContractCallSuite extends HapiApiSuite {
                                                                         FUNCTION,
                                                                         "isWhitelisted",
                                                                         WHITELISTER),
-                                                                getNestedContractAddress(
-                                                                        WHITELISTER, spec))
+                                                                convertAliasToAddress(
+                                                                        getNestedContractAddress(
+                                                                                WHITELISTER, spec)))
                                                         .payingWith(DEFAULT_PAYER)
                                                         .via(mirrorWhitelistCheckTxn),
                                                 contractCall(
                                                                 CREATOR,
                                                                 "isWhitelisted",
-                                                                getNestedContractAddress(
-                                                                        WHITELISTER, spec))
+                                                                convertAliasToAddress(
+                                                                        getNestedContractAddress(
+                                                                                WHITELISTER, spec)))
                                                         .payingWith(DEFAULT_PAYER)
                                                         .via(evmWhitelistCheckTxn))))
                 .then(
@@ -383,8 +387,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             ASSOCIATOR,
                                                             "associate",
-                                                            mirrorAddress,
-                                                            asAddress(tokenID.get()))
+                                                            convertAliasToAddress(mirrorAddress),
+                                                            convertAliasToAddress(
+                                                                    asAddress(tokenID.get())))
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .gas(GAS_TO_OFFER)
                                                     .via("NOPE"),
@@ -395,8 +400,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             ASSOCIATOR,
                                                             "associate",
-                                                            create2address,
-                                                            asAddress(tokenID.get()))
+                                                            convertAliasToAddress(create2address),
+                                                            convertAliasToAddress(
+                                                                    asAddress(tokenID.get())))
                                                     .gas(GAS_TO_OFFER));
                                 }))
                 .then();
@@ -452,7 +458,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                         contractCall(
                                                         createIndirectly,
                                                         "makeOpaquely",
-                                                        toyMakerMirror.get())
+                                                        convertAliasToAddress(toyMakerMirror.get()))
                                                 .payingWith(longLivedPayer)))
                 .then(
                         overriding(
@@ -592,7 +598,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                         contractCall(
                                                         minters,
                                                         "add",
-                                                        historicalAddress,
+                                                        convertAliasToAddress(historicalAddress),
                                                         "Peter",
                                                         nyJurisCode.get())
                                                 .gas(1_000_000)));
@@ -740,8 +746,10 @@ public class ContractCallSuite extends HapiApiSuite {
                                         contractCall(
                                                         treasuryContract,
                                                         "nonSequiturMintAndTransfer",
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()))
                                                 .via(mintAndTransferTxn)
                                                 .gas(4_000_000)
                                                 .alsoSigningWithFullPrefix(multiKey)))
@@ -760,8 +768,10 @@ public class ContractCallSuite extends HapiApiSuite {
                                         contractCall(
                                                         treasuryContract,
                                                         "nonSequiturMintAndTransferAndBurn",
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()))
                                                 .via(mintAndTransferAndBurnTxn)
                                                 .gas(4_000_000)
                                                 .alsoSigningWithFullPrefix(multiKey, aCivilian)));
@@ -850,10 +860,22 @@ public class ContractCallSuite extends HapiApiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, INSERT, 1, 4).gas(gasToOffer).via(insert1To4),
-                        contractCall(contract, INSERT, 2, 8).gas(gasToOffer).via(insert2To8),
-                        contractCall(contract, INSERT, 3, 16).gas(gasToOffer).via(insert3To16),
-                        contractCall(contract, "remove", 2).gas(gasToOffer).via(remove2));
+                        contractCall(contract, INSERT, BigInteger.ONE, BigInteger.valueOf(4))
+                                .gas(gasToOffer)
+                                .via(insert1To4),
+                        contractCall(contract, INSERT, BigInteger.TWO, BigInteger.valueOf(8))
+                                .gas(gasToOffer)
+                                .via(insert2To8),
+                        contractCall(
+                                        contract,
+                                        INSERT,
+                                        BigInteger.valueOf(3),
+                                        BigInteger.valueOf(16))
+                                .gas(gasToOffer)
+                                .via(insert3To16),
+                        contractCall(contract, "remove", BigInteger.TWO)
+                                .gas(gasToOffer)
+                                .via(remove2));
     }
 
     // For this test we use refusingEthConversion() for the Eth Call isomer,
@@ -925,7 +947,9 @@ public class ContractCallSuite extends HapiApiSuite {
 
                                     final var subop5 =
                                             contractCallLocal(
-                                                            contract, BALANCE_OF, issuerEthAddress)
+                                                            contract,
+                                                            BALANCE_OF,
+                                                            convertAliasToAddress(issuerEthAddress))
                                                     .gas(250_000L)
                                                     .saveResultTo(ISSUER_TOKEN_BALANCE);
 
@@ -991,8 +1015,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             TRANSFER,
-                                                            aliceEthAddress,
-                                                            1000 * tokenMultiplier)
+                                                            convertAliasToAddress(aliceEthAddress),
+                                                            BigInteger.valueOf(
+                                                                    1000 * tokenMultiplier))
                                                     .gas(250_000L)
                                                     .payingWith(TOKEN_ISSUER)
                                                     .refusingEthConversion();
@@ -1001,8 +1026,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             TRANSFER,
-                                                            bobEthAddress,
-                                                            2000 * tokenMultiplier)
+                                                            convertAliasToAddress(bobEthAddress),
+                                                            BigInteger.valueOf(
+                                                                    2000 * tokenMultiplier))
                                                     .gas(250_000L)
                                                     .payingWith(TOKEN_ISSUER)
                                                     .refusingEthConversion();
@@ -1011,24 +1037,34 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             TRANSFER,
-                                                            carolEthAddress,
-                                                            500 * tokenMultiplier)
+                                                            convertAliasToAddress(carolEthAddress),
+                                                            BigInteger.valueOf(
+                                                                    500 * tokenMultiplier))
                                                     .gas(250_000L)
                                                     .payingWith("Bob")
                                                     .refusingEthConversion();
 
                                     final var subop9 =
-                                            contractCallLocal(contract, BALANCE_OF, aliceEthAddress)
+                                            contractCallLocal(
+                                                            contract,
+                                                            BALANCE_OF,
+                                                            convertAliasToAddress(aliceEthAddress))
                                                     .gas(250_000L)
                                                     .saveResultTo(ALICE_TOKEN_BALANCE);
 
                                     final var subop10 =
-                                            contractCallLocal(contract, BALANCE_OF, carolEthAddress)
+                                            contractCallLocal(
+                                                            contract,
+                                                            BALANCE_OF,
+                                                            convertAliasToAddress(carolEthAddress))
                                                     .gas(250_000L)
                                                     .saveResultTo(CAROL_TOKEN_BALANCE);
 
                                     final var subop11 =
-                                            contractCallLocal(contract, BALANCE_OF, bobEthAddress)
+                                            contractCallLocal(
+                                                            contract,
+                                                            BALANCE_OF,
+                                                            convertAliasToAddress(bobEthAddress))
                                                     .gas(250_000L)
                                                     .saveResultTo(BOB_TOKEN_BALANCE);
 
@@ -1070,8 +1106,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "approve",
-                                                            daveEthAddress,
-                                                            200 * tokenMultiplier)
+                                                            convertAliasToAddress(daveEthAddress),
+                                                            BigInteger.valueOf(
+                                                                    200 * tokenMultiplier))
                                                     .gas(250_000L)
                                                     .payingWith(ALICE)
                                                     .refusingEthConversion();
@@ -1080,36 +1117,51 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "transferFrom",
-                                                            aliceEthAddress,
-                                                            bobEthAddress,
-                                                            100 * tokenMultiplier)
+                                                            convertAliasToAddress(aliceEthAddress),
+                                                            convertAliasToAddress(bobEthAddress),
+                                                            BigInteger.valueOf(
+                                                                    100 * tokenMultiplier))
                                                     .gas(250_000L)
                                                     .payingWith("Dave")
                                                     .refusingEthConversion();
 
                                     final var subop14 =
-                                            contractCallLocal(contract, BALANCE_OF, aliceEthAddress)
+                                            contractCallLocal(
+                                                            contract,
+                                                            BALANCE_OF,
+                                                            convertAliasToAddress(aliceEthAddress))
                                                     .gas(250_000L)
                                                     .saveResultTo(ALICE_TOKEN_BALANCE);
 
                                     final var subop15 =
-                                            contractCallLocal(contract, BALANCE_OF, bobEthAddress)
+                                            contractCallLocal(
+                                                            contract,
+                                                            BALANCE_OF,
+                                                            convertAliasToAddress(bobEthAddress))
                                                     .gas(250_000L)
                                                     .saveResultTo(BOB_TOKEN_BALANCE);
 
                                     final var subop16 =
-                                            contractCallLocal(contract, BALANCE_OF, carolEthAddress)
+                                            contractCallLocal(
+                                                            contract,
+                                                            BALANCE_OF,
+                                                            convertAliasToAddress(carolEthAddress))
                                                     .gas(250_000L)
                                                     .saveResultTo(CAROL_TOKEN_BALANCE);
 
                                     final var subop17 =
-                                            contractCallLocal(contract, BALANCE_OF, daveEthAddress)
+                                            contractCallLocal(
+                                                            contract,
+                                                            BALANCE_OF,
+                                                            convertAliasToAddress(daveEthAddress))
                                                     .gas(250_000L)
                                                     .saveResultTo("daveTokenBalance");
 
                                     final var subop18 =
                                             contractCallLocal(
-                                                            contract, BALANCE_OF, issuerEthAddress)
+                                                            contract,
+                                                            BALANCE_OF,
+                                                            convertAliasToAddress(issuerEthAddress))
                                                     .gas(250_000L)
                                                     .saveResultTo(ISSUER_TOKEN_BALANCE);
 
@@ -1238,7 +1290,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCallLocal(
                                                             inlineTestContract,
                                                             GET_CODE_SIZE,
-                                                            contractAddress)
+                                                            convertAliasToAddress(contractAddress))
                                                     .saveResultTo(
                                                             "simpleStorageContractCodeSizeBytes")
                                                     .gas(300_000L);
@@ -1279,7 +1331,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCallLocal(
                                                             inlineTestContract,
                                                             GET_CODE_SIZE,
-                                                            acctAddress)
+                                                            convertAliasToAddress(acctAddress))
                                                     .saveResultTo("fakeCodeSizeBytes")
                                                     .gas(300_000L);
 
@@ -1315,7 +1367,10 @@ public class ContractCallSuite extends HapiApiSuite {
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
-                        contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, DEPOSIT_AMOUNT)
+                        contractCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(DEPOSIT_AMOUNT))
                                 .via(PAY_TXN)
                                 .sending(DEPOSIT_AMOUNT))
                 .then(
@@ -1342,7 +1397,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAY_RECEIVABLE_CONTRACT,
                                                                 DEPOSIT,
-                                                                DEPOSIT_AMOUNT)
+                                                                BigInteger.valueOf(DEPOSIT_AMOUNT))
                                                         .via(PAY_TXN)
                                                         .sending(DEPOSIT_AMOUNT);
                                         final var subOp3 =
@@ -1364,7 +1419,10 @@ public class ContractCallSuite extends HapiApiSuite {
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
-                        contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, DEPOSIT_AMOUNT)
+                        contractCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(DEPOSIT_AMOUNT))
                                 .via(PAY_TXN)
                                 .sending(DEPOSIT_AMOUNT))
                 .then(
@@ -1401,14 +1459,24 @@ public class ContractCallSuite extends HapiApiSuite {
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", 5, 42).gas(300_000L),
+                        contractCall(
+                                        SIMPLE_UPDATE_CONTRACT,
+                                        "set",
+                                        BigInteger.valueOf(5),
+                                        BigInteger.valueOf(42))
+                                .gas(300_000L),
                         contractCall(
                                         SIMPLE_UPDATE_CONTRACT,
                                         "del",
-                                        "0x0000000000000000000000000000000000000002")
+                                        convertAliasToAddress(
+                                                "0x0000000000000000000000000000000000000002"))
                                 .gas(1_000_000L))
                 .then(
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", 15, 434)
+                        contractCall(
+                                        SIMPLE_UPDATE_CONTRACT,
+                                        "set",
+                                        BigInteger.valueOf(15),
+                                        BigInteger.valueOf(434))
                                 .gas(350_000L)
                                 .hasKnownStatus(CONTRACT_DELETED),
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
@@ -1521,7 +1589,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                         contract,
                                         DEPOSIT,
                                         TRANSFER_AMOUNT,
-                                        0,
+                                        0L,
                                         "So we out-danced thought...")
                                 .via("noLogsCallTxn")
                                 .sending(TRANSFER_AMOUNT),
@@ -1529,7 +1597,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                         contract,
                                         DEPOSIT,
                                         TRANSFER_AMOUNT,
-                                        5,
+                                        5L,
                                         "So we out-danced thought...")
                                 .via("loggedCallTxn")
                                 .sending(TRANSFER_AMOUNT))
@@ -1644,7 +1712,10 @@ public class ContractCallSuite extends HapiApiSuite {
                                 (spec, ignore) -> {
                                     final var subop1 = balanceSnapshot("balanceBefore3", civilian);
                                     final var subop2 =
-                                            contractCall(SIMPLE_STORAGE_CONTRACT, "set", 999_999L)
+                                            contractCall(
+                                                            SIMPLE_STORAGE_CONTRACT,
+                                                            "set",
+                                                            BigInteger.valueOf(999_999L))
                                                     .payingWith(civilian)
                                                     .gas(300_000L)
                                                     .hasKnownStatus(SUCCESS)
@@ -1706,7 +1777,10 @@ public class ContractCallSuite extends HapiApiSuite {
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var subop1 =
-                                            contractCall(contract, DEPOSIT, 1_000L)
+                                            contractCall(
+                                                            contract,
+                                                            DEPOSIT,
+                                                            BigInteger.valueOf(1_000L))
                                                     .payingWith(PAYER)
                                                     .gas(300_000L)
                                                     .via(DEPOSIT)
@@ -1723,13 +1797,17 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             KILL_ME,
-                                                            contractAccountId.getAccountNum())
+                                                            convertAliasToAddress(
+                                                                    contractAccountId))
                                                     .payingWith(PAYER)
                                                     .gas(300_000L)
                                                     .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID);
 
                                     final var subop4 =
-                                            contractCall(contract, KILL_ME, 999_999L)
+                                            contractCall(
+                                                            contract,
+                                                            KILL_ME,
+                                                            convertAliasToAddress(new byte[20]))
                                                     .payingWith(PAYER)
                                                     .gas(300_000L)
                                                     .hasKnownStatus(INVALID_SOLIDITY_ADDRESS);
@@ -1739,7 +1817,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             KILL_ME,
-                                                            receiverAccountId.getAccountNum())
+                                                            convertAliasToAddress(
+                                                                    receiverAccountId))
                                                     .payingWith(PAYER)
                                                     .gas(300_000L)
                                                     .via("selfDestruct")
@@ -1800,8 +1879,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            accountAddress,
-                                                            1)
+                                                            convertAliasToAddress(accountAddress),
+                                                            BigInteger.ONE)
                                                     .payingWith(CONTRACT_CALLER)
                                                     .gas(300_000)
                                                     .alsoSigningWithFullPrefix("receivableKey");
@@ -1810,8 +1889,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            accountAddress,
-                                                            1)
+                                                            convertAliasToAddress(accountAddress),
+                                                            BigInteger.ONE)
                                                     .payingWith(RECEIVABLE_SIG_REQ_ACCOUNT)
                                                     .gas(300_000)
                                                     .hasKnownStatus(SUCCESS);
@@ -1840,8 +1919,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            accountAddress,
-                                                            1)
+                                                            convertAliasToAddress(accountAddress),
+                                                            BigInteger.ONE)
                                                     .gas(300_000)
                                                     .hasKnownStatus(INVALID_SIGNATURE);
                                     allRunFor(spec, call);
@@ -1855,7 +1934,11 @@ public class ContractCallSuite extends HapiApiSuite {
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", 5, 42)
+                        contractCall(
+                                        SIMPLE_UPDATE_CONTRACT,
+                                        "set",
+                                        BigInteger.valueOf(5),
+                                        BigInteger.valueOf(42))
                                 .gas(300_000L)
                                 .via(CALL_TX))
                 .then(
@@ -1883,7 +1966,11 @@ public class ContractCallSuite extends HapiApiSuite {
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", 5, 42)
+                        contractCall(
+                                        SIMPLE_UPDATE_CONTRACT,
+                                        "set",
+                                        BigInteger.valueOf(5),
+                                        BigInteger.valueOf(42))
                                 .gas(300_000L)
                                 .via(CALL_TX))
                 .then(
@@ -1912,7 +1999,11 @@ public class ContractCallSuite extends HapiApiSuite {
                         UtilVerbs.overriding(CONTRACTS_MAX_GAS_PER_SEC, "100"))
                 .when()
                 .then(
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", 5, 42)
+                        contractCall(
+                                        SIMPLE_UPDATE_CONTRACT,
+                                        "set",
+                                        BigInteger.valueOf(5),
+                                        BigInteger.valueOf(42))
                                 .gas(101L)
                                 .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
@@ -1940,8 +2031,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            receiverAddr,
-                                                            10)
+                                                            convertAliasToAddress(receiverAddr),
+                                                            BigInteger.valueOf(10))
                                                     .payingWith(ACCOUNT)
                                                     .logged();
                                     allRunFor(spec, transferCall);
@@ -1994,8 +2085,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             subLevelContract,
                                                             "subLevelNonPayableCall",
-                                                            subLevelSolidityAddr,
-                                                            20L)
+                                                            convertAliasToAddress(
+                                                                    subLevelSolidityAddr),
+                                                            BigInteger.valueOf(20L))
                                                     .hasKnownStatus(
                                                             ResponseCodeEnum
                                                                     .CONTRACT_REVERT_EXECUTED);
@@ -2016,8 +2108,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                     topLevelContract,
                                                     "subLevelPayableCall",
-                                                    subLevelSolidityAddr,
-                                                    20);
+                                                    convertAliasToAddress(subLevelSolidityAddr),
+                                                    BigInteger.valueOf(20L));
                                     allRunFor(spec, cc);
                                 }),
                         getAccountBalance(topLevelContract).hasTinyBars(INITIAL_CONTRACT_BALANCE),
@@ -2050,8 +2142,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            cto,
-                                                            10)
+                                                            convertAliasToAddress(cto),
+                                                            BigInteger.valueOf(10))
                                                     .payingWith(ACCOUNT)
                                                     .logged();
                                     allRunFor(spec, transferCall);
@@ -2088,8 +2180,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            acc,
-                                                            ONE_HUNDRED_HBARS / 2)
+                                                            convertAliasToAddress(acc),
+                                                            BigInteger.valueOf(
+                                                                    ONE_HUNDRED_HBARS / 2))
                                                     .hasKnownStatus(INVALID_SIGNATURE);
                                     allRunFor(spec, withoutReceiverSignature);
 
@@ -2097,8 +2190,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            acc,
-                                                            ONE_HUNDRED_HBARS / 2)
+                                                            convertAliasToAddress(acc),
+                                                            BigInteger.valueOf(
+                                                                    ONE_HUNDRED_HBARS / 2))
                                                     .payingWith(ACC)
                                                     .signedBy(RECEIVER_KEY)
                                                     .hasKnownStatus(SUCCESS);
@@ -2144,8 +2238,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            acc,
-                                                            10)
+                                                            convertAliasToAddress(acc),
+                                                            BigInteger.valueOf(10L))
                                                     .payingWith(ACC)
                                                     .signedBy(PAYER_KEY)
                                                     .hasPrecheck(INVALID_SIGNATURE)
@@ -2156,8 +2250,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            acc,
-                                                            10)
+                                                            convertAliasToAddress(acc),
+                                                            BigInteger.valueOf(10L))
                                                     .payingWith(ACC)
                                                     .signedBy(PAYER_KEY, OTHER_KEY)
                                                     .hasKnownStatus(SUCCESS)
@@ -2185,8 +2279,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             "transferToAddressMultipleTimes",
-                                                            receiverAddr,
-                                                            64)
+                                                            convertAliasToAddress(receiverAddr),
+                                                            BigInteger.valueOf(64))
                                                     .payingWith(ACCOUNT)
                                                     .logged();
                                     allRunFor(spec, transferCall);
@@ -2231,10 +2325,10 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             "transferToDifferentAddresses",
-                                                            receiver1Addr,
-                                                            receiver2Addr,
-                                                            receiver3Addr,
-                                                            20)
+                                                            convertAliasToAddress(receiver1Addr),
+                                                            convertAliasToAddress(receiver2Addr),
+                                                            convertAliasToAddress(receiver3Addr),
+                                                            BigInteger.valueOf(20))
                                                     .payingWith(ACCOUNT)
                                                     .logged();
                                     allRunFor(spec, transferCall);
@@ -2285,8 +2379,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             NESTED_TRANSFERRING_CONTRACT,
                                                             "transferFromDifferentAddressesToAddress",
-                                                            receiverAddr,
-                                                            40L)
+                                                            convertAliasToAddress(receiverAddr),
+                                                            BigInteger.valueOf(40L))
                                                     .payingWith(ACCOUNT)
                                                     .logged());
                                 }))
@@ -2333,7 +2427,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 NESTED_TRANSFERRING_CONTRACT,
                                                                 "transferToContractFromDifferentAddresses",
-                                                                50L)
+                                                                BigInteger.valueOf(50L))
                                                         .payingWith(ACCOUNT)
                                                         .logged())))
                 .then(
@@ -2423,7 +2517,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 NESTED_TRANSFERRING_CONTRACT,
                                                                 "transferToCallerFromDifferentAddresses",
-                                                                100L)
+                                                                BigInteger.valueOf(100L))
                                                         .payingWith(DEFAULT_CONTRACT_RECEIVER)
                                                         .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
                                                         .via(TRANSFER_TXN)
@@ -2516,10 +2610,10 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             NESTED_TRANSFERRING_CONTRACT,
                                                             "transferFromAndToDifferentAddresses",
-                                                            receiver1Addr,
-                                                            receiver2Addr,
-                                                            receiver3Addr,
-                                                            40)
+                                                            convertAliasToAddress(receiver1Addr),
+                                                            convertAliasToAddress(receiver2Addr),
+                                                            convertAliasToAddress(receiver3Addr),
+                                                            BigInteger.valueOf(40))
                                                     .payingWith(ACCOUNT)
                                                     .gas(1_000_000L)
                                                     .logged());
@@ -2557,16 +2651,16 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             "transferToAddressNegativeAmount",
-                                                            receiverAddr,
-                                                            10)
+                                                            convertAliasToAddress(receiverAddr),
+                                                            BigInteger.valueOf(10))
                                                     .payingWith(ACCOUNT)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
                                     var transferCallZeroHbars =
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             "transferToAddressNegativeAmount",
-                                                            receiverAddr,
-                                                            0)
+                                                            convertAliasToAddress(receiverAddr),
+                                                            BigInteger.ZERO)
                                                     .payingWith(ACCOUNT)
                                                     .hasKnownStatus(SUCCESS);
 
@@ -2596,7 +2690,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_CALLER,
-                                                            10)
+                                                            BigInteger.valueOf(10))
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                                     .via(transferTxn)
                                                     .logged();
@@ -2662,7 +2756,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_CALLER,
-                                                            0)
+                                                            BigInteger.ZERO)
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                                     .via(transferTxn)
                                                     .logged();
@@ -2733,8 +2827,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFERRING_CONTRACT,
                                                             TRANSFER_TO_ADDRESS,
-                                                            receiverAddr,
-                                                            0)
+                                                            convertAliasToAddress(receiverAddr),
+                                                            BigInteger.ZERO)
                                                     .payingWith(ACCOUNT)
                                                     .via(TRANSFER_TXN)
                                                     .logged();
@@ -2862,18 +2956,25 @@ public class ContractCallSuite extends HapiApiSuite {
                         sourcing(
                                 () ->
                                         contractCallWithFunctionAbi(
-                                                        farm, setSauceAbi, sauceAddr.get())
+                                                        farm,
+                                                        setSauceAbi,
+                                                        convertAliasToAddress(sauceAddr.get()))
                                                 .gas(gasToOffer)),
                         sourcing(
                                 () ->
                                         contractCallWithFunctionAbi(
-                                                        farm, transferAbi, ownerAddr.get())
+                                                        farm,
+                                                        transferAbi,
+                                                        convertAliasToAddress(ownerAddr.get()))
                                                 .gas(gasToOffer)))
                 .when(
                         sourcing(
                                 () ->
                                         contractCallWithFunctionAbi(
-                                                        farm, addPoolAbi, 2392L, lpTokenAddr.get())
+                                                        farm,
+                                                        addPoolAbi,
+                                                        BigInteger.valueOf(2392L),
+                                                        convertAliasToAddress(lpTokenAddr.get()))
                                                 .via("add")
                                                 .payingWith(OWNER)
                                                 .gas(gasToOffer)),
@@ -2881,14 +2982,22 @@ public class ContractCallSuite extends HapiApiSuite {
                         tokenUpdate(sauce).supplyKey("contractControl"),
                         sourcing(
                                 () ->
-                                        contractCallWithFunctionAbi(farm, depositAbi, 0L, 100_000)
+                                        contractCallWithFunctionAbi(
+                                                        farm,
+                                                        depositAbi,
+                                                        BigInteger.ZERO,
+                                                        BigInteger.valueOf(100_000))
                                                 .sending(ONE_HUNDRED_HBARS)
                                                 .payingWith(dev)
                                                 .gas(gasToOffer)),
                         sleepFor(1000),
                         sourcing(
                                 () ->
-                                        contractCallWithFunctionAbi(farm, depositAbi, 0L, 100_000)
+                                        contractCallWithFunctionAbi(
+                                                        farm,
+                                                        depositAbi,
+                                                        BigInteger.ZERO,
+                                                        BigInteger.valueOf(100_000))
                                                 .sending(ONE_HUNDRED_HBARS)
                                                 .payingWith(dev)
                                                 .gas(gasToOffer)
@@ -2897,7 +3006,11 @@ public class ContractCallSuite extends HapiApiSuite {
                 .then(
                         sourcing(
                                 () ->
-                                        contractCallWithFunctionAbi(farm, withdrawAbi, 0L, 200_000)
+                                        contractCallWithFunctionAbi(
+                                                        farm,
+                                                        withdrawAbi,
+                                                        BigInteger.ZERO,
+                                                        BigInteger.valueOf(200_000))
                                                 .payingWith(dev)
                                                 .gas(gasToOffer)));
     }

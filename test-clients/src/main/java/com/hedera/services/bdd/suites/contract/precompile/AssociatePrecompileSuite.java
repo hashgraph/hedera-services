@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
@@ -52,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -133,8 +135,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         contractCall(
                                         THE_GRACEFULLY_FAILING_CONTRACT,
                                         "performLessThanFourBytesFunctionCall",
-                                        ACCOUNT_ADDRESS,
-                                        TOKEN_ADDRESS)
+                                        convertAliasToAddress(ACCOUNT_ADDRESS),
+                                        convertAliasToAddress(TOKEN_ADDRESS))
                                 .notTryingAsHexedliteral()
                                 .via("Function call with less than 4 bytes txn")
                                 .gas(100_000))
@@ -151,8 +153,11 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         contractCall(
                                         THE_GRACEFULLY_FAILING_CONTRACT,
                                         "performInvalidlyFormattedFunctionCall",
-                                        ACCOUNT_ADDRESS,
-                                        List.of(TOKEN_ADDRESS, TOKEN_ADDRESS))
+                                        convertAliasToAddress(ACCOUNT_ADDRESS),
+                                        new Address[] {
+                                            convertAliasToAddress(TOKEN_ADDRESS),
+                                            convertAliasToAddress(TOKEN_ADDRESS)
+                                        })
                                 .notTryingAsHexedliteral()
                                 .via("Invalid Abi Function call txn"))
                 .then(childRecordsCheck("Invalid Abi Function call txn", SUCCESS));
@@ -168,8 +173,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         contractCall(
                                         THE_GRACEFULLY_FAILING_CONTRACT,
                                         "performNonExistingServiceFunctionCall",
-                                        ACCOUNT_ADDRESS,
-                                        TOKEN_ADDRESS)
+                                        convertAliasToAddress(ACCOUNT_ADDRESS),
+                                        convertAliasToAddress(TOKEN_ADDRESS))
                                 .notTryingAsHexedliteral()
                                 .via("nonExistingFunctionCallTxn"))
                 .then(childRecordsCheck("nonExistingFunctionCallTxn", SUCCESS));
@@ -206,16 +211,24 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "nonSupportedFunction",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("notSupportedFunctionCallTxn")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
                                                         .gas(GAS_TO_OFFER))))
@@ -239,7 +252,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     private HapiApiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        final var invalidAbiArgument = 123;
+        final var invalidAbiArgument = new byte[20];
 
         return defaultHapiSpec("InvalidlyFormattedAbiCallGracefullyFails")
                 .given(
@@ -267,8 +280,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                invalidAbiArgument)
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        invalidAbiArgument))
                                                         .payingWith(GENESIS)
                                                         .via("functionCallWithInvalidArgumentTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -276,8 +291,12 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -359,18 +378,26 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokensAssociate",
-                                                                asAddress(accountID.get()),
-                                                                List.of(
-                                                                        asAddress(
-                                                                                frozenTokenID
-                                                                                        .get()),
-                                                                        asAddress(
-                                                                                unfrozenTokenID
-                                                                                        .get()),
-                                                                        asAddress(kycTokenID.get()),
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                new Address[] {
+                                                                    convertAliasToAddress(
+                                                                            asAddress(
+                                                                                    frozenTokenID
+                                                                                            .get())),
+                                                                    convertAliasToAddress(
+                                                                            asAddress(
+                                                                                    unfrozenTokenID
+                                                                                            .get())),
+                                                                    convertAliasToAddress(
+                                                                            asAddress(
+                                                                                    kycTokenID
+                                                                                            .get())),
+                                                                    convertAliasToAddress(
+                                                                            asAddress(
+                                                                                    vanillaTokenID
+                                                                                            .get()))
+                                                                })
                                                         .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via("MultipleTokensAssociationsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -434,8 +461,12 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "associateDissociateContractCall",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via("nestedAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -505,8 +536,12 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -514,9 +549,12 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(
-                                                                        secondVanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                secondVanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("secondVanillaTokenAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -561,7 +599,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         contractCall(
                                         THE_GRACEFULLY_FAILING_CONTRACT,
                                         "performInvalidlyFormattedSingleFunctionCall",
-                                        ACCOUNT_ADDRESS)
+                                        convertAliasToAddress(ACCOUNT_ADDRESS))
                                 .notTryingAsHexedliteral()
                                 .via("Invalid Single Abi Call txn")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),

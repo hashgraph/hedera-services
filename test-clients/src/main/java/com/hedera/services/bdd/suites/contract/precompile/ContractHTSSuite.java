@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -58,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -68,6 +70,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -187,13 +190,16 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 theContract,
                                                                 "transferToAddress",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        alice)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(bob)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                alice))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                bob))),
                                                                 1L,
                                                                 2L)
                                                         .payingWith(bob)
@@ -258,10 +264,10 @@ public class ContractHTSSuite extends HapiApiSuite {
                         // signature will have to
                         // be validated via EthTxSigs, because in any case only DEFAULT_PAYER signs
                         // this call
-                        contractCall(theContract, "depositTokens", 50)
+                        contractCall(theContract, "depositTokens", 50L)
                                 .gas(GAS_TO_OFFER)
                                 .via("zeno"),
-                        contractCall(theContract, "depositTokens", 0)
+                        contractCall(theContract, "depositTokens", 0L)
                                 .gas(GAS_TO_OFFER)
                                 .via("zeroTransfers"),
                         contractCall(theContract, "withdrawTokens")
@@ -354,19 +360,26 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             asAddress(
                                                     spec.registry()
                                                             .getAccountID(theSecondReceiver));
-                                    final var accounts = List.of(sender, receiver1, receiver2);
-                                    final var amounts = List.of(-10L, 5L, 5L);
+                                    final var accounts =
+                                            new Address[] {
+                                                convertAliasToAddress(sender),
+                                                convertAliasToAddress(receiver1),
+                                                convertAliasToAddress(receiver2)
+                                            };
+                                    final var amounts = new long[] {-10L, 5L, 5L};
 
                                     allRunFor(
                                             spec,
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "distributeTokens",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(A_TOKEN)),
-                                                            accounts.toArray(),
-                                                            amounts.toArray())
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            A_TOKEN))),
+                                                            accounts,
+                                                            amounts)
                                                     .alsoSigningWithFullPrefix(ACCOUNT)
                                                     .gas(GAS_TO_OFFER)
                                                     .via("distributeTx"));
@@ -437,8 +450,13 @@ public class ContractHTSSuite extends HapiApiSuite {
                                     final var receiver2 =
                                             asAddress(
                                                     spec.registry().getAccountID(SECOND_RECEIVER));
-                                    final var accounts = List.of(sender, receiver1, receiver2);
-                                    final var amounts = List.of(-10L, 5L, 5L);
+                                    final var accounts =
+                                            new Address[] {
+                                                convertAliasToAddress(sender),
+                                                convertAliasToAddress(receiver1),
+                                                convertAliasToAddress(receiver2)
+                                            };
+                                    final var amounts = new long[] {-10L, 5L, 5L};
 
                                     /* --- HSCS-PREC-009 --- */
                                     allRunFor(
@@ -446,18 +464,23 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransfer",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(A_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(FEE_TOKEN)),
-                                                            accounts.toArray(),
-                                                            amounts.toArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(
-                                                                                    FEE_COLLECTOR)))
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            A_TOKEN))),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FEE_TOKEN))),
+                                                            accounts,
+                                                            amounts,
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            FEE_COLLECTOR))))
                                                     .gas(GAS_TO_OFFER)
                                                     .via("distributeTx")
                                                     .alsoSigningWithFullPrefix(
@@ -470,18 +493,23 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransfer",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(A_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(FEE_TOKEN)),
-                                                            accounts.toArray(),
-                                                            amounts.toArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(
-                                                                                    FEE_COLLECTOR)))
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            A_TOKEN))),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FEE_TOKEN))),
+                                                            accounts,
+                                                            amounts,
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            FEE_COLLECTOR))))
                                                     .alsoSigningWithFullPrefix(ACCOUNT)
                                                     .gas(GAS_TO_OFFER)
                                                     .via("missingSignatureTx")
@@ -493,18 +521,23 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransfer",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(A_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(FEE_TOKEN)),
-                                                            accounts.toArray(),
-                                                            amounts.toArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(
-                                                                                    RECEIVER)))
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            A_TOKEN))),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FEE_TOKEN))),
+                                                            accounts,
+                                                            amounts,
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            RECEIVER))))
                                                     .alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
                                                     .gas(GAS_TO_OFFER)
                                                     .via("failingChildFrameTx")
@@ -624,8 +657,13 @@ public class ContractHTSSuite extends HapiApiSuite {
                                     final var receiver2 =
                                             asAddress(
                                                     spec.registry().getAccountID(SECOND_RECEIVER));
-                                    final var accounts = List.of(sender, receiver1, receiver2);
-                                    final var amounts = List.of(-10L, 5L, 5L);
+                                    final var accounts =
+                                            new Address[] {
+                                                convertAliasToAddress(sender),
+                                                convertAliasToAddress(receiver1),
+                                                convertAliasToAddress(receiver2)
+                                            };
+                                    final var amounts = new long[] {-10L, 5L, 5L};
 
                                     /* --- HSCS-PREC-009 --- */
                                     allRunFor(
@@ -633,18 +671,23 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransferStaticNestedCall",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(A_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(FEE_TOKEN)),
-                                                            accounts.toArray(),
-                                                            amounts.toArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(
-                                                                                    FEE_COLLECTOR)))
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            A_TOKEN))),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FEE_TOKEN))),
+                                                            accounts,
+                                                            amounts,
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            FEE_COLLECTOR))))
                                                     .alsoSigningWithFullPrefix(
                                                             ACCOUNT, FEE_COLLECTOR)
                                                     .gas(GAS_TO_OFFER)
@@ -657,18 +700,23 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransferStaticNestedCall",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(A_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(FEE_TOKEN)),
-                                                            accounts.toArray(),
-                                                            amounts.toArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(
-                                                                                    FEE_COLLECTOR)))
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            A_TOKEN))),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FEE_TOKEN))),
+                                                            accounts,
+                                                            amounts,
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            FEE_COLLECTOR))))
                                                     .alsoSigningWithFullPrefix(ACCOUNT)
                                                     .gas(GAS_TO_OFFER)
                                                     .via("missingSignatureTx")
@@ -680,18 +728,23 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransferStaticNestedCall",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(A_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(FEE_TOKEN)),
-                                                            accounts.toArray(),
-                                                            amounts.toArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(
-                                                                                    RECEIVER)))
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            A_TOKEN))),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FEE_TOKEN))),
+                                                            accounts,
+                                                            amounts,
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            RECEIVER))))
                                                     .alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
                                                     .gas(GAS_TO_OFFER)
                                                     .via("failingChildFrameTx")
@@ -824,12 +877,22 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             outerContract,
                                                             "feeDistributionAfterTransfer",
-                                                            asAddress(tokenID.get()),
-                                                            asAddress(senderAccountID.get()),
-                                                            asAddress(tokenReceiverAccountID.get()),
-                                                            asAddress(hbarReceiverAccountID.get()),
+                                                            convertAliasToAddress(
+                                                                    asAddress(tokenID.get())),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            senderAccountID.get())),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            tokenReceiverAccountID
+                                                                                    .get())),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            hbarReceiverAccountID
+                                                                                    .get())),
                                                             AMOUNT_TO_SEND,
-                                                            CUSTOM_HBAR_FEE_AMOUNT)
+                                                            BigInteger.valueOf(
+                                                                    CUSTOM_HBAR_FEE_AMOUNT))
                                                     .alsoSigningWithFullPrefix(ACCOUNT)
                                                     .gas(GAS_TO_OFFER)
                                                     .via("distributeTx"));
@@ -918,9 +981,9 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "transferNft",
-                                                            tokenAddress,
-                                                            sender,
-                                                            receiver,
+                                                            convertAliasToAddress(tokenAddress),
+                                                            convertAliasToAddress(sender),
+                                                            convertAliasToAddress(receiver),
                                                             1L)
                                                     .alsoSigningWithFullPrefix(ACCOUNT)
                                                     .gas(GAS_TO_OFFER)
@@ -986,16 +1049,24 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             asAddress(spec.registry().getAccountID(ACCOUNT));
                                     final var receiver =
                                             asAddress(spec.registry().getAccountID(RECEIVER));
-                                    final var theSenders = List.of(sender, sender);
-                                    final var theReceivers = List.of(receiver, receiver);
-                                    final var theSerialNumbers = List.of(1L, 2L);
+                                    final var theSenders =
+                                            new Address[] {
+                                                convertAliasToAddress(sender),
+                                                convertAliasToAddress(sender)
+                                            };
+                                    final var theReceivers =
+                                            new Address[] {
+                                                convertAliasToAddress(receiver),
+                                                convertAliasToAddress(receiver)
+                                            };
+                                    final var theSerialNumbers = new long[] {1L, 2L};
 
                                     allRunFor(
                                             spec,
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "transferNfts",
-                                                            tokenAddress,
+                                                            convertAliasToAddress(tokenAddress),
                                                             theSenders,
                                                             theReceivers,
                                                             theSerialNumbers)
@@ -1063,19 +1134,25 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                     spec.registry()
                                                             .getAccountID(theSecondReceiver));
 
-                                    final var accounts = List.of(receiver1, receiver2);
-                                    final var amounts = List.of(5L, 5L);
+                                    final var accounts =
+                                            new Address[] {
+                                                convertAliasToAddress(receiver1),
+                                                convertAliasToAddress(receiver2)
+                                            };
+                                    final var amounts = new long[] {5L, 5L};
 
                                     allRunFor(
                                             spec,
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "distributeTokens",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(A_TOKEN)),
-                                                            accounts.toArray(),
-                                                            amounts.toArray())
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            A_TOKEN))),
+                                                            accounts,
+                                                            amounts)
                                                     .alsoSigningWithFullPrefix(ACCOUNT)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)

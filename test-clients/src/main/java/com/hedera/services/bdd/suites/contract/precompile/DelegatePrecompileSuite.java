@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -52,6 +53,7 @@ import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -146,10 +148,15 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "transferDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                asAddress(accountID.get()),
-                                                                asAddress(receiverID.get()),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                receiverID.get())),
                                                                 1L)
                                                         .payingWith(GENESIS)
                                                         .via(
@@ -207,10 +214,12 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "burnDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                0,
-                                                                List.of(1L))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ZERO,
+                                                                new long[] {1L})
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateBurnCallWithDelegateContractKeyTxn")
@@ -269,9 +278,11 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "mintDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ONE)
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateBurnCallWithDelegateContractKeyTxn")

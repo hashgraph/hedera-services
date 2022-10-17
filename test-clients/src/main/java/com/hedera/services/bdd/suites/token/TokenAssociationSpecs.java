@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -61,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -150,10 +152,14 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                         contractCall(
                                                         theContract,
                                                         "tokensAssociate",
-                                                        civilianMirrorAddr.get(),
-                                                        List.of(
-                                                                tokenMirrorAddr.get(),
-                                                                tokenMirrorAddr.get()))
+                                                        convertAliasToAddress(
+                                                                civilianMirrorAddr.get()),
+                                                        (new Address[] {
+                                                            convertAliasToAddress(
+                                                                    tokenMirrorAddr.get()),
+                                                            convertAliasToAddress(
+                                                                    tokenMirrorAddr.get())
+                                                        }))
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                 .via(multiAssociate)
                                                 .payingWith(civilian)

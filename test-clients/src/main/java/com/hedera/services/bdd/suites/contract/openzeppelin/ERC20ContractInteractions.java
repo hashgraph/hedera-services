@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddressInTopic;
@@ -38,6 +39,7 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,8 +70,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
         final var TRANSFER_MORE_THAN_APPROVED_FROM_TX = "transferMoreThanApproved";
         final var TRANSFER_TX = "transfer";
         final var NOT_ENOUGH_BALANCE_TRANSFER_TX = "notEnoughBalanceTransfer";
-        final var AMOUNT = 1_000;
-        final var INITIAL_AMOUNT = 5_000;
+        final var AMOUNT = BigInteger.valueOf(1_000);
+        final var INITIAL_AMOUNT = BigInteger.valueOf(5_000);
 
         return defaultHapiSpec("callsERC20ContractInteractions")
                 .given(
@@ -105,20 +107,29 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                             receiverInfo.getContractAccountID();
 
                                     final var transferParams =
-                                            new Object[] {receiverContractId, AMOUNT};
+                                            new Object[] {
+                                                convertAliasToAddress(receiverContractId), AMOUNT
+                                            };
                                     final var notEnoughBalanceTransferParams =
                                             new Object[] {
-                                                receiverContractId, INITIAL_AMOUNT - AMOUNT + 1
+                                                convertAliasToAddress(receiverContractId),
+                                                INITIAL_AMOUNT.subtract(AMOUNT).add(BigInteger.ONE)
                                             };
                                     final var approveParams =
-                                            new Object[] {receiverContractId, AMOUNT};
+                                            new Object[] {
+                                                convertAliasToAddress(receiverContractId), AMOUNT
+                                            };
                                     final var transferFromParams =
                                             new Object[] {
-                                                ownerContractId, receiverContractId, AMOUNT
+                                                convertAliasToAddress(ownerContractId),
+                                                convertAliasToAddress(receiverContractId),
+                                                AMOUNT
                                             };
                                     final var transferMoreThanApprovedFromParams =
                                             new Object[] {
-                                                ownerContractId, receiverContractId, AMOUNT + 1
+                                                convertAliasToAddress(ownerContractId),
+                                                convertAliasToAddress(receiverContractId),
+                                                AMOUNT.add(BigInteger.ONE)
                                             };
 
                                     final var transfer =
@@ -213,7 +224,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                                                                             inOrder(
                                                                                                     logWith()
                                                                                                             .longValue(
-                                                                                                                    INITIAL_AMOUNT)
+                                                                                                                    INITIAL_AMOUNT
+                                                                                                                            .longValueExact())
                                                                                                             .withTopicsInOrder(
                                                                                                                     List
                                                                                                                             .of(
@@ -244,7 +256,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                                                                             inOrder(
                                                                                                     logWith()
                                                                                                             .longValue(
-                                                                                                                    AMOUNT)
+                                                                                                                    AMOUNT
+                                                                                                                            .longValueExact())
                                                                                                             .withTopicsInOrder(
                                                                                                                     List
                                                                                                                             .of(
@@ -279,7 +292,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                                                                             inOrder(
                                                                                                     logWith()
                                                                                                             .longValue(
-                                                                                                                    AMOUNT)
+                                                                                                                    AMOUNT
+                                                                                                                            .longValueExact())
                                                                                                             .withTopicsInOrder(
                                                                                                                     List
                                                                                                                             .of(
@@ -314,7 +328,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                                                                             inOrder(
                                                                                                     logWith()
                                                                                                             .longValue(
-                                                                                                                    AMOUNT)
+                                                                                                                    AMOUNT
+                                                                                                                            .longValueExact())
                                                                                                             .withTopicsInOrder(
                                                                                                                     List
                                                                                                                             .of(

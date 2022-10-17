@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -79,17 +80,17 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    gracePeriodRestrictionsSuiteSetup(),
-                    contractCallRestrictionsEnforced(),
-                    payerRestrictionsEnforced(),
-                    cryptoTransferRestrictionsEnforced(),
-                    tokenMgmtRestrictionsEnforced(),
-                    cryptoAndContractDeleteRestrictionsEnforced(),
-                    treasuryOpsRestrictionEnforced(),
-                    tokenAutoRenewOpsEnforced(),
-                    topicAutoRenewOpsEnforced(),
-                    cryptoUpdateRestrictionsEnforced(),
-                    gracePeriodRestrictionsSuiteCleanup(),
+                    //                    gracePeriodRestrictionsSuiteSetup(),
+                    contractCallRestrictionsEnforced()
+                    //                    payerRestrictionsEnforced(),
+                    //                    cryptoTransferRestrictionsEnforced(),
+                    //                    tokenMgmtRestrictionsEnforced(),
+                    //                    cryptoAndContractDeleteRestrictionsEnforced(),
+                    //                    treasuryOpsRestrictionEnforced(),
+                    //                    tokenAutoRenewOpsEnforced(),
+                    //                    topicAutoRenewOpsEnforced(),
+                    //                    cryptoUpdateRestrictionsEnforced(),
+                    //                    gracePeriodRestrictionsSuiteCleanup(),
                 });
     }
 
@@ -121,8 +122,14 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                                                         contract,
                                                         getABIFor(FUNCTION, "donate", contract),
                                                         new Object[] {
-                                                            asAddress(civilianAccountID.get()),
-                                                            asAddress(detachedAccountID.get())
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            civilianAccountID
+                                                                                    .get())),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            detachedAccountID
+                                                                                    .get()))
                                                         })
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         getAccountBalance(civilian).hasTinyBars(0L),
@@ -136,8 +143,10 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                                                 contract,
                                                 getABIFor(FUNCTION, "donate", contract),
                                                 new Object[] {
-                                                    asAddress(civilianAccountID.get()),
-                                                    asAddress(detachedAccountID.get())
+                                                    convertAliasToAddress(
+                                                            asAddress(civilianAccountID.get())),
+                                                    convertAliasToAddress(
+                                                            asAddress(detachedAccountID.get()))
                                                 })),
                         getAccountBalance(civilian).hasTinyBars(1L),
                         getAccountBalance(detachedAccount).hasTinyBars(1L));

@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -53,6 +54,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -131,18 +133,21 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsAllowance",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        theSpender)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                theSpender))))
                                                         .payingWith(OWNER)
                                                         .via(allowanceTxn)
                                                         .hasKnownStatus(SUCCESS))))
@@ -194,15 +199,17 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsApprove",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        theSpender)),
-                                                                10)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                theSpender))),
+                                                                BigInteger.valueOf(10))
                                                         .payingWith(OWNER)
                                                         .gas(4_000_000L)
                                                         .via(approveTxn)
@@ -287,15 +294,17 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsApproveNFT",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        theSpender)),
-                                                                2L)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                theSpender))),
+                                                                BigInteger.valueOf(2L))
                                                         .payingWith(OWNER)
                                                         .gas(4_000_000L)
                                                         .via(approveTxn))))
@@ -395,18 +404,21 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsIsApprovedForAll",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))))
                                                         .payingWith(OWNER)
                                                         .via(approvedForAllTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -414,18 +426,21 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsIsApprovedForAll",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))))
                                                         .payingWith(OWNER)
                                                         .via(notApprovedTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -506,11 +521,12 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsGetApproved",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(allowanceTxn)
                                                         .hasKnownStatus(SUCCESS))))
@@ -580,14 +596,16 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsSetApprovalForAll",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        theSpender)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                theSpender))),
                                                                 true)
                                                         .payingWith(OWNER)
                                                         .gas(5_000_000L)

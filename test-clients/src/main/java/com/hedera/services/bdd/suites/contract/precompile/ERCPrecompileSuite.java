@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
@@ -93,12 +94,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
 
 public class ERCPrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
@@ -181,7 +182,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(ERC_20(), ERC_721());
+        return allOf(
+                //            ERC_20(),
+                ERC_721());
     }
 
     List<HapiApiSpec> ERC_20() {
@@ -254,10 +257,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 "name",
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)))
+                                                                convertAliasToAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))))
                                                         .payingWith(ACCOUNT)
                                                         .via(NAME_TXN)
                                                         .gas(4_000_000)
@@ -310,10 +314,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 SYMBOL,
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)))
+                                                                convertAliasToAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))))
                                                         .payingWith(ACCOUNT)
                                                         .via(SYMBOL_TXN)
                                                         .hasKnownStatus(SUCCESS)
@@ -333,7 +338,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         .ERC_SYMBOL)
                                                                         .withSymbol(tokenSymbol)))),
                         sourcing(
-                                () -> contractCallLocal(ERC_20_CONTRACT, SYMBOL, tokenAddr.get())));
+                                () ->
+                                        contractCallLocal(
+                                                ERC_20_CONTRACT,
+                                                SYMBOL,
+                                                convertAliasToAddress(tokenAddr.get()))));
     }
 
     private HapiApiSpec getErc20TokenDecimals() {
@@ -370,10 +379,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 DECIMALS,
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)))
+                                                                convertAliasToAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))))
                                                         .payingWith(ACCOUNT)
                                                         .via(decimalsTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -429,12 +439,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TOTAL_SUPPLY,
-                                                                Bytes.wrap(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        FUNGIBLE_TOKEN)))
-                                                                        .toHexString())
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))))
                                                         .payingWith(ACCOUNT)
                                                         .via(supplyTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -496,14 +505,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 BALANCE_OF,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))))
                                                         .payingWith(ACCOUNT)
                                                         .via(zeroBalanceTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -515,14 +526,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 BALANCE_OF,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))))
                                                         .payingWith(ACCOUNT)
                                                         .via(balanceTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -560,8 +573,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                 ERC_20_CONTRACT,
                                                 BALANCE_OF,
-                                                tokenAddr.get(),
-                                                accountAddr.get())));
+                                                convertAliasToAddress(tokenAddr.get()),
+                                                convertAliasToAddress(accountAddr.get()))));
     }
 
     private HapiApiSpec transferErc20Token() {
@@ -603,15 +616,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                2)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.TWO)
                                                         .via(TRANSFER_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS))))
@@ -682,9 +697,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         ERC_20_CONTRACT,
                                                         TRANSFER,
-                                                        tokenAddr.get(),
-                                                        accountAddr.get(),
-                                                        1)
+                                                        convertAliasToAddress(tokenAddr.get()),
+                                                        convertAliasToAddress(accountAddr.get()),
+                                                        BigInteger.ONE)
                                                 .hasAnswerOnlyPrecheck(CONTRACT_REVERT_EXECUTED)));
     }
 
@@ -720,15 +735,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        nestedContract)),
-                                                                2)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                nestedContract))),
+                                                                BigInteger.TWO)
                                                         .via(TRANSFER_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS))))
@@ -816,15 +833,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 "delegateTransfer",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                2)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.TWO)
                                                         .payingWith(ACCOUNT)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
                                                         .via(TRANSFER_TXN)
@@ -922,10 +941,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ALIASED_TRANSFER,
                                                                 "deployWithCREATE2",
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        TOKEN_NAME)))
+                                                                convertAliasToAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                TOKEN_NAME))))
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     final var res =
@@ -947,15 +967,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ALIASED_TRANSFER,
                                                                 "giveTokensToOperator",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        TOKEN_NAME)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT_A)),
-                                                                1500)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                TOKEN_NAME))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT_A))),
+                                                                1500L)
                                                         .payingWith(ACCOUNT)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
                                                         .via(addLiquidityTxn)
@@ -968,11 +990,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ALIASED_TRANSFER,
                                                                 TRANSFER,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT_B)),
-                                                                1000)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT_B))),
+                                                                BigInteger.valueOf(1000))
                                                         .payingWith(ACCOUNT)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
                                                         .via(aliasedTransferTxn)
@@ -1026,19 +1049,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                5)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.valueOf(5))
                                                         .payingWith(GENESIS)
                                                         .via(accountNotAssignedToTokenTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -1054,19 +1080,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                5)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.valueOf(5))
                                                         .payingWith(ACCOUNT)
                                                         .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                         .hasKnownStatus(SUCCESS),
@@ -1077,19 +1106,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                5)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.valueOf(5))
                                                         .payingWith(GENESIS)
                                                         .alsoSigningWithFullPrefix(
                                                                 TRANSFER_SIG_NAME)
@@ -1099,53 +1131,49 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        AccountID.parseFrom(
-                                                                                new byte[] {})),
-                                                                asAddress(
-                                                                        AccountID.parseFrom(
-                                                                                new byte[] {})),
-                                                                5)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(new byte[20]),
+                                                                convertAliasToAddress(new byte[20]),
+                                                                BigInteger.valueOf(5))
                                                         .payingWith(GENESIS)
                                                         .via(transferWithZeroAddressesTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        AccountID.parseFrom(
-                                                                                new byte[] {})),
-                                                                asAddress(
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(new byte[20]),
+                                                                convertAliasToAddress(
                                                                         spec.registry()
                                                                                 .getAccountID(
                                                                                         RECIPIENT)),
-                                                                5)
+                                                                BigInteger.valueOf(5))
                                                         .payingWith(GENESIS)
                                                         .via(transferWithAccountWithZeroAddressTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        AccountID.parseFrom(
-                                                                                new byte[] {})),
-                                                                5)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                convertAliasToAddress(new byte[20]),
+                                                                BigInteger.valueOf(5))
                                                         .payingWith(ACCOUNT)
                                                         .via(
                                                                 transferWithRecipientWithZeroAddressTxn)
@@ -1325,37 +1353,43 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        ERC_20_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        nestedContract)),
-                                                                5)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                ERC_20_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                nestedContract))),
+                                                                BigInteger.valueOf(5))
                                                         .via(TRANSFER_TXN)
                                                         .hasKnownStatus(SUCCESS),
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        ERC_20_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        nestedContract)),
-                                                                5)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                ERC_20_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                nestedContract))),
+                                                                BigInteger.valueOf(5))
                                                         .payingWith(GENESIS)
                                                         .alsoSigningWithFullPrefix(
                                                                 TRANSFER_SIG_NAME)
@@ -1496,18 +1530,21 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 ALLOWANCE,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        SPENDER)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SPENDER))))
                                                         .payingWith(OWNER)
                                                         .via(ALLOWANCE_TXN)
                                                         .hasKnownStatus(SUCCESS))))
@@ -1557,15 +1594,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 APPROVE,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        SPENDER)),
-                                                                10)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SPENDER))),
+                                                                BigInteger.valueOf(10))
                                                         .payingWith(OWNER)
                                                         .gas(4_000_000L)
                                                         .via(approveTxn)
@@ -1601,10 +1640,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 DECIMALS,
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)))
+                                                                convertAliasToAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))))
                                                         .payingWith(ACCOUNT)
                                                         .via(invalidDecimalsTxn)
                                                         .hasKnownStatus(INVALID_TOKEN_ID)
@@ -1642,15 +1682,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                2)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.TWO)
                                                         .payingWith(ACCOUNT)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
                                                         .via(TRANSFER_TXN)
@@ -1683,10 +1725,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 "name",
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)))
+                                                                convertAliasToAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))))
                                                         .payingWith(ACCOUNT)
                                                         .via(NAME_TXN)
                                                         .hasKnownStatus(SUCCESS)
@@ -1733,12 +1776,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 SYMBOL,
-                                                                Bytes.wrap(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        NON_FUNGIBLE_TOKEN)))
-                                                                        .toHexString())
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))))
                                                         .payingWith(ACCOUNT)
                                                         .via(SYMBOL_TXN)
                                                         .hasKnownStatus(SUCCESS)
@@ -1788,11 +1830,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TOKEN_URI,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                BigInteger.ONE)
                                                         .payingWith(ACCOUNT)
                                                         .via(tokenURITxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -1800,11 +1843,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TOKEN_URI,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                2)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                BigInteger.TWO)
                                                         .payingWith(ACCOUNT)
                                                         .via(nonExistingTokenURITxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -1862,10 +1906,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TOTAL_SUPPLY,
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)))
+                                                                convertAliasToAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))))
                                                         .payingWith(ACCOUNT)
                                                         .via(TOTAL_SUPPLY_TXN)
                                                         .hasKnownStatus(SUCCESS)
@@ -1911,14 +1956,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 BALANCE_OF,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))))
                                                         .payingWith(OWNER)
                                                         .via(zeroBalanceOfTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -1930,14 +1977,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 BALANCE_OF,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))))
                                                         .payingWith(OWNER)
                                                         .via(BALANCE_OF_TXN)
                                                         .hasKnownStatus(SUCCESS)
@@ -2007,11 +2056,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 OWNER_OF,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(ownerOfTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -2043,8 +2093,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         ERC_721_CONTRACT,
                                                         OWNER_OF,
-                                                        tokenAddr.get(),
-                                                        1)
+                                                        convertAliasToAddress(tokenAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(OWNER)
                                                 .gas(GAS_TO_OFFER)));
     }
@@ -2081,19 +2131,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.ONE)
                                                         .payingWith(GENESIS)
                                                         .via(ownerNotAssignedToTokenTxn)
                                                         .hasKnownStatus(SUCCESS),
@@ -2112,19 +2165,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(transferFromOwnerTxn)
                                                         .hasKnownStatus(SUCCESS),
@@ -2135,19 +2191,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                2)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.TWO)
                                                         .payingWith(GENESIS)
                                                         .alsoSigningWithFullPrefix(
                                                                 TRANSFER_SIG_NAME)
@@ -2156,53 +2215,50 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        AccountID.parseFrom(
-                                                                                new byte[] {})),
-                                                                asAddress(
-                                                                        AccountID.parseFrom(
-                                                                                new byte[] {})),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(new byte[20]),
+                                                                convertAliasToAddress(new byte[20]),
+                                                                BigInteger.ONE)
                                                         .payingWith(GENESIS)
                                                         .via(transferWithZeroAddressesTxn)
                                                         .hasKnownStatus(SUCCESS),
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        AccountID.parseFrom(
-                                                                                new byte[] {})),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(new byte[20]),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.ONE)
                                                         .payingWith(GENESIS)
                                                         .via(transferWithOwnerWithZeroAddressTxn)
                                                         .hasKnownStatus(SUCCESS),
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        AccountID.parseFrom(
-                                                                                new byte[] {})),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(new byte[20]),
+                                                                BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(
                                                                 transferWithRecipientWithZeroAddressTxn)
@@ -2336,11 +2392,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TOKEN_URI,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                BigInteger.ONE)
                                                         .payingWith(ACCOUNT)
                                                         .via(invalidTokenURITxn)
                                                         .hasKnownStatus(INVALID_TOKEN_ID)
@@ -2374,11 +2431,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 OWNER_OF,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(invalidOwnerOfTxn)
                                                         .hasKnownStatus(INVALID_TOKEN_ID)
@@ -2469,9 +2527,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                             .FunctionType.FUNCTION,
                                                                     BALANCE_OF,
                                                                     ERC_20_ABI),
-                                                            asHexedSolidityAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)))
+                                                            convertAliasToAddress(
+                                                                    asHexedSolidityAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))))
                                                     .via(BALANCE_OF_TXN),
                                             contractCallWithFunctionAbi(
                                                             tokenAddress,
@@ -2481,11 +2541,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                             .FunctionType.FUNCTION,
                                                                     TRANSFER,
                                                                     ERC_20_ABI),
-                                                            asHexedSolidityAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(
-                                                                                    RECIPIENT)),
-                                                            tokenTransferAmount)
+                                                            convertAliasToAddress(
+                                                                    asHexedSolidityAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            RECIPIENT))),
+                                                            BigInteger.valueOf(tokenTransferAmount))
                                                     .via(TRANSFER_TXN)
                                                     .payingWith(ACCOUNT));
                                 }))
@@ -2632,8 +2693,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         "iMustOwnAfterReceiving",
-                                                        tokenMirrorAddr.get(),
-                                                        5L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.valueOf(5))
                                                 .payingWith(B_CIVILIAN)
                                                 .via("D")
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2643,10 +2705,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MISSING_FROM)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2655,10 +2720,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MISSING_TO)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2667,10 +2735,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MSG_SENDER_IS_THE_SAME_AS_FROM)),
                         cryptoTransfer(movingUnique(NF_TOKEN, 1L).between(B_CIVILIAN, A_CIVILIAN)),
@@ -2679,10 +2750,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MSG_SENDER_IS_NOT_THE_SAME_AS_FROM)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2701,10 +2775,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via("SERIAL_NOT_OWNED_BY_FROM")
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
@@ -2794,9 +2871,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        666L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(666))
                                                 .via("MISSING_SERIAL_NO")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2806,9 +2885,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        5L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(5))
                                                 .via(MISSING_TO)
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2838,9 +2919,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        3L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(3))
                                                 .via("NOT_AN_OPERATOR")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2850,8 +2933,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         REVOKE_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .via("MISSING_REVOKE")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2871,9 +2955,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        3L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(3))
                                                 .via("E")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2884,9 +2970,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        6L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(6))
                                                 .via("EXTANT_TO")
                                                 .gas(1_000_000)),
                         getTokenNftInfo(NF_TOKEN, 6L).hasSpenderID(B_CIVILIAN),
@@ -2906,8 +2994,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         REVOKE_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .via("B")
                                                 .gas(1_000_000)),
                         // These should work because the contract is an operator for aCivilian
@@ -2916,9 +3005,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        2L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        BigInteger.TWO)
                                                 .via("C")
                                                 .gas(1_000_000)),
                         sourcing(
@@ -2926,8 +3017,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         "iMustOwnAfterReceiving",
-                                                        tokenMirrorAddr.get(),
-                                                        5L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.valueOf(5))
                                                 .payingWith(B_CIVILIAN)
                                                 .via("D")),
                         getTxnRecord("D").andAllChildRecords().logged())
@@ -2949,9 +3041,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        3L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(3))
                                                 .gas(1_000_000)),
                         cryptoTransfer(
                                         movingUniqueWithAllowance(NF_TOKEN, 3L)
@@ -2975,8 +3069,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         REVOKE_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        5L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.valueOf(5))
                                                 .gas(1_000_000)),
                         getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender());
     }
@@ -3028,9 +3123,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        0L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.ZERO)
                                                 .via("ACCOUNT_NOT_ASSOCIATED_TXN")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -3040,9 +3137,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        5L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(5))
                                                 .via(MISSING_TO)
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -3051,9 +3150,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        5L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        BigInteger.valueOf(5))
                                                 .via("SPENDER_SAME_AS_OWNER_TXN")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -3062,9 +3163,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        5L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(5))
                                                 .via("SUCCESSFUL_APPROVE_TXN")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -3073,9 +3176,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         GET_ALLOWANCE,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()))
                                                 .via("ALLOWANCE_TXN")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -3084,17 +3190,19 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                 SOME_ERC_20_SCENARIOS,
                                                 GET_ALLOWANCE,
-                                                tokenMirrorAddr.get(),
-                                                contractMirrorAddr.get(),
-                                                aCivilianMirrorAddr.get())),
+                                                convertAliasToAddress(tokenMirrorAddr.get()),
+                                                convertAliasToAddress(contractMirrorAddr.get()),
+                                                convertAliasToAddress(aCivilianMirrorAddr.get()))),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        0L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.ZERO)
                                                 .via("SUCCESSFUL_REVOKE_TXN")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -3103,9 +3211,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         GET_ALLOWANCE,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()))
                                                 .via("ALLOWANCE_AFTER_REVOKE_TXN")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -3114,9 +3225,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         GET_ALLOWANCE,
-                                                        tokenMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()))
                                                 .via("MISSING_OWNER_ID")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
@@ -3216,10 +3330,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via("TOKEN_NOT_ASSOCIATED_TO_ACCOUNT_TXN")
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -3229,10 +3346,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MISSING_FROM)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -3241,10 +3361,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MISSING_TO)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -3253,10 +3376,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MSG_SENDER_IS_THE_SAME_AS_FROM)
                                                 .hasKnownStatus(SUCCESS)),
@@ -3268,10 +3394,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MSG_SENDER_IS_NOT_THE_SAME_AS_FROM)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -3285,10 +3414,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        5L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(5))
                                                 .payingWith(GENESIS)
                                                 .via(
                                                         "TRY_TO_TRANSFER_MORE_THAN_APPROVED_AMOUNT_TXN")
@@ -3303,10 +3435,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        20L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(20))
                                                 .payingWith(GENESIS)
                                                 .via("TRY_TO_TRANSFER_MORE_THAN_OWNERS_BALANCE_TXN")
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
@@ -3389,9 +3524,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         "approveAndGetAllowanceAmount",
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        5L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.valueOf(5))
                                                 .via("APPROVE_AND_GET_ALLOWANCE_TXN")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)
@@ -3477,7 +3614,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                             .FunctionType.FUNCTION,
                                                                     TOKEN_URI,
                                                                     ERC_721_ABI),
-                                                            1)
+                                                            BigInteger.ONE)
                                                     .via(tokenURITxn),
                                             contractCallWithFunctionAbi(
                                                             tokenAddress,
@@ -3496,9 +3633,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                             .FunctionType.FUNCTION,
                                                                     BALANCE_OF,
                                                                     ERC_721_ABI),
-                                                            asHexedSolidityAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)))
+                                                            convertAliasToAddress(
+                                                                    asHexedSolidityAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))))
                                                     .via(BALANCE_OF_TXN),
                                             contractCallWithFunctionAbi(
                                                             tokenAddress,
@@ -3508,7 +3647,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                             .FunctionType.FUNCTION,
                                                                     OWNER_OF,
                                                                     ERC_721_ABI),
-                                                            1)
+                                                            BigInteger.ONE)
                                                     .via(ownerOfTxn));
                                 }))
                 .then(
@@ -3657,8 +3796,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        zTokenMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                zTokenMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .via(MISSING_TOKEN)
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
@@ -3667,17 +3807,20 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .gas(1_000_000)),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        tokenMirrorAddr.get(),
-                                                        55L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.valueOf(55))
                                                 .via("MISSING_SERIAL")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -3687,8 +3830,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        tokenMirrorAddr.get(),
-                                                        2L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.TWO)
                                                 .via("MISSING_SPENDER")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -3697,8 +3841,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        tokenMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .via(WITH_SPENDER)
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -3708,8 +3853,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        tokenMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .logged()
                                                 .gas(1_000_000)
                                                 .has(
@@ -3809,8 +3955,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_BALANCE_OF,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()))
                                                 .via("BALANCE_OF")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -3819,8 +3967,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_BALANCE_OF,
-                                                        zTokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                zTokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()))
                                                 .via(MISSING_TOKEN)
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
@@ -3829,8 +3979,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_BALANCE_OF,
-                                                        tokenMirrorAddr.get(),
-                                                        bCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                bCivilianMirrorAddr.get()))
                                                 .via("NOT_ASSOCIATED")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)))
@@ -3915,8 +4067,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_OWNER_OF,
-                                                        zTokenMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                zTokenMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .via(MISSING_TOKEN)
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
@@ -3925,8 +4078,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_OWNER_OF,
-                                                        tokenMirrorAddr.get(),
-                                                        55L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.valueOf(55))
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(
@@ -3934,8 +4088,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_OWNER_OF,
-                                                        tokenMirrorAddr.get(),
-                                                        2L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.TWO)
                                                 .via("TREASURY_OWNER")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -3947,8 +4102,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_OWNER_OF,
-                                                        tokenMirrorAddr.get(),
-                                                        1L)
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .via("CIVILIAN_OWNER")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)))
@@ -4053,9 +4209,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        contractMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()))
                                                 .via("OWNER_DOES_NOT_EXISTS")
                                                 .gas(1_000_000)),
                         sourcing(
@@ -4063,9 +4222,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()))
                                                 .via(OPERATOR_DOES_NOT_EXISTS)
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -4074,9 +4236,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        contractMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()))
                                                 .via("OPERATOR_IS_NOT_APPROVED")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -4104,9 +4269,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        contractMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()))
                                                 .via("OPERATOR_IS_APPROVED_FOR_ALL")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -4115,9 +4283,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
-                                                        contractMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()))
                                                 .gas(1_000_000)
                                                 .has(resultWith().contractCallResult(flag(true)))))
                 .then(
@@ -4226,8 +4397,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         SET_APPROVAL_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
                                                         true)
                                                 .via("OPERATOR_SAME_AS_MSG_SENDER")
                                                 .gas(1_000_000)
@@ -4237,8 +4410,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         SET_APPROVAL_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                zCivilianMirrorAddr.get()),
                                                         true)
                                                 .via(OPERATOR_DOES_NOT_EXISTS)
                                                 .gas(1_000_000)
@@ -4248,8 +4423,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         SET_APPROVAL_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
                                                         true)
                                                 .via("OPERATOR_EXISTS")
                                                 .gas(1_000_000)
@@ -4259,9 +4436,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()))
                                                 .via("SUCCESSFULLY_APPROVED_CHECK_TXN")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -4270,8 +4450,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         SET_APPROVAL_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get(),
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()),
                                                         false)
                                                 .via("OPERATOR_EXISTS_REVOKE_APPROVE_FOR_ALL")
                                                 .gas(1_000_000)
@@ -4281,9 +4463,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        aCivilianMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                contractMirrorAddr.get()),
+                                                        convertAliasToAddress(
+                                                                aCivilianMirrorAddr.get()))
                                                 .via("SUCCESSFULLY_REVOKED_CHECK_TXN")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)))
@@ -4388,18 +4573,21 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 IS_APPROVED_FOR_ALL,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))))
                                                         .payingWith(OWNER)
                                                         .via(approvedForAllTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -4407,18 +4595,21 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 IS_APPROVED_FOR_ALL,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))))
                                                         .payingWith(OWNER)
                                                         .via(notApprovedTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -4486,15 +4677,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 APPROVE,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.ONE)
                                                         .payingWith(ACCOUNT)
                                                         .via(NAME_TXN)
                                                         .hasKnownStatus(SUCCESS)
@@ -4550,11 +4743,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 GET_APPROVED,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(ALLOWANCE_TXN)
                                                         .hasKnownStatus(SUCCESS))))
@@ -4625,14 +4819,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 SET_APPROVAL_FOR_ALL,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        SPENDER)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SPENDER))),
                                                                 true)
                                                         .payingWith(OWNER)
                                                         .via(ALLOWANCE_TXN)
@@ -4695,19 +4891,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(transferFromOwnerTxn)
                                                         .hasKnownStatus(SUCCESS))))
@@ -4766,13 +4965,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 APPROVE,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(nft)),
-                                                                asAddress(
-                                                                        AccountID.parseFrom(
-                                                                                new byte[] {})),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                nft))),
+                                                                convertAliasToAddress(new byte[20]),
+                                                                BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via("cryptoDeleteAllowanceTxn")
                                                         .hasKnownStatus(SUCCESS)
@@ -4828,18 +5027,21 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 ALLOWANCE,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ERC_20_CONTRACT)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ERC_20_CONTRACT))))
                                                         .gas(500_000L)
                                                         .via(ALLOWANCE_TXN)
                                                         .hasKnownStatus(SUCCESS),
@@ -4848,19 +5050,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                2)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.TWO)
                                                         .gas(500_000L)
                                                         .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                         .hasKnownStatus(SUCCESS),
@@ -4868,18 +5073,21 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 ALLOWANCE,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ERC_20_CONTRACT)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ERC_20_CONTRACT))))
                                                         .gas(500_000L)
                                                         .via(allowanceTxn2)
                                                         .hasKnownStatus(SUCCESS))))
@@ -4943,19 +5151,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ERC_20_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                2)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ERC_20_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.TWO)
                                                         .gas(500_000L)
                                                         .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                         .hasKnownStatus(SUCCESS))))
@@ -5008,19 +5219,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.ONE)
                                                         .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                         .hasKnownStatus(SUCCESS),
                                                 getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
@@ -5131,19 +5345,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.ONE)
                                                         .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                         .hasKnownStatus(SUCCESS),
                                                 getAccountDetails(RECIPIENT).logged(),

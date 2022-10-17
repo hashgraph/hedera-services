@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -58,9 +59,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
-import static java.lang.System.arraycopy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -131,7 +132,15 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1269,38 +1278,20 @@ public class UtilVerbs {
 
     public static class TokenTransferListBuilder {
         private Tuple tokenTransferList;
-        private byte[] token;
-        private boolean isSingleList = true;
-
-        public TokenTransferListBuilder isSingleList(final boolean isSingleList) {
-            this.isSingleList = isSingleList;
-            return this;
-        }
+        private Address token;
 
         public TokenTransferListBuilder forToken(final TokenID token) {
-            this.token = getAddressWithFilledEmptyBytes(asAddress(token));
+            this.token = convertAliasToAddress(asAddress(token));
             return this;
         }
 
         public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
-            if (isSingleList) {
-                this.tokenTransferList =
-                        Tuple.singleton(
-                                new Tuple[] {Tuple.of(token, accountAmounts, new Tuple[] {})});
-            } else {
-                this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] {});
-            }
+            this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] {});
             return this;
         }
 
         public TokenTransferListBuilder withNftTransfers(final Tuple... nftTransfers) {
-            if (isSingleList) {
-                this.tokenTransferList =
-                        Tuple.singleton(
-                                new Tuple[] {Tuple.of(token, new Tuple[] {}, nftTransfers)});
-            } else {
-                this.tokenTransferList = Tuple.of(token, new Tuple[] {}, nftTransfers);
-            }
+            this.tokenTransferList = Tuple.of(token, new Tuple[] {}, nftTransfers);
             return this;
         }
 
@@ -1310,30 +1301,26 @@ public class UtilVerbs {
     }
 
     public static class TokenTransferListsBuilder {
-        private Tuple tokenTransferLists;
+        private Tuple[] tokenTransferLists;
 
         public TokenTransferListsBuilder withTokenTransferList(final Tuple... tokenTransferLists) {
-            this.tokenTransferLists = Tuple.singleton(tokenTransferLists);
+            this.tokenTransferLists = tokenTransferLists;
             return this;
         }
 
-        public Tuple build() {
-            return tokenTransferLists;
+        public Object build() {
+            return (Object) tokenTransferLists;
         }
     }
 
     public static Tuple accountAmount(final AccountID account, final Long amount) {
-        final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(account));
-
-        return Tuple.of(account32, amount);
+        return Tuple.of(convertAliasToAddress(account), amount);
     }
 
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
-        final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(sender));
-        final byte[] receiver32 = getAddressWithFilledEmptyBytes(asAddress(receiver));
-
-        return Tuple.of(account32, receiver32, serialNumber);
+        return Tuple.of(
+                convertAliasToAddress(sender), convertAliasToAddress(receiver), serialNumber);
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
@@ -1371,11 +1358,5 @@ public class UtilVerbs {
         }
 
         return privateKeyByteArray;
-    }
-
-    private static byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {
-        final var address32 = new byte[32];
-        arraycopy(address20, 0, address32, 12, 20);
-        return address32;
     }
 }

@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -76,7 +77,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.ArrayList;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -240,7 +241,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         newKeyNamed(DELEGATE_KEY)
                                 .shape(delegateContractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(DELEGATE_KEY),
-                        contractCall(BURN_TOKEN, "burnToken", 1, new ArrayList<Long>())
+                        contractCall(BURN_TOKEN, "burnToken", BigInteger.ONE, new long[0])
                                 .via("burn with delegate contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -266,7 +267,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(contractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(CONTRACT_KEY),
-                        contractCall(BURN_TOKEN, "burnToken", 1, new ArrayList<Long>())
+                        contractCall(BURN_TOKEN, "burnToken", BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -341,10 +342,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "transferDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                asAddress(accountID.get()),
-                                                                asAddress(receiverID.get()),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                receiverID.get())),
                                                                 1L)
                                                         .payingWith(GENESIS)
                                                         .alsoSigningWithFullPrefix(ACCOUNT)
@@ -413,10 +419,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "transferDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                asAddress(accountID.get()),
-                                                                asAddress(receiverID.get()),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                receiverID.get())),
                                                                 1L)
                                                         .payingWith(GENESIS)
                                                         .via(
@@ -478,10 +489,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                0,
-                                                                List.of(1L))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ZERO,
+                                                                new long[] {1L})
                                                         .payingWith(GENESIS)
                                                         .via("delegateBurnCallWithContractKeyTxn")
                                                         .hasKnownStatus(
@@ -541,9 +554,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "mintDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ONE)
                                                         .payingWith(GENESIS)
                                                         .via("delegateBurnCallWithContractKeyTxn")
                                                         .hasKnownStatus(
@@ -598,9 +613,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "dissociateStaticCall",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("staticDissociateCallTxn")
                                                         .hasKnownStatus(
@@ -659,10 +677,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "transferStaticCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                asAddress(accountID.get()),
-                                                                asAddress(receiverID.get()),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                receiverID.get())),
                                                                 1L)
                                                         .payingWith(GENESIS)
                                                         .via("staticTransferCallWithContractKeyTxn")
@@ -710,10 +733,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnStaticCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                0,
-                                                                List.of(1L))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ZERO,
+                                                                new long[] {1L})
                                                         .payingWith(GENESIS)
                                                         .via("staticBurnCallWithContractKeyTxn")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -758,9 +783,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "mintStaticCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ONE)
                                                         .payingWith(GENESIS)
                                                         .via("staticBurnCallWithContractKeyTxn")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -820,10 +847,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "transferStaticCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                asAddress(accountID.get()),
-                                                                asAddress(receiverID.get()),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                receiverID.get())),
                                                                 1L)
                                                         .payingWith(GENESIS)
                                                         .via(
@@ -876,10 +908,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnStaticCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                0,
-                                                                List.of(1L))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ZERO,
+                                                                new long[] {1L})
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "staticBurnCallWithDelegateContractKeyTxn")
@@ -929,9 +963,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "mintStaticCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                1)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ONE)
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "staticBurnCallWithDelegateContractKeyTxn")
@@ -974,9 +1010,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "associateStaticCall",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("staticAssociateCallTxn")
                                                         .hasKnownStatus(
@@ -1027,12 +1066,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "mintTokenCall",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)),
-                                                                amount,
-                                                                new byte[] {})
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))),
+                                                                BigInteger.valueOf(amount),
+                                                                new byte[][] {})
                                                         .via(firstMintTxn)
                                                         .payingWith(theAccount))))
                 .then(
@@ -1100,12 +1140,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "mintTokenCall",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)),
-                                                                amount,
-                                                                new byte[] {})
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))),
+                                                                BigInteger.valueOf(amount),
+                                                                new byte[][] {})
                                                         .via(firstMintTxn)
                                                         .payingWith(theAccount))))
                 .then(
@@ -1171,17 +1212,21 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "transferNFTCall",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(NFT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECEIVER)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
                                                                 1L)
                                                         .fee(ONE_HBAR)
                                                         .hasKnownStatus(SUCCESS)
@@ -1248,17 +1293,21 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "transferNFTCall",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(NFT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECEIVER)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
                                                                 1L)
                                                         .fee(ONE_HBAR)
                                                         .hasKnownStatus(SUCCESS)
@@ -1316,8 +1365,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -1365,8 +1418,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -1423,8 +1480,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn")
@@ -1436,8 +1497,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "tokenDissociateWithDelegateContractKeyHappyTxn")
@@ -1505,8 +1570,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "nonZeroTokenBalanceDissociateWithContractKeyFailedTxn")
@@ -1518,8 +1587,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "tokenDissociateWithContractKeyHappyTxn")
@@ -1580,7 +1653,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                         DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
                                                 sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(DELEGATE_KEY),
-                        contractCall(BURN_TOKEN, "burnToken", 1, new ArrayList<Long>())
+                        contractCall(BURN_TOKEN, "burnToken", BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -1641,9 +1714,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "associateDelegateCall",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateAssociateCallWithDelegateContractKeyTxn")
@@ -1701,9 +1777,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "dissociateDelegateCall",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateDissociateCallWithDelegateContractKeyTxn")
@@ -1749,8 +1828,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -1766,8 +1848,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -1775,8 +1860,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTSecondAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -1850,8 +1938,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(treasuryID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                treasuryID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateFromTreasuryFailedTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -1859,8 +1952,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "tokenDissociateWithDelegateContractKeyFailedTxn")
@@ -1873,8 +1970,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn")
@@ -1886,8 +1987,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "tokenDissociateWithDelegateContractKeyHappyTxn")
@@ -1975,8 +2080,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "frozenTokenAssociateWithDelegateContractKeyTxn")
@@ -1986,8 +2095,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "UnfrozenTokenAssociateWithDelegateContractKeyTxn")
@@ -2051,8 +2164,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "kycTokenDissociateWithDelegateContractKeyFailedTxn")
@@ -2062,8 +2178,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "kycTokenDissociateWithDelegateContractKeyHappyTxn")
@@ -2132,8 +2251,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(treasuryID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                treasuryID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("NFTDissociateFromTreasuryFailedTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2141,8 +2265,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "NFTDissociateWithDelegateContractKeyFailedTxn")
@@ -2155,8 +2283,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "nonZeroNFTBalanceDissociateWithDelegateContractKeyFailedTxn")
@@ -2168,8 +2300,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "NFTDissociateWithDelegateContractKeyHappyTxn")
@@ -2259,8 +2395,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "frozenNFTAssociateWithDelegateContractKeyTxn")
@@ -2270,8 +2410,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "UnfrozenNFTAssociateWithDelegateContractKeyTxn")
@@ -2337,8 +2481,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "kycNFTDissociateWithDelegateContractKeyFailedTxn")
@@ -2348,8 +2495,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "kycNFTDissociateWithDelegateContractKeyHappyTxn")
@@ -2407,8 +2557,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2424,8 +2578,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2433,8 +2591,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTSecondAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2500,8 +2662,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaNFTAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2517,8 +2683,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaNFTAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2526,8 +2696,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaNFTSecondAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2592,8 +2766,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2609,8 +2786,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2618,8 +2798,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(kycTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                kycTokenID.get())))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenSecondAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2686,8 +2869,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2703,8 +2890,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2712,8 +2903,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(frozenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                frozenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenSecondAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2777,8 +2972,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2794,8 +2993,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2803,8 +3006,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenSecondAssociateFailsTxn")
                                                         .gas(GAS_TO_OFFER)
@@ -2878,9 +3085,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "associateDelegateCall",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateAssociateCallWithContractKeyTxn")
@@ -2937,9 +3147,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "dissociateDelegateCall",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()))
+                                                                convertAliasToAddress(
+                                                                        asAddress(accountID.get())),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())))
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateDissociateCallWithContractKeyTxn")
@@ -2990,7 +3203,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(CONTRACT_KEY),
-                        contractCall(BURN_TOKEN, "burnToken", 1, new ArrayList<Long>())
+                        contractCall(BURN_TOKEN, "burnToken", BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -3046,12 +3259,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "burnTokenCall",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)),
-                                                                1,
-                                                                new ArrayList<Long>())
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))),
+                                                                BigInteger.ONE,
+                                                                new long[0])
                                                         .via(firstBurnTxn)
                                                         .payingWith(theAccount)
                                                         .signedBy(MULTI_KEY)
@@ -3060,12 +3274,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "burnTokenCall",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)),
-                                                                1,
-                                                                new ArrayList<Long>())
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))),
+                                                                BigInteger.ONE,
+                                                                new long[0])
                                                         .via(secondBurnTxn)
                                                         .payingWith(theAccount)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -3153,44 +3368,48 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnCallAfterNestedMintCallWithPrecompileCall",
-                                                                1,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)))
+                                                                BigInteger.ONE,
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))))
                                                         .payingWith(theAccount)
                                                         .via(
                                                                 "burnCallAfterNestedMintCallWithPrecompileCall"),
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall",
-                                                                1,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)))
+                                                                BigInteger.ONE,
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))))
                                                         .payingWith(theAccount)
                                                         .via(
                                                                 "burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall"),
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall",
-                                                                1,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)))
+                                                                BigInteger.ONE,
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))))
                                                         .payingWith(theAccount)
                                                         .via(
                                                                 "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall"),
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall",
-                                                                1,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)))
+                                                                BigInteger.ONE,
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))))
                                                         .payingWith(theAccount)
                                                         .via(
                                                                 "burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall"))),
@@ -3211,33 +3430,36 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnDelegateCallAfterNestedMintCallWithPrecompileCall",
-                                                                1,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)))
+                                                                BigInteger.ONE,
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))))
                                                         .payingWith(theAccount)
                                                         .via(
                                                                 "burnDelegateCallAfterNestedMintCallWithPrecompileCall"),
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall",
-                                                                1,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)))
+                                                                BigInteger.ONE,
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))))
                                                         .payingWith(theAccount)
                                                         .via(
                                                                 "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall"),
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnCallAfterNestedMintDelegateCallWithPrecompileCall",
-                                                                1,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)))
+                                                                BigInteger.ONE,
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))))
                                                         .payingWith(theAccount)
                                                         .via(
                                                                 "burnCallAfterNestedMintDelegateCallWithPrecompileCall"))),
@@ -3258,11 +3480,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnCallAfterNestedMintCallWithPrecompileDelegateCall",
-                                                                1,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        fungibleToken)))
+                                                                BigInteger.ONE,
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                fungibleToken))))
                                                         .payingWith(theAccount)
                                                         .via(
                                                                 "burnCallAfterNestedMintCallWithPrecompileDelegateCall"))),

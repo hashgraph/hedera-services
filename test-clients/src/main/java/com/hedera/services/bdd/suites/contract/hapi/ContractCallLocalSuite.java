@@ -171,7 +171,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
         final var decimalsABI =
                 "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
                         + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
-                        + "\"type\": \"function\"},";
+                        + "\"type\": \"function\"}";
 
         return defaultHapiSpec("erc20Queries")
                 .given(tokenCreate(TOKEN).decimals(DECIMALS).symbol(SYMBOL).asCallableContract())

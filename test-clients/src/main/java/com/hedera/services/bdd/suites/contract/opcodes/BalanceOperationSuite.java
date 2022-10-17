@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -34,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.math.BigInteger;
 import java.util.List;
@@ -65,15 +67,29 @@ public class BalanceOperationSuite extends HapiApiSuite {
                         contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, "balanceOf", INVALID_ADDRESS)
+                        contractCall(
+                                        contract,
+                                        "balanceOf",
+                                        HapiParserUtil.convertAliasToAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-                        contractCallLocal(contract, "balanceOf", INVALID_ADDRESS)
+                        contractCallLocal(
+                                        contract,
+                                        "balanceOf",
+                                        HapiParserUtil.convertAliasToAddress(INVALID_ADDRESS))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var id = spec.registry().getAccountID(ACCOUNT);
                                     final var contractID = spec.registry().getContractId(contract);
-                                    final var solidityAddress = asHexedSolidityAddress(id);
+                                    //                                    final var solidityAddress
+                                    // = asHexedSolidityAddress(id);
+                                    //                                    final var solidityAddress
+                                    // =
+                                    //
+                                    // HapiParserUtil.convertSolidityAddressToHeadlongAddress(
+                                    //
+                                    // (asHexedSolidityAddress(id)));
+                                    final var solidityAddress = convertAliasToAddress(id);
                                     final var contractAddress = asHexedSolidityAddress(contractID);
 
                                     final var call =
@@ -120,7 +136,10 @@ public class BalanceOperationSuite extends HapiApiSuite {
 
                                     final var contractCallLocal =
                                             contractCallLocal(
-                                                            contract, "balanceOf", contractAddress)
+                                                            contract,
+                                                            "balanceOf",
+                                                            HapiParserUtil.convertAliasToAddress(
+                                                                    contractAddress))
                                                     .has(
                                                             ContractFnResultAsserts.resultWith()
                                                                     .resultThruAbi(

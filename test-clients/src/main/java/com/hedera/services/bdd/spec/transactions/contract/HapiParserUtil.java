@@ -15,13 +15,15 @@
  */
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static org.ethereum.crypto.HashUtil.sha3;
+import static java.lang.System.arraycopy;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
-import java.util.Arrays;
-import org.ethereum.util.ByteUtil;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
+import com.hederahashgraph.api.proto.java.AccountID;
+import org.apache.tuweni.bytes.Bytes;
+import org.jetbrains.annotations.NotNull;
 
 public class HapiParserUtil {
 
@@ -29,35 +31,69 @@ public class HapiParserUtil {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    private static final String ADDRESS_ABI_TYPE = "address";
-    private static final String ADDRESS_ENCODE_TYPE = "bytes32";
-
     public static byte[] encodeParametersWithTuple(final Object[] params, final String abi) {
         byte[] callData = new byte[] {};
 
-        final var abiFunction = Function.fromJson(abi);
-        final var signatureParameters = abiFunction.getInputs().toString();
-        final var signature = abiFunction.getName() + signatureParameters;
-        final var argumentTypes =
-                signatureParameters.replace(ADDRESS_ABI_TYPE, ADDRESS_ENCODE_TYPE);
-        final var paramsAsTuple = Tuple.of(params);
+        if (!abi.isEmpty() && !abi.contains("<empty>")) {
+            final var abiFunction = Function.fromJson(abi);
+            callData = abiFunction.encodeCallWithArgs(params).array();
+        }
 
-        final var tupleEncoded = getTupleAsBytes(paramsAsTuple, argumentTypes);
-        callData = ByteUtil.merge(callData, tupleEncoded);
-
-        return ByteUtil.merge(encodeSignature(signature), callData);
+        return callData;
     }
 
-    private static byte[] getTupleAsBytes(final Tuple argumentValues, final String argumentTypes) {
-        final TupleType tupleType = TupleType.parse(argumentTypes);
-        return tupleType.encode(argumentValues.get(0)).array();
+    public static Address convertAliasToAddress(final AccountID account) {
+        final var besuAddress = asTypedEvmAddress(account);
+        return convertBesuAddressToHeadlongAddress(besuAddress);
     }
 
-    private static byte[] encodeSignature(final String functionSignature) {
-        return Arrays.copyOfRange(encodeSignatureLong(functionSignature), 0, 4);
+    public static Address convertAliasToAddress(final String address) {
+        final var addressBytes =
+                Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 
-    private static byte[] encodeSignatureLong(final String functionSignature) {
-        return sha3(functionSignature.getBytes());
+    public static Address convertAliasToAddress(final byte[] address) {
+        final var addressBytes = Bytes.wrap(address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static org.hyperledger.besu.datatypes.Address asTypedEvmAddress(final AccountID id) {
+        return org.hyperledger.besu.datatypes.Address.wrap(Bytes.wrap(asEvmAddress(id)));
+    }
+
+    public static byte[] asEvmAddress(final AccountID id) {
+        return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+    }
+
+    public static byte[] asEvmAddress(final int shard, final long realm, final long num) {
+        final byte[] evmAddress = new byte[20];
+
+        arraycopy(Ints.toByteArray(shard), 0, evmAddress, 0, 4);
+        arraycopy(Longs.toByteArray(realm), 0, evmAddress, 4, 8);
+        arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
+
+        return evmAddress;
+    }
+
+    public static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
+        byte[] expandedArray = new byte[32];
+
+        System.arraycopy(
+                bytesToExpand,
+                0,
+                expandedArray,
+                expandedArray.length - bytesToExpand.length,
+                bytesToExpand.length);
+        return expandedArray;
+    }
+
+    static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(
+            @NotNull final org.hyperledger.besu.datatypes.Address address) {
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(
+                        address.toUnsignedBigInteger()));
     }
 }

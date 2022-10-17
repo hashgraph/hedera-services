@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -52,7 +53,7 @@ public class StaticCallOperationSuite extends HapiApiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, "staticcall", INVALID_ADDRESS)
+                        contractCall(contract, "staticcall", convertAliasToAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
                         withOpContext(
                                 (spec, opLog) -> {
@@ -61,12 +62,17 @@ public class StaticCallOperationSuite extends HapiApiSuite {
                                             HapiPropertySource.asHexedSolidityAddress(id);
 
                                     final var contractCall =
-                                            contractCall(contract, "staticcall", solidityAddress)
+                                            contractCall(
+                                                            contract,
+                                                            "staticcall",
+                                                            convertAliasToAddress(solidityAddress))
                                                     .hasKnownStatus(SUCCESS);
 
                                     final var contractCallLocal =
                                             contractCallLocal(
-                                                    contract, "staticcall", solidityAddress);
+                                                    contract,
+                                                    "staticcall",
+                                                    convertAliasToAddress(solidityAddress));
 
                                     allRunFor(spec, contractCall, contractCallLocal);
                                 }));

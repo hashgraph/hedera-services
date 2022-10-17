@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.expandByteArrayTo32Length;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -131,7 +132,10 @@ public class SStoreSuite extends HapiApiSuite {
                                             sizeNow < MAX_CONTRACT_STORAGE_KB;
                                             sizeNow += step) {
                                         final var subOp1 =
-                                                contractCall(contract, "growTo", sizeNow)
+                                                contractCall(
+                                                                contract,
+                                                                "growTo",
+                                                                BigInteger.valueOf(sizeNow))
                                                         .gas(GAS_TO_OFFER)
                                                         .logged();
                                         subOps.add(subOp1);
@@ -149,8 +153,9 @@ public class SStoreSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 contract,
                                                                 "changeArray",
-                                                                ThreadLocalRandom.current()
-                                                                        .nextInt(1000))
+                                                                BigInteger.valueOf(
+                                                                        ThreadLocalRandom.current()
+                                                                                .nextInt(1000)))
                                                         .logged();
                                         subOps.add(subOp1);
                                     }
@@ -182,18 +187,18 @@ public class SStoreSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 contract,
                                                                 "growChild",
-                                                                0,
-                                                                kbPerStep,
-                                                                17)
+                                                                BigInteger.valueOf(0),
+                                                                BigInteger.valueOf(kbPerStep),
+                                                                BigInteger.valueOf(17))
                                                         .gas(MAX_CONTRACT_GAS)
                                                         .via("small" + childKbStorage);
                                         final var subOp2 =
                                                 contractCall(
                                                                 contract,
                                                                 "growChild",
-                                                                1,
-                                                                kbPerStep,
-                                                                19)
+                                                                BigInteger.valueOf(1),
+                                                                BigInteger.valueOf(kbPerStep),
+                                                                BigInteger.valueOf(19))
                                                         .gas(MAX_CONTRACT_GAS)
                                                         .via("large" + childKbStorage);
                                         final var subOp3 =
@@ -207,23 +212,23 @@ public class SStoreSuite extends HapiApiSuite {
                 .then(
                         flattened(
                                 valuesMatch(contract, 19, 17, 19),
-                                contractCall(contract, "setZeroReadOne", 23),
+                                contractCall(contract, "setZeroReadOne", BigInteger.valueOf(23)),
                                 valuesMatch(contract, 23, 23, 19),
-                                contractCall(contract, "setBoth", 29),
+                                contractCall(contract, "setBoth", BigInteger.valueOf(29)),
                                 valuesMatch(contract, 29, 29, 29)));
     }
 
     private HapiSpecOperation[] valuesMatch(
             final String contract, final long parent, final long child0, final long child1) {
         return new HapiSpecOperation[] {
-            contractCallLocal(contract, "getChildValue", 0)
+            contractCallLocal(contract, "getChildValue", BigInteger.ZERO)
                     .has(
                             resultWith()
                                     .resultThruAbi(
                                             getABIFor(FUNCTION, "getChildValue", contract),
                                             isLiteralResult(
                                                     new Object[] {BigInteger.valueOf(child0)}))),
-            contractCallLocal(contract, "getChildValue", 1)
+            contractCallLocal(contract, "getChildValue", BigInteger.ONE)
                     .has(
                             resultWith()
                                     .resultThruAbi(
@@ -243,6 +248,7 @@ public class SStoreSuite extends HapiApiSuite {
     private HapiApiSpec benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
+        var value = Bytes.fromHexString("0x05").toArray();
         return defaultHapiSpec("SimpleStorage")
                 .given(
                         cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
@@ -252,7 +258,7 @@ public class SStoreSuite extends HapiApiSuite {
                                 .payingWith("payer")
                                 .via("creationTx")
                                 .gas(GAS_LIMIT),
-                        contractCall(contract, "twoSSTOREs", Bytes.fromHexString("0x05").toArray())
+                        contractCall(contract, "twoSSTOREs", expandByteArrayTo32Length(value))
                                 .gas(GAS_LIMIT)
                                 .via("storageTx"))
                 .then(
@@ -278,8 +284,10 @@ public class SStoreSuite extends HapiApiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
-                        contractCall(contract, "holdTemporary", 10).via("tempHoldTx"),
-                        contractCall(contract, "holdPermanently", 10).via("permHoldTx"))
+                        contractCall(contract, "holdTemporary", BigInteger.valueOf(10))
+                                .via("tempHoldTx"),
+                        contractCall(contract, "holdPermanently", BigInteger.valueOf(10))
+                                .via("permHoldTx"))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {

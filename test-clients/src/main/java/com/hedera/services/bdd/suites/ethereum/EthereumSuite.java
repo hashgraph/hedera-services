@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
@@ -260,7 +261,7 @@ public class EthereumSuite extends HapiApiSuite {
                                             ethereumCall(
                                                             PAY_RECEIVABLE_CONTRACT,
                                                             "deposit",
-                                                            depositAmount)
+                                                            BigInteger.valueOf(depositAmount))
                                                     .type(EthTxData.EthTransactionType.EIP1559)
                                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                                     .payingWith(RELAYER)
@@ -411,7 +412,10 @@ public class EthereumSuite extends HapiApiSuite {
                 .when(
                         balanceSnapshot(relayerSnapshot, RELAYER),
                         balanceSnapshot(senderSnapshot, SECP_256K1_SOURCE_KEY).accountIsAlias(),
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        "deposit",
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -490,7 +494,7 @@ public class EthereumSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
-                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", 5)
+                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -556,7 +560,7 @@ public class EthereumSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
-                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", 5)
+                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -624,7 +628,7 @@ public class EthereumSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
-                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", 5)
+                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .nonce(0)
                                 .via(mintTxn)
@@ -854,15 +858,16 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                 SECP_256K1_SOURCE_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
+                                                                convertAliasToAddress(
                                                                         spec.registry()
                                                                                 .getAccountID(
                                                                                         feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                convertAliasToAddress(
                                                                         spec.registry()
                                                                                 .getAccountID(
                                                                                         RELAYER)),

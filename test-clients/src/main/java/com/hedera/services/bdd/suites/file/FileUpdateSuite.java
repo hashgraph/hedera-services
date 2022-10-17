@@ -424,15 +424,19 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 "100_000_000")))
                 .when(
                         /* The first call to insert adds 5 mappings */
-                        contractCall(contract, INSERT_ABI, 1, 1)
+                        contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer),
                         /* Each subsequent call to adds 3 mappings; so 8 total after this */
-                        contractCall(contract, INSERT_ABI, 2, 4)
+                        contractCall(contract, INSERT_ABI, BigInteger.TWO, BigInteger.valueOf(4))
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer),
                         /* And this one fails because 8 + 3 = 11 > 10 */
-                        contractCall(contract, INSERT_ABI, 3, 9)
+                        contractCall(
+                                        contract,
+                                        INSERT_ABI,
+                                        BigInteger.valueOf(3),
+                                        BigInteger.valueOf(9))
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(MAX_CONTRACT_STORAGE_EXCEEDED)
                                 .gas(gasToOffer),
@@ -445,7 +449,11 @@ public class FileUpdateSuite extends HapiApiSuite {
                                         Map.of(
                                                 INDIVIDUAL_KV_LIMIT_PROP, "1_000_000_000",
                                                 AGGREGATE_KV_LIMIT_PROP, "1")),
-                        contractCall(contract, INSERT_ABI, 3, 9)
+                        contractCall(
+                                        contract,
+                                        INSERT_ABI,
+                                        BigInteger.valueOf(3),
+                                        BigInteger.valueOf(9))
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED)
                                 .gas(gasToOffer),
@@ -462,10 +470,18 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 DEFAULT_MAX_KV_PAIRS,
                                                 CONS_MAX_GAS_PROP,
                                                 DEFAULT_MAX_CONS_GAS)),
-                        contractCall(contract, INSERT_ABI, 3, 9)
+                        contractCall(
+                                        contract,
+                                        INSERT_ABI,
+                                        BigInteger.valueOf(3),
+                                        BigInteger.valueOf(9))
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer),
-                        contractCall(contract, INSERT_ABI, 4, 16)
+                        contractCall(
+                                        contract,
+                                        INSERT_ABI,
+                                        BigInteger.valueOf(4),
+                                        BigInteger.valueOf(16))
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer),
                         getContractInfo(contract).has(contractWith().numKvPairs(14)));
@@ -489,19 +505,23 @@ public class FileUpdateSuite extends HapiApiSuite {
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract),
-                        contractCall(contract, INSERT_ABI, 1, 4)
+                        contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.valueOf(4))
                                 .payingWith(civilian)
                                 .gas(gasToOffer)
                                 .via(unrefundedTxn))
                 .when(
                         usableTxnIdNamed(refundedTxn).payerId(civilian),
-                        contractCall(contract, INSERT_ABI, 2, 4)
+                        contractCall(contract, INSERT_ABI, BigInteger.TWO, BigInteger.valueOf(4))
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer)
                                 .hasAnyStatusAtAll()
                                 .deferStatusResolution(),
                         uncheckedSubmit(
-                                        contractCall(contract, INSERT_ABI, 3, 4)
+                                        contractCall(
+                                                        contract,
+                                                        INSERT_ABI,
+                                                        BigInteger.valueOf(3),
+                                                        BigInteger.valueOf(4))
                                                 .signedBy(civilian)
                                                 .gas(gasToOffer)
                                                 .txnId(refundedTxn))
@@ -657,14 +677,14 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 "staking.fees.stakingRewardPercentage",
                                 "0"),
                         // Validate free tier is respected
-                        contractCall(slotUser, "consumeB", 1L).via(bSet),
+                        contractCall(slotUser, "consumeB", BigInteger.ONE).via(bSet),
                         getTxnRecord(bSet).hasNonStakingChildRecordCount(0),
                         contractCallLocal(slotUser, "slotB")
                                 .exposingTypedResultsTo(
                                         results -> assertEquals(BigInteger.ONE, results[0])),
                         overriding(FREE_PRICE_TIER_PROP, "0"),
                         // And validate auto-renew account must be storage fees must be payable
-                        contractCall(slotUser, "consumeA", 2L, 3L)
+                        contractCall(slotUser, "consumeA", BigInteger.TWO, BigInteger.valueOf(3))
                                 .gas(oddGasAmount)
                                 .via(failedSet)
                                 .hasKnownStatus(INSUFFICIENT_BALANCES_FOR_STORAGE_RENT),
@@ -684,7 +704,8 @@ public class FileUpdateSuite extends HapiApiSuite {
                                         results -> assertEquals(BigInteger.ZERO, results[0])),
                         // Now fund the contract's auto-renew account and confirm payment accepted
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, autoRenew, 5 * ONE_HBAR)),
-                        contractCall(slotUser, "consumeA", 2L, 1L).via(aSet),
+                        contractCall(slotUser, "consumeA", BigInteger.TWO, BigInteger.ONE)
+                                .via(aSet),
                         contractCallLocal(slotUser, "slotA")
                                 .exposingTypedResultsTo(
                                         results -> assertEquals(BigInteger.TWO, results[0])),

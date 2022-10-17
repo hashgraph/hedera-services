@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -79,6 +80,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -163,7 +165,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                         uploadInitCode(HELLO_WORLD_MINT))
                 .when(
                         sourcing(() -> contractCreate(HELLO_WORLD_MINT, fungibleNum.get())),
-                        contractCall(HELLO_WORLD_MINT, "brrr", amount)
+                        contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
@@ -173,7 +175,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
                         tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
-                        contractCall(HELLO_WORLD_MINT, "brrr", amount).via(SECOND_MINT_TXN),
+                        contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
+                                .via(SECOND_MINT_TXN),
                         getTxnRecord(SECOND_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(2 * amount))
                 .then(
@@ -294,7 +297,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                         uploadInitCode(MINT_CONTRACT),
                         sourcing(() -> contractCreate(MINT_CONTRACT, fungibleNum.get())))
                 .when(
-                        contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", amount)
+                        contractCall(
+                                        MINT_CONTRACT,
+                                        "mintFungibleTokenWithEvent",
+                                        BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
@@ -362,7 +368,11 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                         contractCall(
                                         MINT_CONTRACT,
                                         "mintNonFungibleTokenWithEvent",
-                                        Arrays.asList(TEST_METADATA_1, TEST_METADATA_2))
+                                        (Object)
+                                                new byte[][] {
+                                                    TEST_METADATA_1.getBytes(),
+                                                    TEST_METADATA_2.getBytes()
+                                                })
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
@@ -453,15 +463,19 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 NESTED_MINT_CONTRACT,
                                                                 "sendNFTAfterMint",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        TOKEN_TREASURY)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                Arrays.asList(TEST_METADATA_1),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                TOKEN_TREASURY))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                new byte[][] {
+                                                                    TEST_METADATA_1.getBytes()
+                                                                },
                                                                 1L)
                                                         .payingWith(GENESIS)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -592,15 +606,17 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 MINT_CONTRACT,
                                                                 "revertMintAfterFailedMint",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
-                                                                20)
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                20L)
                                                         .payingWith(GENESIS)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
                                                         .via(failedMintTxn)
@@ -672,11 +688,14 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 NESTED_MINT_CONTRACT,
                                                                 "revertMintAfterFailedAssociate",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                Arrays.asList(TEST_METADATA_1))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                new byte[][] {
+                                                                    TEST_METADATA_1.getBytes()
+                                                                })
                                                         .payingWith(GENESIS)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
                                                         .via(nestedMintTxn)
@@ -773,7 +792,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 .payingWith(ACCOUNT)
                                                 .gas(GAS_TO_OFFER)))
                 .then(
-                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, amount)
+                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, BigInteger.valueOf(amount))
                                 .via(baselineMintWithEnoughGas)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -799,7 +818,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 }),
                         sourcing(
                                 () ->
-                                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, amount)
+                                        contractCall(
+                                                        MINT_CONTRACT,
+                                                        MINT_FUNGIBLE_TOKEN,
+                                                        BigInteger.valueOf(amount))
                                                 .via(FIRST_MINT_TXN)
                                                 .payingWith(ACCOUNT)
                                                 .alsoSigningWithFullPrefix(MULTI_KEY)

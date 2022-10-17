@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -205,8 +206,8 @@ public class Create2OperationSuite extends HapiApiSuite {
     private HapiApiSpec inlineCreate2CanFailSafely() {
         final var tcValue = 1_234L;
         final var contract = "RevertingCreateFactory";
-        final var foo = 22;
-        final var salt = 23;
+        final var foo = BigInteger.valueOf(22);
+        final var salt = BigInteger.valueOf(23);
         final var timesToFail = 7;
         final AtomicLong factoryEntityNum = new AtomicLong();
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
@@ -231,7 +232,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         contract,
                                                         GET_BYTECODE,
-                                                        factoryEvmAddress.get(),
+                                                        convertAliasToAddress(
+                                                                factoryEvmAddress.get()),
                                                         foo)
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -282,7 +284,7 @@ public class Create2OperationSuite extends HapiApiSuite {
         final var creation = CREATION;
         final var contract = "RevertingCreateFactory";
 
-        final var foo = 22;
+        final var foo = BigInteger.valueOf(22);
         final var timesToFail = 7;
         final AtomicLong factoryEntityNum = new AtomicLong();
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
@@ -307,7 +309,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         contract,
                                                         GET_BYTECODE,
-                                                        factoryEvmAddress.get(),
+                                                        convertAliasToAddress(
+                                                                factoryEvmAddress.get()),
                                                         foo)
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -388,7 +391,7 @@ public class Create2OperationSuite extends HapiApiSuite {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
         final var testContract = "TestContract";
-        final var salt = 42;
+        final var salt = BigInteger.valueOf(42);
         final var adminKey = "adminKey";
         final var replAdminKey = "replAdminKey";
         final var entityMemo = "JUST DO IT";
@@ -437,7 +440,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         contract,
                                                         GET_BYTECODE,
-                                                        factoryEvmAddress.get(),
+                                                        convertAliasToAddress(
+                                                                factoryEvmAddress.get()),
                                                         salt)
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -711,7 +715,11 @@ public class Create2OperationSuite extends HapiApiSuite {
                         sourcing(() -> getContractInfo(userLiteralId.get()).logged()),
                         sourcing(
                                 () ->
-                                        contractCall(ercContract, "ownerOf", nftAddress.get(), 1)
+                                        contractCall(
+                                                        ercContract,
+                                                        "ownerOf",
+                                                        convertAliasToAddress(nftAddress.get()),
+                                                        BigInteger.valueOf(1))
                                                 .via(lookup)
                                                 .gas(4_000_000)))
                 .then(
@@ -831,13 +839,17 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "associateBothTo",
-                                                            hex(asSolidityAddress(ftType)))
+                                                            convertAliasToAddress(
+                                                                    hex(asSolidityAddress(ftType))))
                                                     .gas(4_000_000L);
                                     final var nftAssoc =
                                             contractCall(
                                                             contract,
                                                             "associateBothTo",
-                                                            hex(asSolidityAddress(nftType)))
+                                                            convertAliasToAddress(
+                                                                    hex(
+                                                                            asSolidityAddress(
+                                                                                    nftType))))
                                                     .gas(4_000_000L);
 
                                     final var fundingXfer =
@@ -853,22 +865,27 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "sendFtToUser",
-                                                            hex(asSolidityAddress(ftType)),
-                                                            100)
+                                                            convertAliasToAddress(
+                                                                    hex(asSolidityAddress(ftType))),
+                                                            100L)
                                                     .gas(4_000_000L);
                                     final var sendNft =
                                             contractCall(
                                                             contract,
                                                             "sendNftToUser",
-                                                            hex(asSolidityAddress(nftType)),
-                                                            1)
+                                                            convertAliasToAddress(
+                                                                    hex(
+                                                                            asSolidityAddress(
+                                                                                    nftType))),
+                                                            1L)
                                                     .via(ftFail)
                                                     .gas(4_000_000L);
                                     final var failFtDissoc =
                                             contractCall(
                                                             contract,
                                                             "dissociateBothFrom",
-                                                            hex(asSolidityAddress(ftType)))
+                                                            convertAliasToAddress(
+                                                                    hex(asSolidityAddress(ftType))))
                                                     .via(ftFail)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .gas(4_000_000L);
@@ -876,7 +893,10 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "dissociateBothFrom",
-                                                            hex(asSolidityAddress(nftType)))
+                                                            convertAliasToAddress(
+                                                                    hex(
+                                                                            asSolidityAddress(
+                                                                                    nftType))))
                                                     .via(nftFail)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .gas(4_000_000L);
@@ -889,8 +909,11 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     FUNCTION,
                                                                     "mintNft",
                                                                     userContract),
-                                                            hex(asSolidityAddress(nftType)),
-                                                            List.of("WoRtHlEsS"))
+                                                            convertAliasToAddress(
+                                                                    hex(
+                                                                            asSolidityAddress(
+                                                                                    nftType))),
+                                                            new byte[][] {"WoRtHlEsS".getBytes()})
                                                     .gas(4_000_000L);
                                     /* Can't succeed yet because supply key isn't delegatable */
                                     hexedNftType.set(hex(asSolidityAddress(nftType)));
@@ -901,8 +924,9 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     FUNCTION,
                                                                     "mintNftViaDelegate",
                                                                     userContract),
-                                                            hexedNftType.get(),
-                                                            List.of("WoRtHlEsS"))
+                                                            convertAliasToAddress(
+                                                                    hexedNftType.get()),
+                                                            new byte[][] {"WoRtHlEsS".getBytes()})
                                                     .via(helperMintFail)
                                                     .gas(4_000_000L);
 
@@ -975,8 +999,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                 FUNCTION,
                                                                 "mintNftViaDelegate",
                                                                 userContract),
-                                                        hexedNftType.get(),
-                                                        List.of("WoRtHlEsS...NOT"))
+                                                        convertAliasToAddress(hexedNftType.get()),
+                                                        new byte[][] {"WoRtHlEsS...NOT".getBytes()})
                                                 .via(helperMintSuccess)
                                                 .gas(4_000_000L)),
                         getTxnRecord(helperMintSuccess).andAllChildRecords().logged(),
@@ -1059,7 +1083,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                 FUNCTION,
                                                                 "relinquishFundsTo",
                                                                 donorContract),
-                                                        donorAliasAddr.get())
+                                                        convertAliasToAddress(donorAliasAddr.get()))
                                                 .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
                         sourcing(
                                 () ->
@@ -1069,7 +1093,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                 FUNCTION,
                                                                 "relinquishFundsTo",
                                                                 donorContract),
-                                                        donorMirrorAddr.get())
+                                                        convertAliasToAddress(
+                                                                donorMirrorAddr.get()))
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)))
                 .then(
                         contractCall(contract, "buildThenRevertThenBuild", otherSalt)
@@ -1305,7 +1330,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCall(
                                                         contract,
                                                         "callCreator",
-                                                        saltingCreatorAliasAddr.get(),
+                                                        convertAliasToAddress(
+                                                                saltingCreatorAliasAddr.get()),
                                                         salt)
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
@@ -1434,7 +1460,10 @@ public class Create2OperationSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        contractCallLocal(contract, CALL_RETURNER, mirrorAddr.get())
+                                        contractCallLocal(
+                                                        contract,
+                                                        CALL_RETURNER,
+                                                        convertAliasToAddress(mirrorAddr.get()))
                                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
@@ -1447,7 +1476,10 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                         })),
                         sourcing(
                                 () ->
-                                        contractCallLocal(contract, CALL_RETURNER, aliasAddr.get())
+                                        contractCallLocal(
+                                                        contract,
+                                                        CALL_RETURNER,
+                                                        convertAliasToAddress(aliasAddr.get()))
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -1461,12 +1493,18 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                         })),
                         sourcing(
                                 () ->
-                                        contractCall(contract, CALL_RETURNER, aliasAddr.get())
+                                        contractCall(
+                                                        contract,
+                                                        CALL_RETURNER,
+                                                        convertAliasToAddress(aliasAddr.get()))
                                                 .payingWith(GENESIS)
                                                 .via(aliasCall)),
                         sourcing(
                                 () ->
-                                        contractCall(contract, CALL_RETURNER, mirrorAddr.get())
+                                        contractCall(
+                                                        contract,
+                                                        CALL_RETURNER,
+                                                        convertAliasToAddress(mirrorAddr.get()))
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
                                                 .payingWith(GENESIS)
                                                 .via(mirrorCall)))

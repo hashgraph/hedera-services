@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
@@ -191,10 +192,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createTokenWithKeysAndExpiry",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
                                                                         .getEd25519()
@@ -203,23 +205,27 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT_TO_ASSOCIATE)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT_TO_ASSOCIATE))))
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -324,18 +330,21 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -437,14 +446,16 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
                                                             CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             spec.registry()
                                                                     .getKey(ED25519KEY)
                                                                     .getEd25519()
                                                                     .toByteArray(),
-                                                            new byte[] {},
+                                                            convertAliasToAddress(new byte[20]),
                                                             AUTO_RENEW_PERIOD)
                                                     .via(FIRST_CREATE_TXN)
                                                     .gas(GAS_TO_OFFER)
@@ -525,10 +536,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createTokenWithKeysAndExpiry",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
                                                                         .getEd25519()
@@ -537,21 +549,25 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                new byte[] {}, // set empty
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        new byte[20]), // set empty
                                                                 // autoRenewAccount
                                                                 AUTO_RENEW_PERIOD,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT_TO_ASSOCIATE)))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT_TO_ASSOCIATE))))
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -610,16 +626,20 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
                                                             CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             spec.registry()
                                                                     .getKey(ED25519KEY)
                                                                     .getEd25519()
                                                                     .toByteArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             AUTO_RENEW_PERIOD)
                                                     .via(FIRST_CREATE_TXN)
                                                     .gas(GAS_TO_OFFER)
@@ -742,22 +762,26 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createNonFungibleTokenWithCustomFees",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD,
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -857,10 +881,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ED25519KEY)
                                                                         .getEd25519()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -959,14 +984,16 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createNonFungibleTokenThenQuery",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1063,9 +1090,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
                                                             "createTokenWithEmptyKeysArray",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             AUTO_RENEW_PERIOD)
                                                     .via(FIRST_CREATE_TXN)
                                                     .gas(GAS_TO_OFFER)
@@ -1121,10 +1150,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createTokenWithKeyWithMultipleValues",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1160,14 +1190,16 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1275,10 +1307,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createTokenWithInvalidExpiry",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1329,22 +1362,26 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createNonFungibleTokenWithInvalidRoyaltyFee",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD,
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -1394,19 +1431,24 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
-                                                                ArrayUtils.toPrimitive(
-                                                                        Utils.asSolidityAddress(
-                                                                                0,
-                                                                                0,
-                                                                                999_999_999L)),
+                                                                convertAliasToAddress(
+                                                                        (byte[])
+                                                                                ArrayUtils
+                                                                                        .toPrimitive(
+                                                                                                Utils
+                                                                                                        .asSolidityAddress(
+                                                                                                                0,
+                                                                                                                0,
+                                                                                                                999_999_999L))),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
                                                                         .getEd25519()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1454,18 +1496,21 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1511,17 +1556,25 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                ArrayUtils.toPrimitive(
-                                                                        Utils.asSolidityAddress(
-                                                                                0, 0, 15252L)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        (byte[])
+                                                                                ArrayUtils
+                                                                                        .toPrimitive(
+                                                                                                Utils
+                                                                                                        .asSolidityAddress(
+                                                                                                                0,
+                                                                                                                0,
+                                                                                                                15252L))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1574,16 +1627,20 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
                                                             CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             spec.registry()
                                                                     .getKey(ED25519KEY)
                                                                     .getEd25519()
                                                                     .toByteArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            convertAliasToAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             AUTO_RENEW_PERIOD)
                                                     .via(FIRST_CREATE_TXN)
                                                     .gas(GAS_TO_OFFER)
@@ -1648,14 +1705,16 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "delegateCallCreate",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
