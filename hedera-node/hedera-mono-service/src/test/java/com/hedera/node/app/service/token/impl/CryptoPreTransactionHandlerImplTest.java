@@ -26,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.InvalidTransactionMetadata;
-import com.hedera.node.app.spi.SigTransactionMetadata;
+import com.hedera.node.app.spi.meta.impl.InvalidTransactionMetadata;
+import com.hedera.node.app.spi.meta.impl.SigTransactionMetadata;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;

@@ -20,8 +20,8 @@ import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.SigTransactionMetadata;
-import com.hedera.node.app.spi.TransactionMetadata;
+import com.hedera.node.app.spi.meta.impl.SigTransactionMetadata;
+import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.services.legacy.core.jproto.JKey;

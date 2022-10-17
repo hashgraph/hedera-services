@@ -20,8 +20,8 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
-import com.hedera.node.app.spi.InvalidTransactionMetadata;
-import com.hedera.node.app.spi.TransactionMetadata;
+import com.hedera.node.app.spi.meta.impl.InvalidTransactionMetadata;
+import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 
