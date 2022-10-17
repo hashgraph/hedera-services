@@ -15,6 +15,8 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUCCESS;
@@ -23,18 +25,30 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -65,6 +79,17 @@ class HederaMessageCallProcessorTest {
     private static final Address HTS_PRECOMPILE_ADDRESS =
             Address.fromHexString(HTS_PRECOMPILE_ADDRESS_STRING);
     private static final Address RECIPIENT_ADDRESS = Address.fromHexString("0xcafecafe01");
+    private static final BalanceChange BALANCE_CHANGE =
+            BalanceChange.changingHbar(
+                    AccountAmount.newBuilder()
+                            .setAccountID(
+                                    AccountID.newBuilder()
+                                            .setAlias(
+                                                    ByteStringUtils.wrapUnsafely(
+                                                            RECIPIENT_ADDRESS.toArrayUnsafe()))
+                                            .build())
+                            .build(),
+                    null);
     private static final Address SENDER_ADDRESS = Address.fromHexString("0xcafecafe02");
     private static final PrecompiledContract.PrecompileContractResult NO_RESULT =
             new PrecompiledContract.PrecompileContractResult(
@@ -86,6 +111,8 @@ class HederaMessageCallProcessorTest {
     @Mock private HTSPrecompiledContract htsPrecompile;
     @Mock private HederaOperationTracer hederaTracer;
     @Mock private HederaStackedWorldStateUpdater updater;
+    @Mock private AutoCreationLogic autoCreationLogic;
+    @Mock private RecordsHistorian recordsHistorian;
 
     @BeforeEach
     void setup() {
@@ -95,7 +122,9 @@ class HederaMessageCallProcessorTest {
                         precompiles,
                         Map.of(
                                 HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile,
-                                HTS_PRECOMPILE_ADDRESS_STRING, htsPrecompile));
+                                HTS_PRECOMPILE_ADDRESS_STRING, htsPrecompile),
+                        autoCreationLogic,
+                        recordsHistorian);
     }
 
     @Test
@@ -155,6 +184,25 @@ class HederaMessageCallProcessorTest {
     }
 
     @Test
+    void callsParentWhenRecipientIsNonExistentButInputDataIsPresent() {
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(frame.getValue()).willReturn(Wei.ONE);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+        given(frame.getInputData()).willReturn(Bytes.of(1));
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
+        doCallRealMethod().when(frame).setState(CODE_EXECUTING);
+        doCallRealMethod().when(frame).getState();
+
+        subject.start(frame, hederaTracer);
+
+        verify(hederaTracer, never()).tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
+        verifyNoMoreInteractions(nonHtsPrecompile, frame);
+    }
+
+    @Test
     void callsParentWithNonTokenAccountReceivingNoValue() {
         final var sender = new UpdateTrackingLedgerAccount<>(SENDER_ADDRESS, null);
         sender.setBalance(Wei.of(123));
@@ -167,6 +215,7 @@ class HederaMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
         given(updater.getSenderAccount(frame)).willReturn(sender);
         given(updater.getOrCreate(RECIPIENT_ADDRESS)).willReturn(receiver);
+        given(frame.getInputData()).willReturn(Bytes.of(22));
         doCallRealMethod().when(frame).setState(CODE_EXECUTING);
         doCallRealMethod().when(frame).getState();
 
@@ -258,5 +307,119 @@ class HederaMessageCallProcessorTest {
         verify(htsPrecompile).computeCosted(Bytes.EMPTY, frame);
         verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, output);
         verifyNoMoreInteractions(htsPrecompile, frame, operationTrace);
+    }
+
+    @Test
+    void executesLazyCreate() {
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getInputData()).willReturn(Bytes.EMPTY);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        final var gasPrice = Wei.of(5);
+        given(frame.getGasPrice()).willReturn(gasPrice);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+        final var initialGas = 1_000_000L;
+        given(frame.getRemainingGas()).willReturn(initialGas);
+        final var transactionalLedger = mock(TransactionalLedger.class);
+        given(updater.trackingAccounts()).willReturn(transactionalLedger);
+        final var creationFee = 500L;
+        given(autoCreationLogic.create(BALANCE_CHANGE, transactionalLedger, null))
+                .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
+
+        subject.start(frame, hederaTracer);
+
+        verify(frame).decrementRemainingGas(creationFee / gasPrice.toLong());
+        verify(autoCreationLogic).submitRecordsTo(recordsHistorian);
+        verify(updater)
+                .trackLazilyCreatedAccount(
+                        EntityIdUtils.asTypedEvmAddress(BALANCE_CHANGE.accountId()));
+        verify(frame, times(2)).getState();
+        verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
+    }
+
+    @Test
+    void executesLazyCreateNotSufficientGas() {
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getInputData()).willReturn(Bytes.EMPTY);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        final var gasPrice = Wei.of(5);
+        given(frame.getGasPrice()).willReturn(gasPrice);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+        final var initialGas = 50L;
+        given(frame.getRemainingGas()).willReturn(initialGas);
+        final var transactionalLedger = mock(TransactionalLedger.class);
+        given(updater.trackingAccounts()).willReturn(transactionalLedger);
+        final var change =
+                BalanceChange.changingHbar(
+                        AccountAmount.newBuilder()
+                                .setAccountID(
+                                        AccountID.newBuilder()
+                                                .setAlias(
+                                                        ByteStringUtils.wrapUnsafely(
+                                                                RECIPIENT_ADDRESS.toArrayUnsafe()))
+                                                .build())
+                                .build(),
+                        null);
+        final var creationFee = 500L;
+        given(autoCreationLogic.create(change, transactionalLedger, null))
+                .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
+
+        subject.start(frame, hederaTracer);
+
+        verify(frame).decrementRemainingGas(initialGas);
+        verify(frame).setState(EXCEPTIONAL_HALT);
+        verify(frame, times(2)).getState();
+        verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
+        verify(transactionalLedger, never()).set(change.accountId(), BALANCE, 1000L);
+        verify(autoCreationLogic).reclaimPendingAliases();
+        verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
+        verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
+    }
+
+    @Test
+    void executesLazyCreateMaxEntitiesReached() {
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getInputData()).willReturn(Bytes.EMPTY);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+        final var initialGas = 1_000_000L;
+        given(frame.getRemainingGas()).willReturn(initialGas);
+        final var transactionalLedger = mock(TransactionalLedger.class);
+        given(updater.trackingAccounts()).willReturn(transactionalLedger);
+        final BalanceChange change =
+                BalanceChange.changingHbar(
+                        AccountAmount.newBuilder()
+                                .setAccountID(
+                                        AccountID.newBuilder()
+                                                .setAlias(
+                                                        ByteStringUtils.wrapUnsafely(
+                                                                RECIPIENT_ADDRESS.toArrayUnsafe()))
+                                                .build())
+                                .build(),
+                        null);
+        given(autoCreationLogic.create(change, transactionalLedger, null))
+                .willReturn(
+                        Pair.of(
+                                ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED,
+                                0));
+
+        subject.start(frame, hederaTracer);
+
+        verify(frame).decrementRemainingGas(frame.getRemainingGas());
+        verify(frame).setState(EXCEPTIONAL_HALT);
+        verify(frame, times(2)).getState();
+        verify(hederaTracer)
+                .traceAccountCreationResult(
+                        frame, Optional.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
+        verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
+        verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }
 }

@@ -15,8 +15,11 @@
  */
 package com.hedera.services.txns.contract;
 
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -25,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -35,6 +39,7 @@ import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -53,6 +58,7 @@ import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -130,6 +136,8 @@ class ContractCallTransitionLogicTest {
                                         target.getRealmNum(),
                                         target.getContractNum())))
                 .willReturn(contractAccount);
+        //        given(properties.isAutoCreationEnabled()).willReturn(true); // TODO: maybe new
+        // flag
         // and:
         var results =
                 TransactionProcessingResult.successful(
@@ -212,6 +220,200 @@ class ContractCallTransitionLogicTest {
         verify(recordService).externaliseEvmCallTransaction(any());
         verify(worldState).getCreatedContractIds();
         verify(txnCtx).setTargetedContract(target);
+    }
+
+    @Test
+    void verifyExternaliseContractResultCallSuccessfulLazyCreate() {
+        // setup:
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+        // and:
+        var results =
+                TransactionProcessingResult.successful(
+                        null,
+                        1234L,
+                        0L,
+                        124L,
+                        Bytes.EMPTY,
+                        Address.wrap(Bytes.wrap(alias.toByteArray())),
+                        Map.of(),
+                        List.of());
+        given(
+                        evmTxProcessor.executeEth(
+                                senderAccount,
+                                Address.wrap(Bytes.wrap(alias.toByteArray())),
+                                gas,
+                                sent,
+                                Bytes.EMPTY,
+                                txnCtx.consensusTime(),
+                                biOfferedGasPrice,
+                                relayerAccount,
+                                maxGas))
+                .willReturn(results);
+        given(aliasManager.lookupIdBy(alias))
+                .willReturn(EntityNum.MISSING_NUM)
+                .willReturn(EntityNum.fromLong(666L));
+        given(properties.isAutoCreationEnabled()).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        // when:
+        subject.doStateTransitionOperation(
+                accessor.getTxn(),
+                senderAccount.getId(),
+                relayerAccount.getId(),
+                maxGas,
+                biOfferedGasPrice);
+
+        // then:
+        verify(recordService).externaliseEvmCallTransaction(any());
+        verify(worldState, never()).getCreatedContractIds();
+        verify(txnCtx).setTargetedContract(IdUtils.asContract("0.0." + 666L));
+    }
+
+    @Test
+    void verifyExternaliseFailedContractResultCallLazyCreate() {
+        // setup:
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+        // and:
+        var results =
+                TransactionProcessingResult.failed(
+                        1234L,
+                        0L,
+                        124L,
+                        Optional.of(Bytes.EMPTY),
+                        Optional.empty(),
+                        Map.of(),
+                        List.of());
+        given(
+                        evmTxProcessor.executeEth(
+                                senderAccount,
+                                Address.wrap(Bytes.wrap(alias.toByteArray())),
+                                gas,
+                                sent,
+                                Bytes.EMPTY,
+                                txnCtx.consensusTime(),
+                                biOfferedGasPrice,
+                                relayerAccount,
+                                maxGas))
+                .willReturn(results);
+        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+        given(properties.isAutoCreationEnabled()).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        // when:
+        subject.doStateTransitionOperation(
+                accessor.getTxn(),
+                senderAccount.getId(),
+                relayerAccount.getId(),
+                maxGas,
+                biOfferedGasPrice);
+
+        // then:
+        verify(worldState, never()).getCreatedContractIds();
+        verify(txnCtx, never()).setTargetedContract(any());
+        verify(recordService).externaliseEvmCallTransaction(any());
+    }
+
+    @Test
+    void verifyEthLazyCreateThrowsWhenAmountIsZero() {
+        // setup:
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+        given(properties.isAutoCreationEnabled()).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+        // when:
+        assertFailsWith(
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice),
+                INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void verifyEthLazyCreateThrowsWhenFunctionParametersIsNotEmpty() {
+        // setup:
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setFunctionParameters(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        "parameters".getBytes()))
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+        given(properties.isAutoCreationEnabled()).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+        // when:
+        assertFailsWith(
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice),
+                INVALID_ACCOUNT_ID);
     }
 
     @Test

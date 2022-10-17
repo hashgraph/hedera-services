@@ -87,6 +87,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -446,6 +447,26 @@ class SyntheticTxnFactoryTest {
         assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
         assertEquals(
                 alias.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+    }
+
+    @Test
+    void createsExpectedHollowAccountCreate() {
+        final var balance = 10L;
+        final var evmAddressAlias =
+                ByteString.copyFrom(Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
+        final var result = subject.createHollowAccount(evmAddressAlias, balance);
+        final var txnBody = result.build();
+
+        assertTrue(txnBody.hasCryptoCreateAccount());
+        assertEquals(Key.getDefaultInstance(), txnBody.getCryptoCreateAccount().getKey());
+        assertEquals(
+                EntityIdUtils.EVM_ADDRESS_SIZE, txnBody.getCryptoCreateAccount().getAlias().size());
+        assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
+        assertEquals(
+                THREE_MONTHS_IN_SECONDS,
+                txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
+        assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
+        assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
     }
 
     @Test

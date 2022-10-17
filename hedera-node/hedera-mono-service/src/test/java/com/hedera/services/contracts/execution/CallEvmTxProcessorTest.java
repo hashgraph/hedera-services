@@ -226,7 +226,37 @@ class CallEvmTxProcessorTest {
     }
 
     @Test
+    void assertSuccessExecutionEthLazyCreate() {
+        givenValidMockEth();
+        given(globalDynamicProperties.fundingAccount())
+                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(false);
+        var evmAccount = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+
+        givenSenderWithBalance(350_000L);
+        var result =
+                callEvmTxProcessor.executeEth(
+                        sender,
+                        receiverAddress,
+                        33_333L,
+                        1234L,
+                        Bytes.EMPTY,
+                        consensusTime,
+                        BigInteger.valueOf(10_000L),
+                        relayer,
+                        55_555L);
+        assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    }
+
+    @Test
     void nonCodeTxRequiresValue() {
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         assertFailsWith(
                 () ->
                         callEvmTxProcessor.buildInitialFrame(
@@ -473,6 +503,8 @@ class CallEvmTxProcessorTest {
                         .completer(__ -> {})
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(h -> null);
+        given(aliasManager.resolveForEvm(any())).willReturn(Address.ALTBN128_MUL);
+        given(aliasManager.isMirror(Address.ALTBN128_MUL)).willReturn(true);
         // when:
         MessageFrame buildMessageFrame =
                 callEvmTxProcessor.buildInitialFrame(
@@ -1098,7 +1130,7 @@ class CallEvmTxProcessorTest {
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
                 .willReturn(evmAccount);
         given(updater.getOrCreate(any())).willReturn(evmAccount);
-        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+        //        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
@@ -1127,7 +1159,7 @@ class CallEvmTxProcessorTest {
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
         given(updater.getOrCreate(any())).willReturn(evmAccount);
-        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+        //        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
