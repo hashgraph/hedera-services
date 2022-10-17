@@ -63,11 +63,10 @@ public class AccountStore {
             final Optional<JKey> key,
             final boolean receiverSigReq,
             final AccountID payer) {
-        final var payerMeta = new SigTransactionMetadata(this, tx, payer);
         if (receiverSigReq && key.isPresent()) {
             return new SigTransactionMetadata(this, tx, payer, List.of(key.get()));
         }
-        return payerMeta;
+        return new SigTransactionMetadata(this, tx, payer);
     }
 
     /**

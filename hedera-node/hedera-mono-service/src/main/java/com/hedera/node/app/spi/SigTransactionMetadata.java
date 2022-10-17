@@ -26,14 +26,13 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nullable;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
  * verification.
  */
 public class SigTransactionMetadata implements TransactionMetadata {
-    protected @Nullable List<JKey> requiredKeys = new ArrayList<>();
+    protected List<JKey> requiredKeys = new ArrayList<>();
     protected Transaction txn;
     protected AccountStore store;
 
