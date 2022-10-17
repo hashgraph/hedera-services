@@ -16,9 +16,12 @@
 package com.hedera.node.app.spi;
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.Collections;
 import java.util.List;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
@@ -27,25 +30,23 @@ import java.util.List;
  * during the "handle" phase as part of the HandleContext.
  */
 public class TransactionMetadata {
-    private final boolean failed;
+    private ResponseCodeEnum failureStatus = OK;
     private final Transaction tx;
     private final JKey payerSig;
     private final List<JKey> otherSigs;
 
     public TransactionMetadata(
             final Transaction tx,
-            final boolean failed,
             final JKey payerSig,
             final List<JKey> otherSigs) {
         this.tx = tx;
-        this.failed = failed;
         this.payerSig = payerSig;
         this.otherSigs = otherSigs;
     }
 
-    public TransactionMetadata(final Transaction tx, final boolean failed) {
+    public TransactionMetadata(final Transaction tx, final ResponseCodeEnum failureStatus) {
         this.tx = tx;
-        this.failed = failed;
+        this.failureStatus = failureStatus;
         this.payerSig = null;
         this.otherSigs = Collections.emptyList();
     }
@@ -55,7 +56,11 @@ public class TransactionMetadata {
     }
 
     public boolean failed() {
-        return failed;
+        return !failureStatus.equals(OK);
+    }
+
+    public ResponseCodeEnum failureStatus() {
+        return failureStatus;
     }
 
     public JKey getPayerSig() {

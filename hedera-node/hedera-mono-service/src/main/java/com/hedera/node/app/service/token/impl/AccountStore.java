@@ -27,6 +27,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.Collections;
 import java.util.List;
@@ -63,27 +64,32 @@ public class AccountStore {
             final Optional<JKey> key,
             final boolean receiverSigReq,
             final AccountID payer) {
-        final var payerNum = getAccountNum(payer);
-        final var payerKey = getAccountLeaf(payerNum).getAccountKey();
-        if (receiverSigReq && key.isPresent()) {
-            return new TransactionMetadata(tx, false, payerKey, List.of(key.get()));
+        final var payerAccount = getAccountLeaf(payer);
+        if (payerAccount.isEmpty()){
+            return new TransactionMetadata(tx, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
         }
-        return new TransactionMetadata(tx, false, payerKey, Collections.emptyList());
+
+        final var payerKey = payerAccount.get().getAccountKey();
+        if (receiverSigReq && key.isPresent()) {
+            return new TransactionMetadata(tx, payerKey, List.of(key.get()));
+        }
+        return new TransactionMetadata(tx, payerKey, Collections.emptyList());
     }
 
     /**
      * Returns the account leaf for the given account number. If the account doesn't exist throws
      * {@link IllegalArgumentException}
      *
-     * @param accountNumber given account number
+     * @param id given account number
      * @return merkle leaf for the given account number
      */
-    private MerkleAccount getAccountLeaf(final EntityNum accountNumber) {
-        final var account = accountState.get(accountNumber);
-        if (!account.isPresent()) {
-            throw new IllegalArgumentException("Provided account doesn't exist");
+    private Optional<MerkleAccount> getAccountLeaf(final AccountID id) {
+        final var accountNum = getAccount(id);
+        if(accountNum == EntityNum.MISSING_NUM){
+            return Optional.empty();
         }
-        return account.get();
+        final var account = accountState.get(accountNum);
+        return account;
     }
 
     /**
@@ -93,7 +99,7 @@ public class AccountStore {
      * @param id provided account id
      * @return account number
      */
-    private EntityNum getAccountNum(final AccountID id) {
+    private EntityNum getAccount(final AccountID id) {
         if (isAlias(id)) {
             final var num = aliases.get(id.getAlias());
             if (num.isPresent()) {

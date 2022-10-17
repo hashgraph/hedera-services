@@ -21,6 +21,7 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 
 /**
@@ -44,7 +45,7 @@ public class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHand
             final var payer = txn.getTransactionID().getAccountID();
             return accountStore.createAccountSigningMetadata(tx, key, receiverSigReq, payer);
         } catch (InvalidProtocolBufferException ex) {
-            return new TransactionMetadata(tx, true);
+            return new TransactionMetadata(tx, ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
     }
 }

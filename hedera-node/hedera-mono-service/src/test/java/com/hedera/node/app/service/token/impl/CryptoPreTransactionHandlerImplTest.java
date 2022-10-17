@@ -36,6 +36,7 @@ import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -82,7 +83,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(account.getAccountKey()).willReturn(jkey);
 
         final var txn = createAccountTransaction(true);
-        final var expectedMeta = new TransactionMetadata(txn, false, jkey, List.of(jkey));
+        final var expectedMeta = new TransactionMetadata(txn, jkey, List.of(jkey));
 
         final var meta = subject.cryptoCreate(txn);
 
@@ -98,7 +99,7 @@ class CryptoPreTransactionHandlerImplTest {
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
                         .build();
-        final var expectedMeta = new TransactionMetadata(txn, true);
+        final var expectedMeta = new TransactionMetadata(txn, ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         final var meta = subject.cryptoCreate(txn);
 
         assertEquals(expectedMeta.transaction(), meta.transaction());
@@ -114,7 +115,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(account.getAccountKey()).willReturn(jkey);
 
         final var txn = createAccountTransaction(false);
-        final var expectedMeta = new TransactionMetadata(txn, false, jkey, Collections.emptyList());
+        final var expectedMeta = new TransactionMetadata(txn, jkey, Collections.emptyList());
 
         final var meta = subject.cryptoCreate(txn);
 

@@ -22,7 +22,7 @@ import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
@@ -36,6 +36,7 @@ import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -110,17 +111,17 @@ class AccountStoreTest {
         final var jkey = JKey.mapKey(key);
         given(accounts.get(payerNum)).willReturn(Optional.empty());
         final var txn = createAccountTransaction(payer);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.createAccountSigningMetadata(txn, Optional.of(jkey), true, payer));
+        var meta = subject.createAccountSigningMetadata(txn, Optional.of(jkey), true, payer);
+
+        assertTrue(meta.failed());
+        assertEquals(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID, meta.failureStatus());
 
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
         final var aliasedTxn = createAccountTransaction(payerAlias);
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        subject.createAccountSigningMetadata(
-                                aliasedTxn, Optional.of(jkey), true, payerAlias));
+
+        meta = subject.createAccountSigningMetadata(aliasedTxn, Optional.of(jkey), true, payerAlias);
+        assertTrue(meta.failed());
+        assertEquals(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID, meta.failureStatus());
     }
 
     private Transaction createAccountTransaction(final AccountID payer) {
