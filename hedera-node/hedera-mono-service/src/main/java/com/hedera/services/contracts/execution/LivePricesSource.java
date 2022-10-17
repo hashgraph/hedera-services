@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.fees;
+package com.hedera.services.contracts.execution;
 
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -59,7 +61,7 @@ public class LivePricesSource {
         return currentFeeInTinycents(now, function, FeeComponents::getGas);
     }
 
-    long currentPrice(
+    public long currentPrice(
             final Instant now,
             final HederaFunctionality function,
             final ToLongFunction<FeeComponents> resourcePriceFn) {

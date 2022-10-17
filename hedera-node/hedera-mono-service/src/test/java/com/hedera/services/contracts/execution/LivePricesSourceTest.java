@@ -23,7 +23,6 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.LivePricesSource;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;

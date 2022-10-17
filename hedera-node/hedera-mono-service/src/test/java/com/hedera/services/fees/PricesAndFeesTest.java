@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.execution;
+package com.hedera.services.fees;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -23,9 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.LivePricesSource;
-import com.hedera.services.fees.PricesAndFeesImpl;
+import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;

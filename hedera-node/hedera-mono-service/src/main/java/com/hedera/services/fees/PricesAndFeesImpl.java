@@ -18,6 +18,7 @@ package com.hedera.services.fees;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
+import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
