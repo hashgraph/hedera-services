@@ -245,7 +245,8 @@ public class ContractCallSuite extends HapiApiSuite {
                 exchangeRatePrecompileWorks(),
                 canMintAndTransferInSameContractOperation(),
                 workingHoursDemo(),
-                lpFarmSimulation());
+                lpFarmSimulation()
+        );
     }
 
     private HapiApiSpec whitelistingAliasedContract() {
@@ -658,8 +659,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                     final var creation =
                                             contractCreate(
                                                             contract,
-                                                            tokenId.getTokenNum(),
-                                                            treasuryId.getAccountNum())
+                                                            convertAliasToAddress(asAddress(tokenId)),
+                                                convertAliasToAddress(asAddress(treasuryId)))
                                                     .gas(gasToOffer);
                                     allRunFor(spec, creation);
                                 }),
@@ -787,7 +788,7 @@ public class ContractCallSuite extends HapiApiSuite {
         return defaultHapiSpec("ExchangeRatePrecompileWorks")
                 .given(
                         uploadInitCode(rateAware),
-                        contractCreate(rateAware, minPriceToAccessGatedMethod),
+                        contractCreate(rateAware, BigInteger.valueOf(minPriceToAccessGatedMethod)),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var rates = spec.ratesProvider().rates();
@@ -897,7 +898,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         getAccountInfo("Carol").savingSnapshot("CarolAcctInfo"),
                         getAccountInfo("Dave").savingSnapshot("DaveAcctInfo"),
                         uploadInitCode(contract),
-                        contractCreate(contract, 1_000_000L, "OpenCrowd Token", "OCT")
+                        contractCreate(contract, BigInteger.valueOf(1_000_000L), "OpenCrowd Token", "OCT")
                                 .gas(250_000L)
                                 .payingWith(TOKEN_ISSUER)
                                 .via("tokenCreateTxn")
@@ -2368,12 +2369,12 @@ public class ContractCallSuite extends HapiApiSuite {
                                             spec,
                                             contractCreate(
                                                             NESTED_TRANSFERRING_CONTRACT,
-                                                            getNestedContractAddress(
+                                                            convertAliasToAddress(getNestedContractAddress(
                                                                     NESTED_TRANSFER_CONTRACT + "1",
-                                                                    spec),
-                                                            getNestedContractAddress(
+                                                                    spec)),
+                                                            convertAliasToAddress(getNestedContractAddress(
                                                                     NESTED_TRANSFER_CONTRACT + "2",
-                                                                    spec))
+                                                                    spec)))
                                                     .balance(10_000L)
                                                     .payingWith(ACCOUNT),
                                             contractCall(
@@ -2414,14 +2415,14 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 NESTED_TRANSFERRING_CONTRACT,
-                                                                getNestedContractAddress(
+                                                                convertAliasToAddress(getNestedContractAddress(
                                                                         NESTED_TRANSFER_CONTRACT
                                                                                 + "1",
-                                                                        spec),
-                                                                getNestedContractAddress(
+                                                                        spec)),
+                                                                convertAliasToAddress(getNestedContractAddress(
                                                                         NESTED_TRANSFER_CONTRACT
                                                                                 + "2",
-                                                                        spec))
+                                                                        spec)))
                                                         .balance(10_000L)
                                                         .payingWith(ACCOUNT),
                                                 contractCall(
@@ -2504,14 +2505,14 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 NESTED_TRANSFERRING_CONTRACT,
-                                                                getNestedContractAddress(
+                                                                convertAliasToAddress(getNestedContractAddress(
                                                                         NESTED_TRANSFER_CONTRACT
                                                                                 + "1",
-                                                                        spec),
-                                                                getNestedContractAddress(
+                                                                        spec)),
+                                                                convertAliasToAddress(getNestedContractAddress(
                                                                         NESTED_TRANSFER_CONTRACT
                                                                                 + "2",
-                                                                        spec))
+                                                                        spec)))
                                                         .balance(10_000L)
                                                         .payingWith(GENESIS),
                                                 contractCall(
@@ -2599,12 +2600,12 @@ public class ContractCallSuite extends HapiApiSuite {
                                             spec,
                                             contractCreate(
                                                             NESTED_TRANSFERRING_CONTRACT,
-                                                            getNestedContractAddress(
+                                                            convertAliasToAddress(getNestedContractAddress(
                                                                     NESTED_TRANSFER_CONTRACT + "1",
-                                                                    spec),
-                                                            getNestedContractAddress(
+                                                                    spec)),
+                                                            convertAliasToAddress(getNestedContractAddress(
                                                                     NESTED_TRANSFER_CONTRACT + "2",
-                                                                    spec))
+                                                                    spec)))
                                                     .balance(10_000L)
                                                     .payingWith(ACCOUNT),
                                             contractCall(
@@ -2923,12 +2924,12 @@ public class ContractCallSuite extends HapiApiSuite {
                                         new HapiContractCreate(
                                                         farm,
                                                         consAbi,
-                                                        devAddr.get(),
-                                                        rentPayerAddr.get(),
-                                                        4804540L,
-                                                        10000L,
-                                                        1000000000000000L,
-                                                        2500000000L)
+                                                        convertAliasToAddress(devAddr.get()),
+                                            convertAliasToAddress(rentPayerAddr.get()),
+                                                        BigInteger.valueOf(4804540L),
+                                            BigInteger.valueOf(10000L),
+                                            BigInteger.valueOf(1000000000000000L),
+                                            BigInteger.valueOf(2500000000L))
                                                 .bytecode(initcode)),
                         tokenCreate(sauce)
                                 .supplyType(TokenSupplyType.FINITE)

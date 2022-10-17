@@ -126,9 +126,9 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 THE_CONTRACT,
-                                                                asHexedAddress(
+                                                                convertAliasToAddress(asHexedAddress(
                                                                         spec.registry()
-                                                                                .getTokenID(TOKEN)))
+                                                                                .getTokenID(TOKEN))))
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
@@ -223,9 +223,9 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 THE_CONTRACT,
-                                                                asHexedAddress(
+                                                    convertAliasToAddress(asHexedAddress(
                                                                         spec.registry()
-                                                                                .getTokenID(TOKEN)))
+                                                                                .getTokenID(TOKEN))))
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
@@ -288,8 +288,8 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 outerContract,
-                                                                getNestedContractAddress(
-                                                                        innerContract, spec))
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                        innerContract, spec)))
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
@@ -384,10 +384,10 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 theContract,
-                                                                asHexedAddress(
+                                                    convertAliasToAddress(asHexedAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
-                                                                                        tokenWithHbarFee)))
+                                                                                        tokenWithHbarFee))))
                                                         .payingWith(bob)
                                                         .gas(GAS_TO_OFFER))),
                         tokenAssociate(ALICE, tokenWithHbarFee),

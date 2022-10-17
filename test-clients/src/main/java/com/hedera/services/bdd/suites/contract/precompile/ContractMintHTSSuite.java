@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -75,6 +75,7 @@ import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.io.IOException;
@@ -84,6 +85,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -149,7 +151,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 
     private HapiApiSpec helloWorldFungibleMint() {
         final var amount = 1_234_567L;
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
         return defaultHapiSpec("HelloWorldFungibleMint")
                 .given(
@@ -161,10 +163,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(
                                         idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
+                                              fungible.set(asToken(idLit))),
                         uploadInitCode(HELLO_WORLD_MINT))
                 .when(
-                        sourcing(() -> contractCreate(HELLO_WORLD_MINT, fungibleNum.get())),
+                        sourcing(() -> contractCreate(HELLO_WORLD_MINT, convertAliasToAddress(asAddress(fungible.get())))),
                         contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
@@ -205,7 +207,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec helloWorldNftMint() {
-        final AtomicLong nonFungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
         return defaultHapiSpec("HelloWorldNftMint")
                 .given(
@@ -217,10 +219,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(
                                         idLit ->
-                                                nonFungibleNum.set(
-                                                        asDotDelimitedLongArray(idLit)[2])),
+                                            nonFungible.set(
+                                                       asToken(idLit))),
                         uploadInitCode(HELLO_WORLD_MINT),
-                        sourcing(() -> contractCreate(HELLO_WORLD_MINT, nonFungibleNum.get())))
+                        sourcing(() -> contractCreate(HELLO_WORLD_MINT, convertAliasToAddress(asAddress(nonFungible.get())))))
                 .when(
                         contractCall(HELLO_WORLD_MINT, "mint")
                                 .via(FIRST_MINT_TXN)
@@ -278,7 +280,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 
     private HapiApiSpec happyPathFungibleTokenMint() {
         final var amount = 10L;
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
         return defaultHapiSpec("FungibleMint")
                 .given(
@@ -293,9 +295,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(
                                         idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
+                                            fungible.set(asToken(idLit))),
                         uploadInitCode(MINT_CONTRACT),
-                        sourcing(() -> contractCreate(MINT_CONTRACT, fungibleNum.get())))
+                        sourcing(() -> contractCreate(MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))))
                 .when(
                         contractCall(
                                         MINT_CONTRACT,
@@ -344,7 +346,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 
     private HapiApiSpec happyPathNonFungibleTokenMint() {
         final var totalSupply = 2;
-        final AtomicLong nonFungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
         return defaultHapiSpec("NonFungibleMint")
                 .given(
@@ -360,10 +362,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(
                                         idLit ->
-                                                nonFungibleNum.set(
-                                                        asDotDelimitedLongArray(idLit)[2])),
+                                            nonFungible.set(
+                                                        asToken(idLit))),
                         uploadInitCode(MINT_CONTRACT),
-                        sourcing(() -> contractCreate(MINT_CONTRACT, nonFungibleNum.get())))
+                        sourcing(() -> contractCreate(MINT_CONTRACT, convertAliasToAddress(asAddress(nonFungible.get())))))
                 .when(
                         contractCall(
                                         MINT_CONTRACT,
@@ -442,12 +444,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 NESTED_MINT_CONTRACT,
-                                                                getNestedContractAddress(
-                                                                        MINT_NFT_CONTRACT, spec),
-                                                                asAddress(
+                                                                convertAliasToAddress(getNestedContractAddress(
+                                                                        MINT_NFT_CONTRACT, spec)),
+                                                    convertAliasToAddress(asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)))
+                                                                                        NON_FUNGIBLE_TOKEN))))
                                                         .gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
                                                         .shape(
@@ -591,10 +593,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         MINT_CONTRACT,
-                                                        asAddress(
+                                                        convertAliasToAddress(asAddress(
                                                                 spec.registry()
                                                                         .getTokenID(
-                                                                                FUNGIBLE_TOKEN))),
+                                                                                FUNGIBLE_TOKEN)))),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT_KEY_SHAPE
@@ -670,12 +672,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 NESTED_MINT_CONTRACT,
-                                                                getNestedContractAddress(
-                                                                        MINT_NFT_CONTRACT, spec),
-                                                                asAddress(
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                        MINT_NFT_CONTRACT, spec)),
+                                                    convertAliasToAddress(asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN)))
+                                                                                        NON_FUNGIBLE_TOKEN))))
                                                         .gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
@@ -726,7 +728,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
         final var mintContractByteCode = "mintContractByteCode";
         final var amount = "9223372036854775808";
 
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
         return defaultHapiSpec("FungibleMintFailure")
                 .given(
@@ -742,12 +744,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(
                                         idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])))
+                                            fungible.set(asToken(idLit))))
                 .when(
                         uploadInitCode(MINT_CONTRACT),
                         sourcing(
                                 () ->
-                                        contractCreate(MINT_CONTRACT, fungibleNum.get())
+                                        contractCreate(MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))
                                                 .payingWith(ACCOUNT)
                                                 .gas(GAS_TO_OFFER)))
                 .then(
@@ -768,7 +770,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
         final var baselineMintWithEnoughGas = "baselineMintWithEnoughGas";
 
         final AtomicLong expectedInsufficientGas = new AtomicLong();
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
         return defaultHapiSpec("gasCostNotMetSetsInsufficientGasStatusInChildRecord")
                 .given(
@@ -783,12 +785,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(
                                         idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])))
+                                                fungible.set(asToken(idLit))))
                 .when(
                         uploadInitCode(MINT_CONTRACT),
                         sourcing(
                                 () ->
-                                        contractCreate(MINT_CONTRACT, fungibleNum.get())
+                                        contractCreate(MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))
                                                 .payingWith(ACCOUNT)
                                                 .gas(GAS_TO_OFFER)))
                 .then(

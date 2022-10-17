@@ -42,6 +42,17 @@ public class HapiParserUtil {
         return callData;
     }
 
+    public static byte[] encodeParametersForConstructor(final Object[] params, final String abi) {
+        byte[] callData = new byte[] {};
+
+        if (!abi.isEmpty() && !abi.contains("<empty>")) {
+            final var abiFunction = Function.fromJson(abi);
+            callData = abiFunction.encodeCallWithArgs(params).array();
+        }
+
+        return stripSelector(callData);
+    }
+
     public static Address convertAliasToAddress(final AccountID account) {
         final var besuAddress = asTypedEvmAddress(account);
         return convertBesuAddressToHeadlongAddress(besuAddress);
@@ -87,6 +98,18 @@ public class HapiParserUtil {
                 expandedArray,
                 expandedArray.length - bytesToExpand.length,
                 bytesToExpand.length);
+        return expandedArray;
+    }
+
+    private static byte[] stripSelector(final byte[] bytesToExpand) {
+        byte[] expandedArray = new byte[bytesToExpand.length-4];
+
+        System.arraycopy(
+            bytesToExpand,
+            4,
+            expandedArray,
+            0,
+            bytesToExpand.length-4);
         return expandedArray;
     }
 

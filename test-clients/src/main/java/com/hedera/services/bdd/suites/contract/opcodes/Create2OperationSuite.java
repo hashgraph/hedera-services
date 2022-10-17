@@ -374,7 +374,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        contractCreate(contract, tokenMirrorAddr.get())
+                                        contractCreate(contract,convertAliasToAddress(tokenMirrorAddr.get()))
                                                 .payingWith(GENESIS)
                                                 .omitAdminKey()
                                                 .gas(4_000_000)
@@ -768,7 +768,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                         uploadInitCode(immediateChildAssoc),
                         sourcing(
                                 () ->
-                                        contractCreate(immediateChildAssoc, tokenMirrorAddr.get())
+                                        contractCreate(immediateChildAssoc, convertAliasToAddress(tokenMirrorAddr.get()))
                                                 .gas(2_000_000)
                                                 .adminKey(multiKey)
                                                 .payingWith(GENESIS)

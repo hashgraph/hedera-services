@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.ethereum;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -46,8 +45,14 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCal
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
@@ -70,6 +75,7 @@ import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.io.File;
 import java.math.BigInteger;
@@ -470,7 +476,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
         return defaultHapiSpec("ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn")
@@ -490,10 +496,10 @@ public class EthereumSuite extends HapiApiSuite {
                                 .supplyKey(SECP_256K1_SOURCE_KEY)
                                 .exposingCreatedIdTo(
                                         idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])))
+                                            fungible.set(asToken(idLit))))
                 .when(
                         sourcing(
-                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
+                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -534,7 +540,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn() {
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
         final String MULTI_KEY = "MULTI_KEY";
@@ -556,10 +562,10 @@ public class EthereumSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(
                                         idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])))
+                                                fungible.set(asToken(idLit))))
                 .when(
                         sourcing(
-                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
+                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -601,7 +607,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
         final String MULTI_KEY = "MULTI_KEY";
@@ -624,10 +630,10 @@ public class EthereumSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(
                                         idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])))
+                                            fungible.set(asToken(idLit))))
                 .when(
                         sourcing(
-                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
+                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .nonce(0)

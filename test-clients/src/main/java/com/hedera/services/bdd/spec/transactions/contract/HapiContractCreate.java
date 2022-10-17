@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.doGasLookup;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersWithTuple;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForConstructor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
@@ -295,7 +295,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         } else {
             params =
                     abi.isPresent()
-                            ? Optional.of(encodeParametersWithTuple(args.get(), abi.get()))
+                            ? Optional.of(encodeParametersForConstructor(args.get(), abi.get()))
                             : Optional.empty();
         }
         ContractCreateTransactionBody opBody =

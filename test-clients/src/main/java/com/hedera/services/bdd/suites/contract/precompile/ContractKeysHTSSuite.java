@@ -233,9 +233,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 BURN_TOKEN,
-                                                                asAddress(
+                                                    convertAliasToAddress(asAddress(
                                                                         spec.registry()
-                                                                                .getTokenID(token)))
+                                                                                .getTokenID(token))))
                                                         .via("creationTx"))))
                 .when(
                         newKeyNamed(DELEGATE_KEY)
@@ -327,8 +327,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 tokenAssociate(outerContract, VANILLA_TOKEN),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
@@ -408,8 +408,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 tokenAssociate(outerContract, VANILLA_TOKEN),
                                                 newKeyNamed(CONTRACT_KEY)
                                                         .shape(
@@ -479,8 +479,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
                                                         .shape(
                                                                 CONTRACT_KEY_SHAPE.signedWith(
@@ -544,8 +544,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
                                                         .shape(
                                                                 CONTRACT_KEY_SHAPE.signedWith(
@@ -608,8 +608,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 contractCall(
                                                                 outerContract,
                                                                 "dissociateStaticCall",
@@ -666,8 +666,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 tokenAssociate(outerContract, VANILLA_TOKEN),
                                                 newKeyNamed(CONTRACT_KEY)
                                                         .shape(
@@ -723,8 +723,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
                                                         .shape(
                                                                 CONTRACT_KEY_SHAPE.signedWith(
@@ -773,8 +773,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
                                                         .shape(
                                                                 CONTRACT_KEY_SHAPE.signedWith(
@@ -833,8 +833,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 tokenAssociate(outerContract, VANILLA_TOKEN),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
@@ -895,8 +895,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT_KEY_SHAPE
@@ -950,8 +950,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT_KEY_SHAPE
@@ -1005,8 +1005,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 contractCall(
                                                                 outerContract,
                                                                 "associateStaticCall",
@@ -1643,9 +1643,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 BURN_TOKEN,
-                                                                asAddress(
+                                                    convertAliasToAddress(asAddress(
                                                                         spec.registry()
-                                                                                .getTokenID(token)))
+                                                                                .getTokenID(token))))
                                                         .via("creationTx"))))
                 .when(
                         newKeyNamed(DELEGATE_KEY)
@@ -1701,8 +1701,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT_KEY_SHAPE
@@ -1763,8 +1763,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
@@ -3075,8 +3075,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
                                                         .shape(
                                                                 CONTRACT_KEY_SHAPE.signedWith(
@@ -3136,8 +3136,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                nestedContract, spec)),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
                                                         .shape(
                                                                 CONTRACT_KEY_SHAPE.signedWith(
@@ -3195,9 +3195,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 BURN_TOKEN,
-                                                                asAddress(
+                                                    convertAliasToAddress(asAddress(
                                                                         spec.registry()
-                                                                                .getTokenID(token)))
+                                                                                .getTokenID(token))))
                                                         .via("creationTx"))))
                 .when(
                         newKeyNamed(CONTRACT_KEY)
@@ -3351,8 +3351,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 outerContract,
-                                                                getNestedContractAddress(
-                                                                        nestedContract, spec))
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                        nestedContract, spec)))
                                                         .via("creationTx"),
                                                 newKeyNamed(delegateContractDelegateContractKey)
                                                         .shape(

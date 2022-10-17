@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -86,9 +87,9 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 outerContract,
-                                                                asAddress(
+                                                                convertAliasToAddress(asAddress(
                                                                         spec.registry()
-                                                                                .getTokenID(token)))
+                                                                                .getTokenID(token))))
                                                         .via("associateTxn"),
                                                 cryptoTransfer(
                                                                 moving(200, token)

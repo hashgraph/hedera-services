@@ -165,10 +165,10 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         theContract,
-                                                        asAddress(
+                                                        convertAliasToAddress(asAddress(
                                                                 spec.registry()
                                                                         .getTokenID(
-                                                                                tokenWithHbarFee))))),
+                                                                                tokenWithHbarFee)))))),
                         tokenAssociate(alice, tokenWithHbarFee),
                         tokenAssociate(bob, tokenWithHbarFee),
                         tokenAssociate(theContract, tokenWithHbarFee),
@@ -249,10 +249,10 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 theContract,
-                                                                asAddress(
+                                                    convertAliasToAddress(asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
-                                                                                        A_TOKEN)))
+                                                                                        A_TOKEN))))
                                                         .via("creationTx"))),
                         tokenAssociate(DEFAULT_CONTRACT_SENDER, List.of(A_TOKEN)),
                         tokenAssociate(theContract, List.of(A_TOKEN)),
@@ -342,8 +342,8 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        getNestedContractAddress(
-                                                                FEE_DISTRIBUTOR, spec)))),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(A_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(A_TOKEN)),
@@ -438,8 +438,8 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        getNestedContractAddress(
-                                                                FEE_DISTRIBUTOR, spec)))))
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                FEE_DISTRIBUTOR, spec))))))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -645,8 +645,8 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        getNestedContractAddress(
-                                                                FEE_DISTRIBUTOR, spec)))))
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                FEE_DISTRIBUTOR, spec))))))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -852,8 +852,8 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        getNestedContractAddress(
-                                                                innerContract, spec)))))
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                innerContract, spec))))))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -958,8 +958,8 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        getNestedContractAddress(
-                                                                FEE_DISTRIBUTOR, spec)))),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
                         tokenAssociate(RECEIVER, List.of(NFT)),
                         cryptoTransfer(
@@ -1033,8 +1033,8 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        getNestedContractAddress(
-                                                                FEE_DISTRIBUTOR, spec)))),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
                         tokenAssociate(RECEIVER, List.of(NFT)),
                         cryptoTransfer(
@@ -1117,8 +1117,8 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        getNestedContractAddress(
-                                                                FEE_DISTRIBUTOR, spec)))),
+                                                    convertAliasToAddress(getNestedContractAddress(
+                                                                FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(A_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(A_TOKEN)),

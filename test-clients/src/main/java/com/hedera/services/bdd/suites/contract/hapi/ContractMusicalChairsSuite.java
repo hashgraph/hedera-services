@@ -24,12 +24,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -81,7 +81,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
                                         spec,
                                         contractCreate(
                                                         contract,
-                                                        unhex(
+                                                        convertAliasToAddress(
                                                                 spec.registry()
                                                                         .getAccountInfo(
                                                                                 DEFAULT_CONTRACT_SENDER)

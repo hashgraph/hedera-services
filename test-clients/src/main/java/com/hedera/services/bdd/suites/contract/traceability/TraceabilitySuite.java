@@ -203,7 +203,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario1")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        contractCreate(TRACEABILITY, 55, 2, 2).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -247,7 +247,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 55, 2, 2),
-                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 12).via(SECOND_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12)).via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(
@@ -292,7 +292,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 12),
-                        contractCustomCreate(TRACEABILITY, THIRD, 0, 11, 0).via(THIRD_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.valueOf(11), BigInteger.ZERO).via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(
@@ -760,7 +760,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario2")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        contractCreate(TRACEABILITY, 0, 0, 0).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -804,7 +804,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 0, 0, 0),
-                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 99).via(SECOND_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(99)).via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(
@@ -849,7 +849,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 99),
-                        contractCustomCreate(TRACEABILITY, THIRD, 0, 88, 0).via(THIRD_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.valueOf(88), BigInteger.ZERO).via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(
@@ -1372,7 +1372,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario3")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        contractCreate(TRACEABILITY, 55, 2, 2).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -1416,7 +1416,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 55, 2, 2),
-                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 12).via(SECOND_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12)).via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(
@@ -1461,7 +1461,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 12),
-                        contractCustomCreate(TRACEABILITY, THIRD, 0, 11, 0).via(THIRD_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.valueOf(11), BigInteger.ZERO).via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(
@@ -1984,7 +1984,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario4")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        contractCreate(TRACEABILITY, 2, 3, 4).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4)).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -2028,7 +2028,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 2, 3, 4),
-                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 0).via(SECOND_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO).via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(
@@ -2073,7 +2073,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 0),
-                        contractCustomCreate(TRACEABILITY, THIRD, 0, 0, 0).via(THIRD_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO).via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(
@@ -2411,7 +2411,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario5")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        contractCreate(TRACEABILITY, 55, 2, 2).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -2455,7 +2455,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 55, 2, 2),
-                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 12).via(SECOND_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12)).via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(
@@ -2500,7 +2500,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 12),
-                        contractCustomCreate(TRACEABILITY, THIRD, 4, 1, 0).via(THIRD_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, THIRD, BigInteger.valueOf(4), BigInteger.ONE, BigInteger.ZERO).via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(
@@ -2850,7 +2850,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario6")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        contractCreate(TRACEABILITY, 2, 3, 4).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4)).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -2894,7 +2894,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 2, 3, 4),
-                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 3).via(SECOND_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(3)).via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(
@@ -2939,7 +2939,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 3),
-                        contractCustomCreate(TRACEABILITY, THIRD, 0, 1, 0).via(THIRD_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO).via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(
@@ -3344,7 +3344,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario7")
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
-                        contractCreate(TRACEABILITY_CALLCODE, 55, 2, 2).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY_CALLCODE, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -3393,7 +3393,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                 55,
                                 2,
                                 2),
-                        contractCustomCreate(TRACEABILITY_CALLCODE, SECOND, 0, 0, 12)
+                        contractCustomCreate(TRACEABILITY_CALLCODE, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -3444,7 +3444,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                 0,
                                 0,
                                 12),
-                        contractCustomCreate(TRACEABILITY_CALLCODE, THIRD, 4, 1, 0)
+                        contractCustomCreate(TRACEABILITY_CALLCODE, THIRD, BigInteger.valueOf(4), BigInteger.ONE, BigInteger.ZERO)
                                 .via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
@@ -3926,7 +3926,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario8")
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
-                        contractCreate(TRACEABILITY_CALLCODE, 55, 2, 2).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY_CALLCODE, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -3975,7 +3975,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                 55,
                                 2,
                                 2),
-                        contractCustomCreate(TRACEABILITY_CALLCODE, SECOND, 0, 0, 12)
+                        contractCustomCreate(TRACEABILITY_CALLCODE, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
                                 .via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
@@ -4026,7 +4026,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                 0,
                                 0,
                                 12),
-                        contractCustomCreate(TRACEABILITY_CALLCODE, THIRD, 4, 1, 0)
+                        contractCustomCreate(TRACEABILITY_CALLCODE, THIRD, BigInteger.valueOf(4), BigInteger.ONE, BigInteger.ZERO)
                                 .via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
@@ -4437,7 +4437,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario9")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        contractCreate(TRACEABILITY, 55, 2, 2).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -4481,7 +4481,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 55, 2, 2),
-                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 12).via(SECOND_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12)).via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(
@@ -4526,7 +4526,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 12),
-                        contractCustomCreate(TRACEABILITY, THIRD, 0, 1, 0).via(THIRD_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO).via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(
@@ -4896,7 +4896,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario10")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        contractCreate(TRACEABILITY, 2, 3, 4).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4)).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -4940,7 +4940,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 2, 3, 4),
-                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 3).via(SECOND_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(3)).via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(
@@ -4985,7 +4985,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 3),
-                        contractCustomCreate(TRACEABILITY, THIRD, 0, 1, 0).via(THIRD_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO).via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(
@@ -5413,7 +5413,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario11")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        contractCreate(TRACEABILITY, 2, 3, 4).via(FIRST_CREATE_TXN),
+                        contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4)).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(
@@ -5457,7 +5457,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 2, 3, 4),
-                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 3).via(SECOND_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(3)).via(SECOND_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(
@@ -5502,7 +5502,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 3),
-                        contractCustomCreate(TRACEABILITY, THIRD, 0, 1, 0).via(THIRD_CREATE_TXN),
+                        contractCustomCreate(TRACEABILITY, THIRD, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO).via(THIRD_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(
@@ -6363,7 +6363,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario17")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
-                        contractCreate(REVERTING_CONTRACT, 6).via(FIRST_CREATE_TXN),
+                        contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6)).via(FIRST_CREATE_TXN),
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
@@ -6454,7 +6454,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario18")
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(
-                        contractCreate(REVERTING_CONTRACT, 4)
+                        contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(4))
                                 .via(FIRST_CREATE_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(
@@ -6546,7 +6546,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario20")
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(
-                        contractCreate(REVERTING_CONTRACT, 6)
+                        contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
                                 .via(FIRST_CREATE_TXN)
                                 .gas(53050)
                                 .hasKnownStatus(INSUFFICIENT_GAS))
@@ -6583,7 +6583,7 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("traceabilityE2EScenario21")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
-                        contractCreate(REVERTING_CONTRACT, 6).via(FIRST_CREATE_TXN),
+                        contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6)).via(FIRST_CREATE_TXN),
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
