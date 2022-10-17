@@ -131,7 +131,7 @@ class ImpliedTransfersMarshalTest {
     @Test
     void rejectsPerceivedMissing() {
         setupHbarOnlyFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         given(aliasCheck.test(op)).willReturn(true);
         given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
@@ -150,7 +150,7 @@ class ImpliedTransfersMarshalTest {
     @Test
     void rejectsPerceivedInvalidAliasKey() {
         setupHbarOnlyFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         given(aliasCheck.test(op)).willReturn(true);
         given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
@@ -187,7 +187,7 @@ class ImpliedTransfersMarshalTest {
     @Test
     void startsWithChecks() {
         setupHbarOnlyFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         final var expectedMeta =
                 new ImpliedTransfersMeta(
@@ -206,7 +206,7 @@ class ImpliedTransfersMarshalTest {
     @Test
     void getsHbarWithOnlyAutoCreationEnabled() {
         setupHbarOnlyFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
         given(aliasCheck.test(op)).willReturn(true);
         given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
         given(aliasResolver.perceivedAutoCreations()).willReturn(1);
@@ -291,7 +291,7 @@ class ImpliedTransfersMarshalTest {
                         .build();
         AccountID validAliasAccount =
                 AccountID.newBuilder().setAlias(aliasB.toByteString()).build();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         final var builder =
                 CryptoTransferTransactionBody.newBuilder()
@@ -363,7 +363,7 @@ class ImpliedTransfersMarshalTest {
                         .setAmount(50)
                         .setIsApproval(true)
                         .build();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         final var builder =
                 CryptoTransferTransactionBody.newBuilder()
@@ -433,7 +433,7 @@ class ImpliedTransfersMarshalTest {
     void getsHappyPath() {
         // setup:
         setupFullFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
         // and:
         final var nonFeeChanges = expNonFeeChanges(true);
         // and:
@@ -488,7 +488,7 @@ class ImpliedTransfersMarshalTest {
     void getsUnhappyPath() {
         // setup:
         setupFullFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
         // and:
         final var nonFeeChanges = expNonFeeChanges(true);
         // and:
@@ -528,22 +528,6 @@ class ImpliedTransfersMarshalTest {
     private void givenValidity(ResponseCodeEnum s, ImpliedTransfersMeta.ValidationProps props) {
         given(xferChecks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), props))
                 .willReturn(s);
-    }
-
-    private void setupProps() {
-        setupPropsWithAutoCreationEnabled(true);
-    }
-
-    private void setupPropsWithAutoCreationEnabled(final boolean isAutoCreationEnabled) {
-        given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
-        given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
-        given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
-        given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
-        given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
-        given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
-        given(dynamicProperties.isAutoCreationEnabled()).willReturn(isAutoCreationEnabled);
-        given(dynamicProperties.isLazyCreationEnabled()).willReturn(false);
-        given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
     }
 
     private void setupPropsWithAutoAndLazyCreation(
