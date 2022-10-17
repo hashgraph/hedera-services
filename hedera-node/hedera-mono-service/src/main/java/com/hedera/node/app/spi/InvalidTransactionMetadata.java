@@ -18,37 +18,36 @@ package com.hedera.node.app.spi;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Transaction metadata returned in case of any failure during pre-handle.
- */
+/** Transaction metadata returned in case of any failure during pre-handle. */
 public class InvalidTransactionMetadata implements TransactionMetadata {
-	protected ResponseCodeEnum status;
-	protected Transaction txn;
-	public InvalidTransactionMetadata(final Transaction txn , final ResponseCodeEnum failure) {
-		this.txn = txn;
-          this.status = failure;
-	}
+    protected ResponseCodeEnum status;
+    protected Transaction txn;
 
-	@Override
-	public boolean failed() {
-		return true;
-	}
-	@Override
-	public ResponseCodeEnum failureStatus() {
-		return status;
-	}
+    public InvalidTransactionMetadata(final Transaction txn, final ResponseCodeEnum failure) {
+        this.txn = txn;
+        this.status = failure;
+    }
 
-	@Override
-	public Transaction getTxn() {
-		return txn;
-	}
+    @Override
+    public boolean failed() {
+        return true;
+    }
 
-	@Override
-	public List<JKey> getReqKeys() {
-		return Collections.emptyList();
-	}
+    @Override
+    public ResponseCodeEnum failureStatus() {
+        return status;
+    }
+
+    @Override
+    public Transaction getTxn() {
+        return txn;
+    }
+
+    @Override
+    public List<JKey> getReqKeys() {
+        return Collections.emptyList();
+    }
 }

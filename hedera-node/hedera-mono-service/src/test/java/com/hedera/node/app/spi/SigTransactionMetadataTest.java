@@ -38,10 +38,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,8 +54,7 @@ class SigTransactionMetadataTest {
     private AccountID payer = asAccount("0.0.3");
     private EntityNum payerNum = EntityNum.fromInt(3);
 
-    @Mock
-    private RebuiltStateImpl aliases;
+    @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
     @Mock private States states;
     @Mock private MerkleAccount account;
@@ -66,7 +63,7 @@ class SigTransactionMetadataTest {
     private SigTransactionMetadata subject;
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         given(states.get(ACCOUNT_STORE)).willReturn(accounts);
         given(states.get(ALIASES_STORE)).willReturn(aliases);
         store = new AccountStore(states);

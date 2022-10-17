@@ -29,7 +29,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -80,7 +79,7 @@ public class AccountStore {
      */
     public Optional<MerkleAccount> getAccountLeaf(final AccountID id) {
         final var accountNum = getAccountNum(id);
-        if(accountNum == EntityNum.MISSING_NUM){
+        if (accountNum == EntityNum.MISSING_NUM) {
             return Optional.empty();
         }
         final var account = accountState.get(accountNum);

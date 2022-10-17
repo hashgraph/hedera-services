@@ -117,7 +117,9 @@ class AccountStoreTest {
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
         final var aliasedTxn = createAccountTransaction(payerAlias);
 
-        meta = subject.createAccountSigningMetadata(aliasedTxn, Optional.of(jkey), true, payerAlias);
+        meta =
+                subject.createAccountSigningMetadata(
+                        aliasedTxn, Optional.of(jkey), true, payerAlias);
         assertTrue(meta.failed());
         assertEquals(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID, meta.failureStatus());
     }

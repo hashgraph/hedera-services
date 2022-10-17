@@ -18,7 +18,6 @@ package com.hedera.node.app.spi;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-
 import java.util.List;
 
 /**
@@ -30,24 +29,29 @@ import java.util.List;
 public interface TransactionMetadata {
     /**
      * Checks the failure by validating the status is not {@link ResponseCodeEnum OK}
+     *
      * @return returns true if status is not OK
      */
     boolean failed();
 
     /**
      * Returns the failure {@link ResponseCodeEnum}, which gives more information on the failure
+     *
      * @return response code of the failure
      */
     ResponseCodeEnum failureStatus();
 
     /**
      * Transaction that is being pre-handled
+     *
      * @return transaction that is being pre-handled
      */
     Transaction getTxn();
 
     /**
-     * All the keys required for validation signing requirements in pre-handle. This list includes payer key as well.
+     * All the keys required for validation signing requirements in pre-handle. This list includes
+     * payer key as well.
+     *
      * @return keys needed for validating signing requirements
      */
     List<JKey> getReqKeys();

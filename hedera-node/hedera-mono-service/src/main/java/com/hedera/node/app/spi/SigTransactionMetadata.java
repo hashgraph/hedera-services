@@ -15,72 +15,72 @@
  */
 package com.hedera.node.app.spi;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-
-import javax.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import javax.annotation.Nullable;
 
 /**
- * Metadata collected when transactions are handled as part of "pre-handle" needed for signature verification.
+ * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
+ * verification.
  */
 public class SigTransactionMetadata implements TransactionMetadata {
-	protected @Nullable List<JKey> requiredKeys = new ArrayList<>();
-	protected Transaction txn;
-	protected AccountStore store;
+    protected @Nullable List<JKey> requiredKeys = new ArrayList<>();
+    protected Transaction txn;
+    protected AccountStore store;
 
-	protected ResponseCodeEnum status = OK;
+    protected ResponseCodeEnum status = OK;
 
-	public SigTransactionMetadata(final AccountStore store,
-			final Transaction txn,
-			final AccountID payer,
-			final List<JKey> otherKeys) {
-		this.store = store;
-		this.txn = txn;
-		requiredKeys.addAll(otherKeys);
-		addPayerKey(payer);
-	}
+    public SigTransactionMetadata(
+            final AccountStore store,
+            final Transaction txn,
+            final AccountID payer,
+            final List<JKey> otherKeys) {
+        this.store = store;
+        this.txn = txn;
+        requiredKeys.addAll(otherKeys);
+        addPayerKey(payer);
+    }
 
-	public SigTransactionMetadata(final AccountStore store,
-			final Transaction txn,
-			final AccountID payer) {
-		this(store, txn, payer, Collections.emptyList());
-	}
+    public SigTransactionMetadata(
+            final AccountStore store, final Transaction txn, final AccountID payer) {
+        this(store, txn, payer, Collections.emptyList());
+    }
 
-	private void addPayerKey(final AccountID payer){
-		final var account = store.getAccountLeaf(payer);
-		if (account.isEmpty()) {
-			this.status = INVALID_PAYER_ACCOUNT_ID;
-		} else {
-			requiredKeys.add(account.get().getAccountKey());
-		}
-	}
+    private void addPayerKey(final AccountID payer) {
+        final var account = store.getAccountLeaf(payer);
+        if (account.isEmpty()) {
+            this.status = INVALID_PAYER_ACCOUNT_ID;
+        } else {
+            requiredKeys.add(account.get().getAccountKey());
+        }
+    }
 
-	@Override
-	public Transaction getTxn() {
-		return txn;
-	}
+    @Override
+    public Transaction getTxn() {
+        return txn;
+    }
 
-	@Override
-	public List<JKey> getReqKeys() {
-		return requiredKeys;
-	}
+    @Override
+    public List<JKey> getReqKeys() {
+        return requiredKeys;
+    }
 
-	@Override
-	public boolean failed() {
-		return !status.equals(OK);
-	}
-	@Override
-	public ResponseCodeEnum failureStatus() {
-		return status;
-	}
+    @Override
+    public boolean failed() {
+        return !status.equals(OK);
+    }
+
+    @Override
+    public ResponseCodeEnum failureStatus() {
+        return status;
+    }
 }
