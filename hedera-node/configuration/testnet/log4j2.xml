@@ -76,6 +76,7 @@
           <!-- JasperDB & Virtual Merkle -->
           <MarkerFilter marker="JASPER_DB"              onMatch="DENY" onMismatch="NEUTRAL"/>
           <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="DENY" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="STATE_HASH"             onMatch="DENY" onMismatch="NEUTRAL"/>
         </Filters>
       </AppenderRef>
 
@@ -162,7 +163,7 @@
         <!-- Saved States -->
         <MarkerFilter marker="SNAPSHOT_MANAGER"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_TO_DISK"          onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="STATE_HASH"             onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STATE_HASH"             onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- Beta Mirror -->
         <MarkerFilter marker="BETA_MIRROR_NODE"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
