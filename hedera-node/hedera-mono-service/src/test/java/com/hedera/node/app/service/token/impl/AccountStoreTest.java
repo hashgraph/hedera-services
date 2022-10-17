@@ -84,7 +84,7 @@ class AccountStoreTest {
 
         assertFalse(meta.failed());
         assertEquals(txn, meta.getTxn());
-        assertEquals(List.of(payerJkey, jkey), meta.getReqKeys());
+        assertEquals(List.of(jkey, payerJkey), meta.getReqKeys());
     }
 
     @Test
@@ -101,7 +101,7 @@ class AccountStoreTest {
 
         assertFalse(meta.failed());
         assertEquals(txn, meta.getTxn());
-        assertEquals(List.of(payerJkey, jkey), meta.getReqKeys());
+        assertEquals(List.of(jkey, payerJkey), meta.getReqKeys());
     }
 
     @Test
