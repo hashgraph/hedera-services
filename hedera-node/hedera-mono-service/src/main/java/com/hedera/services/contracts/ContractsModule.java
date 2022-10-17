@@ -29,6 +29,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.ContractStorageLimits;
@@ -45,6 +46,7 @@ import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
@@ -161,8 +163,11 @@ public interface ContractsModule {
     static MessageCallProcessor provideV_0_30MessageCallProcessor(
             final @V_0_30 EVM evm,
             final @V_0_30 PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final AutoCreationLogic autoCreationLogic,
+            final RecordsHistorian recordsHistorian) {
+        return new HederaMessageCallProcessor(
+                evm, precompiles, hederaPrecompileList, autoCreationLogic, recordsHistorian);
     }
 
     @Provides
@@ -184,8 +189,11 @@ public interface ContractsModule {
     static MessageCallProcessor provideV_0_32MessageCallProcessor(
             final @V_0_32 EVM evm,
             final @V_0_32 PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final AutoCreationLogic autoCreationLogic,
+            final RecordsHistorian recordsHistorian) {
+        return new HederaMessageCallProcessor(
+                evm, precompiles, hederaPrecompileList, autoCreationLogic, recordsHistorian);
     }
 
     @Provides

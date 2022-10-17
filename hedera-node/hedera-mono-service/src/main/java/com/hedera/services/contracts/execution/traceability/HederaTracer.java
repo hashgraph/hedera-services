@@ -35,6 +35,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -120,15 +121,20 @@ public class HederaTracer implements HederaOperationTracer {
                         messageFrame.getInputData().toArray(),
                         messageFrame.getValue().toLong(),
                         messageFrame.getMessageStackDepth());
-        final var recipient =
-                EntityId.fromAddress(
-                        asMirrorAddress(messageFrame.getContractAddress(), messageFrame));
-        if (Code.EMPTY.equals(messageFrame.getCode())) {
-            // code can be empty when calling precompiles too, but we handle
-            // that in tracePrecompileCall, after precompile execution is completed
-            action.setRecipientAccount(recipient);
+
+        final var contractAddress = messageFrame.getContractAddress();
+        if (messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
+            action.setInvalidSolidityAddress(contractAddress.toArray());
         } else {
-            action.setRecipientContract(recipient);
+            final var recipient =
+                    EntityId.fromAddress(asMirrorAddress(contractAddress, messageFrame));
+            if (Code.EMPTY.equals(messageFrame.getCode())) {
+                // code can be empty when calling precompiles too, but we handle
+                // that in tracePrecompileCall, after precompile execution is completed
+                action.setRecipientAccount(recipient);
+            } else {
+                action.setRecipientContract(recipient);
+            }
         }
         actionConfig.accept(action);
 
@@ -143,6 +149,18 @@ public class HederaTracer implements HederaOperationTracer {
             // externalize output for calls only - create output is externalized in bytecode sidecar
             if (action.getCallType() != CREATE) {
                 action.setOutput(frame.getOutputData().toArrayUnsafe());
+                if (action.getInvalidSolidityAddress() != null) {
+                    // we had a successful lazy create, replace targeted address
+                    // with its new Hedera id
+                    final var recipientAsHederaId =
+                            EntityId.fromAddress(
+                                    asMirrorAddress(
+                                            Address.wrap(
+                                                    Bytes.of(action.getInvalidSolidityAddress())),
+                                            frame));
+                    action.setInvalidSolidityAddress(null);
+                    action.setRecipientAccount(recipientAsHederaId);
+                }
             } else {
                 action.setOutput(new byte[0]);
             }
@@ -206,6 +224,12 @@ public class HederaTracer implements HederaOperationTracer {
     public void traceAccountCreationResult(
             final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
         frame.setExceptionalHaltReason(haltReason);
+        if (areActionSidecarsEnabled) {
+            // we take the last action from the list since there is a chance
+            // it has already been popped from the stack
+            final var lastAction = allActions.get(allActions.size() - 1);
+            finalizeActionFor(lastAction, frame, frame.getState());
+        }
     }
 
     public List<SolidityAction> getActions() {

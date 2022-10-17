@@ -128,7 +128,11 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final Address to,
             final Bytes payload,
             final long value) {
-        final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+        final var resolvedForEvm = aliasManager.resolveForEvm(to);
+        final var code =
+                aliasManager.isMirror(resolvedForEvm)
+                        ? codeCache.getIfPresent(resolvedForEvm)
+                        : null;
         /* The ContractCallTransitionLogic would have rejected a missing or deleted
          * contract, so at this point we should have non-null bytecode available.
          * If there is no bytecode, it means we have a non-token and non-contract account,

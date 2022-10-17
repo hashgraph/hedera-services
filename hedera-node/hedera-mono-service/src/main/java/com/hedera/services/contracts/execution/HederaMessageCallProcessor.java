@@ -15,13 +15,25 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.*;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,14 +58,20 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
     private final Map<Address, PrecompiledContract> hederaPrecompiles;
+    private final AutoCreationLogic autoCreationLogic;
+    private final RecordsHistorian recordsHistorian;
 
     public HederaMessageCallProcessor(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList) {
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final AutoCreationLogic autoCreationLogic,
+            final RecordsHistorian recordsHistorian) {
         super(evm, precompiles);
         hederaPrecompiles = new HashMap<>();
         hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
+        this.autoCreationLogic = autoCreationLogic;
+        this.recordsHistorian = recordsHistorian;
     }
 
     @Override
@@ -68,6 +86,9 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
                 if (updater.isTokenAddress(frame.getRecipientAddress())) {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                } else if (updater.get(frame.getRecipientAddress()) == null
+                        && frame.getInputData().equals(Bytes.EMPTY)) {
+                    executeLazyCreate(frame, updater, operationTracer);
                 }
             }
             if (frame.getState() != EXCEPTIONAL_HALT) {
@@ -115,6 +136,51 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             frame.setState(COMPLETED_SUCCESS);
         } else {
             frame.setState(EXCEPTIONAL_HALT);
+        }
+    }
+
+    private void executeLazyCreate(
+            final MessageFrame frame,
+            final HederaStackedWorldStateUpdater updater,
+            final OperationTracer operationTracer) {
+        final var syntheticBalanceChange =
+                BalanceChange.changingHbar(
+                        AccountAmount.newBuilder()
+                                .setAccountID(
+                                        AccountID.newBuilder()
+                                                .setAlias(
+                                                        ByteStringUtils.wrapUnsafely(
+                                                                frame.getRecipientAddress()
+                                                                        .toArrayUnsafe()))
+                                                .build())
+                                .build(),
+                        null);
+        final var lazyCreateResult =
+                autoCreationLogic.create(syntheticBalanceChange, updater.trackingAccounts(), null);
+        if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {
+            frame.decrementRemainingGas(frame.getRemainingGas());
+            frame.setState(EXCEPTIONAL_HALT);
+            operationTracer.traceAccountCreationResult(
+                    frame, Optional.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
+        } else {
+            final var creationFeeInTinybars = lazyCreateResult.getRight();
+            final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
+            if (frame.getRemainingGas() < creationFeeInGas) {
+                // ledgers won't be committed on unsuccessful frame,
+                // all we need to do is clear the alias link
+                autoCreationLogic.reclaimPendingAliases();
+
+                frame.decrementRemainingGas(frame.getRemainingGas());
+                frame.setState(EXCEPTIONAL_HALT);
+                operationTracer.traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
+            } else {
+                frame.decrementRemainingGas(creationFeeInGas);
+                // track auto-creation preceding child record
+                autoCreationLogic.submitRecordsTo(recordsHistorian);
+                // track the lazy account so it is accessible to the EVM
+                updater.trackLazilyCreatedAccount(
+                        EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));
+            }
         }
     }
 }

@@ -64,7 +64,7 @@ import org.hyperledger.besu.datatypes.Address;
  * the Hedera Token Service. The memo field, for example, is not yet present.
  */
 public class Account {
-    private final Id id;
+    private Id id;
 
     private long expiry;
     private long balance;
@@ -88,6 +88,10 @@ public class Account {
 
     public Account(Id id) {
         this.id = id;
+    }
+
+    public Account(final ByteString alias) {
+        this.alias = alias;
     }
 
     public void setExpiry(long expiry) {

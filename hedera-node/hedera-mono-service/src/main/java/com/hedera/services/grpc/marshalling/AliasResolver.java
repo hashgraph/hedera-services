@@ -23,7 +23,9 @@ import static com.hedera.services.utils.MiscUtils.isSerializedProtoKey;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -32,6 +34,7 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +71,16 @@ public class AliasResolver {
         resolvedOp.addAllTokenTransfers(resolvedTokenAdjusts);
 
         return resolvedOp.build();
+    }
+
+    public void resolve(final EthTxData ethTxDataMeta, final AliasManager aliasManager) {
+        if (aliasManager
+                        .lookupIdBy(ByteStringUtils.wrapUnsafely(ethTxDataMeta.to()))
+                        .equals(MISSING_NUM)
+                && ethTxDataMeta.value().compareTo(BigInteger.ZERO) > 0
+                && !ethTxDataMeta.hasCallData()) {
+            perceivedCreations++;
+        }
     }
 
     public Map<ByteString, EntityNum> resolutions() {

@@ -17,6 +17,7 @@ package com.hedera.services.txns.contract;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -24,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
@@ -104,16 +106,29 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             final long maxGasAllowanceInTinybars,
             final BigInteger offeredGasPrice) {
         var op = contractCallTxn.getContractCall();
-        final var target = targetOf(op);
-        final var targetId = target.toId();
 
         // --- Load the model objects ---
         final var sender = accountStore.loadAccount(senderId);
 
-        Account receiver =
-                entityAccess.isTokenAccount(targetId.asEvmAddress())
-                        ? new Account(targetId)
-                        : accountStore.loadContract(targetId);
+        final var target = targetOf(op);
+        final var targetId = target.toId();
+        Account receiver;
+        if (relayerId != null
+                && target.equals(EntityNum.MISSING_NUM)
+                && properties.isAutoCreationEnabled()
+                && properties.isLazyCreationEnabled()) {
+            // allow Ethereum transactions to lazy create a hollow account
+            // if `to` is non-existent, `value` is non-zero and `callData` is empty
+            if (op.getAmount() <= 0 || !op.getFunctionParameters().isEmpty()) {
+                throw new InvalidTransactionException(INVALID_ACCOUNT_ID);
+            }
+            receiver = new Account(op.getContractID().getEvmAddress());
+        } else {
+            receiver =
+                    entityAccess.isTokenAccount(targetId.asEvmAddress())
+                            ? new Account(targetId)
+                            : accountStore.loadContract(targetId);
+        }
 
         final var callData =
                 !op.getFunctionParameters().isEmpty()
@@ -148,14 +163,26 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                             maxGasAllowanceInTinybars);
         }
 
-        // --- Persist changes into state ---
-        final var createdContracts = worldState.getCreatedContractIds();
-        result.setCreatedContracts(createdContracts);
-
         /* --- Externalise result --- */
-        txnCtx.setTargetedContract(target.toGrpcContractID());
-        for (final var createdContract : createdContracts) {
-            sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
+        if (target.equals(EntityNum.MISSING_NUM)) {
+            // for failed lazy creates there is no ID we can set in the receipt
+            // so only do this if result was successful; SigImpactHistorian has
+            // already been updated in AutoCreationLogic, so no need to do duplicate work here
+            if (result.isSuccessful()) {
+                final var hollowAccountNum =
+                        aliasManager.lookupIdBy(op.getContractID().getEvmAddress());
+                txnCtx.setTargetedContract(hollowAccountNum.toGrpcContractID());
+            }
+        } else {
+            // --- Persist changes into state ---
+            final var createdContracts = worldState.getCreatedContractIds();
+            result.setCreatedContracts(createdContracts);
+
+            txnCtx.setTargetedContract(target.toGrpcContractID());
+
+            for (final var createdContract : createdContracts) {
+                sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
+            }
         }
         recordService.externaliseEvmCallTransaction(result);
     }

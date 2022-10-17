@@ -35,6 +35,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
@@ -77,6 +78,7 @@ class ContractsModuleTest {
     @Mock EntityCreator entityCreator;
     @Mock MessageFrame messageFrame;
     @Mock WorldUpdater worldUpdater;
+    @Mock AutoCreationLogic autoCreationLogic;
 
     ContractsTestComponent subject;
 
@@ -100,6 +102,7 @@ class ContractsModuleTest {
                         .livePricesSource(livePricesSource)
                         .transactionContext(transactionContext)
                         .entityCreator(entityCreator)
+                        .autoCreationLogic(autoCreationLogic)
                         .build();
     }
 

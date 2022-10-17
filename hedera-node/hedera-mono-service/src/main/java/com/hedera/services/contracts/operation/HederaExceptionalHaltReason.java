@@ -71,6 +71,9 @@ public class HederaExceptionalHaltReason {
     /** Used when the target of a {@code selfdestruct} has positive balances. */
     public static final ExceptionalHaltReason TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES =
             HederaExceptionalHalt.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+    /** Used when a lazy creation will exceed the max number of accounts. */
+    public static final ExceptionalHaltReason MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED =
+            HederaExceptionalHalt.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 
     enum HederaExceptionalHalt implements ExceptionalHaltReason {
         INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
@@ -79,7 +82,9 @@ public class HederaExceptionalHaltReason {
         INVALID_SIGNATURE("Invalid signature"),
         TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES(
                 "Accounts with positive fungible token balances cannot be deleted"),
-        CONTRACT_STILL_OWNS_NFTS("Accounts who own nfts cannot be deleted");
+        CONTRACT_STILL_OWNS_NFTS("Accounts who own nfts cannot be deleted"),
+        MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED(
+                "Max entities in price regime have been created");
 
         final String description;
 

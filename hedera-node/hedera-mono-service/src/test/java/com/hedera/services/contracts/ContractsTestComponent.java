@@ -31,6 +31,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -87,6 +88,9 @@ public interface ContractsTestComponent {
 
         @BindsInstance
         Builder stateView(StateView stateView);
+
+        @BindsInstance
+        Builder autoCreationLogic(AutoCreationLogic autoCreationLogic);
 
         @BindsInstance
         Builder txnAwareSigsVerifier(TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier);

@@ -303,11 +303,20 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
                 return shouldThrottleMint(manager, txn.getTokenMint(), now);
             case CryptoTransfer:
                 if (dynamicProperties.isAutoCreationEnabled()) {
-                    return shouldThrottleTransfer(manager, details.getNumAutoCreations(), now);
+                    return shouldThrottleBasedOnAutoCreations(
+                            manager, details.getNumAutoCreations(), now);
                 } else {
                     /* Since auto-creation is disabled, if this transfer does attempt one, it will
                     resolve to NOT_SUPPORTED right away; so we don't want to ask for capacity from the
                     CryptoCreate throttle bucket. */
+                    return !manager.allReqsMetAt(now);
+                }
+            case EthereumTransaction:
+                if (dynamicProperties.isAutoCreationEnabled()
+                        && dynamicProperties.isLazyCreationEnabled()) {
+                    return shouldThrottleBasedOnAutoCreations(
+                            manager, details.getNumAutoCreations(), now);
+                } else {
                     return !manager.allReqsMetAt(now);
                 }
             default:
@@ -423,7 +432,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
                 now);
     }
 
-    private boolean shouldThrottleTransfer(
+    private boolean shouldThrottleBasedOnAutoCreations(
             final ThrottleReqsManager manager, final int numAutoCreations, final Instant now) {
         return (numAutoCreations == 0)
                 ? !manager.allReqsMetAt(now)
