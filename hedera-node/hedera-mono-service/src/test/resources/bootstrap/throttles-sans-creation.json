@@ -12,7 +12,8 @@
                 },
                 {
                     "operations": [
-                        "ContractCall"
+                        "ContractCall",
+                        "EthereumTransaction"
                     ],
                     "opsPerSec": 12
                 },
