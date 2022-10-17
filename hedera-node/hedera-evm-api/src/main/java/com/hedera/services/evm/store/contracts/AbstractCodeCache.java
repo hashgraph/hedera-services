@@ -26,14 +26,15 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 
 public class AbstractCodeCache {
-    private final HederaEvmEntityAccess entityAccess;
-    private final Cache<BytesKey, Code> cache;
+    protected final HederaEvmEntityAccess entityAccess;
+    protected final Cache<BytesKey, Code> cache;
 
-    public AbstractCodeCache(final int cacheTTL, final HederaEvmEntityAccess entityAccess) {
+    public AbstractCodeCache(
+            final int expirationCacheTime, final HederaEvmEntityAccess entityAccess) {
         this.entityAccess = entityAccess;
         this.cache =
                 Caffeine.newBuilder()
-                        .expireAfterAccess(cacheTTL, TimeUnit.SECONDS)
+                        .expireAfterAccess(expirationCacheTime, TimeUnit.SECONDS)
                         .softValues()
                         .build();
     }

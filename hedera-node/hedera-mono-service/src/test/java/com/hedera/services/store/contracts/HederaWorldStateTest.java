@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.operation.HederaOperationUtil;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -78,7 +79,7 @@ class HederaWorldStateTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private ContractCustomizer customizer;
     @Mock private UsageLimits usageLimits;
-
+    @Mock NodeLocalProperties properties;
     private CodeCache codeCache;
 
     final long balance = 1_234L;
@@ -94,7 +95,7 @@ class HederaWorldStateTest {
 
     @BeforeEach
     void setUp() {
-        codeCache = new CodeCache(0, entityAccess);
+        codeCache = new CodeCache(properties, entityAccess);
         subject =
                 new HederaWorldState(
                         usageLimits,
@@ -278,7 +279,10 @@ class HederaWorldStateTest {
     void failsFastIfDeletionsHappenOnStaticWorld() {
         subject =
                 new HederaWorldState(
-                        ids, entityAccess, new CodeCache(0, entityAccess), dynamicProperties);
+                        ids,
+                        entityAccess,
+                        new CodeCache(properties, entityAccess),
+                        dynamicProperties);
         final var tbd = IdUtils.asAccount("0.0.321");
         final var tbdAddress = asTypedEvmAddress(tbd);
         givenNonNullWorldLedgers();

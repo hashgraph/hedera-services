@@ -15,10 +15,13 @@
  */
 package com.hedera.services.store.contracts;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.evm.store.contracts.AbstractCodeCache;
+import com.hedera.services.evm.store.contracts.utils.BytesKey;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.hyperledger.besu.evm.Code;
 
 /**
  * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used to store
@@ -32,21 +35,18 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CodeCache extends AbstractCodeCache {
+
     @Inject
     public CodeCache(final NodeLocalProperties properties, final EntityAccess entityAccess) {
-        this(properties.prefetchCodeCacheTtlSecs(), entityAccess);
-    }
-    // temporary constructor for the test cases
-    public CodeCache(final int cacheTTL, final EntityAccess entityAccess) {
-        super(cacheTTL, entityAccess);
+        super(properties.prefetchCodeCacheTtlSecs(), entityAccess);
     }
 
     /* --- Only used by unit tests --- */
-    //    Cache<BytesKey, Code> getCache() {
-    //        return cache;
-    //    }
-    //
-    //    void cacheValue(BytesKey key, Code value) {
-    //        cache.put(key, value);
-    //    }
+    Cache<BytesKey, Code> getCache() {
+        return cache;
+    }
+
+    void cacheValue(BytesKey key, Code value) {
+        cache.put(key, value);
+    }
 }

@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -50,12 +51,12 @@ class UpdateTrackingLedgerAccountTest {
 
     @Mock private EntityAccess entityAccess;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
-
+    @Mock NodeLocalProperties properties;
     private CodeCache codeCache;
 
     @BeforeEach
     void setUp() {
-        codeCache = new CodeCache(0, entityAccess);
+        codeCache = new CodeCache(properties, entityAccess);
     }
 
     @Test
