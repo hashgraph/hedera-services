@@ -54,17 +54,17 @@ public class TestFileUtils {
     }
 
     /** Convenience method for adding the OS file separator to a path */
-    public static String toPath(File dir, String filename) {
+    public static String toPath(final File dir, final String filename) {
         var withSeparator =
                 filename.startsWith(File.separator) ? filename : File.separator + filename;
         return dir.getPath() + withSeparator;
     }
 
-    public static String toPath(String dir, String filename) {
+    public static String toPath(final String dir, final String filename) {
         return toPath(new File(dir), filename);
     }
 
-    public static String toPath(Path dir, String filename) {
+    public static String toPath(final Path dir, final String filename) {
         return toPath(dir.toFile(), filename);
     }
 }

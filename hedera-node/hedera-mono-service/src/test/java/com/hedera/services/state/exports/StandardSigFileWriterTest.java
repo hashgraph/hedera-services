@@ -55,6 +55,7 @@ class StandardSigFileWriterTest {
     }
 
     @Test
+    @SuppressWarnings("java:S3415")
     void writesExpectedFile() {
         // setup:
         var hash = hashReader.readHash(toSign);
@@ -84,6 +85,7 @@ class StandardSigFileWriterTest {
     }
 
     @Test
+    @SuppressWarnings("java:S3415")
     void writesExpectedFileWhenCompressionIsEnabled() throws IOException {
         // setup:
         var hash = hashReader.readHash(toSign);
