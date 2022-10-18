@@ -177,4 +177,19 @@ class OnDiskAccountCompatibilityTest {
         subject.setAlias(ByteString.copyFromUtf8("PRETEND"));
         assertTrue(subject.hasAlias());
     }
+
+    @Test
+    void canManageAutoRenewAccount() {
+        final var someId = new EntityId(0, 0, 1234L);
+        assertFalse(subject.hasAutoRenewAccount());
+        assertNull(subject.getAutoRenewAccount());
+        subject.setAutoRenewAccountNumber(1234L);
+        assertTrue(subject.hasAutoRenewAccount());
+        assertEquals(someId, subject.getAutoRenewAccount());
+
+        subject.setAutoRenewAccount(null);
+        assertEquals(0L, subject.getAutoRenewAccountNumber());
+        subject.setAutoRenewAccount(someId);
+        assertEquals(1234L, subject.getAutoRenewAccountNumber());
+    }
 }

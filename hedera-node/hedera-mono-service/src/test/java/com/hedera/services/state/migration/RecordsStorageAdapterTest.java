@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.migration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,6 +30,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,11 +40,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RecordsStorageAdapterTest {
     private static final EntityNum SOME_NUM = EntityNum.fromInt(1234);
+    private static final EntityNum SOME_MISSING_NUM = EntityNum.fromInt(4321);
 
     @Mock private @Nullable MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private @Nullable MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
     @Mock private MerkleAccount account;
     @Mock private MerklePayerRecords accountRecords;
+    @Mock private BiConsumer<EntityNum, FCQueue<ExpirableTxnRecord>> observer;
 
     private RecordsStorageAdapter subject;
 
@@ -106,6 +110,38 @@ class RecordsStorageAdapterTest {
     }
 
     @Test
+    void gettingReadOnlyWithDedicatedPayerWorks() {
+        withDedicatedSubject();
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        final FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
+        records.add(aRecord);
+        final var queryable = new QueryableRecords(1, records.iterator());
+        given(payerRecords.get(SOME_NUM)).willReturn(accountRecords);
+        given(accountRecords.asQueryableRecords()).willReturn(queryable);
+
+        assertSame(queryable, subject.getReadOnlyPayerRecords(SOME_NUM));
+        assertSame(
+                QueryableRecords.NO_QUERYABLE_RECORDS,
+                subject.getReadOnlyPayerRecords(SOME_MISSING_NUM));
+    }
+
+    @Test
+    void gettingReadOnlyWithLegacyPayerWorks() {
+        withLegacySubject();
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        final FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
+        records.add(aRecord);
+        given(accounts.get(SOME_NUM)).willReturn(account);
+        given(account.numRecords()).willReturn(1);
+
+        final var queryable = subject.getReadOnlyPayerRecords(SOME_NUM);
+        assertEquals(1, queryable.expectedSize());
+        assertSame(
+                QueryableRecords.NO_QUERYABLE_RECORDS,
+                subject.getReadOnlyPayerRecords(SOME_MISSING_NUM));
+    }
+
+    @Test
     void addingWithLegacyPayerWorks() {
         withLegacySubject();
         final FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
@@ -117,6 +153,34 @@ class RecordsStorageAdapterTest {
 
         final var added = records.poll();
         assertSame(aRecord, added);
+    }
+
+    @Test
+    void canReviewDedicatedRecords() {
+        payerRecords = new MerkleMap<>();
+        withDedicatedSubject();
+        accountRecords = new MerklePayerRecords();
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        accountRecords.offer(aRecord);
+        payerRecords.put(SOME_NUM, accountRecords);
+
+        subject.doForEach(observer);
+
+        verify(observer).accept(eq(SOME_NUM), any());
+    }
+
+    @Test
+    void canReviewLegacy() {
+        accounts = new MerkleMap<>();
+        withLegacySubject();
+        account = new MerkleAccount();
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        account.records().offer(aRecord);
+        accounts.put(SOME_NUM, account);
+
+        subject.doForEach(observer);
+
+        verify(observer).accept(eq(SOME_NUM), any());
     }
 
     private void withLegacySubject() {
