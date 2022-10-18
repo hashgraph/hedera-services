@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -494,12 +495,13 @@ public class EthereumSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .adminKey(SECP_256K1_SOURCE_KEY)
                                 .supplyKey(SECP_256K1_SOURCE_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                            fungible.set(asToken(idLit))))
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
                 .when(
                         sourcing(
-                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))),
+                                () ->
+                                        contractCreate(
+                                                HELLO_WORLD_MINT_CONTRACT,
+                                                convertAliasToAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -560,12 +562,13 @@ public class EthereumSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                fungible.set(asToken(idLit))))
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
                 .when(
                         sourcing(
-                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))),
+                                () ->
+                                        contractCreate(
+                                                HELLO_WORLD_MINT_CONTRACT,
+                                                convertAliasToAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -628,12 +631,13 @@ public class EthereumSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                            fungible.set(asToken(idLit))))
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
                 .when(
                         sourcing(
-                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))),
+                                () ->
+                                        contractCreate(
+                                                HELLO_WORLD_MINT_CONTRACT,
+                                                convertAliasToAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .nonce(0)
@@ -888,9 +892,9 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                     + " is {}",
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createdTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }))))
                 .then(

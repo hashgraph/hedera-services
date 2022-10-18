@@ -65,10 +65,6 @@ public class ContractPerformanceSuite extends HapiApiSuite {
             "726576657274207465737420636f6e7472616374";
 
     public static void main(String... args) {
-        /* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-        //noinspection InstantiationOfUtilityClass
-        new org.ethereum.crypto.HashUtil();
-
         new ContractPerformanceSuite().runSuiteAsync();
     }
 

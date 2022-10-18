@@ -101,15 +101,10 @@ public class HapiParserUtil {
         return expandedArray;
     }
 
-    private static byte[] stripSelector(final byte[] bytesToExpand) {
-        byte[] expandedArray = new byte[bytesToExpand.length-4];
+    public static byte[] stripSelector(final byte[] bytesToExpand) {
+        byte[] expandedArray = new byte[bytesToExpand.length - 4];
 
-        System.arraycopy(
-            bytesToExpand,
-            4,
-            expandedArray,
-            0,
-            bytesToExpand.length-4);
+        System.arraycopy(bytesToExpand, 4, expandedArray, 0, bytesToExpand.length - 4);
         return expandedArray;
     }
 

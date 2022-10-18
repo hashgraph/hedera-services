@@ -60,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -73,7 +74,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
@@ -239,9 +239,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -357,9 +357,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createdTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -468,9 +468,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         "Explicit create result is"
                                                                                 + " {}",
                                                                         result[0]);
-                                                                final var res = (byte[]) result[0];
+                                                                final var res = (Address) result[0];
                                                                 createdNftTokenNum.set(
-                                                                        new BigInteger(res)
+                                                                        res.value()
                                                                                 .longValueExact());
                                                             })
                                                     .hasKnownStatus(SUCCESS);
@@ -581,9 +581,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }))))
                 .then(
@@ -651,9 +651,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         "Explicit create result is"
                                                                                 + " {}",
                                                                         result[0]);
-                                                                final var res = (byte[]) result[0];
+                                                                final var res = (Address) result[0];
                                                                 createdTokenNum.set(
-                                                                        new BigInteger(res)
+                                                                        res.value()
                                                                                 .longValueExact());
                                                             })
                                                     .refusingEthConversion()
@@ -803,9 +803,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -898,9 +898,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createdTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -1005,9 +1005,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createdTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -1783,9 +1783,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)

@@ -133,8 +133,9 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        convertAliasToAddress(getNestedContractAddress(
-                                                                NESTED_CONTRACT, spec))),
+                                                        convertAliasToAddress(
+                                                                getNestedContractAddress(
+                                                                        NESTED_CONTRACT, spec))),
                                                 tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
                                                 newKeyNamed(SIMPLE_AND_DELEGATE_KEY_NAME)
                                                         .shape(
@@ -202,8 +203,9 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        convertAliasToAddress(getNestedContractAddress(
-                                                                NESTED_CONTRACT, spec))),
+                                                        convertAliasToAddress(
+                                                                getNestedContractAddress(
+                                                                        NESTED_CONTRACT, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT_KEY_SHAPE
@@ -266,8 +268,9 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        convertAliasToAddress(getNestedContractAddress(
-                                                                NESTED_CONTRACT, spec))),
+                                                        convertAliasToAddress(
+                                                                getNestedContractAddress(
+                                                                        NESTED_CONTRACT, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT_KEY_SHAPE

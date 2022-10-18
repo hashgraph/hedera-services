@@ -35,7 +35,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.math.BigInteger;
 import java.util.List;
@@ -67,30 +66,22 @@ public class BalanceOperationSuite extends HapiApiSuite {
                         contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(
-                                        contract,
-                                        "balanceOf",
-                                        HapiParserUtil.convertAliasToAddress(INVALID_ADDRESS))
+                        contractCall(contract, "balanceOf", convertAliasToAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
                         contractCallLocal(
                                         contract,
                                         "balanceOf",
-                                        HapiParserUtil.convertAliasToAddress(INVALID_ADDRESS))
+                                        convertAliasToAddress(INVALID_ADDRESS))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var id = spec.registry().getAccountID(ACCOUNT);
                                     final var contractID = spec.registry().getContractId(contract);
-                                    //                                    final var solidityAddress
-                                    // = asHexedSolidityAddress(id);
-                                    //                                    final var solidityAddress
-                                    // =
-                                    //
-                                    // HapiParserUtil.convertSolidityAddressToHeadlongAddress(
-                                    //
-                                    // (asHexedSolidityAddress(id)));
+
                                     final var solidityAddress = convertAliasToAddress(id);
-                                    final var contractAddress = asHexedSolidityAddress(contractID);
+                                    final var contractAddress =
+                                            convertAliasToAddress(
+                                                    asHexedSolidityAddress(contractID));
 
                                     final var call =
                                             contractCall(contract, "balanceOf", solidityAddress)
@@ -136,10 +127,7 @@ public class BalanceOperationSuite extends HapiApiSuite {
 
                                     final var contractCallLocal =
                                             contractCallLocal(
-                                                            contract,
-                                                            "balanceOf",
-                                                            HapiParserUtil.convertAliasToAddress(
-                                                                    contractAddress))
+                                                            contract, "balanceOf", contractAddress)
                                                     .has(
                                                             ContractFnResultAsserts.resultWith()
                                                                     .resultThruAbi(

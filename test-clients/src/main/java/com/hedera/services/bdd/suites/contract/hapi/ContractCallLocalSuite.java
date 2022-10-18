@@ -182,10 +182,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
                                         resultWith()
                                                 .resultThruAbi(
                                                         decimalsABI,
-                                                        isLiteralResult(
-                                                                new Object[] {
-                                                                    BigInteger.valueOf(DECIMALS)
-                                                                }))));
+                                                        isLiteralResult(new Object[] {DECIMALS}))));
     }
 
     @Override

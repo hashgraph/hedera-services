@@ -354,8 +354,9 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        convertAliasToAddress(getNestedContractAddress(
-                                                                NESTED_CONTRACT, spec))),
+                                                        convertAliasToAddress(
+                                                                getNestedContractAddress(
+                                                                        NESTED_CONTRACT, spec))),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 contractCall(
                                                                 OUTER_CONTRACT,

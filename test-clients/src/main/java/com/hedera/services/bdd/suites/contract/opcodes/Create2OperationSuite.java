@@ -58,8 +58,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.*;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
+import static com.hedera.services.bdd.suites.contract.Utils.accountId;
+import static com.hedera.services.bdd.suites.contract.Utils.aliasContractIdKey;
+import static com.hedera.services.bdd.suites.contract.Utils.aliasDelegateContractKey;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -81,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -334,8 +341,9 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                         contractCall(
                                                                                         contract,
                                                                                         DEPLOY,
-                                                                                        testContractInitcode
-                                                                                                .get())
+                                                                                        (Object)
+                                                                                                testContractInitcode
+                                                                                                        .get())
                                                                                 .payingWith(GENESIS)
                                                                                 .gas(4_000_000L)
                                                                                 .sending(tcValue)
@@ -374,7 +382,10 @@ public class Create2OperationSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        contractCreate(contract,convertAliasToAddress(tokenMirrorAddr.get()))
+                                        contractCreate(
+                                                        contract,
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()))
                                                 .payingWith(GENESIS)
                                                 .omitAdminKey()
                                                 .gas(4_000_000)
@@ -469,9 +480,12 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                             + " results {}",
                                                                     results);
                                                             final var expectedAddrBytes =
-                                                                    (byte[]) results[0];
+                                                                    (Address) results[0];
                                                             final var hexedAddress =
-                                                                    hex(expectedAddrBytes);
+                                                                    hex(
+                                                                            expectedAddrBytes
+                                                                                    .value()
+                                                                                    .toByteArray());
                                                             LOG.info(
                                                                     "  --> Expected CREATE2 address"
                                                                             + " is {}",
@@ -768,7 +782,10 @@ public class Create2OperationSuite extends HapiApiSuite {
                         uploadInitCode(immediateChildAssoc),
                         sourcing(
                                 () ->
-                                        contractCreate(immediateChildAssoc, convertAliasToAddress(tokenMirrorAddr.get()))
+                                        contractCreate(
+                                                        immediateChildAssoc,
+                                                        convertAliasToAddress(
+                                                                tokenMirrorAddr.get()))
                                                 .gas(2_000_000)
                                                 .adminKey(multiKey)
                                                 .payingWith(GENESIS)

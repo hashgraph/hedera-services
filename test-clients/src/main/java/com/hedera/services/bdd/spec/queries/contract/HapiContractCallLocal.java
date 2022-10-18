@@ -45,7 +45,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.core.CallTransaction;
 
 public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     private static final Logger LOG = LogManager.getLogger(HapiContractCallLocal.class);
@@ -155,9 +154,13 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
                 response.getContractCallLocal().getFunctionResult().getContractCallResult();
         saveResultToEntry.ifPresent(s -> spec.registry().saveBytes(s, rawResult));
         if (typedResultsObs.isPresent()) {
-            final var function = CallTransaction.Function.fromJsonInterface(abi);
-            final var typedResult = function.decodeResult(rawResult.toByteArray());
-            typedResultsObs.get().accept(typedResult);
+            final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+            if (rawResult.size() > 0) {
+                final var typedResult = function.decodeReturn(rawResult.toByteArray());
+                typedResultsObs.get().accept(typedResult.toList().toArray());
+            } else {
+                typedResultsObs.get().accept(new Object[1]);
+            }
         }
     }
 

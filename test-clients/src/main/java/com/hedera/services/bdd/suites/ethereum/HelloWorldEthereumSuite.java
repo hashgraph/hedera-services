@@ -515,7 +515,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         uploadInitCodeWithConstructorArguments(
                                 OC_TOKEN_CONTRACT,
                                 getABIFor(CONSTRUCTOR, EMPTY, OC_TOKEN_CONTRACT),
-                                1_000_000L,
+                                BigInteger.valueOf(1_000_000L),
                                 "OpenCrowd Token",
                                 "OCT"))
                 .when(

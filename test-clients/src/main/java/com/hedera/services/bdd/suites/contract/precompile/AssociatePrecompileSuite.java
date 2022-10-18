@@ -456,8 +456,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        convertAliasToAddress(getNestedContractAddress(
-                                                                INNER_CONTRACT, spec))),
+                                                        convertAliasToAddress(
+                                                                getNestedContractAddress(
+                                                                        INNER_CONTRACT, spec))),
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "associateDissociateContractCall",

@@ -161,12 +161,14 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                              fungible.set(asToken(idLit))),
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))),
                         uploadInitCode(HELLO_WORLD_MINT))
                 .when(
-                        sourcing(() -> contractCreate(HELLO_WORLD_MINT, convertAliasToAddress(asAddress(fungible.get())))),
+                        sourcing(
+                                () ->
+                                        contractCreate(
+                                                HELLO_WORLD_MINT,
+                                                convertAliasToAddress(asAddress(fungible.get())))),
                         contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
@@ -217,12 +219,14 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                            nonFungible.set(
-                                                       asToken(idLit))),
+                                .exposingCreatedIdTo(idLit -> nonFungible.set(asToken(idLit))),
                         uploadInitCode(HELLO_WORLD_MINT),
-                        sourcing(() -> contractCreate(HELLO_WORLD_MINT, convertAliasToAddress(asAddress(nonFungible.get())))))
+                        sourcing(
+                                () ->
+                                        contractCreate(
+                                                HELLO_WORLD_MINT,
+                                                convertAliasToAddress(
+                                                        asAddress(nonFungible.get())))))
                 .when(
                         contractCall(HELLO_WORLD_MINT, "mint")
                                 .via(FIRST_MINT_TXN)
@@ -293,11 +297,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                            fungible.set(asToken(idLit))),
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))),
                         uploadInitCode(MINT_CONTRACT),
-                        sourcing(() -> contractCreate(MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))))
+                        sourcing(
+                                () ->
+                                        contractCreate(
+                                                MINT_CONTRACT,
+                                                convertAliasToAddress(asAddress(fungible.get())))))
                 .when(
                         contractCall(
                                         MINT_CONTRACT,
@@ -360,12 +366,14 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                            nonFungible.set(
-                                                        asToken(idLit))),
+                                .exposingCreatedIdTo(idLit -> nonFungible.set(asToken(idLit))),
                         uploadInitCode(MINT_CONTRACT),
-                        sourcing(() -> contractCreate(MINT_CONTRACT, convertAliasToAddress(asAddress(nonFungible.get())))))
+                        sourcing(
+                                () ->
+                                        contractCreate(
+                                                MINT_CONTRACT,
+                                                convertAliasToAddress(
+                                                        asAddress(nonFungible.get())))))
                 .when(
                         contractCall(
                                         MINT_CONTRACT,
@@ -444,12 +452,15 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 NESTED_MINT_CONTRACT,
-                                                                convertAliasToAddress(getNestedContractAddress(
-                                                                        MINT_NFT_CONTRACT, spec)),
-                                                    convertAliasToAddress(asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN))))
+                                                                convertAliasToAddress(
+                                                                        getNestedContractAddress(
+                                                                                MINT_NFT_CONTRACT,
+                                                                                spec)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))))
                                                         .gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
                                                         .shape(
@@ -593,10 +604,11 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         MINT_CONTRACT,
-                                                        convertAliasToAddress(asAddress(
-                                                                spec.registry()
-                                                                        .getTokenID(
-                                                                                FUNGIBLE_TOKEN)))),
+                                                        convertAliasToAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        FUNGIBLE_TOKEN)))),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT_KEY_SHAPE
@@ -672,12 +684,15 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 NESTED_MINT_CONTRACT,
-                                                    convertAliasToAddress(getNestedContractAddress(
-                                                                        MINT_NFT_CONTRACT, spec)),
-                                                    convertAliasToAddress(asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NON_FUNGIBLE_TOKEN))))
+                                                                convertAliasToAddress(
+                                                                        getNestedContractAddress(
+                                                                                MINT_NFT_CONTRACT,
+                                                                                spec)),
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))))
                                                         .gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
@@ -742,14 +757,15 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                            fungible.set(asToken(idLit))))
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
                 .when(
                         uploadInitCode(MINT_CONTRACT),
                         sourcing(
                                 () ->
-                                        contractCreate(MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))
+                                        contractCreate(
+                                                        MINT_CONTRACT,
+                                                        convertAliasToAddress(
+                                                                asAddress(fungible.get())))
                                                 .payingWith(ACCOUNT)
                                                 .gas(GAS_TO_OFFER)))
                 .then(
@@ -783,14 +799,15 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                fungible.set(asToken(idLit))))
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
                 .when(
                         uploadInitCode(MINT_CONTRACT),
                         sourcing(
                                 () ->
-                                        contractCreate(MINT_CONTRACT, convertAliasToAddress(asAddress(fungible.get())))
+                                        contractCreate(
+                                                        MINT_CONTRACT,
+                                                        convertAliasToAddress(
+                                                                asAddress(fungible.get())))
                                                 .payingWith(ACCOUNT)
                                                 .gas(GAS_TO_OFFER)))
                 .then(

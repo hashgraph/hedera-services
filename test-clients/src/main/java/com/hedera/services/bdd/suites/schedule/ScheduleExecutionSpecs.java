@@ -221,8 +221,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
                                 scheduledSystemDeleteWorksAsExpected(),
                                 scheduledSystemDeleteUnauthorizedPayerFails(isLongTermEnabled),
-                                congestionPricingAffectsImmediateScheduleExecution()
-                        ));
+                                congestionPricingAffectsImmediateScheduleExecution()));
     }
 
     private HapiApiSpec scheduledBurnFailsWithInvalidTxBody() {

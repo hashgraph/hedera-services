@@ -87,9 +87,11 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 outerContract,
-                                                                convertAliasToAddress(asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(token))))
+                                                                convertAliasToAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                token))))
                                                         .via("associateTxn"),
                                                 cryptoTransfer(
                                                                 moving(200, token)

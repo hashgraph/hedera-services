@@ -126,10 +126,11 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
                                                                                 contract),
                                                                         isLiteralResult(
                                                                                 new Object[] {
-                                                                                    asAddress(
-                                                                                            spec.registry()
-                                                                                                    .getAccountID(
-                                                                                                            "Player13"))
+                                                                                    convertAliasToAddress(
+                                                                                            asAddress(
+                                                                                                    spec.registry()
+                                                                                                            .getAccountID(
+                                                                                                                    "Player13")))
                                                                                 }))))));
         then.add(UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
 
