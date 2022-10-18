@@ -208,14 +208,18 @@ public class FileUpdateSuite extends HapiApiSuite {
         final var aliasKey = "autoCreationKey";
 
         return defaultHapiSpec("AutoCreationIsDynamic")
-                .given(newKeyNamed(aliasKey), overriding("autoCreation.enabled", "false"))
+                .given(
+                        newKeyNamed(aliasKey),
+                        overriding("autoCreation.enabled", "false"),
+                        overriding("lazyCreation.enabled", "false"))
                 .when(
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR))
                                 .hasKnownStatus(NOT_SUPPORTED))
                 .then(
                         overriding("autoCreation.enabled", "true"),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR)),
-                        getAliasedAccountInfo(aliasKey));
+                        getAliasedAccountInfo(aliasKey),
+                        resetToDefault("autoCreation.enabled"));
     }
 
     public HapiApiSpec notTooManyFeeScheduleCanBeCreated() {
