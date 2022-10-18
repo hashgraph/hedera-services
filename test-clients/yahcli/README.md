@@ -24,6 +24,7 @@ appear below.
 12. [Getting deployed version info of a network](#get-version-info)
 13. [Creating a new key](#generate-a-new-ed25519-key)
 14. [Printing key details](#printing-key-details)
+15. [Changing a staking election](#changing-a-staking-election)
 
 # Setting up the working directory
 
@@ -440,4 +441,28 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.2.6 keys prin
 .i. The public key @ novel.pem is : 4351607d4a00821e6cbd8e8c186bfa3a2b8fdb5ca81cf1e5f84e95a86875fd84
 .i. The private key @ novel.pem is: ea52bce1ad54a88e156f50840e856b941f9b0db09266660c953cd14205546ca2
 .i.   -> With DER prefix; 302e020100300506032b657004220420ea52bce1ad54a88e156f50840e856b941f9b0db09266660c953cd14205546ca2
+```
+
+# Changing a staking election
+
+You can elect to stake to either a node or another account. With no other arguments, the `accounts stake` subcommand 
+updates the payer account's election. For example,
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.2.6 -n localhost -p 2 accounts stake --to-node-id 0
+...
+.i. SUCCESS - account 0.0.2 is now staked to NODE 0
+
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.2.6 -n localhost -p 2 accounts stake --to-account-num 1001
+...
+.i. SUCCESS - account 0.0.2 is now staked to ACCOUNT 0.0.1001
+```
+
+You can also change the staking election of an account other than the payer **if** yahcli can access the account's key in 
+PEM or mnemonic form. For example,
+```
+$ ls localhost/keys/account1001.*
+localhost/keys/account1001.pass		localhost/keys/account1001.pem		localhost/keys/account1001.words
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.2.6 -n localhost -p 2 accounts stake --to-node-id 0 1001
+...
+.i. SUCCESS - account 0.0.1001 is now staked to NODE 0
 ```

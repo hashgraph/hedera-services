@@ -15,20 +15,16 @@
  */
 package com.hedera.services.yahcli.suites;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
-
 import com.hederahashgraph.api.proto.java.FileID;
+
 import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 public class Utils {
     private static final DateTimeFormatter DATE_TIME_FORMAT =
@@ -51,7 +47,7 @@ public class Utils {
         }
     }
 
-    static String extractAccount(final String account) {
+    public static String extractAccount(final String account) {
         if (isIdLiteral(account)) {
             return account;
         } else {

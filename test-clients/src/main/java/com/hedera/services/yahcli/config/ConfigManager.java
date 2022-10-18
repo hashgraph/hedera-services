@@ -15,19 +15,16 @@
  */
 package com.hedera.services.yahcli.config;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
-import static com.hedera.services.yahcli.config.ConfigUtils.asId;
-import static com.hedera.services.yahcli.config.ConfigUtils.isLiteral;
-import static com.hedera.services.yahcli.config.ConfigUtils.promptForPassphrase;
-import static com.hedera.services.yahcli.config.ConfigUtils.unlocks;
-import static java.util.stream.Collectors.toList;
-
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottlesJsonToGrpcBytes;
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.config.domain.GlobalConfig;
 import com.hedera.services.yahcli.config.domain.NetConfig;
 import com.hedera.services.yahcli.config.domain.NodeConfig;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
+import picocli.CommandLine;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,9 +33,10 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
-import picocli.CommandLine;
+
+import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.yahcli.config.ConfigUtils.*;
+import static java.util.stream.Collectors.toList;
 
 public class ConfigManager {
     private static final long MISSING_NODE_ACCOUNT = -1;
@@ -105,7 +103,7 @@ public class ConfigManager {
             specConfig.put("default.payer.pemKeyPassphrase", finalPassphrase.get());
         } else {
             try {
-                var mnemonic = Files.readString(keyFile.toPath());
+                var mnemonic = Files.readString(keyFile.toPath()).trim();
                 specConfig.put("default.payer.mnemonic", mnemonic);
             } catch (IOException e) {
                 fail(String.format("Mnemonic file %s is inaccessible!", keyFile.getPath()));
