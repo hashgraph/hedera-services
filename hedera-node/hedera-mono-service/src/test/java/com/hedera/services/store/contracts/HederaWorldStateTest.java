@@ -15,7 +15,42 @@
  */
 package com.hedera.services.store.contracts;
 
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.contracts.operation.HederaOperationUtil;
+import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.SidecarUtils;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.ArrayDeque;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -35,39 +70,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
-
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.contracts.operation.HederaOperationUtil;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.SidecarUtils;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.ArrayDeque;
-import java.util.Map;
-import java.util.Optional;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaWorldStateTest {
@@ -385,7 +387,7 @@ class HederaWorldStateTest {
                 .resolveForEvm(any());
         given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
 
-        final var expected = new WorldStateTokenAccount(htsProxyAddress);
+        final var expected = new HederaEvmWorldStateTokenAccount(htsProxyAddress);
 
         final var realSubject = subject.updater().updater();
         final var result = realSubject.get(htsProxyAddress);
@@ -394,12 +396,12 @@ class HederaWorldStateTest {
         assertEquals(expected.getAddress(), result.getAddress());
         assertEquals(expected.getBalance(), result.getBalance());
         assertEquals(-1, result.getNonce());
-        assertEquals(WorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress), result.getCode());
+        assertEquals(HederaEvmWorldStateTokenAccount.bytecodeForToken(htsProxyAddress), result.getCode());
         // and:
         assertEquals(expected.getAddress(), evmResult.getAddress());
         assertEquals(expected.getBalance(), evmResult.getBalance());
         assertEquals(-1, evmResult.getNonce());
-        assertEquals(WorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress), evmResult.getCode());
+        assertEquals(HederaEvmWorldStateTokenAccount.bytecodeForToken(htsProxyAddress), evmResult.getCode());
     }
 
     @Test

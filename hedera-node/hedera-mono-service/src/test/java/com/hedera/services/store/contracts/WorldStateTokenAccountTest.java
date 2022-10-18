@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -33,7 +34,7 @@ import org.junit.jupiter.api.Test;
 class WorldStateTokenAccountTest {
     private static final Address pretendTokenAddr = Address.BLS12_G1MULTIEXP;
 
-    private WorldStateTokenAccount subject = new WorldStateTokenAccount(pretendTokenAddr);
+    private HederaEvmWorldStateTokenAccount subject = new HederaEvmWorldStateTokenAccount(pretendTokenAddr);
 
     @Test
     void getsExpectedCode() {
@@ -56,7 +57,7 @@ class WorldStateTokenAccountTest {
 
     @Test
     void hasTokenNonce() {
-        assertEquals(WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE, subject.getNonce());
+        assertEquals(HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE, subject.getNonce());
     }
 
     @Test
