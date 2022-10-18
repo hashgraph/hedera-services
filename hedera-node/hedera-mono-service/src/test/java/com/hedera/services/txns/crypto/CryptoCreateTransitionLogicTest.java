@@ -441,6 +441,7 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
 
         subject.doStateTransition();
 
@@ -572,6 +573,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
 
         subject.doStateTransition();
 
@@ -805,7 +808,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathECKeyAndCreateWithAliasDisabled() throws DecoderException {
+    void followsHappyPathECKeyAndCreateWithAliasAndLazyCreateDisabled() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
         final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
@@ -819,6 +822,87 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(false);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(false);
+
+        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+
+        subject.doStateTransition();
+
+        verify(ledger)
+                .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
+        verify(txnCtx).setCreated(CREATED);
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
+
+        final var changes = captor.getValue().getChanges();
+        assertEquals(7, changes.size());
+        assertEquals(ECDSA_KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
+        assertEquals(0L, (long) changes.get(AUTO_RENEW_PERIOD));
+        assertEquals(consensusTime.getEpochSecond(), (long) changes.get(EXPIRY));
+        assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
+        assertEquals(false, changes.get(DECLINE_REWARD));
+        assertEquals("", changes.get(AccountProperty.MEMO));
+        assertEquals(0, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+    }
+
+    @Test
+    void followsHappyPathECKeyAndCreateWithAliasEnabledAndLazyCreateDisabled()
+            throws DecoderException {
+        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+        given(txnCtx.activePayer()).willReturn(ourAccount());
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(MISSING_NUM);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(false);
+
+        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+
+        subject.doStateTransition();
+
+        verify(ledger)
+                .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
+        verify(txnCtx).setCreated(CREATED);
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
+
+        final var changes = captor.getValue().getChanges();
+        assertEquals(8, changes.size());
+        assertEquals(ECDSA_KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
+        assertEquals(0L, (long) changes.get(AUTO_RENEW_PERIOD));
+        assertEquals(consensusTime.getEpochSecond(), (long) changes.get(EXPIRY));
+        assertEquals(ByteString.copyFrom(EVM_ADDRESS_BYTES), changes.get(AccountProperty.ALIAS));
+        assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
+        assertEquals(false, changes.get(DECLINE_REWARD));
+        assertEquals("", changes.get(AccountProperty.MEMO));
+        assertEquals(0, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+    }
+
+    @Test
+    void followsHappyPathECKeyAndCreateWithAliasDisabledAndLazyCreateEnabled()
+            throws DecoderException {
+        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+        given(txnCtx.activePayer()).willReturn(ourAccount());
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(MISSING_NUM);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(false);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
@@ -858,6 +942,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
 
         subject.doStateTransition();
 
