@@ -352,7 +352,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount);
         }
 
-        final List<TokenTransferWrapper> tokenTransferWrappers =
+        final var tokenTransferWrappers =
                 Collections.singletonList(
                         new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 
@@ -372,7 +372,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver);
         final var amount = (long) decodedArguments.get(3);
 
-        final List<TokenTransferWrapper> tokenTransferWrappers =
+        final var tokenTransferWrappers =
                 Collections.singletonList(
                         new TokenTransferWrapper(
                                 NO_NFT_EXCHANGES,
@@ -401,7 +401,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             nftExchanges.add(nftExchange);
         }
 
-        final List<TokenTransferWrapper> tokenTransferWrappers =
+        final var tokenTransferWrappers =
                 Collections.singletonList(
                         new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
@@ -420,7 +420,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver);
         final var serialNumber = (long) decodedArguments.get(3);
 
-        final List<TokenTransferWrapper> tokenTransferWrappers =
+        final var tokenTransferWrappers =
                 Collections.singletonList(
                         new TokenTransferWrapper(
                                 List.of(

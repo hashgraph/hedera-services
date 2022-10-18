@@ -41,6 +41,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_FROM_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
@@ -61,6 +62,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferList;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -500,7 +502,7 @@ class ERC20PrecompilesTest {
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(
                         syntheticTxnFactory.createCryptoTransfer(
-                                Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+                                Collections.singletonList(tokensTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
@@ -545,7 +547,7 @@ class ERC20PrecompilesTest {
                         () ->
                                 ERCTransferPrecompile.decodeERCTransfer(
                                         eq(nestedPretendArguments), any(), any(), any()))
-                .thenReturn(CRYPTO_TRANSFER_TOKEN_WRAPPER);
+                .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
@@ -1202,7 +1204,7 @@ class ERC20PrecompilesTest {
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(
                         syntheticTxnFactory.createCryptoTransfer(
-                                Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+                                Collections.singletonList(tokensTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
@@ -1247,7 +1249,7 @@ class ERC20PrecompilesTest {
                         () ->
                                 ERCTransferPrecompile.decodeERCTransfer(
                                         eq(nestedPretendArguments), any(), any(), any()))
-                .thenReturn(CRYPTO_TRANSFER_TOKEN_WRAPPER);
+                .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
 
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1564,7 +1566,7 @@ class ERC20PrecompilesTest {
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(
                         syntheticTxnFactory.createCryptoTransfer(
-                                Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+                                Collections.singletonList(tokensTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
@@ -1602,7 +1604,7 @@ class ERC20PrecompilesTest {
                         () ->
                                 ERCTransferPrecompile.decodeERCTransfer(
                                         eq(nestedPretendArguments), any(), any(), any()))
-                .thenReturn(CRYPTO_TRANSFER_TOKEN_WRAPPER);
+                .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
 
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1694,19 +1696,6 @@ class ERC20PrecompilesTest {
     public static final TokenAllowanceWrapper ALLOWANCE_WRAPPER =
             new TokenAllowanceWrapper(token, sender, receiver);
 
-    public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER =
-            new TokenTransferWrapper(
-                    new ArrayList<>() {},
-                    List.of(
-                            new SyntheticTxnFactory.FungibleTokenTransfer(
-                                    AMOUNT, false, token, null, receiver),
-                            new SyntheticTxnFactory.FungibleTokenTransfer(
-                                    -AMOUNT, false, token, sender, null)));
-
-    public static final CryptoTransferWrapper CRYPTO_TRANSFER_TOKEN_WRAPPER =
-            new CryptoTransferWrapper(
-                    new TransferWrapper(Collections.emptyList()),
-                    Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
     public static final TokenTransferWrapper TOKEN_TRANSFER_FROM_WRAPPER =
             new TokenTransferWrapper(
                     new ArrayList<>() {},

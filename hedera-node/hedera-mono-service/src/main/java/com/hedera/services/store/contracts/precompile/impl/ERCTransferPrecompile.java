@@ -226,7 +226,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValueExact());
         addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValueExact());
 
-        final List<TokenTransferWrapper> tokenTransferWrappers =
+        final var tokenTransferWrappers =
                 Collections.singletonList(
                         new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 
@@ -281,7 +281,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValueExact());
             }
 
-            final List<TokenTransferWrapper> tokenTransferWrappers =
+            final var tokenTransferWrappers =
                     Collections.singletonList(
                             new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
             return new CryptoTransferWrapper(
@@ -299,7 +299,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                         SyntheticTxnFactory.NftExchange.fromApproval(serialNo, token, from, to));
             }
 
-            final List<TokenTransferWrapper> tokenTransferWrappers =
+            final var tokenTransferWrappers =
                     Collections.singletonList(
                             new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
             return new CryptoTransferWrapper(
