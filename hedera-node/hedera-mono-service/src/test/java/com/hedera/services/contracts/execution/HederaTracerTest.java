@@ -386,7 +386,6 @@ class HederaTracerTest {
     void finalizesPrecompileCallAsExpected() {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
-        given(messageFrame.getCode()).willReturn(Code.EMPTY);
         given(messageFrame.getOriginatorAddress()).willReturn(originator);
         given(messageFrame.getContractAddress()).willReturn(contract);
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
@@ -396,8 +395,6 @@ class HederaTracerTest {
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
-        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
 
         subject.init(messageFrame);
         // when
@@ -419,7 +416,6 @@ class HederaTracerTest {
     void finalizesSystemPrecompileCallAsExpected() {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
-        given(messageFrame.getCode()).willReturn(Code.EMPTY);
         given(messageFrame.getOriginatorAddress()).willReturn(originator);
         given(messageFrame.getContractAddress()).willReturn(contract);
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
@@ -429,8 +425,6 @@ class HederaTracerTest {
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
-        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
 
         subject.init(messageFrame);
         // when
@@ -586,7 +580,6 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
 
         subject.init(messageFrame);
 
@@ -716,7 +709,7 @@ class HederaTracerTest {
     }
 
     private void prepareSpawnOfChildFrame() {
-        given(messageFrame.getType()).willReturn(Type.CONTRACT_CREATION);
+        given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getCode()).willReturn(code);
         given(messageFrame.getOriginatorAddress()).willReturn(originator);
         given(messageFrame.getContractAddress()).willReturn(contract);
@@ -744,7 +737,6 @@ class HederaTracerTest {
         dequeMock.addFirst(firstChildFrame);
         given(messageFrame.getMessageFrameStack()).willReturn(dequeMock);
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
-        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(EvmAccount.class));
     }
 
     private void givenTracedExecutingFrame(final Type frameType) {
@@ -760,7 +752,9 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+        if (frameType == Type.MESSAGE_CALL) {
+            given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+        }
 
         subject.traceExecution(messageFrame, eo);
     }
