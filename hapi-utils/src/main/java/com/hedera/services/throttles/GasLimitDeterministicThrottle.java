@@ -27,8 +27,6 @@ import java.time.Instant;
  * GasLimitBucketThrottle} under the hood.
  */
 public class GasLimitDeterministicThrottle {
-    private static final Instant NEVER = null;
-
     private final GasLimitBucketThrottle delegate;
     private Instant lastDecisionTime;
     private final long capacity;
