@@ -103,6 +103,8 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.dynamicEvmVersion());
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertTrue(subject.shouldDoTraceabilityExport());
+        assertTrue(subject.isLazyCreationEnabled());
+        assertFalse(subject.isCryptoCreateWithAliasEnabled());
     }
 
     @Test
@@ -198,6 +200,8 @@ class GlobalDynamicPropertiesTest {
         assertEquals(69L, subject.maxPrecedingRecords());
         assertEquals(70L, subject.maxFollowingRecords());
         assertEquals(76L, subject.maxDailyStakeRewardThPerH());
+        assertEquals(88L, subject.traceabilityMinFreeToUsedGasThrottleRatio());
+        assertEquals(89L, subject.traceabilityMaxExportsPerConsSec());
     }
 
     @Test
@@ -255,6 +259,8 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.areTokenAutoCreationsEnabled());
         assertTrue(subject.dynamicEvmVersion());
         assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
+        assertFalse(subject.isLazyCreationEnabled());
+        assertTrue(subject.isCryptoCreateWithAliasEnabled());
     }
 
     @Test
@@ -518,6 +524,13 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 84) % 2 == 0);
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
                 .willReturn((i + 85) % 2 == 0);
+        given(properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO))
+                .willReturn(i + 87L);
+        given(properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC))
+                .willReturn(i + 88L);
+        given(properties.getBooleanProperty(LAZY_CREATION_ENABLED)).willReturn((i + 89) % 2 == 0);
+        given(properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED))
+                .willReturn((i + 90) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

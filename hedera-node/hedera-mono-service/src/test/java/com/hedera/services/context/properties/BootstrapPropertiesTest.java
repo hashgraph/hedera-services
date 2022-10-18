@@ -176,6 +176,8 @@ class BootstrapPropertiesTest {
                     entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, 10),
                     entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
                     entry(AUTO_CREATION_ENABLED, true),
+                    entry(LAZY_CREATION_ENABLED, true),
+                    entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, true),
                     entry(AUTO_RENEW_TARGET_TYPES, EnumSet.of(EntityType.CONTRACT)),
                     entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
                     entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
@@ -288,6 +290,8 @@ class BootstrapPropertiesTest {
                                     SidecarType.CONTRACT_BYTECODE)),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
                     entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
+                    entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, 9L),
+                    entry(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, 10L),
                     entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
                     entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
                     entry(TOKENS_AUTO_CREATIONS_ENABLED, true));

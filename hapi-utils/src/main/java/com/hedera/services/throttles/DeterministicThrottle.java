@@ -20,6 +20,7 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOve
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 /** A throttle with milli-TPS resolution that exists in a deterministic timeline. */
 public class DeterministicThrottle {
@@ -118,13 +119,13 @@ public class DeterministicThrottle {
     }
 
     public boolean allow(final int n, final Instant now) {
-        final var elapsedNanos = elapsedNanosUntil(now);
+        final var elapsedNanos = elapsedNanosBetween(lastDecisionTime, now);
         lastDecisionTime = now;
         return delegate.allow(n, elapsedNanos);
     }
 
     public void leakUntil(final Instant now) {
-        final var elapsedNanos = elapsedNanosUntil(now);
+        final var elapsedNanos = elapsedNanosBetween(lastDecisionTime, now);
         lastDecisionTime = now;
         delegate.leakFor(elapsedNanos);
     }
@@ -251,7 +252,8 @@ public class DeterministicThrottle {
         return lastDecisionTime;
     }
 
-    private long elapsedNanosUntil(final Instant now) {
+    public static long elapsedNanosBetween(
+            @Nullable final Instant lastDecisionTime, final Instant now) {
         long elapsedNanos = 0L;
         if (lastDecisionTime != NEVER) {
             elapsedNanos = Duration.between(lastDecisionTime, now).toNanos();
