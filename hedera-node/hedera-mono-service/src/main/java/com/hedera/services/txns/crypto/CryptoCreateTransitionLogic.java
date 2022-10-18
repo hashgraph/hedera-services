@@ -132,19 +132,24 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
             txnCtx.setCreated(created);
             txnCtx.setStatus(SUCCESS);
-            if (!op.getAlias().isEmpty()) {
-                aliasManager.link(op.getAlias(), EntityNum.fromAccountId(created));
-                if (op.getAlias().size() > EVM_ADDRESS_SIZE) {
-                    final var key = asPrimitiveKeyUnchecked(op.getAlias());
-                    JKey jKey = asFcKeyUnchecked(key);
-                    aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
-                }
-            } else {
-                if (op.hasKey() && !op.getKey().getECDSASecp256K1().isEmpty()) {
-                    aliasManager.link(
-                            (ByteString)
-                                    ledger.getAccountsLedger().get(created, AccountProperty.ALIAS),
-                            EntityNum.fromAccountId(created));
+            if (dynamicProperties.isCryptoCreateWithAliasEnabled()
+                    && dynamicProperties.isLazyCreationEnabled()) {
+
+                if (!op.getAlias().isEmpty()) {
+                    aliasManager.link(op.getAlias(), EntityNum.fromAccountId(created));
+                    if (op.getAlias().size() > EVM_ADDRESS_SIZE) {
+                        final var key = asPrimitiveKeyUnchecked(op.getAlias());
+                        final var jKey = asFcKeyUnchecked(key);
+                        aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
+                    }
+                } else {
+                    if (op.hasKey() && !op.getKey().getECDSASecp256K1().isEmpty()) {
+                        aliasManager.link(
+                                (ByteString)
+                                        ledger.getAccountsLedger()
+                                                .get(created, AccountProperty.ALIAS),
+                                EntityNum.fromAccountId(created));
+                    }
                 }
             }
         } catch (InsufficientFundsException ife) {
@@ -183,7 +188,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getAlias());
         } else {
             /* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
-            if (!op.getKey().getECDSASecp256K1().isEmpty()) {
+            if (!op.getKey().getECDSASecp256K1().isEmpty()
+                    && dynamicProperties.isCryptoCreateWithAliasEnabled()) {
 
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
