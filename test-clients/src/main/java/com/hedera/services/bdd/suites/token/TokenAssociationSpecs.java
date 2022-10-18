@@ -15,25 +15,6 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
-import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
@@ -51,6 +32,24 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
+import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class TokenAssociationSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);

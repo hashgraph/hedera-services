@@ -15,23 +15,6 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -56,6 +39,22 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy
@@ -115,37 +114,39 @@ public class FileUpdateSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-//                    vanillaUpdateSucceeds(),
-//                    updateFeesCompatibleWithCreates(),
-//                    apiPermissionsChangeDynamically(),
-//                    cannotUpdateExpirationPastMaxLifetime(),
-//                    optimisticSpecialFileUpdate(),
-//                    associateHasExpectedSemantics(),
-//                    notTooManyFeeScheduleCanBeCreated(),
-//                    allUnusedGasIsRefundedIfSoConfigured(),
-//                    maxRefundIsEnforced(),
-//                    gasLimitOverMaxGasLimitFailsPrecheck(),
-//                    autoCreationIsDynamic(),
-//                    kvLimitsEnforced(),
-//                    serviceFeeRefundedIfConsGasExhausted(),
-//                    chainIdChangesDynamically(),
-//                    entitiesNotCreatableAfterUsageLimitsReached(),
-//                    rentItemizedAsExpectedWithOverridePriceTiers(),
-//                    messageSubmissionSizeChange(),
-                        getMainnetInfo(),
+                    //                    vanillaUpdateSucceeds(),
+                    //                    updateFeesCompatibleWithCreates(),
+                    //                    apiPermissionsChangeDynamically(),
+                    //                    cannotUpdateExpirationPastMaxLifetime(),
+                    //                    optimisticSpecialFileUpdate(),
+                    //                    associateHasExpectedSemantics(),
+                    //                    notTooManyFeeScheduleCanBeCreated(),
+                    //                    allUnusedGasIsRefundedIfSoConfigured(),
+                    //                    maxRefundIsEnforced(),
+                    //                    gasLimitOverMaxGasLimitFailsPrecheck(),
+                    //                    autoCreationIsDynamic(),
+                    //                    kvLimitsEnforced(),
+                    //                    serviceFeeRefundedIfConsGasExhausted(),
+                    //                    chainIdChangesDynamically(),
+                    //                    entitiesNotCreatableAfterUsageLimitsReached(),
+                    //                    rentItemizedAsExpectedWithOverridePriceTiers(),
+                    //                    messageSubmissionSizeChange(),
+                    getMainnetInfo(),
                 });
     }
 
     private HapiApiSpec getMainnetInfo() {
-        return customHapiSpec("GetMainnetInfo").withProperties(Map.of(
-                        "nodes", "35.237.200.180",
-                        "fees.useFixedOffer", "true",
-                        "fees.fixedOffer", "100000000",
-                        "default.payer", "0.0.748787",
-                        "default.payer.mnemonicFile", "account748787.words"
-                )).given().when().then(
-                        getVersionInfo().logged()
-                );
+        return customHapiSpec("GetMainnetInfo")
+                .withProperties(
+                        Map.of(
+                                "nodes", "35.237.200.180",
+                                "fees.useFixedOffer", "true",
+                                "fees.fixedOffer", "100000000",
+                                "default.payer", "0.0.748787",
+                                "default.payer.mnemonicFile", "account748787.words"))
+                .given()
+                .when()
+                .then(getVersionInfo().logged());
     }
 
     private HapiApiSpec associateHasExpectedSemantics() {

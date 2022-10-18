@@ -15,16 +15,15 @@
  */
 package com.hedera.services.yahcli.suites;
 
-import com.hederahashgraph.api.proto.java.FileID;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
+import com.hederahashgraph.api.proto.java.FileID;
 import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 public class Utils {
     private static final DateTimeFormatter DATE_TIME_FORMAT =

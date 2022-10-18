@@ -15,6 +15,11 @@
  */
 package com.hedera.services.bdd.spec.transactions.crypto;
 
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
@@ -34,19 +39,13 @@ import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     static final Logger log = LogManager.getLogger(HapiCryptoUpdate.class);
@@ -244,7 +243,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
                                     isDeclinedReward.ifPresent(
                                             b -> builder.setDeclineReward(BoolValue.of(b)));
                                 });
-        if (logUpdateDetailsToSysout)  {
+        if (logUpdateDetailsToSysout) {
             System.out.println("\n---- Raw update ----\n");
             System.out.println(opBody);
             System.out.println("--------------------\n");
@@ -297,7 +296,6 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
             return HapiApiSuite.ONE_HBAR;
         }
     }
-
 
     @SuppressWarnings("java:S112")
     private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiApiSpec spec) throws Throwable {

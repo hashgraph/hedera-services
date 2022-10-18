@@ -1,18 +1,19 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.yahcli.suites;
-
-
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoUpdate;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.yahcli.config.ConfigManager;
-import com.hedera.services.yahcli.config.ConfigUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
@@ -20,11 +21,27 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.yahcli.config.ConfigUtils.uncheckedKeyFileFor;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoUpdate;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.yahcli.config.ConfigManager;
+import com.hedera.services.yahcli.config.ConfigUtils;
+import java.util.List;
+import java.util.Map;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class StakeSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(StakeSuite.class);
     private static final String STAKER_KEY_IF_NEEDED = "STAKER_KEY";
 
-    public enum TargetType {NODE, ACCOUNT, NONE}
+    public enum TargetType {
+        NODE,
+        ACCOUNT,
+        NONE
+    }
 
     private final ConfigManager configManager;
     private final Map<String, String> specConfig;
@@ -44,9 +61,7 @@ public class StakeSuite extends HapiApiSuite {
         this.target = target;
         this.targetType = targetType;
         this.declineRewards = declineRewards;
-        this.stakingAccount = stakingAccount != null
-                ? Utils.extractAccount(stakingAccount)
-                : null;
+        this.stakingAccount = stakingAccount != null ? Utils.extractAccount(stakingAccount) : null;
         this.configManager = configManager;
     }
 
@@ -60,12 +75,12 @@ public class StakeSuite extends HapiApiSuite {
             return noOp();
         } else {
             return keyFromFile(
-                    STAKER_KEY_IF_NEEDED,
-                    uncheckedKeyFileFor(
-                                    configManager.keysLoc(),
-                                    "account" + numberOf(stakingAccount))
-                            .getAbsolutePath()
-            ).yahcliLogged();
+                            STAKER_KEY_IF_NEEDED,
+                            uncheckedKeyFileFor(
+                                            configManager.keysLoc(),
+                                            "account" + numberOf(stakingAccount))
+                                    .getAbsolutePath())
+                    .yahcliLogged();
         }
     }
 
@@ -74,16 +89,12 @@ public class StakeSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec doStake() {
-        final var toUpdate = stakingAccount == null
-                ? DEFAULT_PAYER : stakingAccount;
+        final var toUpdate = stakingAccount == null ? DEFAULT_PAYER : stakingAccount;
         return customHapiSpec("DoStake")
-                .withProperties(specConfig).given(
-                        importKeyIfNecessary()
-                ).when().then(
-                        customized(cryptoUpdate(toUpdate)
-                                .blankMemo()
-                                .withYahcliLogging())
-                );
+                .withProperties(specConfig)
+                .given(importKeyIfNecessary())
+                .when()
+                .then(customized(cryptoUpdate(toUpdate).blankMemo().withYahcliLogging()));
     }
 
     private HapiCryptoUpdate customized(final HapiCryptoUpdate baseUpdate) {
