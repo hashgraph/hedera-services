@@ -69,7 +69,7 @@ on:
         default: "wrapper"
   push:
     branches:
-      - master
+      - develop
       - main
 
 defaults:
