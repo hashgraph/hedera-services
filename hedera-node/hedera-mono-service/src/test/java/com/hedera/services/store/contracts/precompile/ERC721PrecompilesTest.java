@@ -111,11 +111,13 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.services.store.contracts.precompile.codec.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.services.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
@@ -1477,7 +1479,7 @@ class ERC721PrecompilesTest {
                                         any(),
                                         any(),
                                         any()))
-                .thenReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_WRAPPER);
         final var nftId = NftId.fromGrpc(token, serialNumber);
         given(wrappedLedgers.nfts()).willReturn(nfts);
         given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
@@ -1571,7 +1573,7 @@ class ERC721PrecompilesTest {
                                         any(),
                                         any(),
                                         any()))
-                .thenReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_WRAPPER);
         final var nftId = NftId.fromGrpc(token, serialNumber);
         given(wrappedLedgers.nfts()).willReturn(nfts);
         given(nfts.contains(nftId)).willReturn(true);
@@ -1719,6 +1721,11 @@ class ERC721PrecompilesTest {
             new TokenTransferWrapper(
                     List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
                     new ArrayList<>() {});
+
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_TOKEN_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(Collections.emptyList()),
+                    Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 
     private void givenLedgers() {
         given(wrappedLedgers.accounts()).willReturn(accounts);
