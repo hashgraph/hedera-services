@@ -153,11 +153,7 @@ public class UpgradeActions {
                     try {
                         var artifactsLocFile = new File(artifactsLoc);
                         if (!artifactsLocFile.exists()) {
-                            if (!artifactsLocFile.mkdirs()) {
-                                log.warn(
-                                        "Unable to create artifacts file dir [{}]",
-                                        artifactsLocFile.getPath());
-                            }
+                            artifactsLocFile.mkdirs();
                         }
                         FileUtils.cleanDirectory(artifactsLocFile);
                         unzipAction.unzip(archiveData, artifactsLoc);
