@@ -81,7 +81,6 @@ class UpgradeActionsTest {
     @BeforeEach
     void setUp() {
         markerFilesLoc = TestFileUtils.toPath(tempDir, "outdated");
-        assertTrue(new File(markerFilesLoc).mkdirs());
         noiseDirLoc = TestFileUtils.toPath(markerFilesLoc, "old-config.txt");
         noiseFileLoc = TestFileUtils.toPath(markerFilesLoc, "forgotten.cfg");
         noiseSubFileLoc = TestFileUtils.toPath(markerFilesLoc, "edargpu");
@@ -97,7 +96,10 @@ class UpgradeActionsTest {
 
     @AfterEach
     void tearDown() {
-        assertTrue(new File(markerFilesLoc).delete());
+        final var testLoc = new File(markerFilesLoc);
+        if (testLoc.exists()) {
+            assertTrue(testLoc.delete());
+        }
     }
 
     @Test
@@ -240,6 +242,7 @@ class UpgradeActionsTest {
 
     @Test
     void preparesForUpgrade() throws IOException {
+        assertTrue(new File(markerFilesLoc).mkdirs());
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
@@ -250,6 +253,21 @@ class UpgradeActionsTest {
         verify(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
         assertNoiseFilesAreGone();
+    }
+
+    @Test
+    void upgradeCreatesMissingWriteDirectory() {
+        final var d = Paths.get(markerFilesLoc).toFile();
+        if (d.exists()) {
+            assertTrue(d.delete());
+        }
+
+        given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
+
+        subject.extractSoftwareUpgrade(PRETEND_ARCHIVE).join();
+
+        assertTrue(d.exists());
+        rmIfPresent(EXEC_IMMEDIATE_MARKER);
     }
 
     @Test
