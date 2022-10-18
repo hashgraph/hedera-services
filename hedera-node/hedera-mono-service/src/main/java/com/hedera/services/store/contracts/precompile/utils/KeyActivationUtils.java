@@ -15,16 +15,15 @@
  */
 package com.hedera.services.store.contracts.precompile.utils;
 
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import java.util.Optional;
-
-import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 public final class KeyActivationUtils {
 

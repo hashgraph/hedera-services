@@ -34,7 +34,8 @@ import org.junit.jupiter.api.Test;
 class WorldStateTokenAccountTest {
     private static final Address pretendTokenAddr = Address.BLS12_G1MULTIEXP;
 
-    private HederaEvmWorldStateTokenAccount subject = new HederaEvmWorldStateTokenAccount(pretendTokenAddr);
+    private HederaEvmWorldStateTokenAccount subject =
+            new HederaEvmWorldStateTokenAccount(pretendTokenAddr);
 
     @Test
     void getsExpectedCode() {

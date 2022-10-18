@@ -15,8 +15,8 @@
  */
 package com.hedera.services.store.contracts;
 
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import com.google.common.base.Preconditions;
 import com.hedera.services.ledger.TransactionalLedger;
