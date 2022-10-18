@@ -47,6 +47,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -65,9 +66,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
     public static final String ACCOUNT = "account";
     public static final String AUTO_CREATED_ACCOUNT = "auto-created account";
     public static final String ED_25519_KEY = "ed25519Alias";
+    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
+    public static final String TRUE = "true";
 
     public static void main(String... args) {
         new CryptoCreateSuite().runSuiteSync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return false;
     }
 
     @Override
@@ -168,7 +177,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                 .given(
                         overridingTwo(
                                 associationsLimitProperty,
-                                "true",
+                                TRUE,
                                 "tokens.maxPerAccount",
                                 "" + MONOGAMOUS_NETWORK))
                 .when()
@@ -477,7 +486,10 @@ public class CryptoCreateSuite extends HapiApiSuite {
 
     private HapiApiSpec createAnAccountWithECDSAAlias() {
         return defaultHapiSpec("CreateAnAccountWithECDSAAlias")
-                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -505,12 +517,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
-                .then();
+                .then(
+                        UtilVerbs.resetToDefault(
+                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec createAnAccountWithEVMAddressAlias() {
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAlias")
-                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -547,12 +564,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
-                .then();
+                .then(
+                        UtilVerbs.resetToDefault(
+                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec createAnAccountWithED25519Alias() {
         return defaultHapiSpec("CreateAnAccountWithED25519Alias")
-                .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
+                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -578,12 +600,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
-                .then();
+                .then(
+                        UtilVerbs.resetToDefault(
+                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec createAnAccountWithECKeyAndNoAlias() {
         return defaultHapiSpec("CreateAnAccountWithECKeyAndNoAlias")
-                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -620,19 +647,30 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                             evmAddressBytes));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
-                .then();
+                .then(
+                        UtilVerbs.resetToDefault(
+                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec createAnAccountWithEDKeyAndNoAlias() {
         return defaultHapiSpec("CreateAnAccountWithEDKeyAndNoAlias")
-                .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
+                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(cryptoCreate(ACCOUNT).key(ED_25519_KEY))
-                .then(getAccountInfo(ACCOUNT).has(accountWith().key(ED_25519_KEY).noAlias()));
+                .then(
+                        getAccountInfo(ACCOUNT).has(accountWith().key(ED_25519_KEY).noAlias()),
+                        UtilVerbs.resetToDefault(
+                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec createAnAccountWithEVMAddressAliasAndECKey() {
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAliasAndECKey")
-                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -684,12 +722,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
-                .then();
+                .then(
+                        UtilVerbs.resetToDefault(
+                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec createAnAccountWithED25519KeyAndED25519Alias() {
         return defaultHapiSpec("CreateAnAccountWithED25519KeyAndED25519Alias")
-                .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
+                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -716,12 +759,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
-                .then();
+                .then(
+                        UtilVerbs.resetToDefault(
+                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec createAnAccountWithECKeyAndECKeyAlias() {
         return defaultHapiSpec("CreateAnAccountWithECKeyAndECKeyAlias")
-                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -765,7 +813,9 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
-                .then();
+                .then(
+                        UtilVerbs.resetToDefault(
+                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     @Override
