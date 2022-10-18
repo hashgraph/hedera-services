@@ -15,7 +15,7 @@
  */
 package com.hedera.services.evm.store.contracts;
 
-import static com.hedera.services.evm.store.contracts.utils.TokenAccountUtils.bytecodeForToken;
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.bytecodeForToken;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
