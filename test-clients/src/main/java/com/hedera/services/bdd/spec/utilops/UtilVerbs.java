@@ -32,7 +32,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -74,6 +73,7 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
@@ -1281,7 +1281,7 @@ public class UtilVerbs {
         private Address token;
 
         public TokenTransferListBuilder forToken(final TokenID token) {
-            this.token = convertAliasToAddress(asAddress(token));
+            this.token = HapiParserUtil.asHeadlongAddress(asAddress(token));
             return this;
         }
 
@@ -1314,13 +1314,15 @@ public class UtilVerbs {
     }
 
     public static Tuple accountAmount(final AccountID account, final Long amount) {
-        return Tuple.of(convertAliasToAddress(account), amount);
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount);
     }
 
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
         return Tuple.of(
-                convertAliasToAddress(sender), convertAliasToAddress(receiver), serialNumber);
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
+                serialNumber);
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(

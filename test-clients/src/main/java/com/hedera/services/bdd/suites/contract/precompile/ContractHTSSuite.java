@@ -35,7 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -64,6 +64,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -165,7 +166,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         theContract,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
@@ -191,12 +192,12 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 theContract,
                                                                 "transferToAddress",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 alice))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -250,7 +251,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 theContract,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -344,7 +345,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
@@ -365,9 +366,9 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                             .getAccountID(theSecondReceiver));
                                     final var accounts =
                                             new Address[] {
-                                                convertAliasToAddress(sender),
-                                                convertAliasToAddress(receiver1),
-                                                convertAliasToAddress(receiver2)
+                                                HapiParserUtil.asHeadlongAddress(sender),
+                                                HapiParserUtil.asHeadlongAddress(receiver1),
+                                                HapiParserUtil.asHeadlongAddress(receiver2)
                                             };
                                     final var amounts = new long[] {-10L, 5L, 5L};
 
@@ -376,7 +377,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "distributeTokens",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
@@ -441,7 +442,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         FEE_DISTRIBUTOR, spec))))))
                 .when(
@@ -456,9 +457,9 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                     spec.registry().getAccountID(SECOND_RECEIVER));
                                     final var accounts =
                                             new Address[] {
-                                                convertAliasToAddress(sender),
-                                                convertAliasToAddress(receiver1),
-                                                convertAliasToAddress(receiver2)
+                                                HapiParserUtil.asHeadlongAddress(sender),
+                                                HapiParserUtil.asHeadlongAddress(receiver1),
+                                                HapiParserUtil.asHeadlongAddress(receiver2)
                                             };
                                     final var amounts = new long[] {-10L, 5L, 5L};
 
@@ -468,19 +469,19 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransfer",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             A_TOKEN))),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             FEE_TOKEN))),
                                                             accounts,
                                                             amounts,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
@@ -497,19 +498,19 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransfer",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             A_TOKEN))),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             FEE_TOKEN))),
                                                             accounts,
                                                             amounts,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
@@ -525,19 +526,19 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransfer",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             A_TOKEN))),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             FEE_TOKEN))),
                                                             accounts,
                                                             amounts,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
@@ -649,7 +650,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         FEE_DISTRIBUTOR, spec))))))
                 .when(
@@ -664,9 +665,9 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                     spec.registry().getAccountID(SECOND_RECEIVER));
                                     final var accounts =
                                             new Address[] {
-                                                convertAliasToAddress(sender),
-                                                convertAliasToAddress(receiver1),
-                                                convertAliasToAddress(receiver2)
+                                                HapiParserUtil.asHeadlongAddress(sender),
+                                                HapiParserUtil.asHeadlongAddress(receiver1),
+                                                HapiParserUtil.asHeadlongAddress(receiver2)
                                             };
                                     final var amounts = new long[] {-10L, 5L, 5L};
 
@@ -676,19 +677,19 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransferStaticNestedCall",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             A_TOKEN))),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             FEE_TOKEN))),
                                                             accounts,
                                                             amounts,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
@@ -705,19 +706,19 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransferStaticNestedCall",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             A_TOKEN))),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             FEE_TOKEN))),
                                                             accounts,
                                                             amounts,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
@@ -733,19 +734,19 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "feeDistributionAfterTransferStaticNestedCall",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             A_TOKEN))),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(
                                                                                             FEE_TOKEN))),
                                                             accounts,
                                                             amounts,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
@@ -857,7 +858,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         innerContract, spec))))))
                 .when(
@@ -883,16 +884,16 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             outerContract,
                                                             "feeDistributionAfterTransfer",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(tokenID.get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             senderAccountID.get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             tokenReceiverAccountID
                                                                                     .get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             hbarReceiverAccountID
                                                                                     .get())),
@@ -964,7 +965,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
@@ -988,9 +989,12 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "transferNft",
-                                                            convertAliasToAddress(tokenAddress),
-                                                            convertAliasToAddress(sender),
-                                                            convertAliasToAddress(receiver),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    tokenAddress),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    sender),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    receiver),
                                                             1L)
                                                     .alsoSigningWithFullPrefix(ACCOUNT)
                                                     .gas(GAS_TO_OFFER)
@@ -1040,7 +1044,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
@@ -1059,13 +1063,13 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             asAddress(spec.registry().getAccountID(RECEIVER));
                                     final var theSenders =
                                             new Address[] {
-                                                convertAliasToAddress(sender),
-                                                convertAliasToAddress(sender)
+                                                HapiParserUtil.asHeadlongAddress(sender),
+                                                HapiParserUtil.asHeadlongAddress(sender)
                                             };
                                     final var theReceivers =
                                             new Address[] {
-                                                convertAliasToAddress(receiver),
-                                                convertAliasToAddress(receiver)
+                                                HapiParserUtil.asHeadlongAddress(receiver),
+                                                HapiParserUtil.asHeadlongAddress(receiver)
                                             };
                                     final var theSerialNumbers = new long[] {1L, 2L};
 
@@ -1074,7 +1078,8 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "transferNfts",
-                                                            convertAliasToAddress(tokenAddress),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    tokenAddress),
                                                             theSenders,
                                                             theReceivers,
                                                             theSerialNumbers)
@@ -1125,7 +1130,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         VERSATILE_TRANSFERS,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
@@ -1145,8 +1150,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 
                                     final var accounts =
                                             new Address[] {
-                                                convertAliasToAddress(receiver1),
-                                                convertAliasToAddress(receiver2)
+                                                HapiParserUtil.asHeadlongAddress(receiver1),
+                                                HapiParserUtil.asHeadlongAddress(receiver2)
                                             };
                                     final var amounts = new long[] {5L, 5L};
 
@@ -1155,7 +1160,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             VERSATILE_TRANSFERS,
                                                             "distributeTokens",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getTokenID(

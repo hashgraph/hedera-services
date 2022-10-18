@@ -21,7 +21,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contra
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -109,10 +109,8 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                         contractCall(
                                                         contract,
                                                         "checkBalanceRepeatedly",
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                treasuryMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(treasuryMirrorAddr.get()),
                                                         BigInteger.valueOf(illegalNumChildren))
                                                 .via(precompileViolation)
                                                 .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
@@ -170,8 +168,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                         contractCall(
                                                         contract,
                                                         "sendSomeValueTo",
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()))
+                                                        asHeadlongAddress(tokenMirrorAddr.get()))
                                                 .sending(ONE_HBAR)
                                                 .payingWith(TOKEN_TREASURY)
                                                 .via(internalViolation)

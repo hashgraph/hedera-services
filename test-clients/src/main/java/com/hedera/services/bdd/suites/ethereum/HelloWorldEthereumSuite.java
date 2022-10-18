@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -180,9 +180,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                         ethereumCall(
                                                         exploitContract,
                                                         "stealFrom",
-                                                        convertAliasToAddress(
-                                                                relayerEvmAddress.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(relayerEvmAddress.get()),
+                                                        asHeadlongAddress(
                                                                 exploitTokenEvmAddress.get()))
                                                 .type(EthTxData.EthTransactionType.EIP1559)
                                                 .signingWith(maliciousEOA)

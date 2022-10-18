@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.expandByteArrayTo32Length;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -65,12 +64,12 @@ public class SStoreSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    setupAppProperties(),
-                    multipleSStoreOpsSucceed(),
+                    //                    setupAppProperties(),
+                    //                    multipleSStoreOpsSucceed(),
                     benchmarkSingleSetter(),
-                    childStorage(),
-                    temporarySStoreRefundTest(),
-                    cleanupAppProperties()
+                    //                    childStorage(),
+                    //                    temporarySStoreRefundTest(),
+                    //                    cleanupAppProperties()
                 });
     }
 
@@ -248,7 +247,10 @@ public class SStoreSuite extends HapiApiSuite {
     private HapiApiSpec benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
-        var value = Bytes.fromHexString("0x05").toArray();
+        var value =
+                Bytes.fromHexString(
+                                "0x0000000000000000000000000000000000000000000000000000000000000005")
+                        .toArray();
         return defaultHapiSpec("SimpleStorage")
                 .given(
                         cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
@@ -258,9 +260,7 @@ public class SStoreSuite extends HapiApiSuite {
                                 .payingWith("payer")
                                 .via("creationTx")
                                 .gas(GAS_LIMIT),
-                        contractCall(contract, "twoSSTOREs", expandByteArrayTo32Length(value))
-                                .gas(GAS_LIMIT)
-                                .via("storageTx"))
+                        contractCall(contract, "twoSSTOREs", value).gas(GAS_LIMIT).via("storageTx"))
                 .then(
                         getTxnRecord("storageTx").logged(),
                         contractCallLocal(contract, "counter")

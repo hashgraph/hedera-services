@@ -41,7 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -70,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -233,7 +234,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 BURN_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -329,7 +330,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 tokenAssociate(outerContract, VANILLA_TOKEN),
@@ -345,13 +346,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "transferDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 receiverID.get())),
                                                                 1L)
@@ -411,7 +412,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 tokenAssociate(outerContract, VANILLA_TOKEN),
@@ -423,13 +424,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "transferDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 receiverID.get())),
                                                                 1L)
@@ -483,7 +484,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
@@ -494,7 +495,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
@@ -549,7 +550,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
@@ -560,7 +561,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "mintDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
@@ -614,15 +615,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 contractCall(
                                                                 outerContract,
                                                                 "dissociateStaticCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())))
@@ -673,7 +674,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 tokenAssociate(outerContract, VANILLA_TOKEN),
@@ -685,13 +686,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "transferStaticCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 receiverID.get())),
                                                                 1L)
@@ -731,7 +732,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
@@ -742,7 +743,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnStaticCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
@@ -782,7 +783,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
@@ -793,7 +794,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "mintStaticCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
@@ -843,7 +844,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 tokenAssociate(outerContract, VANILLA_TOKEN),
@@ -858,13 +859,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "transferStaticCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 receiverID.get())),
                                                                 1L)
@@ -906,7 +907,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
@@ -920,7 +921,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "burnStaticCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
@@ -962,7 +963,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
@@ -976,7 +977,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "mintStaticCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
@@ -1018,15 +1019,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 contractCall(
                                                                 outerContract,
                                                                 "associateStaticCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())))
@@ -1080,7 +1081,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "mintTokenCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -1154,7 +1155,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "mintTokenCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -1226,17 +1227,17 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "transferNFTCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NFT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 ACCOUNT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1307,17 +1308,17 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "transferNFTCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NFT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 ACCOUNT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1379,9 +1380,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -1432,9 +1433,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -1494,9 +1495,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -1511,9 +1512,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -1584,9 +1585,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -1601,9 +1602,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -1657,7 +1658,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 BURN_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -1717,7 +1718,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
@@ -1731,9 +1732,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "associateDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())))
@@ -1780,7 +1781,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
@@ -1795,9 +1796,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "dissociateDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())))
@@ -1846,9 +1847,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -1866,9 +1867,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -1878,9 +1879,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -1956,10 +1957,10 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 treasuryID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -1970,9 +1971,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -1988,9 +1989,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -2005,9 +2006,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -2098,9 +2099,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2113,9 +2114,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2182,9 +2183,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -2196,9 +2197,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -2269,10 +2270,10 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 treasuryID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -2283,9 +2284,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -2301,9 +2302,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -2318,9 +2319,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -2413,9 +2414,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2428,9 +2429,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2499,9 +2500,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -2513,9 +2514,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenDissociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -2575,9 +2576,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2596,9 +2597,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2609,9 +2610,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2680,9 +2681,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -2701,9 +2702,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -2714,9 +2715,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -2784,9 +2785,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -2804,9 +2805,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -2816,9 +2817,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 kycTokenID.get())))
                                                         .payingWith(GENESIS)
@@ -2887,9 +2888,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2908,9 +2909,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2921,9 +2922,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 frozenTokenID
                                                                                         .get())))
@@ -2990,9 +2991,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -3011,9 +3012,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -3024,9 +3025,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ASSOCIATE_DISSOCIATE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -3093,7 +3094,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
@@ -3104,9 +3105,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "associateDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())))
@@ -3155,7 +3156,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         outerContract,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         nestedContract, spec))),
                                                 newKeyNamed(CONTRACT_KEY)
@@ -3167,9 +3168,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 "dissociateDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())))
@@ -3215,7 +3216,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 BURN_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3281,7 +3282,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "burnTokenCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3296,7 +3297,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ORDINARY_CALLS_CONTRACT,
                                                                 "burnTokenCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3373,7 +3374,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 outerContract,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 nestedContract,
                                                                                 spec)))
@@ -3393,7 +3394,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                                 outerContract,
                                                                 "burnCallAfterNestedMintCallWithPrecompileCall",
                                                                 BigInteger.ONE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3405,7 +3406,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                                 outerContract,
                                                                 "burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall",
                                                                 BigInteger.ONE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3417,7 +3418,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                                 outerContract,
                                                                 "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall",
                                                                 BigInteger.ONE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3429,7 +3430,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                                 outerContract,
                                                                 "burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall",
                                                                 BigInteger.ONE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3455,7 +3456,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                                 outerContract,
                                                                 "burnDelegateCallAfterNestedMintCallWithPrecompileCall",
                                                                 BigInteger.ONE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3467,7 +3468,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                                 outerContract,
                                                                 "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall",
                                                                 BigInteger.ONE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3479,7 +3480,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                                 outerContract,
                                                                 "burnCallAfterNestedMintDelegateCallWithPrecompileCall",
                                                                 BigInteger.ONE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -3505,7 +3506,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                                 outerContract,
                                                                 "burnCallAfterNestedMintCallWithPrecompileDelegateCall",
                                                                 BigInteger.ONE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(

@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -58,6 +58,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -126,7 +127,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 THE_CONTRACT,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -225,7 +226,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 THE_CONTRACT,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -292,7 +293,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 outerContract,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 innerContract,
                                                                                 spec)))
@@ -317,7 +318,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                                 outerContract,
                                                                 BURN_AFTER_NESTED_MINT_TX,
                                                                 BigInteger.ONE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -390,7 +391,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 theContract,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -415,12 +416,12 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             theContract,
                                                             "transferBurn",
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
                                                                                             ALICE))),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(

@@ -32,7 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContrac
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.stripSelector;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -74,6 +74,7 @@ import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
@@ -376,11 +377,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario1",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "C",
                                                                                 spec)))
@@ -965,11 +966,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario2",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "C",
                                                                                 spec)))
@@ -1609,11 +1610,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario3",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "C",
                                                                                 spec)))
@@ -2253,11 +2254,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario4",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "C",
                                                                                 spec)))
@@ -2712,11 +2713,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario5",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "C",
                                                                                 spec)))
@@ -3183,11 +3184,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario6",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "C",
                                                                                 spec)))
@@ -3709,12 +3710,12 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY_CALLCODE,
                                                                 "eetScenario7",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY_CALLCODE
                                                                                         + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY_CALLCODE
                                                                                         + "C",
@@ -4306,12 +4307,12 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY_CALLCODE,
                                                                 "eetScenario8",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY_CALLCODE
                                                                                         + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY_CALLCODE
                                                                                         + "C",
@@ -4832,11 +4833,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario9",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "C",
                                                                                 spec)))
@@ -5323,11 +5324,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario10",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "C",
                                                                                 spec)))
@@ -5872,11 +5873,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario11",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "B",
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 TRACEABILITY + "C",
                                                                                 spec)))
@@ -6339,8 +6340,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         contract,
                                                         GET_BYTECODE,
-                                                        convertAliasToAddress(
-                                                                factoryEvmAddress.get()),
+                                                        asHeadlongAddress(factoryEvmAddress.get()),
                                                         BigInteger.valueOf(salt))
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -6557,7 +6557,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                         PRECOMPILE_CALLER,
                                                         "callSha256AndIsToken",
                                                         toHash.getBytes(),
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(vanillaTokenID.get())))
                                                 .via("callTxn")))
                 .then(

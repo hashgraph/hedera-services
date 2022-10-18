@@ -39,7 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -68,6 +68,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
@@ -168,7 +169,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT,
-                                                convertAliasToAddress(asAddress(fungible.get())))),
+                                                HapiParserUtil.asHeadlongAddress(
+                                                        asAddress(fungible.get())))),
                         contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
@@ -225,7 +227,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT,
-                                                convertAliasToAddress(
+                                                HapiParserUtil.asHeadlongAddress(
                                                         asAddress(nonFungible.get())))))
                 .when(
                         contractCall(HELLO_WORLD_MINT, "mint")
@@ -303,7 +305,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 MINT_CONTRACT,
-                                                convertAliasToAddress(asAddress(fungible.get())))))
+                                                HapiParserUtil.asHeadlongAddress(
+                                                        asAddress(fungible.get())))))
                 .when(
                         contractCall(
                                         MINT_CONTRACT,
@@ -372,7 +375,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 MINT_CONTRACT,
-                                                convertAliasToAddress(
+                                                HapiParserUtil.asHeadlongAddress(
                                                         asAddress(nonFungible.get())))))
                 .when(
                         contractCall(
@@ -452,11 +455,11 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 NESTED_MINT_CONTRACT,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 MINT_NFT_CONTRACT,
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -476,12 +479,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 NESTED_MINT_CONTRACT,
                                                                 "sendNFTAfterMint",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 TOKEN_TREASURY))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -604,7 +607,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         MINT_CONTRACT,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
@@ -620,12 +623,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 MINT_CONTRACT,
                                                                 "revertMintAfterFailedMint",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 ACCOUNT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -684,11 +687,11 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 NESTED_MINT_CONTRACT,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         getNestedContractAddress(
                                                                                 MINT_NFT_CONTRACT,
                                                                                 spec)),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -705,7 +708,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 NESTED_MINT_CONTRACT,
                                                                 "revertMintAfterFailedAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -764,7 +767,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                         MINT_CONTRACT,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(fungible.get())))
                                                 .payingWith(ACCOUNT)
                                                 .gas(GAS_TO_OFFER)))
@@ -806,7 +809,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                         MINT_CONTRACT,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(fungible.get())))
                                                 .payingWith(ACCOUNT)
                                                 .gas(GAS_TO_OFFER)))

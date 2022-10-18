@@ -46,7 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -92,6 +92,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -239,8 +240,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         contract,
                                                         GET_BYTECODE,
-                                                        convertAliasToAddress(
-                                                                factoryEvmAddress.get()),
+                                                        asHeadlongAddress(factoryEvmAddress.get()),
                                                         foo)
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -316,8 +316,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         contract,
                                                         GET_BYTECODE,
-                                                        convertAliasToAddress(
-                                                                factoryEvmAddress.get()),
+                                                        asHeadlongAddress(factoryEvmAddress.get()),
                                                         foo)
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -384,8 +383,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                         contract,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()))
+                                                        asHeadlongAddress(tokenMirrorAddr.get()))
                                                 .payingWith(GENESIS)
                                                 .omitAdminKey()
                                                 .gas(4_000_000)
@@ -451,8 +449,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         contract,
                                                         GET_BYTECODE,
-                                                        convertAliasToAddress(
-                                                                factoryEvmAddress.get()),
+                                                        asHeadlongAddress(factoryEvmAddress.get()),
                                                         salt)
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -732,7 +729,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCall(
                                                         ercContract,
                                                         "ownerOf",
-                                                        convertAliasToAddress(nftAddress.get()),
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                nftAddress.get()),
                                                         BigInteger.valueOf(1))
                                                 .via(lookup)
                                                 .gas(4_000_000)))
@@ -784,8 +782,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                         immediateChildAssoc,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()))
+                                                        asHeadlongAddress(tokenMirrorAddr.get()))
                                                 .gas(2_000_000)
                                                 .adminKey(multiKey)
                                                 .payingWith(GENESIS)
@@ -856,14 +853,14 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "associateBothTo",
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     hex(asSolidityAddress(ftType))))
                                                     .gas(4_000_000L);
                                     final var nftAssoc =
                                             contractCall(
                                                             contract,
                                                             "associateBothTo",
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     hex(
                                                                             asSolidityAddress(
                                                                                     nftType))))
@@ -882,7 +879,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "sendFtToUser",
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     hex(asSolidityAddress(ftType))),
                                                             100L)
                                                     .gas(4_000_000L);
@@ -890,7 +887,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "sendNftToUser",
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     hex(
                                                                             asSolidityAddress(
                                                                                     nftType))),
@@ -901,7 +898,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "dissociateBothFrom",
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     hex(asSolidityAddress(ftType))))
                                                     .via(ftFail)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -910,7 +907,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "dissociateBothFrom",
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     hex(
                                                                             asSolidityAddress(
                                                                                     nftType))))
@@ -926,7 +923,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     FUNCTION,
                                                                     "mintNft",
                                                                     userContract),
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     hex(
                                                                             asSolidityAddress(
                                                                                     nftType))),
@@ -941,8 +938,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     FUNCTION,
                                                                     "mintNftViaDelegate",
                                                                     userContract),
-                                                            convertAliasToAddress(
-                                                                    hexedNftType.get()),
+                                                            asHeadlongAddress(hexedNftType.get()),
                                                             new byte[][] {"WoRtHlEsS".getBytes()})
                                                     .via(helperMintFail)
                                                     .gas(4_000_000L);
@@ -1016,7 +1012,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                 FUNCTION,
                                                                 "mintNftViaDelegate",
                                                                 userContract),
-                                                        convertAliasToAddress(hexedNftType.get()),
+                                                        asHeadlongAddress(hexedNftType.get()),
                                                         new byte[][] {"WoRtHlEsS...NOT".getBytes()})
                                                 .via(helperMintSuccess)
                                                 .gas(4_000_000L)),
@@ -1100,7 +1096,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                 FUNCTION,
                                                                 "relinquishFundsTo",
                                                                 donorContract),
-                                                        convertAliasToAddress(donorAliasAddr.get()))
+                                                        asHeadlongAddress(donorAliasAddr.get()))
                                                 .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
                         sourcing(
                                 () ->
@@ -1110,8 +1106,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                 FUNCTION,
                                                                 "relinquishFundsTo",
                                                                 donorContract),
-                                                        convertAliasToAddress(
-                                                                donorMirrorAddr.get()))
+                                                        asHeadlongAddress(donorMirrorAddr.get()))
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)))
                 .then(
                         contractCall(contract, "buildThenRevertThenBuild", otherSalt)
@@ -1347,7 +1342,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCall(
                                                         contract,
                                                         "callCreator",
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 saltingCreatorAliasAddr.get()),
                                                         salt)
                                                 .payingWith(GENESIS)
@@ -1480,7 +1475,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         contract,
                                                         CALL_RETURNER,
-                                                        convertAliasToAddress(mirrorAddr.get()))
+                                                        asHeadlongAddress(mirrorAddr.get()))
                                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
@@ -1496,7 +1491,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         contract,
                                                         CALL_RETURNER,
-                                                        convertAliasToAddress(aliasAddr.get()))
+                                                        asHeadlongAddress(aliasAddr.get()))
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
@@ -1513,7 +1508,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCall(
                                                         contract,
                                                         CALL_RETURNER,
-                                                        convertAliasToAddress(aliasAddr.get()))
+                                                        asHeadlongAddress(aliasAddr.get()))
                                                 .payingWith(GENESIS)
                                                 .via(aliasCall)),
                         sourcing(
@@ -1521,7 +1516,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                         contractCall(
                                                         contract,
                                                         CALL_RETURNER,
-                                                        convertAliasToAddress(mirrorAddr.get()))
+                                                        asHeadlongAddress(mirrorAddr.get()))
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
                                                 .payingWith(GENESIS)
                                                 .via(mirrorCall)))

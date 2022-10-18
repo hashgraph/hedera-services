@@ -31,7 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -54,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -130,9 +131,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_UNFREEZE_FUNC,
-                                                                convertAliasToAddress(
-                                                                        invalidAddress),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(invalidAddress),
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
@@ -142,9 +142,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_FREEZE_FUNC,
-                                                                convertAliasToAddress(
-                                                                        invalidAddress),
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(invalidAddress),
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .payingWith(ACCOUNT)
@@ -193,11 +192,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_FREEZE_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
@@ -207,11 +206,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_FREEZE_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 withoutKeyID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
@@ -221,11 +220,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_UNFREEZE_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 withoutKeyID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
@@ -235,11 +234,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_FREEZE_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
@@ -254,11 +253,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_UNFREEZE_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
@@ -336,11 +335,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_UNFREEZE_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
@@ -350,11 +349,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_FREEZE_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
@@ -368,22 +367,22 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_UNFREEZE_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 IS_FROZEN_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
@@ -445,10 +444,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             FREEZE_CONTRACT,
                                                             TOKEN_FREEZE_FUNC,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             vanillaTokenID.get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(accountID.get())))
                                                     .logged()
                                                     .payingWith(ACCOUNT)
@@ -457,10 +456,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                             contractCallLocal(
                                                             FREEZE_CONTRACT,
                                                             IS_FROZEN_FUNC,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             vanillaTokenID.get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(accountID.get())))
                                                     .has(
                                                             resultWith()

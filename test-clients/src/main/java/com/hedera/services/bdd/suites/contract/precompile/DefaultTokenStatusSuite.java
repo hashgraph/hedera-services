@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -37,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -95,7 +95,7 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
                                                                 GET_TOKEN_DEFAULT_FREEZE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -105,7 +105,7 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
                                                         GET_TOKEN_DEFAULT_FREEZE,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(vanillaTokenID.get()))))))
                 .then(
                         childRecordsCheck(
@@ -149,7 +149,7 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
                                                                 GET_TOKEN_DEFAULT_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -159,7 +159,7 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
                                                         GET_TOKEN_DEFAULT_KYC,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(vanillaTokenID.get()))))))
                 .then(
                         childRecordsCheck(

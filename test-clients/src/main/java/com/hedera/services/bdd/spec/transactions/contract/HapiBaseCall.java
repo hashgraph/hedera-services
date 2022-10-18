@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersWithTuple;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForCall;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -40,7 +40,7 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
         if (explicitHexedParams.isPresent()) {
             callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).orElseThrow();
         } else {
-            callData = encodeParametersWithTuple(params, abi);
+            callData = encodeParametersForCall(params, abi);
         }
 
         return callData;

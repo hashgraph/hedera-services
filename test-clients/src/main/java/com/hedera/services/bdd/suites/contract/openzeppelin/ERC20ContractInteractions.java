@@ -26,7 +26,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddressInTopic;
@@ -108,27 +108,27 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 
                                     final var transferParams =
                                             new Object[] {
-                                                convertAliasToAddress(receiverContractId), AMOUNT
+                                                asHeadlongAddress(receiverContractId), AMOUNT
                                             };
                                     final var notEnoughBalanceTransferParams =
                                             new Object[] {
-                                                convertAliasToAddress(receiverContractId),
+                                                asHeadlongAddress(receiverContractId),
                                                 INITIAL_AMOUNT.subtract(AMOUNT).add(BigInteger.ONE)
                                             };
                                     final var approveParams =
                                             new Object[] {
-                                                convertAliasToAddress(receiverContractId), AMOUNT
+                                                asHeadlongAddress(receiverContractId), AMOUNT
                                             };
                                     final var transferFromParams =
                                             new Object[] {
-                                                convertAliasToAddress(ownerContractId),
-                                                convertAliasToAddress(receiverContractId),
+                                                asHeadlongAddress(ownerContractId),
+                                                asHeadlongAddress(receiverContractId),
                                                 AMOUNT
                                             };
                                     final var transferMoreThanApprovedFromParams =
                                             new Object[] {
-                                                convertAliasToAddress(ownerContractId),
-                                                convertAliasToAddress(receiverContractId),
+                                                asHeadlongAddress(ownerContractId),
+                                                asHeadlongAddress(receiverContractId),
                                                 AMOUNT.add(BigInteger.ONE)
                                             };
 

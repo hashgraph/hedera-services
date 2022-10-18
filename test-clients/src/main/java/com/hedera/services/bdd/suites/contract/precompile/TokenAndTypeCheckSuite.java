@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -40,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -94,7 +94,7 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                 IS_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -113,7 +113,7 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                 GET_TOKEN_TYPE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -157,14 +157,16 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                 IS_TOKEN,
-                                                                convertAliasToAddress(notAnAddress))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        notAnAddress))
                                                         .via("FakeAddressTokenCheckTx")
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                 GET_TOKEN_TYPE,
-                                                                convertAliasToAddress(notAnAddress))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        notAnAddress))
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .via("FakeAddressTokenTypeCheckTx")
                                                         .payingWith(ACCOUNT)

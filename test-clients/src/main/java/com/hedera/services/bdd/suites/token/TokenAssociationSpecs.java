@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -152,13 +152,11 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                         contractCall(
                                                         theContract,
                                                         "tokensAssociate",
-                                                        convertAliasToAddress(
-                                                                civilianMirrorAddr.get()),
+                                                        asHeadlongAddress(civilianMirrorAddr.get()),
                                                         (new Address[] {
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     tokenMirrorAddr.get()),
-                                                            convertAliasToAddress(
-                                                                    tokenMirrorAddr.get())
+                                                            asHeadlongAddress(tokenMirrorAddr.get())
                                                         }))
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                 .via(multiAssociate)

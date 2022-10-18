@@ -28,7 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -124,8 +124,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
-                                                                        invalidAddress))
+                                                                asHeadlongAddress(invalidAddress))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via("PauseTx")
@@ -133,8 +132,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
-                                                                        invalidAddress))
+                                                                asHeadlongAddress(invalidAddress))
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
@@ -175,7 +173,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -186,7 +184,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -242,7 +240,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -255,7 +253,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -268,7 +266,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -324,7 +322,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -337,7 +335,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -384,7 +382,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -397,7 +395,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -410,7 +408,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -468,7 +466,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -481,7 +479,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))

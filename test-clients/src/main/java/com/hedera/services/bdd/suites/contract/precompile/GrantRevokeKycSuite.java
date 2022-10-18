@@ -27,7 +27,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -45,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -127,11 +127,11 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -142,11 +142,11 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -158,11 +158,11 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -174,11 +174,11 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -191,11 +191,11 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 tokenWithoutKeyID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -206,11 +206,11 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 tokenWithoutKeyID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -221,9 +221,9 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(invalidTokenID)),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -234,9 +234,9 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(invalidTokenID)),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -367,11 +367,11 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -388,18 +388,18 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         GRANT_REVOKE_KYC_CONTRACT,
                                                         IS_KYC_GRANTED,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(vanillaTokenID.get())),
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(secondAccountID.get()))),
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
@@ -409,11 +409,11 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 IS_KYC_GRANTED,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))

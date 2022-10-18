@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -84,17 +84,15 @@ public class ERC721ContractInteractions extends HapiApiSuite {
                                                     .getContractAccountID();
 
                                     final var mintParams =
-                                            new Object[] {
-                                                convertAliasToAddress(nftSenderId), NFT_ID
-                                            };
+                                            new Object[] {asHeadlongAddress(nftSenderId), NFT_ID};
                                     final var approveParams =
                                             new Object[] {
-                                                convertAliasToAddress(contractCreatorId), NFT_ID
+                                                asHeadlongAddress(contractCreatorId), NFT_ID
                                             };
                                     final var transferFromParams =
                                             new Object[] {
-                                                convertAliasToAddress(nftSenderId),
-                                                convertAliasToAddress(contractCreatorId),
+                                                asHeadlongAddress(nftSenderId),
+                                                asHeadlongAddress(contractCreatorId),
                                                 NFT_ID
                                             };
 

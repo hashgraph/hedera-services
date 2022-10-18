@@ -31,7 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -191,7 +191,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                                                         isLiteralResult(
                                                                                                 new Object
                                                                                                         [] {
-                                                                                                    convertAliasToAddress(
+                                                                                                    asHeadlongAddress(
                                                                                                             childEip1014
                                                                                                                     .get())
                                                                                                 }))))),
@@ -212,7 +212,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                                                         isLiteralResult(
                                                                                                 new Object
                                                                                                         [] {
-                                                                                                    convertAliasToAddress(
+                                                                                                    asHeadlongAddress(
                                                                                                             childEip1014
                                                                                                                     .get())
                                                                                                 }))))),
@@ -233,7 +233,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                                                         isLiteralResult(
                                                                                                 new Object
                                                                                                         [] {
-                                                                                                    convertAliasToAddress(
+                                                                                                    asHeadlongAddress(
                                                                                                             childEip1014
                                                                                                                     .get())
                                                                                                 }))))),
@@ -254,7 +254,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                                                         isLiteralResult(
                                                                                                 new Object
                                                                                                         [] {
-                                                                                                    convertAliasToAddress(
+                                                                                                    asHeadlongAddress(
                                                                                                             childEip1014
                                                                                                                     .get())
                                                                                                 }))))));

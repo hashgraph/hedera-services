@@ -42,7 +42,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
@@ -71,6 +70,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
@@ -501,7 +501,8 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                convertAliasToAddress(asAddress(fungible.get())))),
+                                                HapiParserUtil.asHeadlongAddress(
+                                                        asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -568,7 +569,8 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                convertAliasToAddress(asAddress(fungible.get())))),
+                                                HapiParserUtil.asHeadlongAddress(
+                                                        asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -637,7 +639,8 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                convertAliasToAddress(asAddress(fungible.get())))),
+                                                HapiParserUtil.asHeadlongAddress(
+                                                        asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .nonce(0)
@@ -868,19 +871,21 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                 SECP_256K1_SOURCE_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 EXISTING_TOKEN))),
-                                                                convertAliasToAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RELAYER)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RELAYER))),
                                                                 8_000_000L)
                                                         .via(firstTxn)
                                                         .gasLimit(GAS_LIMIT)

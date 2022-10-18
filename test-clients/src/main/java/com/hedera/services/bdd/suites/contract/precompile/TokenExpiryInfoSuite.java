@@ -25,7 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
@@ -116,7 +117,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
                                                                 GET_EXPIRY_INFO_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 TokenID.newBuilder()
                                                                                         .build())))
@@ -127,7 +128,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
                                                                 GET_EXPIRY_INFO_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -137,7 +138,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_EXPIRY_CONTRACT,
                                                         GET_EXPIRY_INFO_FOR_TOKEN,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(vanillaTokenID.get()))))))
                 .then(
                         childRecordsCheck(
@@ -214,10 +215,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
                                                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                convertAliasToAddress(
-                                                                        INVALID_ADDRESS),
+                                                                asHeadlongAddress(INVALID_ADDRESS),
                                                                 DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
@@ -230,12 +230,12 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
                                                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
                                                                 DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
@@ -247,12 +247,12 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
                                                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
                                                                 100L,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
@@ -265,13 +265,12 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
                                                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
                                                                 DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                convertAliasToAddress(
-                                                                        INVALID_ADDRESS),
+                                                                asHeadlongAddress(INVALID_ADDRESS),
                                                                 MONTH_IN_SECONDS)
                                                         .alsoSigningWithFullPrefix(ADMIN_KEY)
                                                         .via("invalidAutoRenewAccountTxn")
@@ -281,12 +280,12 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
                                                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
                                                                 DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
@@ -299,12 +298,12 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
                                                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
                                                                 DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),

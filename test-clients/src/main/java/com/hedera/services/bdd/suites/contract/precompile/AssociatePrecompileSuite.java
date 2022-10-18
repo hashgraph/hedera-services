@@ -32,7 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
@@ -57,6 +57,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
@@ -135,8 +136,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         contractCall(
                                         THE_GRACEFULLY_FAILING_CONTRACT,
                                         "performLessThanFourBytesFunctionCall",
-                                        convertAliasToAddress(ACCOUNT_ADDRESS),
-                                        convertAliasToAddress(TOKEN_ADDRESS))
+                                        HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
+                                        HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS))
                                 .notTryingAsHexedliteral()
                                 .via("Function call with less than 4 bytes txn")
                                 .gas(100_000))
@@ -153,10 +154,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         contractCall(
                                         THE_GRACEFULLY_FAILING_CONTRACT,
                                         "performInvalidlyFormattedFunctionCall",
-                                        convertAliasToAddress(ACCOUNT_ADDRESS),
+                                        HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
                                         new Address[] {
-                                            convertAliasToAddress(TOKEN_ADDRESS),
-                                            convertAliasToAddress(TOKEN_ADDRESS)
+                                            HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS),
+                                            HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS)
                                         })
                                 .notTryingAsHexedliteral()
                                 .via("Invalid Abi Function call txn"))
@@ -173,8 +174,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         contractCall(
                                         THE_GRACEFULLY_FAILING_CONTRACT,
                                         "performNonExistingServiceFunctionCall",
-                                        convertAliasToAddress(ACCOUNT_ADDRESS),
-                                        convertAliasToAddress(TOKEN_ADDRESS))
+                                        HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
+                                        HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS))
                                 .notTryingAsHexedliteral()
                                 .via("nonExistingFunctionCallTxn"))
                 .then(childRecordsCheck("nonExistingFunctionCallTxn", SUCCESS));
@@ -211,9 +212,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "nonSupportedFunction",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -223,9 +224,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -280,9 +281,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         invalidAbiArgument))
                                                         .payingWith(GENESIS)
                                                         .via("functionCallWithInvalidArgumentTxn")
@@ -291,9 +292,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -378,25 +379,29 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokensAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
                                                                 new Address[] {
-                                                                    convertAliasToAddress(
-                                                                            asAddress(
-                                                                                    frozenTokenID
-                                                                                            .get())),
-                                                                    convertAliasToAddress(
-                                                                            asAddress(
-                                                                                    unfrozenTokenID
-                                                                                            .get())),
-                                                                    convertAliasToAddress(
-                                                                            asAddress(
-                                                                                    kycTokenID
-                                                                                            .get())),
-                                                                    convertAliasToAddress(
-                                                                            asAddress(
-                                                                                    vanillaTokenID
-                                                                                            .get()))
+                                                                    HapiParserUtil
+                                                                            .asHeadlongAddress(
+                                                                                    asAddress(
+                                                                                            frozenTokenID
+                                                                                                    .get())),
+                                                                    HapiParserUtil
+                                                                            .asHeadlongAddress(
+                                                                                    asAddress(
+                                                                                            unfrozenTokenID
+                                                                                                    .get())),
+                                                                    HapiParserUtil
+                                                                            .asHeadlongAddress(
+                                                                                    asAddress(
+                                                                                            kycTokenID
+                                                                                                    .get())),
+                                                                    HapiParserUtil
+                                                                            .asHeadlongAddress(
+                                                                                    asAddress(
+                                                                                            vanillaTokenID
+                                                                                                    .get()))
                                                                 })
                                                         .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via("MultipleTokensAssociationsTxn")
@@ -456,15 +461,15 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         INNER_CONTRACT, spec))),
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "associateDissociateContractCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -537,9 +542,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -550,9 +555,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 THE_CONTRACT,
                                                                 "tokenAssociate",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondVanillaTokenID
                                                                                         .get())))
@@ -600,7 +605,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         contractCall(
                                         THE_GRACEFULLY_FAILING_CONTRACT,
                                         "performInvalidlyFormattedSingleFunctionCall",
-                                        convertAliasToAddress(ACCOUNT_ADDRESS))
+                                        HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS))
                                 .notTryingAsHexedliteral()
                                 .via("Invalid Single Abi Call txn")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),

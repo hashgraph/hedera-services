@@ -22,13 +22,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.math.BigInteger;
 import java.util.List;
@@ -63,7 +65,7 @@ public class CallOperationSuite extends HapiApiSuite {
                         contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, "call", convertAliasToAddress(INVALID_ADDRESS))
+                        contractCall(contract, "call", asHeadlongAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
                         withOpContext(
                                 (spec, opLog) -> {
@@ -75,7 +77,8 @@ public class CallOperationSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             "call",
-                                                            convertAliasToAddress(id))
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(id)))
                                                     .sending(EXPECTED_BALANCE);
 
                                     final var balance =
@@ -97,7 +100,7 @@ public class CallOperationSuite extends HapiApiSuite {
                         contractCall(
                                         contract,
                                         "callContract",
-                                        convertAliasToAddress(INVALID_ADDRESS),
+                                        asHeadlongAddress(INVALID_ADDRESS),
                                         BigInteger.valueOf(222))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
                 .then(contractCallLocal(contract, "getVar1").logged());

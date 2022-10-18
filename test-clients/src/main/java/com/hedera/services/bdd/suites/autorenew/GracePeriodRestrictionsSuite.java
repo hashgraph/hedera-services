@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -61,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.time.Instant;
@@ -122,11 +122,11 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                                                         contract,
                                                         getABIFor(FUNCTION, "donate", contract),
                                                         new Object[] {
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             civilianAccountID
                                                                                     .get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             detachedAccountID
                                                                                     .get()))
@@ -143,9 +143,9 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                                                 contract,
                                                 getABIFor(FUNCTION, "donate", contract),
                                                 new Object[] {
-                                                    convertAliasToAddress(
+                                                    HapiParserUtil.asHeadlongAddress(
                                                             asAddress(civilianAccountID.get())),
-                                                    convertAliasToAddress(
+                                                    HapiParserUtil.asHeadlongAddress(
                                                             asAddress(detachedAccountID.get()))
                                                 })),
                         getAccountBalance(civilian).hasTinyBars(1L),

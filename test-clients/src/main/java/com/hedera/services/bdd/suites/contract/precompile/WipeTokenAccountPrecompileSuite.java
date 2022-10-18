@@ -31,7 +31,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -52,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -118,11 +118,11 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
                                                                 10L)
                                                         .payingWith(ADMIN_ACCOUNT)
@@ -133,11 +133,11 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
                                                                 1_000L)
                                                         .payingWith(ADMIN_ACCOUNT)
@@ -147,11 +147,11 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())),
@@ -163,11 +163,11 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
                                                                 10L)
                                                         .payingWith(ADMIN_ACCOUNT)
@@ -176,11 +176,11 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
                                                                 0L)
                                                         .payingWith(ADMIN_ACCOUNT)
@@ -271,10 +271,10 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             vanillaTokenID.get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(accountID.get())),
                                                             serialNumbers)
                                                     .payingWith(ADMIN_ACCOUNT)
@@ -286,10 +286,10 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             vanillaTokenID.get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(accountID.get())),
                                                             new long[] {2L})
                                                     .payingWith(ADMIN_ACCOUNT)
@@ -300,10 +300,10 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             vanillaTokenID.get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(accountID.get())),
                                                             new long[] {-2L})
                                                     .payingWith(ADMIN_ACCOUNT)
@@ -313,10 +313,10 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             vanillaTokenID.get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(accountID.get())),
                                                             new long[] {3L})
                                                     .payingWith(ADMIN_ACCOUNT)
@@ -326,10 +326,10 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             vanillaTokenID.get())),
-                                                            convertAliasToAddress(
+                                                            HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(accountID.get())),
                                                             serialNumbers)
                                                     .payingWith(ADMIN_ACCOUNT)

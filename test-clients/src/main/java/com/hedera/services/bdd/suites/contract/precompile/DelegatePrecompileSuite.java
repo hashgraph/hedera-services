@@ -35,7 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -48,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -133,7 +134,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         NESTED_CONTRACT, spec))),
                                                 tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
@@ -149,13 +150,13 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "transferDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 receiverID.get())),
                                                                 1L)
@@ -203,7 +204,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         NESTED_CONTRACT, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
@@ -216,7 +217,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "burnDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),
@@ -268,7 +269,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 getNestedContractAddress(
                                                                         NESTED_CONTRACT, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
@@ -281,7 +282,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "mintDelegateCall",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenTokenID
                                                                                         .get())),

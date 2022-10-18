@@ -23,7 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
@@ -83,8 +83,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "setApprovalForAll",
-                                                            convertAliasToAddress(
-                                                                    accountOneAddress),
+                                                            asHeadlongAddress(accountOneAddress),
                                                             true)
                                                     .via("acc1ApproveCall")
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
@@ -98,7 +97,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
                                                             "mintToken",
                                                             BigInteger.ZERO,
                                                             BigInteger.valueOf(10),
-                                                            convertAliasToAddress(senderAddress))
+                                                            asHeadlongAddress(senderAddress))
                                                     .via("contractMintCall")
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                                     .hasKnownStatus(ResponseCodeEnum.SUCCESS);
@@ -109,9 +108,8 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "safeTransferFrom",
-                                                            convertAliasToAddress(senderAddress),
-                                                            convertAliasToAddress(
-                                                                    accountOneAddress),
+                                                            asHeadlongAddress(senderAddress),
+                                                            asHeadlongAddress(accountOneAddress),
                                                             BigInteger.ZERO, // token id
                                                             BigInteger.ONE, // amount
                                                             "0x0".getBytes())

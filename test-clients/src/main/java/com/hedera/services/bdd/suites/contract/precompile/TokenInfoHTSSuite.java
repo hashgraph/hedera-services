@@ -33,7 +33,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
@@ -48,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
@@ -195,7 +195,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -205,7 +205,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_INFORMATION_FOR_TOKEN,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
@@ -303,7 +303,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -313,7 +313,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
@@ -432,7 +432,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -443,7 +443,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
@@ -554,7 +554,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -565,7 +565,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -607,7 +607,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_TOKEN,
-                                                                convertAliasToAddress(new byte[20]))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]))
                                                         .via(TOKEN_INFO_TXN + 1)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(
@@ -616,7 +617,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(new byte[20]))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]))
                                                         .via(TOKEN_INFO_TXN + 2)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(
@@ -661,7 +663,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -706,7 +708,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
                                                                 1L)
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN + 1)
                                                         .gas(1_000_000L)
@@ -716,7 +719,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -766,7 +769,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_CUSTOM_FEES_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -776,7 +779,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_CUSTOM_FEES_FOR_TOKEN,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
@@ -863,7 +866,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_CUSTOM_FEES_FOR_TOKEN,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -873,7 +876,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_CUSTOM_FEES_FOR_TOKEN,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(

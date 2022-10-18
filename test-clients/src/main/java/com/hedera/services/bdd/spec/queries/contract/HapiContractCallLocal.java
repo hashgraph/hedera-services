@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummary
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersWithTuple;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForCall;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -185,7 +185,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
             params = paramsFn.get().apply(spec);
         }
 
-        byte[] callData = encodeParametersWithTuple(params, abi);
+        byte[] callData = encodeParametersForCall(params, abi);
 
         @SuppressWarnings("java:S1874")
         final var opBuilder =

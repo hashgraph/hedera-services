@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -65,6 +64,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -192,8 +192,9 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 "updateTokenWithAllFields",
-                                                                convertAliasToAddress(new byte[20]),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -206,12 +207,12 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
                                                                                                 TOKEN_UPDATE_CONTRACT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -228,11 +229,11 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 "updateTokenWithAllFields",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -245,12 +246,12 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
                                                                                                 TOKEN_UPDATE_CONTRACT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -335,11 +336,11 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 "updateTokenTreasury",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 noAdminKeyToken
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -352,9 +353,9 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 "updateTokenTreasury",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(nftToken.get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -405,11 +406,11 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 "checkNameAndSymbolLength",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -424,11 +425,11 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 "checkNameAndSymbolLength",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -539,11 +540,11 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 updateTokenWithKeysFunc,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -556,7 +557,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -569,12 +570,12 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 updateTokenWithKeysFunc,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 tokenList
                                                                                         .get(0)
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -587,7 +588,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -600,12 +601,12 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 updateTokenWithKeysFunc,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 tokenList
                                                                                         .get(1)
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -618,7 +619,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -631,12 +632,12 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 updateTokenWithKeysFunc,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 tokenList
                                                                                         .get(2)
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -649,7 +650,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -662,12 +663,12 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 updateTokenWithKeysFunc,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 tokenList
                                                                                         .get(3)
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -680,7 +681,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -693,12 +694,12 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 updateTokenWithKeysFunc,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 tokenList
                                                                                         .get(4)
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -711,7 +712,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -795,11 +796,11 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 "updateTokenWithInvalidKeyValues",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -857,7 +858,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 UPDATE_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
@@ -869,7 +870,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -888,7 +889,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
@@ -897,7 +898,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
@@ -906,7 +907,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
@@ -915,7 +916,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
@@ -924,7 +925,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
@@ -934,7 +935,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
@@ -943,7 +944,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())),
@@ -952,7 +953,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_UPDATE_CONTRACT,
                                                         GET_KEY_FUNC,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(vanillaTokenID.get())),
                                                         BigInteger.valueOf(ADMIN_KEY_TYPE)))))
                 .then(
@@ -1142,7 +1143,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 UPDATE_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(nftToken.get())),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -1152,7 +1153,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -1222,7 +1223,8 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 UPDATE_KEY_FUNC,
-                                                                convertAliasToAddress(new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
                                                                         .getEd25519()
@@ -1231,7 +1233,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -1244,7 +1246,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 UPDATE_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(nftToken.get())),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -1254,7 +1256,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -1306,13 +1308,13 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         TOKEN_UPDATE_CONTRACT,
                                                         GET_KEY_FUNC,
-                                                        convertAliasToAddress(
+                                                        HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(nftToken.get())),
                                                         BigInteger.valueOf(SUPPLY_KEY_TYPE)),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(nftToken.get())),
                                                                 BigInteger.valueOf(89L))
                                                         .via("Invalid_Key_Type")
@@ -1320,14 +1322,15 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
                                                                 BigInteger.valueOf(SUPPLY_KEY_TYPE))
                                                         .via("InvalidTokenId")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
                                                                 GET_KEY_FUNC,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(nftToken.get())),
                                                                 BigInteger.valueOf(ADMIN_KEY_TYPE))
                                                         .via(NO_ADMIN_KEY)

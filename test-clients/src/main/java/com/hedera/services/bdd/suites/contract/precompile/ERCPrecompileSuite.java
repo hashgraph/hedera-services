@@ -45,7 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
@@ -86,6 +86,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -257,7 +258,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 "name",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -314,7 +315,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 SYMBOL,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -342,7 +343,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                 ERC_20_CONTRACT,
                                                 SYMBOL,
-                                                convertAliasToAddress(tokenAddr.get()))));
+                                                asHeadlongAddress(tokenAddr.get()))));
     }
 
     private HapiApiSpec getErc20TokenDecimals() {
@@ -379,7 +380,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 DECIMALS,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -439,7 +440,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TOTAL_SUPPLY,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -505,12 +506,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 BALANCE_OF,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -526,12 +527,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 BALANCE_OF,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -573,8 +574,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                 ERC_20_CONTRACT,
                                                 BALANCE_OF,
-                                                convertAliasToAddress(tokenAddr.get()),
-                                                convertAliasToAddress(accountAddr.get()))));
+                                                asHeadlongAddress(tokenAddr.get()),
+                                                asHeadlongAddress(accountAddr.get()))));
     }
 
     private HapiApiSpec transferErc20Token() {
@@ -616,12 +617,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -697,8 +698,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         ERC_20_CONTRACT,
                                                         TRANSFER,
-                                                        convertAliasToAddress(tokenAddr.get()),
-                                                        convertAliasToAddress(accountAddr.get()),
+                                                        asHeadlongAddress(tokenAddr.get()),
+                                                        asHeadlongAddress(accountAddr.get()),
                                                         BigInteger.ONE)
                                                 .hasAnswerOnlyPrecheck(CONTRACT_REVERT_EXECUTED)));
     }
@@ -735,12 +736,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -833,12 +834,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 "delegateTransfer",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -941,7 +942,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ALIASED_TRANSFER,
                                                                 "deployWithCREATE2",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -967,12 +968,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ALIASED_TRANSFER,
                                                                 "giveTokensToOperator",
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 TOKEN_NAME))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -990,7 +991,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ALIASED_TRANSFER,
                                                                 TRANSFER,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1049,17 +1050,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 ACCOUNT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1080,17 +1081,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 ACCOUNT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1106,17 +1107,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 ACCOUNT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1131,13 +1132,15 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(new byte[20]),
-                                                                convertAliasToAddress(new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
                                                                 BigInteger.valueOf(5))
                                                         .payingWith(GENESIS)
                                                         .via(transferWithZeroAddressesTxn)
@@ -1145,16 +1148,18 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(new byte[20]),
-                                                                convertAliasToAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
                                                                 BigInteger.valueOf(5))
                                                         .payingWith(GENESIS)
                                                         .via(transferWithAccountWithZeroAddressTxn)
@@ -1162,17 +1167,18 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 ACCOUNT))),
-                                                                convertAliasToAddress(new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
                                                                 BigInteger.valueOf(5))
                                                         .payingWith(ACCOUNT)
                                                         .via(
@@ -1353,17 +1359,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
                                                                                                 ERC_20_CONTRACT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -1374,17 +1380,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
                                                                                                 ERC_20_CONTRACT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getContractId(
@@ -1530,17 +1536,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 ALLOWANCE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1594,12 +1600,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 APPROVE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1640,7 +1646,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 DECIMALS,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -1682,12 +1688,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1725,7 +1731,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 "name",
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -1776,7 +1782,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 SYMBOL,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -1830,7 +1836,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TOKEN_URI,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -1843,7 +1849,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TOKEN_URI,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -1906,7 +1912,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TOTAL_SUPPLY,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -1956,12 +1962,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 BALANCE_OF,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -1977,12 +1983,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 BALANCE_OF,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -2056,7 +2062,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 OWNER_OF,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -2093,7 +2099,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         ERC_721_CONTRACT,
                                                         OWNER_OF,
-                                                        convertAliasToAddress(tokenAddr.get()),
+                                                        asHeadlongAddress(tokenAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(OWNER)
                                                 .gas(GAS_TO_OFFER)));
@@ -2131,17 +2137,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -2165,17 +2171,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -2191,17 +2197,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -2215,13 +2221,15 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(new byte[20]),
-                                                                convertAliasToAddress(new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
                                                                 BigInteger.ONE)
                                                         .payingWith(GENESIS)
                                                         .via(transferWithZeroAddressesTxn)
@@ -2229,13 +2237,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(new byte[20]),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -2247,17 +2256,18 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
                                                                 BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(
@@ -2392,7 +2402,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TOKEN_URI,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -2431,7 +2441,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 OWNER_OF,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -2527,7 +2537,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                             .FunctionType.FUNCTION,
                                                                     BALANCE_OF,
                                                                     ERC_20_ABI),
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     asHexedSolidityAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
@@ -2541,7 +2551,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                             .FunctionType.FUNCTION,
                                                                     TRANSFER,
                                                                     ERC_20_ABI),
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     asHexedSolidityAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
@@ -2693,8 +2703,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         "iMustOwnAfterReceiving",
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.valueOf(5))
                                                 .payingWith(B_CIVILIAN)
                                                 .via("D")
@@ -2705,11 +2714,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -2720,11 +2728,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -2735,11 +2741,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -2750,11 +2754,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -2775,11 +2778,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -2871,9 +2872,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(666))
                                                 .via("MISSING_SERIAL_NO")
@@ -2885,9 +2885,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(5))
                                                 .via(MISSING_TO)
@@ -2919,9 +2918,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(3))
                                                 .via("NOT_AN_OPERATOR")
@@ -2933,8 +2931,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         REVOKE_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .via("MISSING_REVOKE")
                                                 .gas(1_000_000)
@@ -2955,9 +2952,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(3))
                                                 .via("E")
@@ -2970,9 +2966,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(6))
                                                 .via("EXTANT_TO")
@@ -2994,8 +2989,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         REVOKE_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .via("B")
                                                 .gas(1_000_000)),
@@ -3005,9 +2999,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.TWO)
                                                 .via("C")
@@ -3017,8 +3010,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         "iMustOwnAfterReceiving",
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.valueOf(5))
                                                 .payingWith(B_CIVILIAN)
                                                 .via("D")),
@@ -3041,9 +3033,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(3))
                                                 .gas(1_000_000)),
@@ -3069,8 +3060,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         REVOKE_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.valueOf(5))
                                                 .gas(1_000_000)),
                         getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender());
@@ -3123,9 +3113,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.ZERO)
                                                 .via("ACCOUNT_NOT_ASSOCIATED_TXN")
@@ -3137,9 +3126,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(5))
                                                 .via(MISSING_TO)
@@ -3150,10 +3138,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
                                                         BigInteger.valueOf(5))
                                                 .via("SPENDER_SAME_AS_OWNER_TXN")
                                                 .gas(1_000_000)
@@ -3163,9 +3149,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(5))
                                                 .via("SUCCESSFUL_APPROVE_TXN")
@@ -3176,11 +3161,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         GET_ALLOWANCE,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()))
                                                 .via("ALLOWANCE_TXN")
                                                 .gas(1_000_000)
@@ -3190,17 +3173,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                 SOME_ERC_20_SCENARIOS,
                                                 GET_ALLOWANCE,
-                                                convertAliasToAddress(tokenMirrorAddr.get()),
-                                                convertAliasToAddress(contractMirrorAddr.get()),
-                                                convertAliasToAddress(aCivilianMirrorAddr.get()))),
+                                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                                asHeadlongAddress(contractMirrorAddr.get()),
+                                                asHeadlongAddress(aCivilianMirrorAddr.get()))),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.ZERO)
                                                 .via("SUCCESSFUL_REVOKE_TXN")
@@ -3211,11 +3193,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         GET_ALLOWANCE,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()))
                                                 .via("ALLOWANCE_AFTER_REVOKE_TXN")
                                                 .gas(1_000_000)
@@ -3225,11 +3205,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         GET_ALLOWANCE,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()))
                                                 .via("MISSING_OWNER_ID")
                                                 .gas(1_000_000)
@@ -3330,11 +3309,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -3346,11 +3323,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -3361,11 +3337,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -3376,11 +3350,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -3394,11 +3366,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -3414,11 +3385,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(5))
                                                 .payingWith(GENESIS)
@@ -3435,11 +3405,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(20))
                                                 .payingWith(GENESIS)
@@ -3524,9 +3493,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         "approveAndGetAllowanceAmount",
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.valueOf(5))
                                                 .via("APPROVE_AND_GET_ALLOWANCE_TXN")
@@ -3633,7 +3601,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                             .FunctionType.FUNCTION,
                                                                     BALANCE_OF,
                                                                     ERC_721_ABI),
-                                                            convertAliasToAddress(
+                                                            asHeadlongAddress(
                                                                     asHexedSolidityAddress(
                                                                             spec.registry()
                                                                                     .getAccountID(
@@ -3796,8 +3764,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        convertAliasToAddress(
-                                                                zTokenMirrorAddr.get()),
+                                                        asHeadlongAddress(zTokenMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .via(MISSING_TOKEN)
                                                 .gas(1_000_000)
@@ -3807,9 +3774,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         DO_SPECIFIC_APPROVAL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .gas(1_000_000)),
@@ -3818,8 +3784,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.valueOf(55))
                                                 .via("MISSING_SERIAL")
                                                 .gas(1_000_000)
@@ -3830,8 +3795,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.TWO)
                                                 .via("MISSING_SPENDER")
                                                 .gas(1_000_000)
@@ -3841,8 +3805,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .via(WITH_SPENDER)
                                                 .gas(1_000_000)
@@ -3853,8 +3816,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_APPROVED,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .logged()
                                                 .gas(1_000_000)
@@ -3955,9 +3917,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_BALANCE_OF,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()))
                                                 .via("BALANCE_OF")
                                                 .gas(1_000_000)
@@ -3967,9 +3928,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_BALANCE_OF,
-                                                        convertAliasToAddress(
-                                                                zTokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(zTokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()))
                                                 .via(MISSING_TOKEN)
                                                 .gas(1_000_000)
@@ -3979,9 +3939,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_BALANCE_OF,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()))
                                                 .via("NOT_ASSOCIATED")
                                                 .gas(1_000_000)
@@ -4067,8 +4026,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_OWNER_OF,
-                                                        convertAliasToAddress(
-                                                                zTokenMirrorAddr.get()),
+                                                        asHeadlongAddress(zTokenMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .via(MISSING_TOKEN)
                                                 .gas(1_000_000)
@@ -4078,8 +4036,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_OWNER_OF,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.valueOf(55))
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -4088,8 +4045,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_OWNER_OF,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.TWO)
                                                 .via("TREASURY_OWNER")
                                                 .gas(1_000_000)
@@ -4102,8 +4058,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         GET_OWNER_OF,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .via("CIVILIAN_OWNER")
                                                 .gas(1_000_000)
@@ -4209,12 +4164,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()))
+                                                        asHeadlongAddress(contractMirrorAddr.get()))
                                                 .via("OWNER_DOES_NOT_EXISTS")
                                                 .gas(1_000_000)),
                         sourcing(
@@ -4222,11 +4175,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()))
                                                 .via(OPERATOR_DOES_NOT_EXISTS)
                                                 .gas(1_000_000)
@@ -4236,12 +4188,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()))
+                                                        asHeadlongAddress(contractMirrorAddr.get()))
                                                 .via("OPERATOR_IS_NOT_APPROVED")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -4269,12 +4219,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()))
+                                                        asHeadlongAddress(contractMirrorAddr.get()))
                                                 .via("OPERATOR_IS_APPROVED_FOR_ALL")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
@@ -4283,12 +4231,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCallLocal(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()))
+                                                        asHeadlongAddress(contractMirrorAddr.get()))
                                                 .gas(1_000_000)
                                                 .has(resultWith().contractCallResult(flag(true)))))
                 .then(
@@ -4397,10 +4343,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         SET_APPROVAL_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
                                                         true)
                                                 .via("OPERATOR_SAME_AS_MSG_SENDER")
                                                 .gas(1_000_000)
@@ -4410,9 +4354,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         SET_APPROVAL_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 zCivilianMirrorAddr.get()),
                                                         true)
                                                 .via(OPERATOR_DOES_NOT_EXISTS)
@@ -4423,9 +4366,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         SET_APPROVAL_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         true)
                                                 .via("OPERATOR_EXISTS")
@@ -4436,11 +4378,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()))
                                                 .via("SUCCESSFULLY_APPROVED_CHECK_TXN")
                                                 .gas(1_000_000)
@@ -4450,9 +4390,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         SET_APPROVAL_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()),
                                                         false)
                                                 .via("OPERATOR_EXISTS_REVOKE_APPROVE_FOR_ALL")
@@ -4463,11 +4402,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         IS_APPROVED_FOR_ALL,
-                                                        convertAliasToAddress(
-                                                                tokenMirrorAddr.get()),
-                                                        convertAliasToAddress(
-                                                                contractMirrorAddr.get()),
-                                                        convertAliasToAddress(
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
                                                                 aCivilianMirrorAddr.get()))
                                                 .via("SUCCESSFULLY_REVOKED_CHECK_TXN")
                                                 .gas(1_000_000)
@@ -4573,17 +4510,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 IS_APPROVED_FOR_ALL,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -4595,17 +4532,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 IS_APPROVED_FOR_ALL,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -4677,12 +4614,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 APPROVE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -4743,7 +4680,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 GET_APPROVED,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -4819,12 +4756,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 SET_APPROVAL_FOR_ALL,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -4891,17 +4828,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -4965,12 +4902,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 APPROVE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 nft))),
-                                                                convertAliasToAddress(new byte[20]),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
                                                                 BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via("cryptoDeleteAllowanceTxn")
@@ -5027,17 +4965,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 ALLOWANCE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -5050,17 +4988,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -5073,17 +5011,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 ALLOWANCE,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -5151,17 +5089,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 ERC_20_CONTRACT))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -5219,17 +5157,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -5345,17 +5283,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TRANSFER_FROM,
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                convertAliasToAddress(
+                                                                HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(

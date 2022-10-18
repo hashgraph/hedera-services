@@ -30,7 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.convertAliasToAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -110,7 +110,7 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 DELETE_TOKEN_CONTRACT,
                                                                 TOKEN_DELETE_FUNCTION,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -127,7 +127,7 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 DELETE_TOKEN_CONTRACT,
                                                                 TOKEN_DELETE_FUNCTION,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -181,7 +181,7 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 DELETE_TOKEN_CONTRACT,
                                                                 TOKEN_DELETE_FUNCTION,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
@@ -193,7 +193,7 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 DELETE_TOKEN_CONTRACT,
                                                                 TOKEN_DELETE_FUNCTION,
-                                                                convertAliasToAddress(
+                                                                asHeadlongAddress(
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
