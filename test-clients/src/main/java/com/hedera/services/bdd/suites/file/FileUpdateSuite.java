@@ -15,13 +15,19 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
@@ -31,10 +37,22 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.*;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -114,44 +132,29 @@ public class FileUpdateSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                    vanillaUpdateSucceeds(),
-                    //                    updateFeesCompatibleWithCreates(),
-                    //                    apiPermissionsChangeDynamically(),
-                    //                    cannotUpdateExpirationPastMaxLifetime(),
-                    //                    optimisticSpecialFileUpdate(),
-                    //                    associateHasExpectedSemantics(),
-                    //                    notTooManyFeeScheduleCanBeCreated(),
-                    //                    allUnusedGasIsRefundedIfSoConfigured(),
-                    //                    maxRefundIsEnforced(),
-                    //                    gasLimitOverMaxGasLimitFailsPrecheck(),
-                    //                    autoCreationIsDynamic(),
-                    //                    kvLimitsEnforced(),
-                    //                    serviceFeeRefundedIfConsGasExhausted(),
-                    //                    chainIdChangesDynamically(),
-                    //                    entitiesNotCreatableAfterUsageLimitsReached(),
-                    //                    rentItemizedAsExpectedWithOverridePriceTiers(),
-                    //                    messageSubmissionSizeChange(),
-                    getMainnetInfo(),
+                    vanillaUpdateSucceeds(),
+                    updateFeesCompatibleWithCreates(),
+                    apiPermissionsChangeDynamically(),
+                    cannotUpdateExpirationPastMaxLifetime(),
+                    optimisticSpecialFileUpdate(),
+                    associateHasExpectedSemantics(),
+                    notTooManyFeeScheduleCanBeCreated(),
+                    allUnusedGasIsRefundedIfSoConfigured(),
+                    maxRefundIsEnforced(),
+                    gasLimitOverMaxGasLimitFailsPrecheck(),
+                    autoCreationIsDynamic(),
+                    kvLimitsEnforced(),
+                    serviceFeeRefundedIfConsGasExhausted(),
+                    chainIdChangesDynamically(),
+                    entitiesNotCreatableAfterUsageLimitsReached(),
+                    rentItemizedAsExpectedWithOverridePriceTiers(),
+                    messageSubmissionSizeChange()
                 });
-    }
-
-    private HapiApiSpec getMainnetInfo() {
-        return customHapiSpec("GetMainnetInfo")
-                .withProperties(
-                        Map.of(
-                                "nodes", "35.237.200.180",
-                                "fees.useFixedOffer", "true",
-                                "fees.fixedOffer", "100000000",
-                                "default.payer", "0.0.748787",
-                                "default.payer.mnemonicFile", "account748787.words"))
-                .given()
-                .when()
-                .then(getVersionInfo().logged());
     }
 
     private HapiApiSpec associateHasExpectedSemantics() {
         return defaultHapiSpec("AssociateHasExpectedSemantics")
-                .given(TokenAssociationSpecs.basicKeysAndTokens())
+                .given(flattened(TokenAssociationSpecs.basicKeysAndTokens()))
                 .when(
                         cryptoCreate("misc").balance(0L),
                         TxnVerbs.tokenAssociate(
