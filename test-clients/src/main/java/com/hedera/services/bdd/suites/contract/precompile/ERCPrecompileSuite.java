@@ -82,6 +82,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -404,7 +405,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                         sourcing(
                                 () ->
                                         contractCallLocal(
-                                                ERC_20_CONTRACT, DECIMALS, tokenAddr.get())));
+                                                ERC_20_CONTRACT,
+                                                DECIMALS,
+                                                asHeadlongAddress(tokenAddr.get()))));
     }
 
     private HapiApiSpec getErc20TotalSupply() {
@@ -465,7 +468,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                         sourcing(
                                 () ->
                                         contractCallLocal(
-                                                ERC_20_CONTRACT, DECIMALS, tokenAddr.get())));
+                                                ERC_20_CONTRACT,
+                                                DECIMALS,
+                                                asHeadlongAddress(tokenAddr.get()))));
     }
 
     private HapiApiSpec getErc20BalanceOfAccount() {
@@ -948,8 +953,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     final var res =
-                                                                            (byte[]) result[0];
-                                                                    ALIASED_ADDRESS[0] = res;
+                                                                            (Address) result[0];
+                                                                    ALIASED_ADDRESS[0] =
+                                                                            res.value()
+                                                                                    .toByteArray();
                                                                 })
                                                         .payingWith(ACCOUNT)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
