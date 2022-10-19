@@ -264,6 +264,7 @@ public final class BootstrapProperties implements PropertySource {
                     HEDERA_RECORD_STREAM_SIG_FILE_VERSION,
                     HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION,
                     HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION,
+                HEDERA_RECORD_STREAM_EXPORT_ON_EACH_TXN,
                     AUTO_RENEW_TARGET_TYPES,
                     AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN,
                     AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE,
@@ -558,5 +559,6 @@ public final class BootstrapProperties implements PropertySource {
                     entry(HEDERA_ALLOWANCES_IS_ENABLED, AS_BOOLEAN),
                     entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, AS_BOOLEAN),
                     entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
-                    entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN));
+                    entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
+                    entry(HEDERA_RECORD_STREAM_EXPORT_ON_EACH_TXN, AS_BOOLEAN));
 }

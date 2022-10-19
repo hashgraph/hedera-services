@@ -224,6 +224,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                 // to make that determination at this point in time.
                 return !startWriteAtCompleteWindow;
             } else {
+                // if exporting on each txn, skip comparing periods and return true
+                if (dynamicProperties.shouldRecordStreamExportOnEveryTxn()) {
+                    return true;
+                }
                 // Check if this object is in a different period than the previous object.
                 final long previousPeriod = getPeriod(previousObject.getTimestamp(), logPeriodMs);
                 final long currentPeriod = getPeriod(nextObject.getTimestamp(), logPeriodMs);

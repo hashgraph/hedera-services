@@ -234,6 +234,8 @@ public class PropertyNames {
             "traceability.minFreeToUsedGasThrottleRatio";
     public static final String HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION =
             "hedera.recordStream.compressFilesOnCreation";
+    public static final String HEDERA_RECORD_STREAM_EXPORT_ON_EACH_TXN =
+            "hedera.recordStream.exportOnEachTxn";
 
     public static final String TOKENS_AUTO_CREATIONS_ENABLED = "tokens.autoCreations.isEnabled";
 

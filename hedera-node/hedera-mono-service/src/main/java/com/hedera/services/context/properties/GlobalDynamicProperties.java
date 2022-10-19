@@ -153,6 +153,7 @@ public class GlobalDynamicProperties {
     private long traceabilityMinFreeToUsedGasThrottleRatio;
     private boolean lazyCreationEnabled;
     private boolean cryptoCreateWithAliasEnabled;
+    private boolean recordStreamExportOnEveryTxn;
 
     @Inject
     public GlobalDynamicProperties(
@@ -315,6 +316,8 @@ public class GlobalDynamicProperties {
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
         cryptoCreateWithAliasEnabled =
                 properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
+        recordStreamExportOnEveryTxn =
+                properties.getBooleanProperty(HEDERA_RECORD_STREAM_EXPORT_ON_EACH_TXN);
     }
 
     public int maxTokensPerAccount() {
@@ -759,5 +762,9 @@ public class GlobalDynamicProperties {
 
     public boolean isCryptoCreateWithAliasEnabled() {
         return cryptoCreateWithAliasEnabled;
+    }
+
+    public boolean shouldRecordStreamExportOnEveryTxn() {
+        return recordStreamExportOnEveryTxn;
     }
 }
