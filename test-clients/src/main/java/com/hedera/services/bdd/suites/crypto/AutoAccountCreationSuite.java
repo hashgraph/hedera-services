@@ -744,12 +744,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec hollowAccountCreationWithCryptoTransfer() {
-        final var hollowAccountCreateSponsor = "hollowAccountCreateSponsor";
+        final var lazyCreateSponsor = "lazyCreateSponsor";
         return defaultHapiSpec("HollowAccountCreationWithCryptoTransfer")
                 .given(
                         UtilVerbs.overriding("lazyCreation.enabled", "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(hollowAccountCreateSponsor)
+                        cryptoCreate(lazyCreateSponsor)
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
                                 .key(SECP_256K1_SOURCE_KEY))
                 .when()
@@ -767,7 +767,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     final var op =
                                             cryptoTransfer(
                                                             tinyBarsFromTo(
-                                                                    hollowAccountCreateSponsor,
+                                                                    lazyCreateSponsor,
                                                                     evmAddress,
                                                                     ONE_HUNDRED_HBARS))
                                                     .hasKnownStatus(SUCCESS)
