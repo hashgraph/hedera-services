@@ -31,7 +31,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -107,10 +107,10 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
     @Override
     public RenewAssessment assessCryptoAutoRenewal(
-            final MerkleAccount expiredAccountOrContract,
+            final HederaAccount expiredAccountOrContract,
             final long requestedRenewal,
             final Instant now,
-            final MerkleAccount payer) {
+            final HederaAccount payer) {
         return autoRenewCalcs.assessCryptoRenewal(
                 expiredAccountOrContract, requestedRenewal, now, exchange.activeRate(now), payer);
     }

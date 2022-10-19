@@ -25,13 +25,10 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -41,14 +38,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReleaseTwentySixMigrationTest {
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private VirtualMap<ContractKey, ContractValue> contractStorage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> iterableContractStorage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> finalContractStorage;
     @Mock private ServicesState initializingState;
     @Mock private KvPairIterationMigrator migrator;
     @Mock private ReleaseTwentySixMigration.MigratorFactory migratorFactory;
-    @Mock private ReleaseTwentySixMigration.MigrationUtility migrationUtility;
+    @Mock private VirtualMapDataAccess virtualMapDataAccess;
 
     @Test
     void migratesToIterableStorageAsExpected() throws InterruptedException {
@@ -65,9 +62,9 @@ class ReleaseTwentySixMigrationTest {
         given(migrator.getMigratedStorage()).willReturn(finalContractStorage);
 
         makeStorageIterable(
-                initializingState, migratorFactory, migrationUtility, iterableContractStorage);
+                initializingState, migratorFactory, virtualMapDataAccess, iterableContractStorage);
 
-        verify(migrationUtility).extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
+        verify(virtualMapDataAccess).extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
         verify(migrator).finish();
         verify(initializingState)
                 .setChild(StateChildIndices.CONTRACT_STORAGE, finalContractStorage);
@@ -86,7 +83,7 @@ class ReleaseTwentySixMigrationTest {
                                 eq(iterableContractStorage)))
                 .willReturn(migrator);
         willThrow(InterruptedException.class)
-                .given(migrationUtility)
+                .given(virtualMapDataAccess)
                 .extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
 
         Assertions.assertThrows(
@@ -95,7 +92,7 @@ class ReleaseTwentySixMigrationTest {
                         makeStorageIterable(
                                 initializingState,
                                 migratorFactory,
-                                migrationUtility,
+                                virtualMapDataAccess,
                                 iterableContractStorage));
     }
 }

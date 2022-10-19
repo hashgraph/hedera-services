@@ -34,9 +34,10 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -65,7 +66,7 @@ public class StaticEntityAccess implements EntityAccess {
     private final ContractAliases aliases;
     private final OptionValidator validator;
     private final MerkleMap<EntityNum, MerkleToken> tokens;
-    private final MerkleMap<EntityNum, MerkleAccount> accounts;
+    private final AccountStorageAdapter accounts;
     private final UniqueTokenMapAdapter nfts;
     private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
     private final VirtualMap<ContractKey, IterableContractValue> storage;
@@ -149,7 +150,7 @@ public class StaticEntityAccess implements EntityAccess {
 
     @Override
     public void flushStorage(
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 
@@ -180,7 +181,7 @@ public class StaticEntityAccess implements EntityAccess {
 
     @Override
     public void recordNewKvUsageTo(
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 

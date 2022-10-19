@@ -31,8 +31,8 @@ import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.sigs.order.LinkedRefs;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
@@ -88,7 +88,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
     public static DelegatingSigMetadataLookup defaultLookupsFor(
             final AliasManager aliasManager,
             final HfsSigMetaLookup hfsSigMetaLookup,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
             final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
             final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup) {

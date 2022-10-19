@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -110,7 +111,7 @@ class QueryFeeCheckTest {
 
         validator = mock(OptionValidator.class);
 
-        subject = new QueryFeeCheck(validator, () -> accounts);
+        subject = new QueryFeeCheck(validator, () -> AccountStorageAdapter.fromInMemory(accounts));
     }
 
     @Test

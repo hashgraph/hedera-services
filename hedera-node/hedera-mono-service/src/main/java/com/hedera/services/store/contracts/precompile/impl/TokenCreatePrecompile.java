@@ -490,8 +490,10 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
     private void replaceInheritedProperties() throws DecoderException {
         final var parentId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
-        final var parentAutoRenewId =
-                (EntityId) ledgers.accounts().get(parentId, AUTO_RENEW_ACCOUNT_ID);
+        var parentAutoRenewId = (EntityId) ledgers.accounts().get(parentId, AUTO_RENEW_ACCOUNT_ID);
+        if (parentAutoRenewId == null) {
+            parentAutoRenewId = MISSING_ENTITY_ID;
+        }
         if (!MISSING_ENTITY_ID.equals(parentAutoRenewId) && !tokenCreateOp.hasAutoRenewAccount()) {
             tokenCreateOp.inheritAutoRenewAccount(parentAutoRenewId);
         }

@@ -41,6 +41,7 @@ import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -101,7 +102,7 @@ public class StakingUtilsTest {
     @Test
     void updatesBalance() {
         var changes = randomStakeFieldChanges(100L);
-        var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+        var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
         pendingChanges.include(counterpartyId, counterparty, changes);
         assertEquals(100L, pendingChanges.changes(0).get(BALANCE));
 
@@ -120,7 +121,7 @@ public class StakingUtilsTest {
     void updatesStakedToMe() {
         var changes = randomStakeFieldChanges(100L);
         final long[] stakedToMeUpdates = new long[] {2000L};
-        var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+        var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
         pendingChanges.include(counterpartyId, counterparty, changes);
 
         updateStakedToMe(0, 20L, stakedToMeUpdates, pendingChanges);
@@ -138,7 +139,7 @@ public class StakingUtilsTest {
     @Test
     void worksAroundStakingToNewlyCreatedAccount() {
         final var changes = randomNotStakeFieldChanges();
-        final var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+        final var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
         pendingChanges.clear();
         pendingChanges.include(counterpartyId, null, changes);
         final var stakedToMeUpdates = new long[] {NA};
@@ -202,10 +203,10 @@ public class StakingUtilsTest {
         return info;
     }
 
-    public static EntityChangeSet<AccountID, MerkleAccount, AccountProperty>
+    public static EntityChangeSet<AccountID, HederaAccount, AccountProperty>
             buildPendingNodeStakeChanges() {
         var changes = randomStakeFieldChanges(100L);
-        var pendingChanges = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+        var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
         pendingChanges.include(counterpartyId, counterparty, changes);
         return pendingChanges;
     }

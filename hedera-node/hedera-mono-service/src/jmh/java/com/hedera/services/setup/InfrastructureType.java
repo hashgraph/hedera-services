@@ -21,6 +21,9 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
@@ -50,16 +53,25 @@ public enum InfrastructureType {
     ACCOUNTS_LEDGER {
         @Override
         @SuppressWarnings("unchecked")
-        public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> fromStorage(
+        public TransactionalLedger<AccountID, AccountProperty, HederaAccount> fromStorage(
                 final String dir, final InfrastructureBundle bundle) {
             return abInitio(dir, bundle);
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> abInitio(
+        public TransactionalLedger<AccountID, AccountProperty, HederaAccount> abInitio(
                 final String dir, final InfrastructureBundle bundle) {
-            final var backingAccounts = new BackingAccounts(bundle.getterFor(ACCOUNTS_MM));
+            final var backingAccounts =
+                    new BackingAccounts(
+                            () ->
+                                    AccountStorageAdapter.fromInMemory(
+                                            (MerkleMap<EntityNum, MerkleAccount>)
+                                                    bundle.getterFor(ACCOUNTS_MM).get()),
+                            () ->
+                                    RecordsStorageAdapter.fromLegacy(
+                                            (MerkleMap<EntityNum, MerkleAccount>)
+                                                    bundle.getterFor(ACCOUNTS_MM).get()));
             backingAccounts.rebuildFromSources();
             return new TransactionalLedger<>(
                     AccountProperty.class,

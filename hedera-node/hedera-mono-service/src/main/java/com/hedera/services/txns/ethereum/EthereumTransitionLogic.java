@@ -35,7 +35,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.SynthCreationCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
@@ -72,7 +72,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
     private final ExpandHandleSpanMapAccessor spanMapAccessor;
     private final ContractCallTransitionLogic contractCallTransitionLogic;
     private final ContractCreateTransitionLogic contractCreateTransitionLogic;
-    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     @Inject
     public EthereumTransitionLogic(
@@ -85,7 +85,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
             final TransactionRecordService recordService,
             final GlobalDynamicProperties dynamicProperties,
             final AliasManager aliasManager,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final SpanMapManager spanMapManager) {
         this.txnCtx = txnCtx;
         this.syntheticTxnFactory = syntheticTxnFactory;

@@ -32,9 +32,9 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
@@ -119,7 +119,7 @@ public class InfrastructureFactory {
     }
 
     public AccountStore newAccountStore(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         return new AccountStore(validator, accounts);
     }
 
@@ -191,7 +191,7 @@ public class InfrastructureFactory {
             final HederaTokenStore tokenStore,
             final SideEffectsTracker sideEffects,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final TransactionalLedger<
                             Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
                     tokenRelsLedger) {

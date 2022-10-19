@@ -25,6 +25,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -39,7 +40,7 @@ class AccountGCTest {
     @Mock private AliasManager aliasManager;
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private TreasuryReturns treasuryReturns;
-    @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
+    @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
     @Mock private ExpiryThrottle expiryThrottle;
 
     private AccountGC subject;
