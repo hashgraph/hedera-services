@@ -19,6 +19,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
@@ -32,44 +33,44 @@ import java.util.function.Function;
  * themselves on a {@link MerkleAccount} object.
  */
 @SuppressWarnings("unchecked")
-public enum AccountProperty implements BeanProperty<MerkleAccount> {
+public enum AccountProperty implements BeanProperty<HederaAccount> {
     IS_DELETED {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, f) -> a.setDeleted((boolean) f);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::isDeleted;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::isDeleted;
         }
     },
     IS_RECEIVER_SIG_REQUIRED {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, f) -> a.setReceiverSigRequired((boolean) f);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::isReceiverSigRequired;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::isReceiverSigRequired;
         }
     },
     IS_SMART_CONTRACT {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, f) -> a.setSmartContract((boolean) f);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::isSmartContract;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::isSmartContract;
         }
     },
     BALANCE {
         @Override
         @SuppressWarnings("unchecked")
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, v) -> {
                 try {
                     a.setBalance(((Number) v).longValue());
@@ -92,233 +93,233 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getBalance;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getBalance;
         }
     },
     AUTO_RENEW_PERIOD {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, v) -> a.setAutoRenewSecs((long) v);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getAutoRenewSecs;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getAutoRenewSecs;
         }
     },
     EXPIRY {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, v) -> a.setExpiry((long) v);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getExpiry;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getExpiry;
         }
     },
     KEY {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, k) -> a.setAccountKey((JKey) k);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getAccountKey;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getAccountKey;
         }
     },
     MEMO {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, s) -> a.setMemo((String) s);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getMemo;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getMemo;
         }
     },
     PROXY {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, p) -> a.setProxy((EntityId) p);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getProxy;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getProxy;
         }
     },
     NUM_NFTS_OWNED {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, n) -> a.setNftsOwned((long) n);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getNftsOwned;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getNftsOwned;
         }
     },
     MAX_AUTOMATIC_ASSOCIATIONS {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setMaxAutomaticAssociations((int) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getMaxAutomaticAssociations;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getMaxAutomaticAssociations;
         }
     },
     USED_AUTOMATIC_ASSOCIATIONS {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setUsedAutomaticAssociations((int) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getUsedAutoAssociations;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getUsedAutoAssociations;
         }
     },
     NUM_CONTRACT_KV_PAIRS {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, n) -> a.setNumContractKvPairs((int) n);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getNumContractKvPairs;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getNumContractKvPairs;
         }
     },
     ALIAS {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setAlias((ByteString) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getAlias;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getAlias;
         }
     },
     ETHEREUM_NONCE {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, v) -> a.setEthereumNonce((long) v);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getEthereumNonce;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getEthereumNonce;
         }
     },
     CRYPTO_ALLOWANCES {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setCryptoAllowancesUnsafe((Map<EntityNum, Long>) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getCryptoAllowancesUnsafe;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getCryptoAllowancesUnsafe;
         }
     },
     FUNGIBLE_TOKEN_ALLOWANCES {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setFungibleTokenAllowancesUnsafe((Map<FcTokenAllowanceId, Long>) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getFungibleTokenAllowancesUnsafe;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getFungibleTokenAllowancesUnsafe;
         }
     },
     APPROVE_FOR_ALL_NFTS_ALLOWANCES {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setApproveForAllNfts((Set<FcTokenAllowanceId>) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getApproveForAllNftsUnsafe;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getApproveForAllNftsUnsafe;
         }
     },
     NUM_ASSOCIATIONS {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setNumAssociations((int) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getNumAssociations;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getNumAssociations;
         }
     },
     NUM_POSITIVE_BALANCES {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setNumPositiveBalances((int) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getNumPositiveBalances;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getNumPositiveBalances;
         }
     },
     FIRST_CONTRACT_STORAGE_KEY {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setFirstUint256StorageKey((int[]) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getFirstUint256Key;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getFirstUint256Key;
         }
     },
     NUM_TREASURY_TITLES {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
-            return (a, t) -> a.state().setNumTreasuryTitles((int) t);
+        public BiConsumer<HederaAccount, Object> setter() {
+            return (a, t) -> a.setNumTreasuryTitles((int) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getNumTreasuryTitles;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getNumTreasuryTitles;
         }
     },
     AUTO_RENEW_ACCOUNT_ID {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, p) -> a.setAutoRenewAccount((EntityId) p);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getAutoRenewAccount;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getAutoRenewAccount;
         }
     },
     DECLINE_REWARD {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> a.setDeclineReward((boolean) t);
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::isDeclinedReward;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::isDeclinedReward;
         }
     },
     STAKED_ID {
         @Override
-        public BiConsumer<MerkleAccount, Object> setter() {
+        public BiConsumer<HederaAccount, Object> setter() {
             return (a, t) -> {
                 final var val = (long) t;
                 a.setStakedId(val);
@@ -326,8 +327,8 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
         }
 
         @Override
-        public Function<MerkleAccount, Object> getter() {
-            return MerkleAccount::getStakedId;
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::getStakedId;
         }
     }
 }

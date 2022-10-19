@@ -27,14 +27,12 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -53,7 +51,7 @@ public class ContractSysDelTransitionLogic implements TransitionLogic {
     private final OptionValidator validator;
     private final TransactionContext txnCtx;
     private final LegacySystemDeleter delegate;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
+    private final Supplier<AccountStorageAdapter> contracts;
 
     @Inject
     public ContractSysDelTransitionLogic(
@@ -61,7 +59,7 @@ public class ContractSysDelTransitionLogic implements TransitionLogic {
             final TransactionContext txnCtx,
             final SigImpactHistorian sigImpactHistorian,
             final LegacySystemDeleter delegate,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
+            final Supplier<AccountStorageAdapter> contracts,
             @CompositeProps final PropertySource properties) {
         this.validator = validator;
         this.txnCtx = txnCtx;

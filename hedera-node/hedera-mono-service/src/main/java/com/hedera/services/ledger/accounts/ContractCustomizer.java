@@ -28,7 +28,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -105,7 +105,7 @@ public class ContractCustomizer {
      */
     public static ContractCustomizer fromSponsorContract(
             final AccountID sponsor,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         var key = (JKey) ledger.get(sponsor, KEY);
         if (key instanceof JContractIDKey) {
             key = null;
@@ -137,7 +137,7 @@ public class ContractCustomizer {
      */
     public void customize(
             final AccountID id,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         accountCustomizer.customize(id, ledger);
         final var newKey =
                 (cryptoAdminKey == null)

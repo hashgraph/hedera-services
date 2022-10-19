@@ -53,7 +53,11 @@ class KvPairIterationMigratorTest {
     @BeforeEach
     void setUp() {
         subject =
-                new KvPairIterationMigrator(1, accounts, storageUpserter, iterableContractStorage);
+                new KvPairIterationMigrator(
+                        1,
+                        AccountStorageAdapter.fromInMemory(accounts),
+                        storageUpserter,
+                        iterableContractStorage);
     }
 
     @Test

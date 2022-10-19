@@ -28,6 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -50,7 +51,7 @@ class PureBackingAccountsTest {
     void setup() {
         map = mock(MerkleMap.class);
 
-        subject = new PureBackingAccounts(() -> map);
+        subject = new PureBackingAccounts(() -> AccountStorageAdapter.fromInMemory(map));
     }
 
     @Test

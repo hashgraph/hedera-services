@@ -19,10 +19,10 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.EnumMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -31,12 +31,12 @@ import javax.inject.Singleton;
 @Singleton
 public class StakeChangeManager {
     private final StakeInfoManager stakeInfoManager;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
     public StakeChangeManager(
             final StakeInfoManager stakeInfoManager,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+            final Supplier<AccountStorageAdapter> accounts) {
         this.stakeInfoManager = stakeInfoManager;
         this.accounts = accounts;
     }
@@ -64,7 +64,7 @@ public class StakeChangeManager {
 
     public int findOrAdd(
             final long accountNum,
-            final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+            final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         final var n = pendingChanges.size();
         for (int i = 0; i < n; i++) {
             if (pendingChanges.id(i).getAccountNum() == accountNum) {

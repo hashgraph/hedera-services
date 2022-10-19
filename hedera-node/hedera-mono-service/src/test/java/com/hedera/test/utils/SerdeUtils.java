@@ -29,12 +29,15 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.virtualmap.VirtualValue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 public class SerdeUtils {
@@ -127,6 +130,22 @@ public class SerdeUtils {
         return reconstruction;
     }
 
+    public static <T extends VirtualValue> T deserializeFromBuffer(
+            final Supplier<T> factory, final int version, final byte[] serializedForm) {
+        final var reconstruction = factory.get();
+
+        final var buffer = ByteBuffer.wrap(serializedForm);
+        try {
+            reconstruction.deserialize(buffer, version);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        assertEquals(
+                serializedForm.length, buffer.position(), "No bytes should be left in the buffer");
+
+        return reconstruction;
+    }
+
     public static <T extends SelfSerializable> String serializeToHex(final T source) {
         return CommonUtils.hex(serialize(source));
     }
@@ -141,6 +160,17 @@ public class SerdeUtils {
             throw new UncheckedIOException(e);
         }
         return baos.toByteArray();
+    }
+
+    public static <T extends VirtualValue> byte[] serializeToBuffer(
+            final T source, final int maxSerializedLen) {
+        final var buffer = ByteBuffer.wrap(new byte[maxSerializedLen]);
+        try {
+            source.serialize(buffer);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return Arrays.copyOfRange(buffer.array(), 0, buffer.position());
     }
 
     @FunctionalInterface
