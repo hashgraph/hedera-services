@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -44,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -137,7 +135,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
         return List.of(
                 rollbackOnFailedMintAfterFungibleTransfer(),
                 rollbackOnFailedAssociateAfterNonFungibleMint(),
-                fungibleTokenMintFailure(),
                 gasCostNotMetSetsInsufficientGasStatusInChildRecord());
     }
 
@@ -740,48 +737,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(
                                                                                 INVALID_TOKEN_ID)))));
-    }
-
-    private HapiApiSpec fungibleTokenMintFailure() {
-        final var mintContractByteCode = "mintContractByteCode";
-        final var amount = "9223372036854775808";
-
-        final AtomicReference<TokenID> fungible = new AtomicReference<>();
-
-        return defaultHapiSpec("FungibleMintFailure")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(5 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        fileCreate(mintContractByteCode).payingWith(ACCOUNT),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
-                .when(
-                        uploadInitCode(MINT_CONTRACT),
-                        sourcing(
-                                () ->
-                                        contractCreate(
-                                                        MINT_CONTRACT,
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(fungible.get())))
-                                                .payingWith(ACCOUNT)
-                                                .gas(GAS_TO_OFFER)))
-                .then(
-                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, amount)
-                                .via(FIRST_MINT_TXN)
-                                .payingWith(ACCOUNT)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(2_000_000L),
-                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
-                        // we don`t have child record because the decoding is failing.
-                        // The parent continues execution since we don`t have revert() in the smart
-                        // contract.
-                        emptyChildRecordsCheck(FIRST_MINT_TXN, SUCCESS));
     }
 
     private HapiApiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
