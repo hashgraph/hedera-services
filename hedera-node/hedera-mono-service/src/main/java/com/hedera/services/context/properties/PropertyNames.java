@@ -51,6 +51,7 @@ public class PropertyNames {
     public static final String ACCOUNTS_SYSTEM_DELETE_ADMIN = "accounts.systemDeleteAdmin";
     public static final String ACCOUNTS_SYSTEM_UNDELETE_ADMIN = "accounts.systemUndeleteAdmin";
     public static final String ACCOUNTS_TREASURY = "accounts.treasury";
+    public static final String ACCOUNTS_STORE_ON_DISK = "accounts.storeOnDisk";
     public static final String ENTITIES_MAX_LIFETIME = "entities.maxLifetime";
     public static final String ENTITIES_SYSTEM_DELETABLE = "entities.systemDeletable";
     public static final String FILES_ADDRESS_BOOK = "files.addressBook";
@@ -74,6 +75,8 @@ public class PropertyNames {
     /* ---- Global dynamic properties ---- */
     public static final String ACCOUNTS_MAX_NUM = "accounts.maxNumber";
     public static final String AUTO_CREATION_ENABLED = "autoCreation.enabled";
+    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final String BALANCES_EXPORT_DIR_PATH = "balances.exportDir.path";
     public static final String BALANCES_EXPORT_ENABLED = "balances.exportEnabled";
     public static final String BALANCES_EXPORT_PERIOD_SECS = "balances.exportPeriodSecs";

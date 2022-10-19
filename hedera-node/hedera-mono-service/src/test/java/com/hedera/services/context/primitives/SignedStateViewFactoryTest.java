@@ -30,13 +30,13 @@ import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.exceptions.NoValidSignedStateException;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
@@ -70,7 +70,7 @@ class SignedStateViewFactoryTest {
     @Mock private NetworkInfo networkInfo;
     @Mock private ServicesState state;
     @Mock private ServicesState secondState;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
@@ -219,7 +219,7 @@ class SignedStateViewFactoryTest {
     @Test
     void failsToConstructStateViewIfChildrenEmpty() {
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
-        assertFalse(factory.isUsable(state));
+        assertFalse(SignedStateViewFactory.isUsable(state));
         given(platform.getLastCompleteSwirldState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();

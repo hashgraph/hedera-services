@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.FcLong;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -36,7 +38,11 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class BackingAccountsTest {
     private final AccountID a = asAccount("0.0.1");
     private final AccountID b = asAccount("0.0.2");
@@ -45,6 +51,7 @@ class BackingAccountsTest {
     private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
     private final MerkleAccount bValue = MerkleAccountFactory.newAccount().balance(122L).get();
 
+    @Mock private RecordsStorageAdapter payerRecords;
     private MerkleMap<EntityNum, MerkleAccount> delegate;
     private BackingAccounts subject;
 
@@ -54,7 +61,9 @@ class BackingAccountsTest {
         delegate.put(aKey, aValue);
         delegate.put(bKey, bValue);
 
-        subject = new BackingAccounts(() -> delegate);
+        subject =
+                new BackingAccounts(
+                        () -> AccountStorageAdapter.fromInMemory(delegate), () -> payerRecords);
 
         subject.rebuildFromSources();
     }

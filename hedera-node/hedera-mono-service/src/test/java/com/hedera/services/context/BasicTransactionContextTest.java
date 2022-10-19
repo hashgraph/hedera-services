@@ -52,6 +52,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
@@ -171,7 +172,7 @@ class BasicTransactionContextTest {
         subject =
                 new BasicTransactionContext(
                         narratedCharging,
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         nodeInfo,
                         exchange,
                         creator,
@@ -685,7 +686,7 @@ class BasicTransactionContextTest {
         subject =
                 new BasicTransactionContext(
                         narratedCharging,
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         nodeInfo,
                         exchange,
                         creator,

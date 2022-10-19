@@ -21,8 +21,8 @@ import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.HederaAccount;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -47,7 +47,7 @@ public class RewardCalculator {
         rewardsPaid = 0;
     }
 
-    public long computePendingReward(final MerkleAccount account) {
+    public long computePendingReward(final HederaAccount account) {
         final var rewardOffered =
                 computeRewardFromDetails(
                         account,
@@ -59,7 +59,7 @@ public class RewardCalculator {
 
     public boolean applyReward(
             final long reward,
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @NotNull final Map<AccountProperty, Object> changes) {
         if (reward > 0) {
             final var isDeclined =
@@ -81,7 +81,7 @@ public class RewardCalculator {
     }
 
     public long estimatePendingRewards(
-            final MerkleAccount account, final MerkleStakingInfo nodeStakingInfo) {
+            final HederaAccount account, final MerkleStakingInfo nodeStakingInfo) {
         final var rewardOffered =
                 computeRewardFromDetails(
                         account,
@@ -97,7 +97,7 @@ public class RewardCalculator {
 
     @VisibleForTesting
     public long computeRewardFromDetails(
-            final MerkleAccount account,
+            final HederaAccount account,
             final MerkleStakingInfo nodeStakingInfo,
             final long currentStakePeriod,
             final long effectiveStart) {
@@ -109,7 +109,7 @@ public class RewardCalculator {
     }
 
     private long rewardFor(
-            final MerkleAccount account,
+            final HederaAccount account,
             final long[] rewardSumHistory,
             final long currentStakePeriod,
             final long effectiveStart) {

@@ -15,20 +15,18 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.util.Comparator.comparing;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -65,7 +63,7 @@ public class ExpiryManager {
 
     private final SigImpactHistorian sigImpactHistorian;
     private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<RecordsStorageAdapter> payerRecords;
 
     private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
             new MonotonicFullQueueExpiries<>();
@@ -77,8 +75,8 @@ public class ExpiryManager {
             final HederaNumbers hederaNums,
             final SigImpactHistorian sigImpactHistorian,
             final Map<TransactionID, TxnIdRecentHistory> txnHistories,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
-        this.accounts = accounts;
+            final Supplier<RecordsStorageAdapter> payerRecords) {
+        this.payerRecords = payerRecords;
         this.txnHistories = txnHistories;
         this.sigImpactHistorian = sigImpactHistorian;
 
@@ -121,11 +119,12 @@ public class ExpiryManager {
         payerRecordExpiries.reset();
 
         final var payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
-        final var currentAccounts = accounts.get();
-        forEach(
-                currentAccounts,
-                (id, account) ->
-                        stageExpiringRecords(id.longValue(), account.records(), payerExpiries));
+        payerRecords
+                .get()
+                .doForEach(
+                        (payerNum, accountRecords) ->
+                                stageExpiringRecords(
+                                        payerNum.longValue(), accountRecords, payerExpiries));
         payerExpiries.sort(
                 comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
         payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
@@ -151,12 +150,10 @@ public class ExpiryManager {
     }
 
     private void purgeExpiredRecordsAt(final long now) {
-        final var currentAccounts = accounts.get();
+        final var curPayerRecords = payerRecords.get();
         while (payerRecordExpiries.hasExpiringAt(now)) {
             final var key = EntityNum.fromLong(payerRecordExpiries.expireNextAt(now));
-
-            final var mutableAccount = currentAccounts.getForModify(key);
-            final var mutableRecords = mutableAccount.records();
+            final var mutableRecords = curPayerRecords.getMutablePayerRecords(key);
             purgeExpiredFrom(mutableRecords, now);
         }
     }
