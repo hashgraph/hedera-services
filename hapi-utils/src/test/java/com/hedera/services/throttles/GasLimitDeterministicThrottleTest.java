@@ -62,6 +62,26 @@ class GasLimitDeterministicThrottleTest {
     }
 
     @Test
+    void canGetFreeToUsedRatio() {
+        final var now = Instant.ofEpochSecond(1_234_567L);
+        final var capacity = 1_000_000;
+        final var subject = new GasLimitDeterministicThrottle(capacity);
+        subject.allow(now, capacity / 4);
+        assertEquals(3, subject.freeToUsedRatio(now));
+    }
+
+    @Test
+    void leaksUntilNowBeforeEstimatingFreeToUsed() {
+        final var now = Instant.ofEpochSecond(1_234_567L);
+        final var then = now.plusSeconds(1234);
+        final var capacity = 1_000_000;
+        final var subject = new GasLimitDeterministicThrottle(capacity);
+        subject.allow(now, capacity / 4);
+        assertEquals(Long.MAX_VALUE, subject.freeToUsedRatio(then));
+        assertEquals(then, subject.getLastDecisionTime());
+    }
+
+    @Test
     void requiresMonotonicIncreasingTimeline() {
         // setup:
         long gasLimitForTX = 100_000;

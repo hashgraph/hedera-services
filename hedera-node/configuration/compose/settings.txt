@@ -12,3 +12,4 @@ state.roundsExpired,                           500
 state.saveStatePeriod,                         300
 useLoopbackIp,                                 false
 waitAtStartup,                                 false
+virtualMap.preferredFlushQueueSize,            10000

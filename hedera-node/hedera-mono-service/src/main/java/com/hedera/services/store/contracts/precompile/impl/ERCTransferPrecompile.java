@@ -44,8 +44,10 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.codec.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
@@ -175,8 +177,10 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                     }
                     default -> null;
                 };
+        Objects.requireNonNull(transferOp, "Unable to decode function input");
 
-        transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp);
+        transactionBody =
+                syntheticTxnFactory.createCryptoTransfer(transferOp.tokenTransferWrappers());
         extrapolateDetailsFromSyntheticTxn();
         return transactionBody;
     }
@@ -186,7 +190,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         Objects.requireNonNull(transferOp, "`body` method should be called before `run`");
 
         if (!isFungible) {
-            final var nftExchange = transferOp.get(0).nftExchanges().get(0);
+            final var nftExchange = transferOp.tokenTransferWrappers().get(0).nftExchanges().get(0);
             final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());
             validateTrueOrRevert(ledgers.nfts().contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
         }
@@ -205,11 +209,12 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         }
     }
 
-    public static List<TokenTransferWrapper> decodeERCTransfer(
+    public static CryptoTransferWrapper decodeERCTransfer(
             final Bytes input,
             final TokenID token,
             final AccountID caller,
             final UnaryOperator<byte[]> aliasResolver) {
+        final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedArguments =
                 decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
 
@@ -221,11 +226,14 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValueExact());
         addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValueExact());
 
-        return Collections.singletonList(
-                new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+        final var tokenTransferWrappers =
+                Collections.singletonList(
+                        new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+
+        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
 
-    public static List<TokenTransferWrapper> decodeERCTransferFrom(
+    public static CryptoTransferWrapper decodeERCTransferFrom(
             final Bytes input,
             final TokenID impliedTokenId,
             final boolean isFungible,
@@ -233,6 +241,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final WorldLedgers ledgers,
             final EntityId operatorId) {
 
+        final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final var offset = impliedTokenId == null ? 1 : 0;
         final Tuple decodedArguments;
         final TokenID token;
@@ -272,8 +281,11 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValueExact());
             }
 
-            return Collections.singletonList(
-                    new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+            final var tokenTransferWrappers =
+                    Collections.singletonList(
+                            new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+            return new CryptoTransferWrapper(
+                    new TransferWrapper(hbarTransfers), tokenTransferWrappers);
         } else {
             final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
             final var serialNo = ((BigInteger) decodedArguments.get(offset + 2)).longValueExact();
@@ -287,13 +299,16 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                         SyntheticTxnFactory.NftExchange.fromApproval(serialNo, token, from, to));
             }
 
-            return Collections.singletonList(
-                    new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
+            final var tokenTransferWrappers =
+                    Collections.singletonList(
+                            new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
+            return new CryptoTransferWrapper(
+                    new TransferWrapper(hbarTransfers), tokenTransferWrappers);
         }
     }
 
     private Log getLogForFungibleTransfer(final Address logger) {
-        final var fungibleTransfers = transferOp.get(0).fungibleTransfers();
+        final var fungibleTransfers = transferOp.tokenTransferWrappers().get(0).fungibleTransfers();
         Address sender = null;
         Address receiver = null;
         BigInteger amount = BigInteger.ZERO;
@@ -321,7 +336,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
     }
 
     private Log getLogForNftExchange(final Address logger) {
-        final var nftExchanges = transferOp.get(0).nftExchanges();
+        final var nftExchanges = transferOp.tokenTransferWrappers().get(0).nftExchanges();
         final var nftExchange = nftExchanges.get(0).asGrpc();
         final var sender =
                 super.ledgers.canonicalAddress(asTypedEvmAddress(nftExchange.getSenderAccountID()));
@@ -350,9 +365,14 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
     private TokenID extractTokenIdFromSyntheticOp() {
         if (isFungible) {
-            return transferOp.get(0).fungibleTransfers().get(0).getDenomination();
+            return transferOp
+                    .tokenTransferWrappers()
+                    .get(0)
+                    .fungibleTransfers()
+                    .get(0)
+                    .getDenomination();
         } else {
-            return transferOp.get(0).nftExchanges().get(0).getTokenType();
+            return transferOp.tokenTransferWrappers().get(0).nftExchanges().get(0).getTokenType();
         }
     }
 }

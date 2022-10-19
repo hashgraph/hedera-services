@@ -47,6 +47,8 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
+import static com.hedera.services.store.contracts.precompile.ERC20PrecompilesTest.CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.ERC20PrecompilesTest.CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -143,7 +145,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -941,7 +942,7 @@ class HTSPrecompiledContractTest {
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
                                         any(), any(), anyBoolean(), any(), any(), any()))
-                .thenReturn(List.of(ERC20PrecompilesTest.TOKEN_TRANSFER_FROM_WRAPPER));
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -964,7 +965,7 @@ class HTSPrecompiledContractTest {
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
                                         any(), any(), anyBoolean(), any(), any(), any()))
-                .thenReturn(List.of(ERC20PrecompilesTest.TOKEN_TRANSFER_FROM_WRAPPER));
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -987,7 +988,7 @@ class HTSPrecompiledContractTest {
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
                                         any(), any(), anyBoolean(), any(), any(), any()))
-                .thenReturn(List.of(ERC20PrecompilesTest.TOKEN_TRANSFER_FROM_NFT_WRAPPER));
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -1010,7 +1011,7 @@ class HTSPrecompiledContractTest {
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
                                         any(), any(), anyBoolean(), any(), any(), any()))
-                .thenReturn(List.of(ERC20PrecompilesTest.TOKEN_TRANSFER_FROM_NFT_WRAPPER));
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
