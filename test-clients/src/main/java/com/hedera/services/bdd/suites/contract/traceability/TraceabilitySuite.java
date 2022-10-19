@@ -55,7 +55,6 @@ import static com.hedera.services.stream.proto.ContractActionType.CALL;
 import static com.hedera.services.stream.proto.ContractActionType.CREATE;
 import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
 import static com.hedera.services.stream.proto.ContractActionType.SYSTEM;
-import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -6722,7 +6721,7 @@ public class TraceabilitySuite extends HapiApiSuite {
     HapiApiSpec ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
-        final var lazyCreateTxn = "payTxn";
+        final var lazyCreateTxn = "lazyCreateTxn";
         final var failedlazyCreateTxn = "payTxn2";
         final var valueToSend = FIVE_HBARS;
         return defaultHapiSpec("ethereumLazyCreateExportsExpectedSidecars")
@@ -6735,8 +6734,8 @@ public class TraceabilitySuite extends HapiApiSuite {
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords())
+                                .via(AUTO_ACCOUNT_TXN),
+                        getTxnRecord(AUTO_ACCOUNT_TXN).andAllChildRecords())
                 .when(
                         withOpContext(
                                 (spec, opLog) ->

@@ -35,6 +35,9 @@ import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.Assertions;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
+
+  public static final String BAD_ALIAS = "Bad Alias!";
+
     public static AccountInfoAsserts accountWith() {
         return new AccountInfoAsserts();
     }
@@ -268,7 +271,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts alias(final ByteString alias) {
         registerProvider(
-                (spec, o) -> assertEquals(alias, ((AccountInfo) o).getAlias(), "Bad Alias!"));
+                (spec, o) -> assertEquals(alias, ((AccountInfo) o).getAlias(), BAD_ALIAS));
         return this;
     }
 
@@ -278,13 +281,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                         assertEquals(
                                 spec.registry().getKey(alias).toByteString(),
                                 ((AccountInfo) o).getAlias(),
-                                "Bad Alias!"));
+                            BAD_ALIAS));
         return this;
     }
 
     public AccountInfoAsserts noAlias() {
         registerProvider(
-                (spec, o) -> assertTrue(((AccountInfo) o).getAlias().isEmpty(), "Bad Alias!"));
+                (spec, o) -> assertTrue(((AccountInfo) o).getAlias().isEmpty(), BAD_ALIAS));
         return this;
     }
 

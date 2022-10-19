@@ -191,7 +191,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                             try {
                                 Assertions.assertEquals(
                                         id, receipt.getContractID(), "Bad targeted contract");
-                            } catch (Throwable t) {
+                            } catch (Exception t) {
                                 return List.of(t);
                             }
                             return EMPTY_LIST;
