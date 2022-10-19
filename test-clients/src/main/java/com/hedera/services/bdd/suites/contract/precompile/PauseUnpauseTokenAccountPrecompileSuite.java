@@ -76,7 +76,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
     private static final String UNPAUSE_FUNGIBLE_TXN = "unpauseFungibleTxn";
     private static final String PAUSE_NONFUNGIBLE_TXN = "pauseNonFungibleTxn";
     private static final String UNPAUSE_NONFUNGIBLE_TXN = "unpauseNonFungibleTxn";
-    private static final String invalidAddress = "0x0000000000000000000000000000000000123456";
+    private static final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
     private final AtomicReference<AccountID> accountID = new AtomicReference<>();
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -124,7 +124,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(invalidAddress))
+                                                                asHeadlongAddress(INVALID_ADDRESS))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via("PauseTx")
@@ -132,7 +132,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(invalidAddress))
+                                                                asHeadlongAddress(INVALID_ADDRESS))
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)

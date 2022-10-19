@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 public class StaticCallOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(StaticCallOperationSuite.class);
-    private static String STATIC_CALL = "staticcall";
+    private static final String STATIC_CALL = "staticcall";
 
     public static void main(String[] args) {
         new StaticCallOperationSuite().runSuiteAsync();

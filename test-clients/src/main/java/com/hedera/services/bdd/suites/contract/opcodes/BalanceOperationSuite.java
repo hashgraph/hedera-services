@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
 
 public class BalanceOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(BalanceOperationSuite.class);
-    private static String BALANCE_OF = "balanceOf";
+    private static final String BALANCE_OF = "balanceOf";
 
     public static void main(String[] args) {
         new BalanceOperationSuite().runSuiteAsync();

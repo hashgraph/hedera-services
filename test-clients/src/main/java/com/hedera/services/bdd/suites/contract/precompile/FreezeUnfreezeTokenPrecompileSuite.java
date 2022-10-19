@@ -82,7 +82,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final String FREEZE_KEY = "freezeKey";
     private static final String MULTI_KEY = "purpose";
     private static final long GAS_TO_OFFER = 4_000_000L;
-    private static final String invalidAddress = "0x0000000000000000000000000000000000123456";
+    private static final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
     private final AtomicReference<AccountID> accountID = new AtomicReference<>();
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -131,7 +131,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_UNFREEZE_FUNC,
-                                                                asHeadlongAddress(invalidAddress),
+                                                                asHeadlongAddress(INVALID_ADDRESS),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .payingWith(ACCOUNT)
@@ -142,7 +142,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_FREEZE_FUNC,
-                                                                asHeadlongAddress(invalidAddress),
+                                                                asHeadlongAddress(INVALID_ADDRESS),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
