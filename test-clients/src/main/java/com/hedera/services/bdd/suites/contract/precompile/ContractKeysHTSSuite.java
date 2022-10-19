@@ -115,7 +115,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
     private static final String ORDINARY_CALLS_CONTRACT = "HTSCalls";
     private static final String ASSOCIATE_DISSOCIATE_CONTRACT = "AssociateDissociate";
     private static final String BURN_TOKEN = "BurnToken";
-
+    private static final String BURN_TOKEN_METHOD = "burnToken";
     public static void main(String... args) {
         new ContractKeysHTSSuite().runSuiteAsync();
     }
@@ -244,7 +244,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         newKeyNamed(DELEGATE_KEY)
                                 .shape(delegateContractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(DELEGATE_KEY),
-                        contractCall(BURN_TOKEN, "burnToken", BigInteger.ONE, new long[0])
+                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via("burn with delegate contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -270,7 +270,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(contractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(CONTRACT_KEY),
-                        contractCall(BURN_TOKEN, "burnToken", BigInteger.ONE, new long[0])
+                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -1670,7 +1670,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                         DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
                                                 sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(DELEGATE_KEY),
-                        contractCall(BURN_TOKEN, "burnToken", BigInteger.ONE, new long[0])
+                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -3226,7 +3226,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(CONTRACT_KEY),
-                        contractCall(BURN_TOKEN, "burnToken", BigInteger.ONE, new long[0])
+                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(

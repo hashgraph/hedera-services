@@ -45,6 +45,7 @@ import org.apache.logging.log4j.Logger;
 
 public class BalanceOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(BalanceOperationSuite.class);
+    private static String BALANCE_OF = "balanceOf";
 
     public static void main(String[] args) {
         new BalanceOperationSuite().runSuiteAsync();
@@ -68,9 +69,9 @@ public class BalanceOperationSuite extends HapiApiSuite {
                         contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, "balanceOf", asHeadlongAddress(INVALID_ADDRESS))
+                        contractCall(contract, BALANCE_OF, asHeadlongAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-                        contractCallLocal(contract, "balanceOf", asHeadlongAddress(INVALID_ADDRESS))
+                        contractCallLocal(contract, BALANCE_OF, asHeadlongAddress(INVALID_ADDRESS))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
                         withOpContext(
                                 (spec, opLog) -> {
@@ -83,7 +84,7 @@ public class BalanceOperationSuite extends HapiApiSuite {
                                             asHeadlongAddress(asHexedSolidityAddress(contractID));
 
                                     final var call =
-                                            contractCall(contract, "balanceOf", solidityAddress)
+                                            contractCall(contract, BALANCE_OF, solidityAddress)
                                                     .via("callRecord");
 
                                     final var callRecord =
@@ -95,7 +96,7 @@ public class BalanceOperationSuite extends HapiApiSuite {
                                                                                     .resultThruAbi(
                                                                                             getABIFor(
                                                                                                     FUNCTION,
-                                                                                                    "balanceOf",
+                                                                                                BALANCE_OF,
                                                                                                     contract),
                                                                                             isLiteralResult(
                                                                                                     new Object
@@ -107,13 +108,13 @@ public class BalanceOperationSuite extends HapiApiSuite {
 
                                     final var callLocal =
                                             contractCallLocal(
-                                                            contract, "balanceOf", solidityAddress)
+                                                            contract, BALANCE_OF, solidityAddress)
                                                     .has(
                                                             ContractFnResultAsserts.resultWith()
                                                                     .resultThruAbi(
                                                                             getABIFor(
                                                                                     FUNCTION,
-                                                                                    "balanceOf",
+                                                                                BALANCE_OF,
                                                                                     contract),
                                                                             ContractFnResultAsserts
                                                                                     .isLiteralResult(
@@ -126,13 +127,13 @@ public class BalanceOperationSuite extends HapiApiSuite {
 
                                     final var contractCallLocal =
                                             contractCallLocal(
-                                                            contract, "balanceOf", contractAddress)
+                                                            contract, BALANCE_OF, contractAddress)
                                                     .has(
                                                             ContractFnResultAsserts.resultWith()
                                                                     .resultThruAbi(
                                                                             getABIFor(
                                                                                     FUNCTION,
-                                                                                    "balanceOf",
+                                                                                BALANCE_OF,
                                                                                     contract),
                                                                             ContractFnResultAsserts
                                                                                     .isLiteralResult(

@@ -86,10 +86,10 @@ public class ContractPerformanceSuite extends HapiApiSuite {
                                     asSolidityAddress(revertAccountAddress));
             return fileCreate(test + "bytecode")
                     .contents(contentString.getBytes(StandardCharsets.US_ASCII));
-        } catch (Throwable t) {
+        } catch (Exception e) {
             LOG.warn(
                     "createTestProgram for " + test + " failed to read bytes from '" + path + "'!",
-                    t);
+                    e);
             return fileCreate(test);
         }
     }

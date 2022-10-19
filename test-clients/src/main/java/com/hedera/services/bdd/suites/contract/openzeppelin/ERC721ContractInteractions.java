@@ -51,7 +51,7 @@ public class ERC721ContractInteractions extends HapiApiSuite {
 
     private HapiApiSpec callsERC721ContractInteractions() {
         final var CONTRACT = "GameItem";
-        final var NFT_ID = BigInteger.ONE;
+        final var nftId = BigInteger.ONE;
         final var CREATE_TX = "create";
         final var MINT_TX = "mint";
         final var APPROVE_TX = "approve";
@@ -84,16 +84,16 @@ public class ERC721ContractInteractions extends HapiApiSuite {
                                                     .getContractAccountID();
 
                                     final var mintParams =
-                                            new Object[] {asHeadlongAddress(nftSenderId), NFT_ID};
+                                            new Object[] {asHeadlongAddress(nftSenderId), nftId};
                                     final var approveParams =
                                             new Object[] {
-                                                asHeadlongAddress(contractCreatorId), NFT_ID
+                                                asHeadlongAddress(contractCreatorId), nftId
                                             };
                                     final var transferFromParams =
                                             new Object[] {
                                                 asHeadlongAddress(nftSenderId),
                                                 asHeadlongAddress(contractCreatorId),
-                                                NFT_ID
+                                                nftId
                                             };
 
                                     final var mint =

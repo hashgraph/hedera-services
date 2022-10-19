@@ -47,6 +47,8 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class ERC20ContractInteractions extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
+    private static final String TRANSFER = "transfer";
+  private static final String TRANSFER_FROM = "transferFrom";
 
     public static void main(String[] args) {
         new ERC20ContractInteractions().runSuiteSync();
@@ -66,12 +68,12 @@ public class ERC20ContractInteractions extends HapiApiSuite {
         final var CONTRACT = "GLDToken";
         final var CREATE_TX = "create";
         final var APPROVE_TX = "approve";
-        final var TRANSFER_FROM_TX = "transferFrom";
+        final var TRANSFER_FROM_TX = "transferFromTxn";
         final var TRANSFER_MORE_THAN_APPROVED_FROM_TX = "transferMoreThanApproved";
-        final var TRANSFER_TX = "transfer";
+        final var TRANSFER_TX = TRANSFER;
         final var NOT_ENOUGH_BALANCE_TRANSFER_TX = "notEnoughBalanceTransfer";
-        final var AMOUNT = BigInteger.valueOf(1_000);
-        final var INITIAL_AMOUNT = BigInteger.valueOf(5_000);
+        final var amount = BigInteger.valueOf(1_000);
+        final var initialAmount = BigInteger.valueOf(5_000);
 
         return defaultHapiSpec("callsERC20ContractInteractions")
                 .given(
@@ -79,7 +81,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                         uploadInitCode(CONTRACT))
                 .when(
                         getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
-                        contractCreate(CONTRACT, INITIAL_AMOUNT)
+                        contractCreate(CONTRACT, initialAmount)
                                 .payingWith(DEFAULT_CONTRACT_SENDER)
                                 .hasKnownStatus(SUCCESS)
                                 .via(CREATE_TX)
@@ -108,32 +110,32 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 
                                     final var transferParams =
                                             new Object[] {
-                                                asHeadlongAddress(receiverContractId), AMOUNT
+                                                asHeadlongAddress(receiverContractId), amount
                                             };
                                     final var notEnoughBalanceTransferParams =
                                             new Object[] {
                                                 asHeadlongAddress(receiverContractId),
-                                                INITIAL_AMOUNT.subtract(AMOUNT).add(BigInteger.ONE)
+                                                initialAmount.subtract(amount).add(BigInteger.ONE)
                                             };
                                     final var approveParams =
                                             new Object[] {
-                                                asHeadlongAddress(receiverContractId), AMOUNT
+                                                asHeadlongAddress(receiverContractId), amount
                                             };
                                     final var transferFromParams =
                                             new Object[] {
                                                 asHeadlongAddress(ownerContractId),
                                                 asHeadlongAddress(receiverContractId),
-                                                AMOUNT
+                                                amount
                                             };
                                     final var transferMoreThanApprovedFromParams =
                                             new Object[] {
                                                 asHeadlongAddress(ownerContractId),
                                                 asHeadlongAddress(receiverContractId),
-                                                AMOUNT.add(BigInteger.ONE)
+                                                amount.add(BigInteger.ONE)
                                             };
 
                                     final var transfer =
-                                            contractCall(CONTRACT, "transfer", transferParams)
+                                            contractCall(CONTRACT, TRANSFER, transferParams)
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                                     .via(TRANSFER_TX)
                                                     .scrambleTxnBody(
@@ -149,7 +151,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     final var notEnoughBalanceTransfer =
                                             contractCall(
                                                             CONTRACT,
-                                                            "transfer",
+                                                TRANSFER,
                                                             notEnoughBalanceTransferParams)
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -181,7 +183,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     final var transferFrom =
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferFrom",
+                                                TRANSFER_FROM,
                                                             transferFromParams)
                                                     .payingWith(DEFAULT_CONTRACT_RECEIVER)
                                                     .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
@@ -199,7 +201,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     final var transferMoreThanApprovedFrom =
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferFrom",
+                                                TRANSFER_FROM,
                                                             transferMoreThanApprovedFromParams)
                                                     .payingWith(DEFAULT_CONTRACT_RECEIVER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -224,7 +226,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                                                                             inOrder(
                                                                                                     logWith()
                                                                                                             .longValue(
-                                                                                                                    INITIAL_AMOUNT
+                                                                                                                    initialAmount
                                                                                                                             .longValueExact())
                                                                                                             .withTopicsInOrder(
                                                                                                                     List
@@ -256,7 +258,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                                                                             inOrder(
                                                                                                     logWith()
                                                                                                             .longValue(
-                                                                                                                    AMOUNT
+                                                                                                                    amount
                                                                                                                             .longValueExact())
                                                                                                             .withTopicsInOrder(
                                                                                                                     List
@@ -292,7 +294,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                                                                             inOrder(
                                                                                                     logWith()
                                                                                                             .longValue(
-                                                                                                                    AMOUNT
+                                                                                                                    amount
                                                                                                                             .longValueExact())
                                                                                                             .withTopicsInOrder(
                                                                                                                     List
@@ -328,7 +330,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                                                                             inOrder(
                                                                                                     logWith()
                                                                                                             .longValue(
-                                                                                                                    AMOUNT
+                                                                                                                    amount
                                                                                                                             .longValueExact())
                                                                                                             .withTopicsInOrder(
                                                                                                                     List

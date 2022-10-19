@@ -29,7 +29,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.math.BigInteger;
@@ -70,8 +69,6 @@ public class CallOperationSuite extends HapiApiSuite {
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var id = spec.registry().getAccountID(ACCOUNT);
-                                    final var solidityAddress =
-                                            HapiPropertySource.asHexedSolidityAddress(id);
 
                                     final var contractCall =
                                             contractCall(

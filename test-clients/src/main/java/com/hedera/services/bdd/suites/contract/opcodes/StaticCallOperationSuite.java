@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 public class StaticCallOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(StaticCallOperationSuite.class);
+    private static String STATIC_CALL = "staticcall";
 
     public static void main(String[] args) {
         new StaticCallOperationSuite().runSuiteAsync();
@@ -53,7 +54,7 @@ public class StaticCallOperationSuite extends HapiApiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, "staticcall", asHeadlongAddress(INVALID_ADDRESS))
+                        contractCall(contract, STATIC_CALL, asHeadlongAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
                         withOpContext(
                                 (spec, opLog) -> {
@@ -64,14 +65,14 @@ public class StaticCallOperationSuite extends HapiApiSuite {
                                     final var contractCall =
                                             contractCall(
                                                             contract,
-                                                            "staticcall",
+                                                STATIC_CALL,
                                                             asHeadlongAddress(solidityAddress))
                                                     .hasKnownStatus(SUCCESS);
 
                                     final var contractCallLocal =
                                             contractCallLocal(
                                                     contract,
-                                                    "staticcall",
+                                                STATIC_CALL,
                                                     asHeadlongAddress(solidityAddress));
 
                                     allRunFor(spec, contractCall, contractCallLocal);

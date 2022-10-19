@@ -340,7 +340,6 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                         contractCall(
                                                                                         contract,
                                                                                         DEPLOY,
-                                                                                        (Object)
                                                                                                 testContractInitcode
                                                                                                         .get())
                                                                                 .payingWith(GENESIS)

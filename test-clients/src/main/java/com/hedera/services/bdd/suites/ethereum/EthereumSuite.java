@@ -477,7 +477,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {
-        final AtomicReference<TokenID> fungible = new AtomicReference();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
         return defaultHapiSpec("ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn")
@@ -543,7 +543,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn() {
-        final AtomicReference<TokenID> fungible = new AtomicReference();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
         final String MULTI_KEY = "MULTI_KEY";
@@ -612,7 +612,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
-        final AtomicReference<TokenID> fungible = new AtomicReference();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
         final String MULTI_KEY = "MULTI_KEY";

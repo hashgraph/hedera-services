@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static org.apache.commons.lang3.ArrayUtils.toObject;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -54,7 +55,8 @@ public class SStoreSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(SStoreSuite.class);
     public static final int MAX_CONTRACT_STORAGE_KB = 1024;
     public static final int MAX_CONTRACT_GAS = 15_000_000;
-    AtomicReference<ByteString> legacyProps = new AtomicReference<>();
+    private static final String GET_CHILD_VALUE = "getChildValue";
+  AtomicReference<ByteString> legacyProps = new AtomicReference<>();
 
     public static void main(String... args) {
         new SStoreSuite().runSuiteSync();
@@ -64,12 +66,12 @@ public class SStoreSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                    setupAppProperties(),
-                    //                    multipleSStoreOpsSucceed(),
+                                        setupAppProperties(),
+                                        multipleSStoreOpsSucceed(),
                     benchmarkSingleSetter(),
-                    //                    childStorage(),
-                    //                    temporarySStoreRefundTest(),
-                    //                    cleanupAppProperties()
+                                        childStorage(),
+                                        temporarySStoreRefundTest(),
+                                        cleanupAppProperties()
                 });
     }
 
@@ -220,18 +222,18 @@ public class SStoreSuite extends HapiApiSuite {
     private HapiSpecOperation[] valuesMatch(
             final String contract, final long parent, final long child0, final long child1) {
         return new HapiSpecOperation[] {
-            contractCallLocal(contract, "getChildValue", BigInteger.ZERO)
+            contractCallLocal(contract, GET_CHILD_VALUE, BigInteger.ZERO)
                     .has(
                             resultWith()
                                     .resultThruAbi(
-                                            getABIFor(FUNCTION, "getChildValue", contract),
+                                            getABIFor(FUNCTION, GET_CHILD_VALUE, contract),
                                             isLiteralResult(
                                                     new Object[] {BigInteger.valueOf(child0)}))),
-            contractCallLocal(contract, "getChildValue", BigInteger.ONE)
+            contractCallLocal(contract, GET_CHILD_VALUE, BigInteger.ONE)
                     .has(
                             resultWith()
                                     .resultThruAbi(
-                                            getABIFor(FUNCTION, "getChildValue", contract),
+                                            getABIFor(FUNCTION, GET_CHILD_VALUE, contract),
                                             isLiteralResult(
                                                     new Object[] {BigInteger.valueOf(child1)}))),
             contractCallLocal(contract, "getMyValue")
@@ -260,7 +262,7 @@ public class SStoreSuite extends HapiApiSuite {
                                 .payingWith("payer")
                                 .via("creationTx")
                                 .gas(GAS_LIMIT),
-                        contractCall(contract, "twoSSTOREs", value).gas(GAS_LIMIT).via("storageTx"))
+                        contractCall(contract, "twoSSTOREs", toObject(value)).gas(GAS_LIMIT).via("storageTx"))
                 .then(
                         getTxnRecord("storageTx").logged(),
                         contractCallLocal(contract, "counter")

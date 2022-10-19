@@ -77,6 +77,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     private static final String OC_TOKEN_CONTRACT = "OcToken";
     private static final String CALLDATA_SIZE_CONTRACT = "CalldataSize";
     private static final String CHAIN_ID_PROP = "contracts.chainId";
+    private static final String DEPOSIT = "deposit";
 
     public static void main(String... args) {
         new HelloWorldEthereumSuite().runSuiteSync();
@@ -232,7 +233,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         // allowance is ≈ $0.0001
                         ethereumCall(
                                         PAY_RECEIVABLE_CONTRACT,
-                                        "deposit",
+                            DEPOSIT,
                                         BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -270,7 +271,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         // EIP1559 Ethereum Calls Work
                         ethereumCall(
                                         PAY_RECEIVABLE_CONTRACT,
-                                        "deposit",
+                            DEPOSIT,
                                         BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -285,7 +286,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         // Legacy Ethereum Calls Work
                         ethereumCall(
                                         PAY_RECEIVABLE_CONTRACT,
-                                        "deposit",
+                            DEPOSIT,
                                         BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -300,7 +301,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         // Ethereum Call with FileID callData works
                         ethereumCall(
                                         PAY_RECEIVABLE_CONTRACT,
-                                        "deposit",
+                            DEPOSIT,
                                         BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)

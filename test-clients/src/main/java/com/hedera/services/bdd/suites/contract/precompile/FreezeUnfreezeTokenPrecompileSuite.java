@@ -82,10 +82,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final String FREEZE_KEY = "freezeKey";
     private static final String MULTI_KEY = "purpose";
     private static final long GAS_TO_OFFER = 4_000_000L;
+    private final static String invalidAddress = "0x0000000000000000000000000000000000123456";
 
     private final AtomicReference<AccountID> accountID = new AtomicReference<>();
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-    private final String invalidAddress = "0x0000000000000000000000000000000000123456";
 
     public static void main(String... args) {
         new FreezeUnfreezeTokenPrecompileSuite().runSuiteSync();
