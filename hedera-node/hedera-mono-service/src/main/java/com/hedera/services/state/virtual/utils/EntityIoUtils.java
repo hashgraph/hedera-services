@@ -17,7 +17,7 @@ package com.hedera.services.state.virtual.utils;
 
 import java.io.IOException;
 
-public class EntityIoUtils {
+public final class EntityIoUtils {
     private EntityIoUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }

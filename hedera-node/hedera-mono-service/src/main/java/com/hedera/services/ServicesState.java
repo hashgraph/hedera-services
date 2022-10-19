@@ -85,7 +85,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     private StateMetadata metadata;
     /* Set to true if virtual NFTs are enabled. */
     private boolean enabledVirtualNft;
-    private boolean accountsOnDisk = true;
+    private boolean enableVirtualAccounts = true;
 
     /**
      * For scheduled transaction migration we need to initialize the new scheduled transactions'
@@ -123,7 +123,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         this.deserializedStateVersion = that.deserializedStateVersion;
         this.metadata = (that.metadata == null) ? null : that.metadata.copy();
         this.bootstrapProperties = that.bootstrapProperties;
-        this.accountsOnDisk = that.accountsOnDisk;
+        this.enableVirtualAccounts = that.enableVirtualAccounts;
     }
 
     /** Log out the sizes the state children. */
@@ -260,7 +260,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                             ((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
         }
         final var bootstrapProps = getBootstrapProperties();
-        accountsOnDisk = bootstrapProps.getBooleanProperty(ACCOUNTS_STORE_ON_DISK);
+        enableVirtualAccounts = bootstrapProps.getBooleanProperty(ACCOUNTS_STORE_ON_DISK);
         enabledVirtualNft = bootstrapProps.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         return internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
     }
@@ -275,7 +275,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         // Create the top-level children in the Merkle tree
         final var bootstrapProps = getBootstrapProperties();
         final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
-        accountsOnDisk = bootstrapProps.getBooleanProperty(ACCOUNTS_STORE_ON_DISK);
+        enableVirtualAccounts = bootstrapProps.getBooleanProperty(ACCOUNTS_STORE_ON_DISK);
         enabledVirtualNft = bootstrapProps.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         createGenesisChildren(addressBook, seqStart, bootstrapProps);
 
@@ -538,7 +538,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
         setChild(StateChildIndices.TOPICS, new MerkleMap<>());
         setChild(StateChildIndices.STORAGE, virtualMapFactory.newVirtualizedBlobs());
-        if (accountsOnDisk) {
+        if (enableVirtualAccounts) {
             setChild(StateChildIndices.ACCOUNTS, virtualMapFactory.newOnDiskAccountStorage());
         } else {
             setChild(StateChildIndices.ACCOUNTS, new MerkleMap<>());
@@ -555,7 +555,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(
                 StateChildIndices.STAKING_INFO,
                 stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties));
-        if (accountsOnDisk) {
+        if (enableVirtualAccounts) {
             setChild(StateChildIndices.PAYER_RECORDS, new MerkleMap<>());
         }
     }
@@ -633,7 +633,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     boolean shouldMigrateAccountsToDisk() {
-        return accountsOnDisk && getNumberOfChildren() < StateChildIndices.NUM_032X_CHILDREN;
+        return enableVirtualAccounts && getNumberOfChildren() < StateChildIndices.NUM_032X_CHILDREN;
     }
 
     private BootstrapProperties getBootstrapProperties() {
