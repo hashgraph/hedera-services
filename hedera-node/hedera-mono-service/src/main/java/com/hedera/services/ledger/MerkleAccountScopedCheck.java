@@ -27,7 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -40,7 +40,7 @@ import java.util.Set;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
+public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, AccountProperty> {
     private final OptionValidator validator;
 
     private BalanceChange balanceChange;
@@ -62,7 +62,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
     @Override
     public ResponseCodeEnum checkUsing(
-            final MerkleAccount account, final Map<AccountProperty, Object> changeSet) {
+            final HederaAccount account, final Map<AccountProperty, Object> changeSet) {
         return internalCheck(account, null, changeSet);
     }
 
@@ -72,7 +72,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
     }
 
     private ResponseCodeEnum internalCheck(
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @Nullable final Function<AccountProperty, Object> extantProps,
             final Map<AccountProperty, Object> changeSet) {
         if (balanceChange.isForHbar()) {
@@ -86,7 +86,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
     Object getEffective(
             final AccountProperty prop,
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @Nullable final Function<AccountProperty, Object> extantProps,
             final Map<AccountProperty, Object> changeSet) {
         if (changeSet != null && changeSet.containsKey(prop)) {
@@ -126,7 +126,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
     }
 
     private ResponseCodeEnum hbarCheck(
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @Nullable final Function<AccountProperty, Object> extantProps,
             final Map<AccountProperty, Object> changeSet) {
         if ((boolean) getEffective(IS_DELETED, account, extantProps, changeSet)) {
@@ -158,7 +158,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
     @SuppressWarnings("unchecked")
     public ResponseCodeEnum validateNftAllowance(
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @Nullable final Function<AccountProperty, Object> extantProps,
             final Map<AccountProperty, Object> changeSet) {
         if (balanceChange.isApprovedAllowance()) {
@@ -188,7 +188,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
     @SuppressWarnings("unchecked")
     private ResponseCodeEnum validateHbarAllowance(
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @Nullable final Function<AccountProperty, Object> extantProps,
             final Map<AccountProperty, Object> changeSet) {
         if (balanceChange.isApprovedAllowance()) {
@@ -211,7 +211,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
     @SuppressWarnings("unchecked")
     public ResponseCodeEnum validateFungibleTokenAllowance(
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @Nullable final Function<AccountProperty, Object> extantProps,
             final Map<AccountProperty, Object> changeSet) {
         if (balanceChange.isApprovedAllowance()) {

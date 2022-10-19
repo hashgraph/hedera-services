@@ -18,19 +18,14 @@ package com.hedera.services.state.migration;
 import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,7 +38,7 @@ public class ReleaseTwentySixMigration {
     public static void makeStorageIterable(
             final ServicesState initializingState,
             final MigratorFactory migratorFactory,
-            final MigrationUtility migrationUtility,
+            final VirtualMapDataAccess virtualMapDataAccess,
             final VirtualMap<ContractKey, IterableContractValue> iterableContractStorage) {
         final var contracts = initializingState.accounts();
         final VirtualMap<ContractKey, ContractValue> contractStorage =
@@ -59,7 +54,7 @@ public class ReleaseTwentySixMigration {
                     "Migrating contract storage into iterable VirtualMap with {} threads",
                     THREAD_COUNT);
             final var watch = StopWatch.createStarted();
-            migrationUtility.extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
+            virtualMapDataAccess.extractVirtualMapData(contractStorage, migrator, THREAD_COUNT);
             logDone(watch);
         } catch (InterruptedException e) {
             log.error("Interrupted while making contract storage iterable", e);
@@ -78,18 +73,9 @@ public class ReleaseTwentySixMigration {
     public interface MigratorFactory {
         KvPairIterationMigrator from(
                 int insertionsPerCopy,
-                MerkleMap<EntityNum, MerkleAccount> contracts,
+                AccountStorageAdapter contracts,
                 SizeLimitedStorage.IterableStorageUpserter storageUpserter,
                 VirtualMap<ContractKey, IterableContractValue> iterableContractStorage);
-    }
-
-    @FunctionalInterface
-    public interface MigrationUtility {
-        void extractVirtualMapData(
-                VirtualMap<ContractKey, ContractValue> source,
-                InterruptableConsumer<Pair<ContractKey, ContractValue>> handler,
-                int threadCount)
-                throws InterruptedException;
     }
 
     private ReleaseTwentySixMigration() {

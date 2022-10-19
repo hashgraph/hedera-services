@@ -22,7 +22,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -66,7 +66,7 @@ public class FeeDistribution {
      */
     public void distributeChargedFee(
             final long amount,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         long fundingAdjustment = amount;
         final var fundingId = dynamicProperties.fundingAccount();
         if (dynamicProperties.isStakingEnabled()) {

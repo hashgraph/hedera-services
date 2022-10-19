@@ -43,7 +43,6 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.HandleLogicModule;
 import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StateWriteToDiskListener;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -51,6 +50,8 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -238,9 +239,16 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
+    static Supplier<AccountStorageAdapter> provideWorkingAccounts(
             final MutableStateChildren workingState) {
         return workingState::accounts;
+    }
+
+    @Provides
+    @Singleton
+    static Supplier<RecordsStorageAdapter> providePayerRecords(
+            final MutableStateChildren workingState) {
+        return workingState::payerRecords;
     }
 
     @Provides

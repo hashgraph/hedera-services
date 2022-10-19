@@ -15,8 +15,7 @@
  */
 package com.hedera.services.store;
 
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
+import static com.hedera.services.context.properties.PropertyNames.*;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
@@ -44,9 +43,11 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -156,11 +157,22 @@ public interface StoresModule {
 
     @Provides
     @Singleton
-    static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
-            final BackingStore<AccountID, MerkleAccount> backingAccounts,
+    static Supplier<HederaAccount> provideAccountSupplier(
+            final BootstrapProperties bootstrapProperties) {
+        return bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
+                ? OnDiskAccount::new
+                : MerkleAccount::new;
+    }
+
+    @Provides
+    @Singleton
+    static TransactionalLedger<AccountID, AccountProperty, HederaAccount> provideAccountsLedger(
+            final BackingStore<AccountID, HederaAccount> backingAccounts,
             final SideEffectsTracker sideEffectsTracker,
+            final BootstrapProperties bootstrapProperties,
             final Supplier<MerkleNetworkContext> networkCtx,
             final GlobalDynamicProperties dynamicProperties,
+            final Supplier<HederaAccount> accountSupplier,
             final RewardCalculator rewardCalculator,
             final StakeChangeManager stakeChangeManager,
             final StakePeriodManager stakePeriodManager,
@@ -171,7 +183,7 @@ public interface StoresModule {
         final var accountsLedger =
                 new TransactionalLedger<>(
                         AccountProperty.class,
-                        MerkleAccount::new,
+                        accountSupplier,
                         backingAccounts,
                         new ChangeSummaryManager<>());
         final var accountsCommitInterceptor =

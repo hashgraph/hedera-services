@@ -39,6 +39,8 @@ import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
@@ -62,7 +64,7 @@ class RenewalHelperTest {
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private ExpiryStats expiryStats;
     @Mock private FeeDistribution feeDistribution;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private SideEffectsTracker sideEffectsTracker;
 
     private NonHapiFeeCharging nonHapiFeeCharging;
@@ -72,7 +74,7 @@ class RenewalHelperTest {
 
     @BeforeEach
     void setUp() {
-        lookup = new EntityLookup(() -> accounts);
+        lookup = new EntityLookup(() -> AccountStorageAdapter.fromInMemory(accounts));
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         subject =
