@@ -6,7 +6,7 @@ module com.hedera.services.evm {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires org.apache.commons.lang3;
     requires tuweni.bytes;
-    requires javax.inject.custom;
+    requires javax.inject;
     requires com.swirlds.common;
 
     exports com.hedera.services.evm;
