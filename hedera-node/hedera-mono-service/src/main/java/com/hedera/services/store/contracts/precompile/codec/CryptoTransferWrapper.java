@@ -1,5 +1,5 @@
-package javax.inject;/*
- * Copyright (C) 2009 The JSR-330 Expert Group
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,9 @@ package javax.inject;/*
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.store.contracts.precompile.codec;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.util.List;
 
-/**
- * Identifies a type that the injector only instantiates once. Not inherited.
- *
- * @see Scope @Scope
- */
-@Scope
-@Documented
-@Retention(RUNTIME)
-public @interface Singleton {}
+public record CryptoTransferWrapper(
+        TransferWrapper transferWrapper, List<TokenTransferWrapper> tokenTransferWrappers) {}
