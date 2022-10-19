@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -66,6 +67,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private boolean assertAliasKeyMatches = false;
     private boolean assertAccountIDIsNotAlias = false;
     private ReferenceType referenceType;
+    private ByteString alias;
 
     public HapiGetAccountInfo(String account) {
         this(account, ReferenceType.REGISTRY_NAME);
@@ -78,6 +80,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         } else {
             account = reference;
         }
+    }
+
+    public HapiGetAccountInfo(ByteString evmAlias, ReferenceType evmAddress) {
+        this.referenceType = evmAddress;
+        this.alias = evmAlias;
     }
 
     @Override
@@ -284,6 +291,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                     AccountID.newBuilder()
                             .setAlias(spec.registry().getKey(aliasKeySource).toByteString())
                             .build();
+        } else if (referenceType == ReferenceType.RAW_ALIAS) {
+            target = AccountID.newBuilder().setAlias(alias).build();
         } else {
             target = TxnUtils.asId(account, spec);
         }

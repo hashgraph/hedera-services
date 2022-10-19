@@ -87,6 +87,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private boolean createCallDataFile;
     private boolean isTokenFlow;
     private String account = null;
+    private ByteString alias = null;
 
     public HapiEthereumCall withExplicitParams(final Supplier<String> supplier) {
         explicitHexedParams = Optional.of(supplier);
@@ -110,6 +111,14 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     public HapiEthereumCall(String account, long amount) {
         this.account = account;
+        this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
+        this.abi = FALLBACK_ABI;
+        this.params = new Object[0];
+        this.payer = Optional.of(RELAYER);
+    }
+
+    public HapiEthereumCall(ByteString account, long amount) {
+        this.alias = account;
         this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
         this.abi = FALLBACK_ABI;
         this.params = new Object[0];
@@ -276,7 +285,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         byte[] callData = initializeCallData();
 
         final byte[] to;
-        if (account != null) {
+        if (alias != null) {
+            to = EthTxSigs.recoverAddressFromPubKey(alias.toByteArray());
+        } else if (account != null) {
             to = Utils.asAddress(spec.registry().getAccountID(account));
         } else if (isTokenFlow) {
             to = Utils.asAddress(spec.registry().getTokenID(contract));

@@ -183,6 +183,22 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
+    public TransactionRecordAsserts targetedContractId(final ContractID id) {
+        this.<TransactionReceipt>registerTypedProvider(
+                "receipt",
+                spec ->
+                        receipt -> {
+                            try {
+                                Assertions.assertEquals(
+                                        id, receipt.getContractID(), "Bad targeted contract");
+                            } catch (Throwable t) {
+                                return List.of(t);
+                            }
+                            return EMPTY_LIST;
+                        });
+        return this;
+    }
+
     public TransactionRecordAsserts checkTopicRunningHashVersion(int versionNumber) {
         this.<TransactionReceipt>registerTypedProvider(
                 "receipt",
@@ -307,6 +323,11 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
     public TransactionRecordAsserts memo(String text) {
         registerTypedProvider("memo", shouldBe(text));
+        return this;
+    }
+
+    public TransactionRecordAsserts alias(ByteString alias) {
+        registerTypedProvider("alias", shouldBe(alias));
         return this;
     }
 

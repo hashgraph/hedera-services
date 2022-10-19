@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
@@ -262,6 +263,12 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     public AccountInfoAsserts hasAlias() {
         registerProvider(
                 (spec, o) -> assertFalse(((AccountInfo) o).getAlias().isEmpty(), "Has no Alias!"));
+        return this;
+    }
+
+    public AccountInfoAsserts alias(final ByteString alias) {
+        registerProvider(
+                (spec, o) -> assertEquals(alias, ((AccountInfo) o).getAlias(), "Bad Alias!"));
         return this;
     }
 
