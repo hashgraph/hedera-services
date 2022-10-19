@@ -41,7 +41,8 @@ import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-public class UpdateTrackingLedgerAccount<A extends Account> extends EvmTrackingAccount implements MutableAccount, EvmAccount {
+public class UpdateTrackingLedgerAccount<A extends Account> extends EvmTrackingAccount
+        implements MutableAccount, EvmAccount {
     private final Hash addressHash;
     private final Address address;
     private final AccountID accountId;
@@ -59,7 +60,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends EvmTrackingA
             @Nullable
                     final TransactionalLedger<AccountID, AccountProperty, MerkleAccount>
                             trackingAccounts) {
-        super(0L,Wei.ZERO);
+        super(0L, Wei.ZERO);
         Preconditions.checkNotNull(address);
         this.address = address;
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
@@ -76,7 +77,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends EvmTrackingA
             @Nullable
                     final TransactionalLedger<AccountID, AccountProperty, MerkleAccount>
                             trackingAccounts) {
-        super(account.getNonce(),account.getBalance());
+        super(account.getNonce(), account.getBalance());
         Preconditions.checkNotNull(account);
         this.address = account.getAddress();
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
@@ -128,7 +129,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends EvmTrackingA
     public Hash getAddressHash() {
         return addressHash;
     }
-
 
     public boolean wrappedAccountIsTokenProxy() {
         return account != null && account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
