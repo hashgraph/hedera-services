@@ -122,7 +122,7 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, true),
                     entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, true),
                     entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
-                    entry(CONTRACTS_PRECOMPILE_CRYPTO_TRANSFER_HAS_HBAR, true),
+                    entry(CONTRACTS_PRECOMPILE_CRYPTO_TRANSFER2_ENABLED, true),
                     entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
                     entry(ENTITIES_MAX_LIFETIME, 3153600000L),
                     entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),

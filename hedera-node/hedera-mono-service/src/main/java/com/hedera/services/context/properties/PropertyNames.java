@@ -119,8 +119,8 @@ public class PropertyNames {
             "contracts.precompile.exportRecordResults";
     public static final String CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE =
             "contracts.precompile.htsEnableTokenCreate";
-    public static final String CONTRACTS_PRECOMPILE_CRYPTO_TRANSFER_HAS_HBAR =
-            "contracts.precompile.crypto.transfer.has.hbar";
+    public static final String CONTRACTS_PRECOMPILE_CRYPTO_TRANSFER2_ENABLED =
+            "contracts.precompile.cryptoTransferV2.enabled";
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
     public static final String FILES_MAX_NUM = "files.maxNumber";

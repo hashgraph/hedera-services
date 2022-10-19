@@ -119,7 +119,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private List<BalanceChange> explicitChanges;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
-    private final boolean hasHbarTransfer;
 
     public TransferPrecompile(
             final WorldLedgers ledgers,
@@ -131,15 +130,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final Address senderAddress,
-            final ImpliedTransfersMarshal impliedTransfersMarshal,
-            final boolean hasHbarTransfer) {
+            final ImpliedTransfersMarshal impliedTransfersMarshal) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.updater = updater;
         this.sigsVerifier = sigsVerifier;
         this.functionId = functionId;
         this.senderAddress = senderAddress;
         this.impliedTransfersMarshal = impliedTransfersMarshal;
-        this.hasHbarTransfer = hasHbarTransfer;
     }
 
     protected void initializeHederaTokenStore() {
@@ -156,6 +153,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+
         transferOp =
                 switch (functionId) {
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(
@@ -176,7 +174,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         transactionBody =
                 syntheticTxnFactory.createCryptoTransfer(transferOp.tokenTransferWrappers());
-        if (hasHbarTransfer) {
+        if (!transferOp.transferWrapper().hbarTransfers().isEmpty()) {
             transactionBody.mergeFrom(
                     syntheticTxnFactory.createCryptoTransferForHbar(transferOp.transferWrapper()));
         }
