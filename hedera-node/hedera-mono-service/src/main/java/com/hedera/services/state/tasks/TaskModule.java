@@ -22,14 +22,21 @@ import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
 import javax.inject.Singleton;
 
+/**
+ * Binds the {@link SystemTask} implementations, which should always include {@link ExpiryProcess},
+ * but may include others such as the 0.31.x {@link TraceabilityExportTask}.
+ *
+ * <p>Note we are keeping {@link TraceabilityExportTask} in the codebase at this time for two
+ * reasons:
+ *
+ * <ol>
+ *   <li>It is somewhat likely that we'll want to run it again; and,
+ *   <li>It provides a much simpler model task than expiration, which uses dozens of classes and
+ *       thus obscures some of the details of the task framework.
+ * </ol>
+ */
 @Module
 public interface TaskModule {
-    @Binds
-    @IntoMap
-    @Singleton
-    @StringKey("0_TRACEABILITY_EXPORT")
-    SystemTask bindTraceabilityExportTask(TraceabilityExportTask traceabilityExportTask);
-
     @Binds
     @IntoMap
     @Singleton

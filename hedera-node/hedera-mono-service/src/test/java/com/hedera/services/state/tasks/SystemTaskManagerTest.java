@@ -90,6 +90,14 @@ class SystemTaskManagerTest {
     }
 
     @Test
+    void threeArgProcessDefaultToTwoArg() {
+        final var someTask = mock(SystemTask.class);
+        doCallRealMethod().when(someTask).process(ENTITY_NUM, NOW, networkCtx);
+        someTask.process(ENTITY_NUM, NOW, networkCtx);
+        verify(someTask).process(ENTITY_NUM, NOW);
+    }
+
+    @Test
     void ordersTasksAlphabetically() {
         assertArrayEquals(new SystemTask[] {aTask, bTask, cTask}, subject.getTasks());
     }
@@ -98,9 +106,9 @@ class SystemTaskManagerTest {
     void abortsOnNeedsDifferentContextWithoutGoingToNextTask() {
         given(networkCtx.nextTaskTodo()).willReturn(0);
         givenActive(aTask, bTask, cTask);
-        given(aTask.process(ENTITY_NUM, NOW)).willReturn(DONE);
-        given(bTask.process(ENTITY_NUM, NOW)).willReturn(NOTHING_TO_DO);
-        given(cTask.process(ENTITY_NUM, NOW)).willReturn(NEEDS_DIFFERENT_CONTEXT);
+        given(aTask.process(ENTITY_NUM, NOW, networkCtx)).willReturn(DONE);
+        given(bTask.process(ENTITY_NUM, NOW, networkCtx)).willReturn(NOTHING_TO_DO);
+        given(cTask.process(ENTITY_NUM, NOW, networkCtx)).willReturn(NEEDS_DIFFERENT_CONTEXT);
 
         final var result = subject.process(ENTITY_NUM, NOW, networkCtx);
         assertEquals(NEEDS_DIFFERENT_CONTEXT, result);
@@ -111,7 +119,7 @@ class SystemTaskManagerTest {
     void abortsOnCapacityExhaustedWithoutGoingToNextTask() {
         given(networkCtx.nextTaskTodo()).willReturn(0);
         givenActive(bTask);
-        given(bTask.process(ENTITY_NUM, NOW)).willReturn(NO_CAPACITY_LEFT);
+        given(bTask.process(ENTITY_NUM, NOW, networkCtx)).willReturn(NO_CAPACITY_LEFT);
 
         final var result = subject.process(ENTITY_NUM, NOW, networkCtx);
         assertEquals(NO_CAPACITY_LEFT, result);
@@ -122,8 +130,8 @@ class SystemTaskManagerTest {
     void nothingToDoOnlyIfNothingDone() {
         given(networkCtx.nextTaskTodo()).willReturn(1);
         givenActive(bTask, cTask);
-        given(bTask.process(ENTITY_NUM, NOW)).willReturn(NOTHING_TO_DO);
-        given(cTask.process(ENTITY_NUM, NOW)).willReturn(NOTHING_TO_DO);
+        given(bTask.process(ENTITY_NUM, NOW, networkCtx)).willReturn(NOTHING_TO_DO);
+        given(cTask.process(ENTITY_NUM, NOW, networkCtx)).willReturn(NOTHING_TO_DO);
 
         final var result = subject.process(ENTITY_NUM, NOW, networkCtx);
         assertEquals(NOTHING_TO_DO, result);
@@ -134,8 +142,8 @@ class SystemTaskManagerTest {
     void doneIfAnythingWasDone() {
         given(networkCtx.nextTaskTodo()).willReturn(0);
         givenActive(bTask, cTask);
-        given(bTask.process(ENTITY_NUM, NOW)).willReturn(DONE);
-        given(cTask.process(ENTITY_NUM, NOW)).willReturn(NOTHING_TO_DO);
+        given(bTask.process(ENTITY_NUM, NOW, networkCtx)).willReturn(DONE);
+        given(cTask.process(ENTITY_NUM, NOW, networkCtx)).willReturn(NOTHING_TO_DO);
 
         final var result = subject.process(ENTITY_NUM, NOW, networkCtx);
         assertEquals(DONE, result);

@@ -51,6 +51,17 @@
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
+    <!-- Platform hash stream logs -->
+    <RollingFile name="swirldsHashStream" fileName="output/swirlds-hashstream.log"
+                 filePattern="output/swirlds-hashstream.log-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
   </Appenders>
   <Loggers>
     <Root level="FATAL">
@@ -64,6 +75,7 @@
           <!-- JasperDB & Virtual Merkle -->
           <MarkerFilter marker="JASPER_DB"              onMatch="DENY" onMismatch="NEUTRAL"/>
           <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="DENY" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="STATE_HASH"             onMatch="DENY" onMismatch="NEUTRAL"/>
         </Filters>
       </AppenderRef>
 
@@ -76,6 +88,13 @@
         </Filters>
       </AppenderRef>
 
+      <AppenderRef ref="swirldsHashStream">
+        <Filters>
+          <!-- Hash stream log -->
+          <MarkerFilter marker="STATE_HASH"             onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="DISABLED"               onMatch="DENY"    onMismatch="DENY" />
+        </Filters>
+      </AppenderRef>
       <!--
 	  Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element
 	  to ensure that the root logger does not execute all the lambda arguments erroneously. Potential work around in the
@@ -142,6 +161,7 @@
         <!-- Saved States -->
         <MarkerFilter marker="SNAPSHOT_MANAGER"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_TO_DISK"          onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STATE_HASH"             onMatch="ACCEPT"   onMismatch="NEUTRAL"/>
 
         <!-- Beta Mirror -->
         <MarkerFilter marker="BETA_MIRROR_NODE"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
