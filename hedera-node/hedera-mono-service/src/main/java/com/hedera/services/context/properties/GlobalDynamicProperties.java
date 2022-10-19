@@ -66,6 +66,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean shouldExportBalances;
     private boolean shouldExportTokenBalances;
     private AccountID fundingAccount;
+    private Address fundingAccountAddress;
     private int maxTransfersLen;
     private int maxTokenTransfersLen;
     private int maxMemoUtf8Bytes;
@@ -180,6 +181,7 @@ public class GlobalDynamicProperties implements EvmProperties {
                         .setRealmNum(hederaNums.realm())
                         .setAccountNum(properties.getLongProperty(LEDGER_FUNDING_ACCOUNT))
                         .build();
+        fundingAccountAddress = EntityIdUtils.asTypedEvmAddress(fundingAccount);
         cacheRecordsTtl = properties.getIntProperty(CACHE_RECORDS_TTL);
         ratesIntradayChangeLimitPercent =
                 properties.getIntProperty(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT);
@@ -366,7 +368,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     }
 
     public Address fundingAccountAddress() {
-        return EntityIdUtils.asTypedEvmAddress(fundingAccount);
+        return fundingAccountAddress;
     }
 
     public int cacheRecordsTtl() {
