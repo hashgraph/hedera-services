@@ -90,7 +90,7 @@ public class TokenRelsListMutation
     @Nullable
     @Override
     public EntityNumPair prev(final MerkleTokenRelStatus node) {
-        final var prevKey = node.prevKey();
+        final var prevKey = node.getPrev();
         return prevKey == MISSING_KEY ? null : EntityNumPair.fromLongs(accountNum, prevKey);
     }
 
@@ -98,7 +98,7 @@ public class TokenRelsListMutation
     @Nullable
     @Override
     public EntityNumPair next(final MerkleTokenRelStatus node) {
-        final var nextKey = node.nextKey();
+        final var nextKey = node.getNext();
         return nextKey == MISSING_KEY ? null : EntityNumPair.fromLongs(accountNum, nextKey);
     }
 }

@@ -82,14 +82,14 @@ class MapValueListUtilsTest {
         final var newRoot = unlinkInPlaceFromMapValueList(bRelKey, aRelKey, relsListRemoval);
         assertSame(aRelKey, newRoot);
         final var unlinkedValue = tokenRels.get(bRelKey);
-        assertEquals(0, unlinkedValue.prevKey());
-        assertEquals(0, unlinkedValue.nextKey());
+        assertEquals(0, unlinkedValue.getPrev());
+        assertEquals(0, unlinkedValue.getNext());
         // and:
         final var newRootValue = tokenRels.get(aRelKey);
-        assertEquals(c.longValue(), newRootValue.nextKey());
+        assertEquals(c.longValue(), newRootValue.getNext());
         // and:
         final var newTailValue = tokenRels.get(cRelKey);
-        assertEquals(a.longValue(), newTailValue.prevKey());
+        assertEquals(a.longValue(), newTailValue.getPrev());
         // and:
         assertTrue(tokenRels.containsKey(bRelKey));
     }
@@ -105,14 +105,14 @@ class MapValueListUtilsTest {
                         bRelKey, aRelKey, relsListRemoval, false, false, true);
         assertSame(aRelKey, newRoot);
         final var unlinkedValue = tokenRels.get(bRelKey);
-        assertEquals(0, unlinkedValue.prevKey());
-        assertEquals(0, unlinkedValue.nextKey());
+        assertEquals(0, unlinkedValue.getPrev());
+        assertEquals(0, unlinkedValue.getNext());
         // and:
         final var newRootValue = tokenRels.get(aRelKey);
-        assertEquals(c.longValue(), newRootValue.nextKey());
+        assertEquals(c.longValue(), newRootValue.getNext());
         // and:
         final var newTailValue = tokenRels.get(cRelKey);
-        assertEquals(a.longValue(), newTailValue.prevKey());
+        assertEquals(a.longValue(), newTailValue.getPrev());
         // and:
         assertTrue(tokenRels.containsKey(bRelKey));
     }

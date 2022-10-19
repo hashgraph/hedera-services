@@ -48,9 +48,9 @@ class InPlaceHeadInsertionTest {
 
         assertSame(aRelKey, newRoot);
         final var newRootValue = tokenRels.get(aRelKey);
-        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.nextKey());
+        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.getNext());
         final var newNextValue = tokenRels.get(bRelKey);
-        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.prevKey());
+        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.getPrev());
     }
 
     @Test
@@ -63,9 +63,9 @@ class InPlaceHeadInsertionTest {
 
         assertSame(aRelKey, newRoot);
         final var newRootValue = tokenRels.get(aRelKey);
-        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.nextKey());
+        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.getNext());
         final var newNextValue = tokenRels.get(bRelKey);
-        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.prevKey());
+        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.getPrev());
     }
 
     private static final EntityNum accountNum = EntityNum.fromLong(2);

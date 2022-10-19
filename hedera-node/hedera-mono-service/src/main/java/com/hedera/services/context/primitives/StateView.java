@@ -816,7 +816,7 @@ public class StateView {
             final var rel = tokenRels.get(key);
             final var token = tokens.getOrDefault(key.getLowOrderAsNum(), REMOVED_TOKEN);
             visitor.accept(token, rel);
-            tokenNum = rel.nextKey();
+            tokenNum = rel.getNext();
             key = EntityNumPair.fromLongs(accountNum, tokenNum);
             counter++;
         }

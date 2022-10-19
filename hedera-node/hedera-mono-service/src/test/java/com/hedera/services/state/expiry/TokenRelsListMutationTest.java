@@ -78,7 +78,7 @@ class TokenRelsListMutationTest {
 
         subject.markAsHead(nextRel);
 
-        assertEquals(EntityNum.MISSING_NUM.longValue(), nextRel.prevKey());
+        assertEquals(EntityNum.MISSING_NUM.longValue(), nextRel.getPrev());
     }
 
     @Test
@@ -87,21 +87,21 @@ class TokenRelsListMutationTest {
 
         subject.markAsTail(targetRel);
 
-        assertEquals(EntityNum.MISSING_NUM.longValue(), targetRel.nextKey());
+        assertEquals(EntityNum.MISSING_NUM.longValue(), targetRel.getNext());
     }
 
     @Test
     void setsPrevAsExpected() {
         subject.updatePrev(targetRel, rootRelKey);
 
-        assertEquals(rootNum, targetRel.prevKey());
+        assertEquals(rootNum, targetRel.getPrev());
     }
 
     @Test
     void setsNextAsExpected() {
         subject.updateNext(targetRel, nextRelKey);
 
-        assertEquals(nextNum, targetRel.nextKey());
+        assertEquals(nextNum, targetRel.getNext());
     }
 
     @Test
