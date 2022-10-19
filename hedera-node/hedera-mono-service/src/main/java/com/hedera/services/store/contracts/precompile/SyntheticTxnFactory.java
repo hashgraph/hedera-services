@@ -416,7 +416,7 @@ public class SyntheticTxnFactory {
      */
     public TransactionBody createCryptoTransferForHbar(final TransferWrapper wrapper) {
         final var opBuilder = CryptoTransferTransactionBody.newBuilder();
-        if (wrapper.hbarTransfers().size() > 0) {
+        if (!wrapper.hbarTransfers().isEmpty()) {
             opBuilder.setTransfers(wrapper.asGrpcBuilder());
         }
         return TransactionBody.newBuilder().setCryptoTransfer(opBuilder).build();

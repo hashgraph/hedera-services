@@ -341,25 +341,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
         for (final var tuple : decodedTuples) {
-            for (final var tupleNested : (Tuple[]) tuple) {
-                final var tokenType = convertAddressBytesToTokenID(tupleNested.get(0));
-
-                var nftExchanges = NO_NFT_EXCHANGES;
-                var fungibleTransfers = NO_FUNGIBLE_TRANSFERS;
-
-                final var abiAdjustments = (Tuple[]) tupleNested.get(1);
-                if (abiAdjustments.length > 0) {
-                    fungibleTransfers =
-                            bindFungibleTransfersFrom(tokenType, abiAdjustments, aliasResolver);
-                }
-                final var abiNftExchanges = (Tuple[]) tupleNested.get(2);
-                if (abiNftExchanges.length > 0) {
-                    nftExchanges = bindNftExchangesFrom(tokenType, abiNftExchanges, aliasResolver);
-                }
-
-                tokenTransferWrappers.add(
-                        new TokenTransferWrapper(nftExchanges, fungibleTransfers));
-            }
+            decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tuple);
         }
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
@@ -391,7 +373,16 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             hbarTransfers = bindHBarTransfersFrom(hbarTransferTuples, aliasResolver);
         }
 
-        for (final var tupleNested : (Tuple[]) tokenTransferTuples) {
+        decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tokenTransferTuples);
+
+        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
+    }
+
+    public static void decodeTokenTransfer(
+            UnaryOperator<byte[]> aliasResolver,
+            List<TokenTransferWrapper> tokenTransferWrappers,
+            Tuple[] tokenTransferTuples) {
+        for (final var tupleNested : tokenTransferTuples) {
             final var tokenType = convertAddressBytesToTokenID(tupleNested.get(0));
 
             var nftExchanges = NO_NFT_EXCHANGES;
@@ -409,8 +400,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
             tokenTransferWrappers.add(new TokenTransferWrapper(nftExchanges, fungibleTransfers));
         }
-
-        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
 
     public static CryptoTransferWrapper decodeTransferTokens(
