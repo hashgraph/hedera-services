@@ -120,6 +120,7 @@ public class GlobalDynamicProperties {
     private boolean enableAllowances;
     private boolean limitTokenAssociations;
     private boolean enableHTSPrecompileCreate;
+    private boolean cryptoTransferHasHbar;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
     private long stakingRewardRate;
@@ -266,6 +267,8 @@ public class GlobalDynamicProperties {
         limitTokenAssociations = properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS);
         enableHTSPrecompileCreate =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE);
+        cryptoTransferHasHbar =
+                properties.getBooleanProperty(CONTRACTS_PRECOMPILE_CRYPTO_TRANSFER_HAS_HBAR);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
         exchangeRateGasReq =
                 properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
@@ -627,6 +630,10 @@ public class GlobalDynamicProperties {
 
     public boolean isHTSPrecompileCreateEnabled() {
         return enableHTSPrecompileCreate;
+    }
+
+    public boolean cryptoTransferHasHbar() {
+        return cryptoTransferHasHbar;
     }
 
     public KnownBlockValues knownBlockValues() {

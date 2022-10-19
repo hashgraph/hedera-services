@@ -17,6 +17,7 @@ package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_CRYPTO_TRANSFER_HAS_HBAR;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toSet;
@@ -243,6 +244,7 @@ public final class BootstrapProperties implements PropertySource {
                     CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST,
                     CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS,
                     CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE,
+                    CONTRACTS_PRECOMPILE_CRYPTO_TRANSFER_HAS_HBAR,
                     CONTRACTS_EVM_VERSION,
                     CONTRACTS_DYNAMIC_EVM_VERSION,
                     EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
@@ -528,6 +530,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, AS_LONG),
                     entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, AS_BOOLEAN),
                     entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, AS_BOOLEAN),
+                    entry(CONTRACTS_PRECOMPILE_CRYPTO_TRANSFER_HAS_HBAR, AS_BOOLEAN),
                     entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
                     entry(CONTRACTS_EVM_VERSION, AS_STRING),
                     entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),
