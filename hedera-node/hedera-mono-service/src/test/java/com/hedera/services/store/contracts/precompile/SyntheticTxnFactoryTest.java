@@ -34,6 +34,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.MOCK_INITCODE;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -461,7 +462,7 @@ class SyntheticTxnFactoryTest {
         assertEquals(Key.getDefaultInstance(), txnBody.getCryptoCreateAccount().getKey());
         assertEquals(
                 EntityIdUtils.EVM_ADDRESS_SIZE, txnBody.getCryptoCreateAccount().getAlias().size());
-        assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
+        assertEquals(LAZY_MEMO, txnBody.getCryptoCreateAccount().getMemo());
         assertEquals(
                 THREE_MONTHS_IN_SECONDS,
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
