@@ -329,6 +329,7 @@ import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.auth.SystemOpPolicies;
@@ -6403,7 +6404,7 @@ class SigRequirementsTest {
                                 defaultLookupsFor(
                                         aliasManager,
                                         hfsSigMetaLookup,
-                                        () -> accounts,
+                                        () -> AccountStorageAdapter.fromInMemory(accounts),
                                         () -> topics,
                                         DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(
                                                 tokenStore),

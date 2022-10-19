@@ -26,16 +26,13 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.SystemExits;
+import com.hedera.services.utils.*;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -232,37 +229,38 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
     BalancesSummary summarized(ServicesState signedState) {
         long nodeBalanceWarnThreshold = dynamicProperties.nodeBalanceWarningThreshold();
-        BigInteger totalFloat = BigInteger.valueOf(0L);
+        final var totalFloat = new NonAtomicReference<>(BigInteger.valueOf(0L));
         List<SingleAccountBalances> accountBalances = new ArrayList<>();
 
         var nodeIds = MiscUtils.getNodeAccounts(signedState.addressBook());
         var tokens = signedState.tokens();
         var accounts = signedState.accounts();
         var tokenAssociations = signedState.tokenAssociations();
-        for (var entry : accounts.entrySet()) {
-            var id = entry.getKey();
-            var account = entry.getValue();
-            if (!account.isDeleted()) {
-                var accountId = id.toGrpcAccountId();
-                var balance = account.getBalance();
-                if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
-                    log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, readableId(accountId), balance);
-                }
-                totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
-                SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
-                sabBuilder.setHbarBalance(balance).setAccountID(accountId);
-                if (dynamicProperties.shouldExportTokenBalances()) {
-                    addTokenBalances(account, sabBuilder, tokens, tokenAssociations);
-                }
-                accountBalances.add(sabBuilder.build());
-            }
-        }
+        accounts.forEach(
+                (id, account) -> {
+                    if (!account.isDeleted()) {
+                        var accountId = id.toGrpcAccountId();
+                        var balance = account.getBalance();
+                        if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
+                            log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, readableId(accountId), balance);
+                        }
+                        totalFloat.set(
+                                totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
+                        SingleAccountBalances.Builder sabBuilder =
+                                SingleAccountBalances.newBuilder();
+                        sabBuilder.setHbarBalance(balance).setAccountID(accountId);
+                        if (dynamicProperties.shouldExportTokenBalances()) {
+                            addTokenBalances(account, sabBuilder, tokens, tokenAssociations);
+                        }
+                        accountBalances.add(sabBuilder.build());
+                    }
+                });
         accountBalances.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
-        return new BalancesSummary(totalFloat, accountBalances);
+        return new BalancesSummary(totalFloat.get(), accountBalances);
     }
 
     private void addTokenBalances(
-            final MerkleAccount account,
+            final HederaAccount account,
             final SingleAccountBalances.Builder sabBuilder,
             final MerkleMap<EntityNum, MerkleToken> tokens,
             final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {

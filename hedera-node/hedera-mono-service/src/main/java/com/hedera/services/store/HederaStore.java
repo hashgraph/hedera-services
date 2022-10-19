@@ -22,7 +22,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
@@ -34,14 +34,14 @@ public abstract class HederaStore {
     protected final EntityIdSource ids;
 
     protected HederaLedger hederaLedger;
-    protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    protected TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     protected HederaStore(EntityIdSource ids) {
         this.ids = ids;
     }
 
     public void setAccountsLedger(
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         this.accountsLedger = accountsLedger;
     }
 

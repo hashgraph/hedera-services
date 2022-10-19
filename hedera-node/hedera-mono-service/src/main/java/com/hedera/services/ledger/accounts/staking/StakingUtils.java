@@ -23,7 +23,7 @@ import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
@@ -54,7 +54,7 @@ public class StakingUtils {
     }
 
     public static long finalBalanceGiven(
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @NotNull final Map<AccountProperty, Object> changes) {
         if (changes.containsKey(BALANCE)) {
             return (long) changes.get(BALANCE);
@@ -64,7 +64,7 @@ public class StakingUtils {
     }
 
     public static boolean finalDeclineRewardGiven(
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @NotNull final Map<AccountProperty, Object> changes) {
         if (changes.containsKey(DECLINE_REWARD)) {
             return (Boolean) changes.get(DECLINE_REWARD);
@@ -75,7 +75,7 @@ public class StakingUtils {
 
     public static long finalStakedToMeGiven(
             final int stakeeI,
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @NotNull final long[] stakedToMeUpdates) {
         if (stakedToMeUpdates[stakeeI] != NA) {
             return stakedToMeUpdates[stakeeI];
@@ -89,7 +89,7 @@ public class StakingUtils {
             final long delta,
             @NotNull final long[] stakedToMeUpdates,
             @NotNull
-                    final EntityChangeSet<AccountID, MerkleAccount, AccountProperty>
+                    final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         if (stakedToMeUpdates[stakeeI] != NA) {
             stakedToMeUpdates[stakeeI] += delta;
@@ -106,7 +106,7 @@ public class StakingUtils {
             final long delta,
             final int rewardAccountI,
             @NotNull
-                    final EntityChangeSet<AccountID, MerkleAccount, AccountProperty>
+                    final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         final var mutableChanges = pendingChanges.changes(rewardAccountI);
         if (mutableChanges.containsKey(BALANCE)) {
@@ -119,7 +119,7 @@ public class StakingUtils {
 
     public static boolean hasStakeMetaChanges(
             @NotNull final Map<AccountProperty, Object> changes,
-            @Nullable final MerkleAccount account) {
+            @Nullable final HederaAccount account) {
         return (changes.containsKey(DECLINE_REWARD)
                         && (account == null
                                 || account.isDeclinedReward()

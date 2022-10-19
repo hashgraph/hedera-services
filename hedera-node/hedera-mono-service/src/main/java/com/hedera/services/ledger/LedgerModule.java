@@ -23,8 +23,8 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -40,7 +40,7 @@ import javax.inject.Singleton;
 public interface LedgerModule {
     @Binds
     @Singleton
-    BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
+    BackingStore<AccountID, HederaAccount> bindBackingAccounts(BackingAccounts backingAccounts);
 
     @Provides
     @Singleton
@@ -53,7 +53,7 @@ public interface LedgerModule {
             final SideEffectsTracker sideEffectsTracker,
             final RecordsHistorian recordsHistorian,
             final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final AutoCreationLogic autoCreationLogic,
             final TransferLogic transferLogic) {
         final var ledger =

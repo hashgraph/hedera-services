@@ -51,7 +51,7 @@ import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -61,7 +61,6 @@ import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -69,7 +68,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.merkle.map.MerkleMap;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
@@ -96,7 +94,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
     private final CreateEvmTxProcessor evmTxProcessor;
     private final GlobalDynamicProperties properties;
     private final SigImpactHistorian sigImpactHistorian;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final NodeInfo nodeInfo;
     private final SyntheticTxnFactory syntheticTxnFactory;
 
@@ -114,7 +112,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final GlobalDynamicProperties properties,
             final SigImpactHistorian sigImpactHistorian,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo) {
         this.hfs = hfs;
         this.txnCtx = txnCtx;

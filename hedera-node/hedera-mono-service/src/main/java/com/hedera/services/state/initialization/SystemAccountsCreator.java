@@ -16,7 +16,7 @@
 package com.hedera.services.state.initialization;
 
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -33,5 +33,5 @@ public interface SystemAccountsCreator {
      * @param addressBook the current address book
      */
     void ensureSystemAccounts(
-            BackingStore<AccountID, MerkleAccount> backingAccounts, AddressBook addressBook);
+            BackingStore<AccountID, HederaAccount> backingAccounts, AddressBook addressBook);
 }
