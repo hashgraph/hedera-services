@@ -280,7 +280,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             senderAddress,
                             impliedTransfersMarshal);
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
-                            dynamicProperties.isCryptoTransfer2Enabled(),
+                            dynamicProperties.isAtomicCryptoTransferEnabled(),
                             () ->
                                     new TransferPrecompile(
                                             ledgers,

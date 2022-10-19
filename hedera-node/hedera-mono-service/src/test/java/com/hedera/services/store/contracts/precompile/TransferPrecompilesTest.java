@@ -55,6 +55,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokens
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeCryptoTransfer;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeCryptoTransferV2;
+import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeHbarTransfers;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTokenTransfer;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferNFT;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferNFTs;
@@ -1419,6 +1420,9 @@ class TransferPrecompilesTest {
         transferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput =
                 decodeCryptoTransfer(
                         POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT,
@@ -1451,6 +1455,9 @@ class TransferPrecompilesTest {
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput =
                 decodeCryptoTransfer(NEGATIVE_FUNGIBLE_AMOUNT_CRYPTO_TRANSFER_INPUT, identity());
@@ -1560,6 +1567,9 @@ class TransferPrecompilesTest {
         transferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput = decodeTransferNFTs(TRANSFER_NFTS_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
         final var nonFungibleTransfers = decodedInput.tokenTransferWrappers().get(0).nftExchanges();
@@ -1581,6 +1591,9 @@ class TransferPrecompilesTest {
         transferPrecompile
                 .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_ONLY_INPUT, identity()))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput =
                 decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_ONLY_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
@@ -1601,6 +1614,9 @@ class TransferPrecompilesTest {
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput = decodeCryptoTransferV2(CRYPTO_TRANSFER_FUNGIBLE_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
@@ -1626,6 +1642,9 @@ class TransferPrecompilesTest {
         transferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput = decodeCryptoTransferV2(CRYPTO_TRANSFER_NFT_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
         final var fungibleTransfers =
@@ -1649,6 +1668,9 @@ class TransferPrecompilesTest {
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput =
                 decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_FUNGIBLE_INPUT, identity());
@@ -1675,6 +1697,9 @@ class TransferPrecompilesTest {
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput = decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_NFT_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();

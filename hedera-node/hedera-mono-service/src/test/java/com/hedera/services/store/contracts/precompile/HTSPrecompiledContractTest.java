@@ -409,7 +409,7 @@ class HTSPrecompiledContractTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         // when
-        given(dynamicProperties.isCryptoTransfer2Enabled()).willReturn(true);
+        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
         subject.prepareFields(messageFrame);
         subject.prepareComputation(input, a -> a);
 

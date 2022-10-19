@@ -367,13 +367,21 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final Tuple[] hbarTransferTuples = ((Tuple) decodedTuples.get(0)).get(0);
         final var tokenTransferTuples = decodedTuples.get(1);
 
-        if (hbarTransferTuples.length > 0) {
-            hbarTransfers = bindHBarTransfersFrom(hbarTransferTuples, aliasResolver);
-        }
+        hbarTransfers = decodeHbarTransfers(aliasResolver, hbarTransfers, hbarTransferTuples);
 
         decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tokenTransferTuples);
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
+    }
+
+    public static List<SyntheticTxnFactory.HbarTransfer> decodeHbarTransfers(
+            UnaryOperator<byte[]> aliasResolver,
+            List<SyntheticTxnFactory.HbarTransfer> hbarTransfers,
+            Tuple[] hbarTransferTuples) {
+        if (hbarTransferTuples.length > 0) {
+            hbarTransfers = bindHBarTransfersFrom(hbarTransferTuples, aliasResolver);
+        }
+        return hbarTransfers;
     }
 
     public static void decodeTokenTransfer(
