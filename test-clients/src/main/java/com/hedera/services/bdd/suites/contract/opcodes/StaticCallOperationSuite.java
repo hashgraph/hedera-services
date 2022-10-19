@@ -65,14 +65,14 @@ public class StaticCallOperationSuite extends HapiApiSuite {
                                     final var contractCall =
                                             contractCall(
                                                             contract,
-                                                STATIC_CALL,
+                                                            STATIC_CALL,
                                                             asHeadlongAddress(solidityAddress))
                                                     .hasKnownStatus(SUCCESS);
 
                                     final var contractCallLocal =
                                             contractCallLocal(
                                                     contract,
-                                                STATIC_CALL,
+                                                    STATIC_CALL,
                                                     asHeadlongAddress(solidityAddress));
 
                                     allRunFor(spec, contractCall, contractCallLocal);

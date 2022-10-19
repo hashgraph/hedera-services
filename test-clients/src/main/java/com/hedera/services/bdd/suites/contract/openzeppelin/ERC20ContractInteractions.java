@@ -48,7 +48,7 @@ import org.apache.tuweni.bytes.Bytes;
 public class ERC20ContractInteractions extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
     private static final String TRANSFER = "transfer";
-  private static final String TRANSFER_FROM = "transferFrom";
+    private static final String TRANSFER_FROM = "transferFrom";
 
     public static void main(String[] args) {
         new ERC20ContractInteractions().runSuiteSync();
@@ -151,7 +151,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     final var notEnoughBalanceTransfer =
                                             contractCall(
                                                             CONTRACT,
-                                                TRANSFER,
+                                                            TRANSFER,
                                                             notEnoughBalanceTransferParams)
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -183,7 +183,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     final var transferFrom =
                                             contractCall(
                                                             CONTRACT,
-                                                TRANSFER_FROM,
+                                                            TRANSFER_FROM,
                                                             transferFromParams)
                                                     .payingWith(DEFAULT_CONTRACT_RECEIVER)
                                                     .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
@@ -201,7 +201,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     final var transferMoreThanApprovedFrom =
                                             contractCall(
                                                             CONTRACT,
-                                                TRANSFER_FROM,
+                                                            TRANSFER_FROM,
                                                             transferMoreThanApprovedFromParams)
                                                     .payingWith(DEFAULT_CONTRACT_RECEIVER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)

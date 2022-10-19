@@ -233,7 +233,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         // allowance is ≈ $0.0001
                         ethereumCall(
                                         PAY_RECEIVABLE_CONTRACT,
-                            DEPOSIT,
+                                        DEPOSIT,
                                         BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -271,7 +271,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         // EIP1559 Ethereum Calls Work
                         ethereumCall(
                                         PAY_RECEIVABLE_CONTRACT,
-                            DEPOSIT,
+                                        DEPOSIT,
                                         BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -286,7 +286,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         // Legacy Ethereum Calls Work
                         ethereumCall(
                                         PAY_RECEIVABLE_CONTRACT,
-                            DEPOSIT,
+                                        DEPOSIT,
                                         BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -301,7 +301,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         // Ethereum Call with FileID callData works
                         ethereumCall(
                                         PAY_RECEIVABLE_CONTRACT,
-                            DEPOSIT,
+                                        DEPOSIT,
                                         BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)

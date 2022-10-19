@@ -340,8 +340,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                         contractCall(
                                                                                         contract,
                                                                                         DEPLOY,
-                                                                                                testContractInitcode
-                                                                                                        .get())
+                                                                                        testContractInitcode
+                                                                                                .get())
                                                                                 .payingWith(GENESIS)
                                                                                 .gas(4_000_000L)
                                                                                 .sending(tcValue)

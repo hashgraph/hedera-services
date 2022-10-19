@@ -76,7 +76,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
     private static final String UNPAUSE_FUNGIBLE_TXN = "unpauseFungibleTxn";
     private static final String PAUSE_NONFUNGIBLE_TXN = "pauseNonFungibleTxn";
     private static final String UNPAUSE_NONFUNGIBLE_TXN = "unpauseNonFungibleTxn";
-    private final static String invalidAddress = "0x0000000000000000000000000000000000123456";
+    private static final String invalidAddress = "0x0000000000000000000000000000000000123456";
 
     private final AtomicReference<AccountID> accountID = new AtomicReference<>();
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();

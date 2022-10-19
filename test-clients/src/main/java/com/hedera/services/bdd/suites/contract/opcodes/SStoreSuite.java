@@ -56,7 +56,7 @@ public class SStoreSuite extends HapiApiSuite {
     public static final int MAX_CONTRACT_STORAGE_KB = 1024;
     public static final int MAX_CONTRACT_GAS = 15_000_000;
     private static final String GET_CHILD_VALUE = "getChildValue";
-  AtomicReference<ByteString> legacyProps = new AtomicReference<>();
+    AtomicReference<ByteString> legacyProps = new AtomicReference<>();
 
     public static void main(String... args) {
         new SStoreSuite().runSuiteSync();
@@ -66,12 +66,12 @@ public class SStoreSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                                        setupAppProperties(),
-                                        multipleSStoreOpsSucceed(),
+                    setupAppProperties(),
+                    multipleSStoreOpsSucceed(),
                     benchmarkSingleSetter(),
-                                        childStorage(),
-                                        temporarySStoreRefundTest(),
-                                        cleanupAppProperties()
+                    childStorage(),
+                    temporarySStoreRefundTest(),
+                    cleanupAppProperties()
                 });
     }
 
@@ -262,7 +262,9 @@ public class SStoreSuite extends HapiApiSuite {
                                 .payingWith("payer")
                                 .via("creationTx")
                                 .gas(GAS_LIMIT),
-                        contractCall(contract, "twoSSTOREs", toObject(value)).gas(GAS_LIMIT).via("storageTx"))
+                        contractCall(contract, "twoSSTOREs", toObject(value))
+                                .gas(GAS_LIMIT)
+                                .via("storageTx"))
                 .then(
                         getTxnRecord("storageTx").logged(),
                         contractCallLocal(contract, "counter")
