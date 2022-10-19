@@ -107,6 +107,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 public class Create2OperationSuite extends HapiApiSuite {
 
@@ -479,9 +480,10 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     (Address) results[0];
                                                             final var hexedAddress =
                                                                     hex(
-                                                                            expectedAddrBytes
-                                                                                    .value()
-                                                                                    .toByteArray());
+                                                                            Bytes.fromHexString(
+                                                                                            expectedAddrBytes
+                                                                                                    .toString())
+                                                                                    .toArray());
                                                             LOG.info(
                                                                     "  --> Expected CREATE2 address"
                                                                             + " is {}",
