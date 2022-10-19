@@ -16,10 +16,7 @@
 package com.hedera.services.yahcli.config;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
-import static com.hedera.services.yahcli.config.ConfigUtils.asId;
-import static com.hedera.services.yahcli.config.ConfigUtils.isLiteral;
-import static com.hedera.services.yahcli.config.ConfigUtils.promptForPassphrase;
-import static com.hedera.services.yahcli.config.ConfigUtils.unlocks;
+import static com.hedera.services.yahcli.config.ConfigUtils.*;
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
@@ -105,7 +102,7 @@ public class ConfigManager {
             specConfig.put("default.payer.pemKeyPassphrase", finalPassphrase.get());
         } else {
             try {
-                var mnemonic = Files.readString(keyFile.toPath());
+                var mnemonic = Files.readString(keyFile.toPath()).trim();
                 specConfig.put("default.payer.mnemonic", mnemonic);
             } catch (IOException e) {
                 fail(String.format("Mnemonic file %s is inaccessible!", keyFile.getPath()));

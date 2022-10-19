@@ -22,12 +22,7 @@ import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Utils {
@@ -51,7 +46,7 @@ public class Utils {
         }
     }
 
-    static String extractAccount(final String account) {
+    public static String extractAccount(final String account) {
         if (isIdLiteral(account)) {
             return account;
         } else {
