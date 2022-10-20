@@ -84,7 +84,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<String> stakedAccountId = Optional.empty();
     private Optional<Long> stakedNodeId = Optional.empty();
     private boolean isDeclinedReward = false;
-    private Optional<ByteString> withAlias = Optional.empty();
+    private Optional<ByteString> alias = Optional.empty();
 
     @Override
     public HederaFunctionality type() {
@@ -205,8 +205,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return this;
     }
 
-    public HapiCryptoCreate withAlias(ByteString alias) {
-        withAlias = Optional.of(alias);
+    public HapiCryptoCreate alias(ByteString alias) {
+        this.alias = Optional.of(alias);
         return this;
     }
 
@@ -248,8 +248,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                         .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                                 CryptoCreateTransactionBody.class,
                                 b -> {
-                                    if (withAlias.isPresent()) {
-                                        b.setAlias(withAlias.get());
+                                    if (alias.isPresent()) {
+                                        b.setAlias(alias.get());
                                         keyName.ifPresent(s -> b.setKey(spec.registry().getKey(s)));
                                     } else {
                                         b.setKey(key);
