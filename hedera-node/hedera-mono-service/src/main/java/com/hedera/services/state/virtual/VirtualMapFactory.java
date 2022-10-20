@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.virtual;
 
+import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKeySerializer;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKeySupplier;
@@ -60,7 +62,12 @@ public class VirtualMapFactory {
     private static final String SCHEDULE_EQUALITY_STORAGE_VM_NAME = "scheduleEqualityStore";
     private static final String UNIQUE_TOKENS_VM_NAME = "uniqueTokenStore";
 
-    private static boolean useMerkleDb = false;
+    private static boolean useMerkleDb;
+
+    static {
+        final BootstrapProperties props = new BootstrapProperties();
+        useMerkleDb = props.getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
+    }
 
     private final Path storageDir;
 
@@ -78,10 +85,6 @@ public class VirtualMapFactory {
                 throw new UncheckedIOException(z);
             }
         }
-    }
-
-    public static void setUseMerkleDb(final boolean value) {
-        useMerkleDb = value;
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs() {
