@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static org.apache.commons.lang3.ArrayUtils.toObject;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -262,9 +261,7 @@ public class SStoreSuite extends HapiApiSuite {
                                 .payingWith("payer")
                                 .via("creationTx")
                                 .gas(GAS_LIMIT),
-                        contractCall(contract, "twoSSTOREs", toObject(value))
-                                .gas(GAS_LIMIT)
-                                .via("storageTx"))
+                        contractCall(contract, "twoSSTOREs", value).gas(GAS_LIMIT).via("storageTx"))
                 .then(
                         getTxnRecord("storageTx").logged(),
                         contractCallLocal(contract, "counter")
