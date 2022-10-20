@@ -23,7 +23,6 @@ import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
@@ -35,7 +34,6 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
@@ -163,8 +161,7 @@ public class MutableStateChildren implements StateChildren {
         return tokenAssociations().size();
     }
 
-    public void setTokenAssociations(
-            final TokenRelStorageAdapter tokenAssociations) {
+    public void setTokenAssociations(final TokenRelStorageAdapter tokenAssociations) {
         this.tokenAssociations = new NonAtomicReference<>(tokenAssociations);
     }
 

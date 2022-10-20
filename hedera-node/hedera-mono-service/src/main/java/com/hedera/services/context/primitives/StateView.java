@@ -55,7 +55,6 @@ import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.*;
 import com.hedera.services.state.submerkle.EntityId;
@@ -715,8 +714,7 @@ public class StateView {
         return backingNfts;
     }
 
-    public BackingStore<Pair<AccountID, TokenID>, HederaTokenRel>
-            asReadOnlyAssociationStore() {
+    public BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> asReadOnlyAssociationStore() {
         if (backingRels == null) {
             backingRels = new BackingTokenRels(stateChildren::tokenAssociations);
         }

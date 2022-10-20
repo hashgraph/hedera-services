@@ -475,15 +475,14 @@ public class ServicesState extends PartialNaryMerkleInternal
         return getChild(StateChildIndices.TOKENS);
     }
 
-
     @SuppressWarnings("unchecked")
     public TokenRelStorageAdapter tokenAssociations() {
         final var relsStorage = getChild(TOKEN_ASSOCIATIONS);
         return (relsStorage instanceof VirtualMap)
                 ? TokenRelStorageAdapter.fromOnDisk(
-                (VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage)
+                        (VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage)
                 : TokenRelStorageAdapter.fromInMemory(
-                (MerkleMap<EntityNumPair, MerkleTokenRelStatus>) relsStorage);
+                        (MerkleMap<EntityNumPair, MerkleTokenRelStatus>) relsStorage);
     }
 
     public MerkleScheduledTransactions scheduleTxs() {
@@ -605,7 +604,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     private static MapToDiskMigration mapToDiskMigration =
             MapMigrationToDisk::migrateToDiskAsApropos;
     static final Function<MerkleAccountState, OnDiskAccount> accountMigrator = OnDiskAccount::from;
-    static final Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator = OnDiskTokenRel::from;
+    static final Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator =
+            OnDiskTokenRel::from;
 
     @VisibleForTesting
     void migrateFrom(@NotNull final SoftwareVersion deserializedVersion) {
@@ -661,7 +661,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     boolean shouldMigrateTokenRelsToDisk() {
-        return enableVirtualTokenRels && getChild(TOKEN_ASSOCIATIONS) instanceof MerkleMap<?,?>;
+        return enableVirtualTokenRels && getChild(TOKEN_ASSOCIATIONS) instanceof MerkleMap<?, ?>;
     }
 
     private BootstrapProperties getBootstrapProperties() {

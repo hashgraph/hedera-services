@@ -21,18 +21,15 @@ import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MapValueListMutation;
-import com.swirlds.merkle.map.MerkleMap;
 import org.jetbrains.annotations.Nullable;
 
-public class TokenRelsListMutation
-        implements MapValueListMutation<EntityNumPair, HederaTokenRel> {
+public class TokenRelsListMutation implements MapValueListMutation<EntityNumPair, HederaTokenRel> {
     private static final long MISSING_KEY = MISSING_NUM.longValue();
 
     final long accountNum;
     final TokenRelStorageAdapter tokenRels;
 
-    public TokenRelsListMutation(
-            final long accountNum, final TokenRelStorageAdapter tokenRels) {
+    public TokenRelsListMutation(final long accountNum, final TokenRelStorageAdapter tokenRels) {
         this.tokenRels = tokenRels;
         this.accountNum = accountNum;
     }

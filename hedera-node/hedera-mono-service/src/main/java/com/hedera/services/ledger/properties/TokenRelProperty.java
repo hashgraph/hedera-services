@@ -15,9 +15,7 @@
  */
 package com.hedera.services.ledger.properties;
 
-
 import com.hedera.services.state.migration.HederaTokenRel;
-
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 

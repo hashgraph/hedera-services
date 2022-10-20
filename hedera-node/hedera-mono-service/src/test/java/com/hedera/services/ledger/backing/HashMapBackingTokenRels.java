@@ -15,7 +15,6 @@
  */
 package com.hedera.services.ledger.backing;
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;

@@ -25,7 +25,6 @@ import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -49,10 +48,9 @@ public class TokenRelsLinkManager {
      * Updates the linked list in the {@code tokenRels} map for the given account, including its
      * head token number in the {@code accounts} map if needed.
      *
-     * <p><b>IMPORTANT:</b> each new {@link HederaTokenRel} must have its {@code numbers}
-     * field set; that is, {@link HederaTokenRel#getRelatedTokenNum()} cannot return zero!
-     * This contract is respected by the sole client of this class, the {@link
-     * LinkAwareTokenRelsCommitInterceptor}.
+     * <p><b>IMPORTANT:</b> each new {@link HederaTokenRel} must have its {@code numbers} field set;
+     * that is, {@link HederaTokenRel#getRelatedTokenNum()} cannot return zero! This contract is
+     * respected by the sole client of this class, the {@link LinkAwareTokenRelsCommitInterceptor}.
      *
      * @param accountNum the account whose list is being updated
      * @param dissociatedTokenNums the numbers of the tokens being dissociated

@@ -88,8 +88,12 @@ class MapMigrationToDiskTest {
         given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
 
         MapMigrationToDisk.migrateToDiskAsApropos(
-                1, mutableState, accountsOnly,
-                virtualMapFactory, accountMigrator, tokenRelMigrator);
+                1,
+                mutableState,
+                accountsOnly,
+                virtualMapFactory,
+                accountMigrator,
+                tokenRelMigrator);
 
         verify(mutableState).setChild(ACCOUNTS, accountStore);
         verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS), captor.capture());
@@ -131,8 +135,7 @@ class MapMigrationToDiskTest {
         given(tokenRelMigrator.apply(bRel)).willReturn(bPretendOnDiskRel);
 
         MapMigrationToDisk.migrateToDiskAsApropos(
-                1, mutableState, relsOnly,
-                virtualMapFactory, accountMigrator, tokenRelMigrator);
+                1, mutableState, relsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
 
         verify(mutableState).setChild(TOKEN_ASSOCIATIONS, tokenRelStore);
         // and:

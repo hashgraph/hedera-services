@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,8 +73,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
     @Test
     void noChangesAreNoop() {
         final var changes =
-                new EntityChangeSet<
-                        Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
+                new EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
 
         subject.preview(changes);
 
@@ -132,8 +130,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
     private EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>
             someChanges() {
         final var changes =
-                new EntityChangeSet<
-                        Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
+                new EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
         changes.include(Pair.of(aAccountId, alreadyAssocTokenId), extantRel, Map.of());
         changes.include(Pair.of(aAccountId, newAssocTokenId), null, Map.of());
         tbdExtantRel.setKey(

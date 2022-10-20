@@ -242,16 +242,16 @@ public class VirtualMapFactory {
         final var keySerializer = new EntityNumVirtualKeySerializer();
         final VirtualLeafRecordSerializer<EntityNumVirtualKey, OnDiskTokenRel>
                 tokenRelLeafRecordSerializer =
-                new VirtualLeafRecordSerializer<>(
-                        CURRENT_SERIALIZATION_VERSION,
-                        DigestType.SHA_384,
-                        CURRENT_SERIALIZATION_VERSION,
-                        keySerializer.getSerializedSize(),
-                        new EntityNumVirtualKeySupplier(),
-                        CURRENT_SERIALIZATION_VERSION,
-                        OnDiskTokenRel.serializedSizeInBytes(),
-                        new OnDiskTokenRelSupplier(),
-                        true);
+                        new VirtualLeafRecordSerializer<>(
+                                CURRENT_SERIALIZATION_VERSION,
+                                DigestType.SHA_384,
+                                CURRENT_SERIALIZATION_VERSION,
+                                keySerializer.getSerializedSize(),
+                                new EntityNumVirtualKeySupplier(),
+                                CURRENT_SERIALIZATION_VERSION,
+                                OnDiskTokenRel.serializedSizeInBytes(),
+                                new OnDiskTokenRelSupplier(),
+                                false);
 
         final JasperDbBuilder<EntityNumVirtualKey, OnDiskTokenRel> dsBuilder =
                 jdbBuilderFactory.newJdbBuilder();

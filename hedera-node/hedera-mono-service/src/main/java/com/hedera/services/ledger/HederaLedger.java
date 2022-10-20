@@ -51,7 +51,6 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
@@ -156,8 +155,7 @@ public class HederaLedger {
     }
 
     public void setTokenRelsLedger(
-            final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger) {
         this.tokenRelsLedger = tokenRelsLedger;
     }

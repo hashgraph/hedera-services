@@ -19,7 +19,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.EntityChangeSet;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaTokenRel;
@@ -49,8 +48,7 @@ class AutoAssocTokenRelsCommitInterceptorTest {
     @Test
     void recordsOnlyNewAssociations() {
         final var changes =
-                new EntityChangeSet<
-                        Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
+                new EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
         changes.include(Pair.of(aAccountId, alreadyAssocTokenId), extantRel, Map.of());
         changes.include(Pair.of(aAccountId, newAssocTokenId), null, Map.of());
 

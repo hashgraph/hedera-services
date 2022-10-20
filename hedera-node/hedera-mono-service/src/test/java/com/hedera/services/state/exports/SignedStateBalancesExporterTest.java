@@ -97,7 +97,8 @@ class SignedStateBalancesExporterTest {
     private static final NodeId nodeId = new NodeId(false, 1);
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-    private final TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+    private final TokenRelStorageAdapter tokenRels =
+            TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
     private MerkleToken token;
     private MerkleToken deletedToken;

@@ -27,7 +27,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.stream.proto.AllAccountBalances;

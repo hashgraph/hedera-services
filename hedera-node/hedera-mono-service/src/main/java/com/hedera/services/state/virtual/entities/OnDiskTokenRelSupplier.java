@@ -31,7 +31,7 @@ public class OnDiskTokenRelSupplier implements SelfSerializableSupplier<OnDiskTo
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         // Nothing to do here
     }
 

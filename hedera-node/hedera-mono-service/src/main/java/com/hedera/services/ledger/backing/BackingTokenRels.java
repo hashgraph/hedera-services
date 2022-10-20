@@ -32,8 +32,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * indexed by ({@code AccountID}, {@code TokenID}) pairs. This class is <b>not</b> thread-safe, and
  * should never be used by any thread other than the {@code handleTransaction} thread.
  */
-public class BackingTokenRels
-        implements BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> {
+public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> {
     private final Supplier<TokenRelStorageAdapter> delegate;
 
     public BackingTokenRels(Supplier<TokenRelStorageAdapter> delegate) {

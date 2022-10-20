@@ -31,7 +31,8 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 class MapValueListUtilsTest {
-    private TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+    private TokenRelStorageAdapter tokenRels =
+            TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
     @Test
     void sequentialRemovalWorksAsExpected() {

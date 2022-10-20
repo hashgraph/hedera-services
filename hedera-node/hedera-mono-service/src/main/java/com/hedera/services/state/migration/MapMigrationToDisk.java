@@ -35,8 +35,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,7 +42,6 @@ public class MapMigrationToDisk {
     private static final Logger log = LogManager.getLogger(MapMigrationToDisk.class);
 
     public static final int INSERTIONS_PER_COPY = 10_000;
-
 
     public static void migrateToDiskAsApropos(
             final int insertionsPerCopy,
@@ -58,8 +55,7 @@ public class MapMigrationToDisk {
                     insertionsPerCopy, mutableState, virtualMapFactory, accountMigrator);
         }
         if (toDiskMigrations.doTokenRels()) {
-            migrateRelsToDisk(
-                    insertionsPerCopy, mutableState, virtualMapFactory, tokenRelMigrator);
+            migrateRelsToDisk(insertionsPerCopy, mutableState, virtualMapFactory, tokenRelMigrator);
         }
     }
 
@@ -68,8 +64,7 @@ public class MapMigrationToDisk {
             final int insertionsPerCopy,
             final ServicesState mutableState,
             final VirtualMapFactory virtualMapFactory,
-            final Function<MerkleAccountState, OnDiskAccount> accountMigrator
-    ) {
+            final Function<MerkleAccountState, OnDiskAccount> accountMigrator) {
         final var insertionsSoFar = new AtomicInteger(0);
         final NonAtomicReference<VirtualMap<EntityNumVirtualKey, OnDiskAccount>> onDiskAccounts =
                 new NonAtomicReference<>(virtualMapFactory.newOnDiskAccountStorage());
@@ -110,14 +105,14 @@ public class MapMigrationToDisk {
             final int insertionsPerCopy,
             final ServicesState mutableState,
             final VirtualMapFactory virtualMapFactory,
-            final Function<MerkleTokenRelStatus, OnDiskTokenRel> relMigrator
-    ) {
+            final Function<MerkleTokenRelStatus, OnDiskTokenRel> relMigrator) {
         final var insertionsSoFar = new AtomicInteger(0);
         final NonAtomicReference<VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>> onDiskRels =
                 new NonAtomicReference<>(virtualMapFactory.newOnDiskTokenRels());
 
         final var inMemoryRels =
-                (MerkleMap<EntityNumPair, MerkleTokenRelStatus>) mutableState.getChild(TOKEN_ASSOCIATIONS);
+                (MerkleMap<EntityNumPair, MerkleTokenRelStatus>)
+                        mutableState.getChild(TOKEN_ASSOCIATIONS);
         withLoggedDuration(
                 () ->
                         forEach(
@@ -126,9 +121,7 @@ public class MapMigrationToDisk {
                                     final var onDiskRel = relMigrator.apply(rel);
                                     onDiskRels
                                             .get()
-                                            .put(
-                                                    EntityNumVirtualKey.fromPair(numPair),
-                                                    onDiskRel);
+                                            .put(EntityNumVirtualKey.fromPair(numPair), onDiskRel);
                                     if (insertionsSoFar.incrementAndGet() % insertionsPerCopy
                                             == 0) {
                                         final var onDiskRelCopy = onDiskRels.get().copy();

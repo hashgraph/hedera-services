@@ -34,8 +34,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 /** Interceptor that externalizes any auto-associations created during a transaction. */
 public class AutoAssocTokenRelsCommitInterceptor
-        implements CommitInterceptor<
-                Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty> {
+        implements CommitInterceptor<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty> {
     private static final Set<HederaFunctionality> AUTO_ASSOCIATING_OPS =
             EnumSet.of(CryptoTransfer, TokenCreate);
 

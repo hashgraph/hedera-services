@@ -54,7 +54,6 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.HederaTokenRel;
@@ -207,8 +206,7 @@ class ApproveAllowanceChecksTest {
                                 RichInstant.MISSING_INSTANT));
         uniqueTokenAdapter.setSpender(EntityId.fromGrpcAccountId(spender1));
 
-        BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> rels =
-                mock(BackingTokenRels.class);
+        BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> rels = mock(BackingTokenRels.class);
         given(view.asReadOnlyAccountStore()).willReturn(store);
         given(view.asReadOnlyTokenStore()).willReturn(tokens);
         given(view.asReadOnlyNftStore()).willReturn(nfts);

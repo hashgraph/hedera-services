@@ -19,7 +19,6 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -29,7 +28,6 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.inject.Inject;

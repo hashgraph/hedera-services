@@ -26,7 +26,8 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 class InPlaceHeadInsertionTest {
-    private TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+    private TokenRelStorageAdapter tokenRels =
+            TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
     @Test
     void canInsertToEmptyList() {
