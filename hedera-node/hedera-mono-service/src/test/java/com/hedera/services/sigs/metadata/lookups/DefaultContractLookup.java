@@ -23,16 +23,14 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.sigs.metadata.SafeLookupResult;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 
 public class DefaultContractLookup implements ContractSigMetaLookup {
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
 
-    public DefaultContractLookup(Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+    public DefaultContractLookup(Supplier<AccountStorageAdapter> accounts) {
         this.accounts = accounts;
     }
 

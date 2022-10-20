@@ -33,6 +33,8 @@ import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -246,7 +248,8 @@ class AliasManagerTest {
 
         subject.getAliases().put(expiredAlias, withoutNum);
         subject.rebuildAliasesMap(
-                liveAccounts, (BiConsumer<EntityNum, MerkleAccount>) mockObserver);
+                AccountStorageAdapter.fromInMemory(liveAccounts),
+                (BiConsumer<EntityNum, HederaAccount>) mockObserver);
 
         final var finalMap = subject.getAliases();
         assertEquals(6, finalMap.size());

@@ -47,6 +47,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -90,7 +91,7 @@ class StateChildrenSigMetadataLookupTest {
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
     @Mock private Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private MerkleScheduledTransactions schedules;
     @Mock private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;

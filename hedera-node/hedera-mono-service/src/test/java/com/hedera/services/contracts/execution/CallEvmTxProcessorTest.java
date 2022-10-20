@@ -47,7 +47,7 @@ import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -540,7 +540,7 @@ class CallEvmTxProcessorTest {
     void assertResourceExhaustionChargesBothSenderAndRelayerWithoutRefunds() {
         givenValidMockEth();
         final var mockAccounts =
-                (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>)
+                (TransactionalLedger<AccountID, AccountProperty, HederaAccount>)
                         mock(TransactionalLedger.class);
         given(updater.trackingAccounts()).willReturn(mockAccounts);
 

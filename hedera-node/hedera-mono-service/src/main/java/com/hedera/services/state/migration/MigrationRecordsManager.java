@@ -34,7 +34,6 @@ import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.initialization.TreasuryCloner;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -44,7 +43,6 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
@@ -80,7 +78,7 @@ public class MigrationRecordsManager {
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final ConsensusTimeTracker consensusTimeTracker;
     private final SyntheticTxnFactory syntheticTxnFactory;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final AccountNumbers accountNumbers;
     private final BootstrapProperties bootstrapProperties;
     private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
@@ -93,7 +91,7 @@ public class MigrationRecordsManager {
             final RecordsHistorian recordsHistorian,
             final Supplier<MerkleNetworkContext> networkCtx,
             final ConsensusTimeTracker consensusTimeTracker,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final SyntheticTxnFactory syntheticTxnFactory,
             final AccountNumbers accountNumbers,
             final BootstrapProperties bootstrapProperties) {
@@ -141,7 +139,7 @@ public class MigrationRecordsManager {
                 .forEach(
                         account ->
                                 publishSyntheticCreation(
-                                        account.getKey(),
+                                        EntityNum.fromInt(account.number()),
                                         account.getExpiry() - now.getEpochSecond(),
                                         account.isReceiverSigRequired(),
                                         account.isDeclinedReward(),

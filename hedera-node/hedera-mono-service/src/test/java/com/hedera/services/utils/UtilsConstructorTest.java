@@ -54,6 +54,7 @@ import com.hedera.services.state.migration.*;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.state.virtual.KeyPackingUtils;
+import com.hedera.services.state.virtual.utils.EntityIoUtils;
 import com.hedera.services.stats.*;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
@@ -76,7 +77,6 @@ import com.hedera.services.txns.util.TokenUpdateValidator;
 import com.hedera.services.txns.util.UtilLogicModule;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TokenListChecks;
-import com.hedera.services.txns.validation.TransferListChecks;
 import com.hedera.services.utils.forensics.OrderedComparison;
 import com.hedera.services.utils.forensics.RecordParsers;
 import java.lang.reflect.InvocationTargetException;
@@ -90,6 +90,7 @@ class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested =
             new HashSet<>(
                     Arrays.asList(
+                            EntityIoUtils.class,
                             OrderedComparison.class,
                             RecordParsers.class,
                             Units.class,
@@ -118,7 +119,7 @@ class UtilsConstructorTest {
                             PrecheckUtils.class,
                             MerkleAccount.ChildIndices.class,
                             BitPackUtils.class,
-                            LegacyStateChildIndices.class,
+                            MapMigrationToDisk.class,
                             ReleaseThirtyMigration.class,
                             ReleaseTwentySixMigration.class,
                             StateChildIndices.class,
@@ -133,7 +134,6 @@ class UtilsConstructorTest {
                             PresolvencyFlaws.class,
                             PureValidation.class,
                             TokenListChecks.class,
-                            TransferListChecks.class,
                             EntityIdUtils.class,
                             HederaDateTimeFormatter.class,
                             TokenTypesMapper.class,

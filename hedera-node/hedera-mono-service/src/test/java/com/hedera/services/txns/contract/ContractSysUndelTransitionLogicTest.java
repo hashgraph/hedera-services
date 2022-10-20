@@ -26,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -36,6 +37,7 @@ import com.hedera.services.context.properties.EntityType;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -90,7 +92,7 @@ class ContractSysUndelTransitionLogicTest {
                         sigImpactHistorian,
                         txnCtx,
                         delegate,
-                        () -> contracts,
+                        () -> AccountStorageAdapter.fromInMemory(contracts),
                         properties);
     }
 
@@ -106,7 +108,7 @@ class ContractSysUndelTransitionLogicTest {
                         sigImpactHistorian,
                         txnCtx,
                         delegate,
-                        () -> contracts,
+                        () -> AccountStorageAdapter.fromInMemory(contracts),
                         properties);
 
         assertEquals(NOT_SUPPORTED, subject.validate(contractSysUndelTxn));
@@ -175,7 +177,7 @@ class ContractSysUndelTransitionLogicTest {
     void acceptsDeletedContract() {
         givenValidTxnCtx();
         // and:
-        given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
+        given(validator.queryableContractStatus(eq(target), any())).willReturn(CONTRACT_DELETED);
 
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractSysUndelTxn));
@@ -185,7 +187,7 @@ class ContractSysUndelTransitionLogicTest {
     void rejectsInvalidCid() {
         givenValidTxnCtx();
         // and:
-        given(validator.queryableContractStatus(target, contracts)).willReturn(INVALID_CONTRACT_ID);
+        given(validator.queryableContractStatus(eq(target), any())).willReturn(INVALID_CONTRACT_ID);
 
         // expect:
         assertEquals(INVALID_CONTRACT_ID, subject.semanticCheck().apply(contractSysUndelTxn));
@@ -224,6 +226,6 @@ class ContractSysUndelTransitionLogicTest {
     }
 
     private void withRubberstampingValidator() {
-        given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
+        given(validator.queryableContractStatus(eq(target), any())).willReturn(OK);
     }
 }

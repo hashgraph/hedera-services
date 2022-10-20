@@ -20,7 +20,7 @@ import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
@@ -42,9 +42,9 @@ public class ClassificationWork {
     private final EntityLookup lookup;
     private final ExpiryThrottle expiryThrottle;
     private EntityNum lastClassifiedNum;
-    private MerkleAccount lastClassified;
+    private HederaAccount lastClassified;
     private EntityNum payerNum;
-    private MerkleAccount payer;
+    private HederaAccount payer;
 
     @Inject
     public ClassificationWork(
@@ -116,7 +116,7 @@ public class ClassificationWork {
         return lastClassifiedNum;
     }
 
-    public MerkleAccount getLastClassified() {
+    public HederaAccount getLastClassified() {
         return lastClassified;
     }
 
@@ -124,7 +124,7 @@ public class ClassificationWork {
         return payerNum;
     }
 
-    public MerkleAccount getPayerForLastClassified() {
+    public HederaAccount getPayerForLastClassified() {
         return payer;
     }
 
@@ -141,7 +141,7 @@ public class ClassificationWork {
     }
 
     @VisibleForTesting
-    boolean isValid(final MerkleAccount payer) {
+    boolean isValid(final HederaAccount payer) {
         return payer != null && !payer.isDeleted() && payer.getBalance() > 0;
     }
 }

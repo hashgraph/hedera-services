@@ -23,7 +23,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.setup.Constructables;
 import com.hedera.services.setup.InfrastructureBundle;
 import com.hedera.services.setup.InfrastructureType;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +55,7 @@ public class SimpleTransfersBench {
     private int n;
     private AccountID[] ids;
     private InfrastructureBundle bundle;
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger;
 
     // --- Fixtures ---
     @Setup(Level.Trial)

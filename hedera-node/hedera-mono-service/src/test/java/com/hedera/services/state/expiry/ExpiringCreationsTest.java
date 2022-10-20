@@ -38,7 +38,7 @@ import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -56,7 +56,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
@@ -84,7 +83,7 @@ class ExpiringCreationsTest {
 
     @Mock private ExpiryManager expiries;
     @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private RecordsStorageAdapter payerRecords;
     @Mock private NarratedCharging narratedCharging;
     @Mock private HederaLedger ledger;
     @Mock private TxnAccessor accessor;
@@ -136,7 +135,7 @@ class ExpiringCreationsTest {
     void setup() {
         subject =
                 new ExpiringCreations(
-                        expiries, narratedCharging, dynamicProperties, () -> accounts);
+                        expiries, narratedCharging, dynamicProperties, () -> payerRecords);
         subject.setLedger(ledger);
 
         expectedRecord = record;
@@ -195,15 +194,13 @@ class ExpiringCreationsTest {
     void addsToPayerRecordsAndTracks() {
         // setup:
         final var key = EntityNum.fromAccountId(effPayer);
-        final var payerAccount = new MerkleAccount();
-        given(accounts.getForModify(key)).willReturn(payerAccount);
         given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
         final var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);
 
         assertEquals(expectedRecord, actual);
         verify(expiries).trackRecordInState(effPayer, expectedExpiry);
-        assertEquals(expectedRecord, payerAccount.records().peek());
+        verify(payerRecords).addPayerRecord(key, expectedRecord);
     }
 
     @Test

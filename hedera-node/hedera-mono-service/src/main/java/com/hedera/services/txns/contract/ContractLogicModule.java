@@ -27,13 +27,11 @@ import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.StoresModule;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
@@ -75,7 +73,7 @@ public final class ContractLogicModule {
             final OptionValidator validator,
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final GlobalDynamicProperties properties,
             final NodeInfo nodeInfo) {
         final var contractUpdateTransitionLogic =
