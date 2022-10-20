@@ -23,7 +23,7 @@ plugins {
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-java-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
-    id("org.gradlex.extra-java-module-info")
+    id("com.hedera.hashgraph.jpms-modules")
 }
 
 group = "com.hedera.hashgraph"
@@ -35,6 +35,8 @@ java {
         @Suppress("UnstableApiUsage")
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
+
+    modularity.inferModulePath.set(true)
 }
 
 // Define the repositories from which we will pull dependencies
@@ -69,73 +71,6 @@ repositories {
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1531")
     }
-}
-
-extraJavaModuleInfo {
-    failOnMissingModuleInfo.set(true)
-    automaticModule("javax.inject:javax.inject", "javax.inject")
-    automaticModule("grpc-protobuf:grpc-protobuf", "grpc-protobuf")
-    automaticModule("org.hyperledger.besu.internal:crypto", "crypto")
-    automaticModule("org.hyperledger.besu:secp256k1", "secp256k1")
-    automaticModule("org.hyperledger.besu.internal:rlp", "rlp")
-    automaticModule("org.hyperledger.besu:plugin-api", "plugin-api")
-    automaticModule("com.offbynull.portmapper:portmapper", "portmapper")
-    automaticModule("io.grpc:grpc-netty", "grpc-netty")
-    automaticModule("com.google.code.findbugs:jsr305", "jsr305")
-    automaticModule("com.google.j2objc:j2objc-annotations", "j2objc-annotations")
-    automaticModule("io.perfmark:perfmark-api", "perfmark-api")
-    automaticModule("junit:junit", "junit")
-    automaticModule("io.opencensus:opencensus-api", "opencensus-api")
-    automaticModule("io.grpc:grpc-context", "grpc-context")
-    automaticModule("org.jetbrains.kotlin:kotlin-stdlib-common", "kotlin-stdlib-common")
-    automaticModule("com.google.android:annotations", "annotations")
-    automaticModule("org.codehaus.mojo:animal-sniffer-annotations", "animal-sniffer-annotations")
-    automaticModule("com.google.guava:listenablefuture", "listenablefuture")
-    automaticModule("com.google.guava:failureaccess", "failureaccess")
-    automaticModule("org.connid:framework-internal", "framework-internal")
-    automaticModule("org.connid:framework", "framework")
-    automaticModule("org.openjfx:javafx-base", "javafx-base")
-    automaticModule("io.grpc:grpc-api", "grpc-api")
-    automaticModule("io.grpc:grpc-protobuf-lite", "protobuf-lite")
-    automaticModule("io.grpc:grpc-core", "grpc-core")
-    automaticModule("io.grpc:grpc-stub", "grpc-stub")
-    automaticModule("io.grpc:grpc-stub", "grpc-stub")
-    automaticModule("io.grpc:grpc-testing", "grpc-testing")
-    automaticModule("org.hamcrest:hamcrest-core", "hamcrest-core")
-    automaticModule("org.hyperledger.besu:blake2bf", "blake2bf")
-    automaticModule("org.hyperledger.besu:secp256r1", "secp256r1")
-    automaticModule("com.goterl:resource-loader", "resource-loader")
-    automaticModule("com.goterl:lazysodium-java", "lazysodium-java")
-    automaticModule("org.jetbrains:annotations", "annotations")
-    automaticModule("com.google.api.grpc:proto-google-common-protos", "proto-google-common-protos")
-    automaticModule("io.grpc:grpc-protobuf", "grpc-protobuf")
-    automaticModule("org.hyperledger.besu:bls12-381", "bls12-381")
-    automaticModule("hapi-utils-0.31.0-SNAPSHOT.jar", "hapi-utils")
-    automaticModule("hapi-fees-0.31.0-SNAPSHOT.jar", "hapi-fees")
-//    automaticModule("hedera-evm-api-0.31.0-SNAPSHOT.jar", "hedera-evm-api")
-
-    automaticModule("com.hedera.hashgraph:ethereumj-core", "ethereumj-core")
-    automaticModule("org.testcontainers:testcontainers", "testcontainers")
-    automaticModule("com.github.docker-java:docker-java-api", "docker-java-api")
-    automaticModule("org.rnorth.duct-tape:duct-tape", "duct-tape")
-    automaticModule("com.github.docker-java:docker-java-transport-zerodep", "docker-java-transport-zerodep")
-    automaticModule("com.madgag.spongycastle:prov", "prov")
-    automaticModule("com.madgag.spongycastle:core", "core")
-    automaticModule("org.springframework:spring-context", "spring-context")
-    automaticModule("com.typesafe:config", "config")
-    automaticModule("com.googlecode.concurrent-locks:concurrent-locks", "concurrent-lockst")
-    automaticModule("org.springframework:spring-aop", "spring-aop")
-    automaticModule("org.springframework:spring-beans", "spring-beans")
-    automaticModule("org.springframework:spring-expression", "spring-expression")
-    automaticModule("org.springframework:spring-core", "spring-core")
-    automaticModule("com.github.docker-java:docker-java-transport", "docker-java-transport")
-    automaticModule("commons-logging:commons-logging", "commons-logging")
-    automaticModule("org.awaitility:awaitility", "awaitility")
-    automaticModule("com.google.truth.extensions:truth-java8-extension", "truth-java8-extension")
-    automaticModule("com.google.truth:truth", "truth")
-    automaticModule("com.google.auto.value:auto-value-annotations", "auto-value-annotations")
-    automaticModule("org.hyperledger.besu.internal:util", "util")
-    automaticModule("commons-codec:commons-codec", "commons-codec")
 }
 
 // Make sure we use UTF-8 encoding when compiling
