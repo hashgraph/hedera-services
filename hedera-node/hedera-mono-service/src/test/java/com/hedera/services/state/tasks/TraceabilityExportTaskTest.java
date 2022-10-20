@@ -33,6 +33,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.store.contracts.EntityAccess;
@@ -47,7 +48,6 @@ import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.List;
@@ -68,7 +68,7 @@ class TraceabilityExportTaskTest {
     private static final MerkleAccount AN_ACCOUNT = MerkleAccountFactory.newAccount().get();
 
     @Mock private TraceabilityRecordsHelper recordsHelper;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private EntityAccess entityAccess;
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private GlobalDynamicProperties dynamicProperties;

@@ -59,6 +59,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
@@ -96,12 +97,12 @@ class TransactionalLedgerTest {
             new ChangeSummaryManager<>();
 
     @Mock private BackingStore<Long, TestAccount> backingTestAccounts;
-    @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
+    @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
     @Mock private PropertyChangeObserver<Long, TestAccountProperty> propertyChangeObserver;
     @Mock private CommitInterceptor<Long, TestAccount, TestAccountProperty> testInterceptor;
     private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> testLedger;
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     @Test
     void settingInterceptorAlsoInitializesPendingChangesAndPreviewAction() {

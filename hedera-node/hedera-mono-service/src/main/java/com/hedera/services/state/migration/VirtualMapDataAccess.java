@@ -15,19 +15,15 @@
  */
 package com.hedera.services.state.migration;
 
-/**
- * Recalls the Services 0.16.0 Merkle node children with indices different from 0.17.0, used for
- * migration.
- */
-public final class LegacyStateChildIndices {
-    static final int ADDRESS_BOOK = 0;
-    static final int NETWORK_CTX = 1;
-    static final int TOKEN_ASSOCIATIONS = 6;
-    public static final int UNIQUE_TOKENS = 10;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.VirtualValue;
+import org.apache.commons.lang3.tuple.Pair;
 
-    public static final int NUM_0160_CHILDREN = 11;
-
-    private LegacyStateChildIndices() {
-        throw new UnsupportedOperationException("Utility Class");
-    }
+@FunctionalInterface
+public interface VirtualMapDataAccess {
+    <K extends VirtualKey<? super K>, V extends VirtualValue> void extractVirtualMapData(
+            VirtualMap<K, V> source, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
+            throws InterruptedException;
 }

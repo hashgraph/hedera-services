@@ -22,7 +22,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -30,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -51,7 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MutableStateChildrenTest {
     @Mock private ServicesState state;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
@@ -91,7 +91,7 @@ class MutableStateChildrenTest {
         given(state.isInitialized()).willReturn(true);
         subject.updateFromImmutable(state, signedAt);
 
-        given(accounts.size()).willReturn(1);
+        given(accounts.size()).willReturn(1L);
         given(storage.size()).willReturn(2L);
         given(contractStorage.size()).willReturn(3L);
         given(scheduleTxs.getNumSchedules()).willReturn(4L);

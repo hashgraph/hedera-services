@@ -37,6 +37,10 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
 
     private long value;
 
+    public static EntityNumVirtualKey from(final EntityNum num) {
+        return new EntityNumVirtualKey(num.longValue());
+    }
+
     public EntityNumVirtualKey() {
         this(-1);
     }

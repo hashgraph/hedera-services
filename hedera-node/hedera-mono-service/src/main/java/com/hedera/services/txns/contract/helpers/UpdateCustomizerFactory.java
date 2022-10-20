@@ -27,7 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -39,7 +39,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class UpdateCustomizerFactory {
     public Pair<Optional<HederaAccountCustomizer>, ResponseCodeEnum> customizerFor(
-            MerkleAccount contract, OptionValidator validator, ContractUpdateTransactionBody op) {
+            HederaAccount contract, OptionValidator validator, ContractUpdateTransactionBody op) {
         if (!onlyAffectsExpiry(op) && !isMutable(contract)) {
             return Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT);
         }
@@ -102,7 +102,6 @@ public class UpdateCustomizerFactory {
         } else {
             var resolution = keyIfAcceptable(updateOp.getAdminKey());
             if (resolution.isEmpty()) {
-                // return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
                 return true;
             }
             customizer.key(resolution.get());
@@ -110,7 +109,7 @@ public class UpdateCustomizerFactory {
         return false;
     }
 
-    boolean isMutable(MerkleAccount contract) {
+    boolean isMutable(final HederaAccount contract) {
         return Optional.ofNullable(contract.getAccountKey())
                 .map(key -> !key.hasContractID())
                 .orElse(false);

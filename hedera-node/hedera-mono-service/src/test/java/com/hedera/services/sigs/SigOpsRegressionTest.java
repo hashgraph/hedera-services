@@ -61,6 +61,7 @@ import com.hedera.services.sigs.order.SigningOrderResultFactory;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.RationalizedSigMeta;
@@ -387,7 +388,7 @@ class SigOpsRegressionTest {
                         defaultLookupsFor(
                                 aliasManager,
                                 null,
-                                () -> accounts,
+                                () -> AccountStorageAdapter.fromInMemory(accounts),
                                 () -> null,
                                 ref -> null,
                                 ref -> null),
@@ -411,7 +412,7 @@ class SigOpsRegressionTest {
                         defaultLookupsFor(
                                 aliasManager,
                                 hfsSigMetaLookup,
-                                () -> accounts,
+                                () -> AccountStorageAdapter.fromInMemory(accounts),
                                 null,
                                 ref -> null,
                                 ref -> null),
@@ -426,7 +427,7 @@ class SigOpsRegressionTest {
                 defaultLookupsFor(
                         aliasManager,
                         hfsSigMetaLookup,
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         () -> null,
                         ref -> null,
                         ref -> null);
@@ -444,7 +445,7 @@ class SigOpsRegressionTest {
                 defaultLookupsFor(
                         aliasManager,
                         hfsSigMetaLookup,
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         () -> null,
                         ref -> null,
                         ref -> null);
@@ -473,7 +474,7 @@ class SigOpsRegressionTest {
                         defaultLookupsFor(
                                 aliasManager,
                                 hfsSigMetaLookup,
-                                () -> accounts,
+                                () -> AccountStorageAdapter.fromInMemory(accounts),
                                 () -> null,
                                 ref -> null,
                                 ref -> null),

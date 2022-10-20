@@ -27,6 +27,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +63,7 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(2L), expectedWith(50L));
 
         // expect:
-        assertDoesNotThrow(() -> subject.validate(accounts));
+        assertDoesNotThrow(() -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
     }
 
     @Test
@@ -71,8 +72,9 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         // expect:
-        assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
+        assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
 
     @Test
@@ -81,8 +83,9 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(1L), expectedWith(Long.MAX_VALUE));
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         // expect:
-        assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
+        assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
 
     @Test
@@ -90,8 +93,9 @@ class BasedLedgerValidatorTest {
         // given:
         accounts.put(EntityNum.fromLong(3L), expectedWith(100L));
 
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         // expect:
-        assertDoesNotThrow(() -> subject.validate(accounts));
+        assertDoesNotThrow(() -> subject.validate(adapter));
     }
 
     @Test
@@ -99,20 +103,22 @@ class BasedLedgerValidatorTest {
         // given:
         accounts.put(EntityNum.fromLong(0L), expectedWith(100L));
 
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         // expect:
-        assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
+        assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
 
     private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
         MerkleAccount hAccount =
-                new HederaAccountCustomizer()
-                        .isReceiverSigRequired(false)
-                        .proxy(MISSING_ENTITY_ID)
-                        .isDeleted(false)
-                        .expiry(1_234_567L)
-                        .memo("")
-                        .isSmartContract(false)
-                        .customizing(new MerkleAccount());
+                (MerkleAccount)
+                        new HederaAccountCustomizer()
+                                .isReceiverSigRequired(false)
+                                .proxy(MISSING_ENTITY_ID)
+                                .isDeleted(false)
+                                .expiry(1_234_567L)
+                                .memo("")
+                                .isSmartContract(false)
+                                .customizing(new MerkleAccount());
         hAccount.setBalance(balance);
         return hAccount;
     }

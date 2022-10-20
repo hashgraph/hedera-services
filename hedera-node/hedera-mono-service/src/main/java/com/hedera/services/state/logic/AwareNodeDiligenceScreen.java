@@ -27,7 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -48,13 +48,13 @@ public final class AwareNodeDiligenceScreen {
 
     private final OptionValidator validator;
     private final TransactionContext txnCtx;
-    private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+    private final BackingStore<AccountID, HederaAccount> backingAccounts;
 
     @Inject
     public AwareNodeDiligenceScreen(
             final OptionValidator validator,
             final TransactionContext txnCtx,
-            final BackingStore<AccountID, MerkleAccount> backingAccounts) {
+            final BackingStore<AccountID, HederaAccount> backingAccounts) {
         this.txnCtx = txnCtx;
         this.validator = validator;
         this.backingAccounts = backingAccounts;

@@ -30,7 +30,6 @@ dependencies {
     api(libs.swirlds.common)
     implementation(libs.hapi)
     implementation(libs.javax.inject)
-    implementation(libs.javax.inject)
     implementation(libs.caffeine)
 }
 

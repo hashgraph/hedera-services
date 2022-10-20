@@ -19,7 +19,7 @@ import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -47,12 +47,12 @@ public interface EntityAccess extends HederaEvmEntityAccess {
 
     /* --- Storage access --- */
     void recordNewKvUsageTo(
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
 
     void putStorage(AccountID id, UInt256 key, UInt256 value);
 
     void flushStorage(
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
 
     /* --- Bytecode access --- */
     void storeCode(AccountID id, Bytes code);

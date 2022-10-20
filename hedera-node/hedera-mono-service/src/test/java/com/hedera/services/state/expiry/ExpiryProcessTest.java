@@ -37,6 +37,7 @@ import com.hedera.services.state.expiry.removal.*;
 import com.hedera.services.state.expiry.renewal.RenewalHelper;
 import com.hedera.services.state.expiry.renewal.RenewalWork;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
@@ -92,7 +93,7 @@ class ExpiryProcessTest {
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private ExpiryStats expiryStats;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private FeeDistribution feeDistribution;
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private ConsensusTimeTracker consensusTimeTracker;

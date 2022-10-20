@@ -31,11 +31,10 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.*;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -53,7 +52,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StatesImplTest {
     @Mock private ServicesState state;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
+    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
+    @Mock private AccountStorageAdapter accountsAdapter;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
@@ -88,7 +89,7 @@ class StatesImplTest {
     }
 
     @Test
-    void returnsAccountsMapFromChildren() {
+    void returnsInMemoryAccountsWhenAppropriate() {
         final String ACCOUNTS_KEY = "ACCOUNTS";
         final String STORAGE_KEY = "STORAGE";
 
@@ -96,6 +97,7 @@ class StatesImplTest {
         givenStateWithMockChildren();
         given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
         given(state.isInitialized()).willReturn(true);
+        given(accountsAdapter.getInMemoryAccounts()).willReturn(inMemoryAccounts);
 
         subject.updateChildren(state);
 
@@ -106,8 +108,27 @@ class StatesImplTest {
         assertThrows(IllegalArgumentException.class, () -> subject.get(STORAGE_KEY));
     }
 
+    @Test
+    void returnsOnDiskAccountsWhenAppropriate() {
+        final String ACCOUNTS_KEY = "ACCOUNTS";
+
+        final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
+        givenStateWithMockChildren();
+        given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
+        given(state.isInitialized()).willReturn(true);
+        given(accountsAdapter.areOnDisk()).willReturn(true);
+        given(accountsAdapter.getOnDiskAccounts()).willReturn(onDiskAccounts);
+
+        subject.updateChildren(state);
+
+        final var state = subject.get(ACCOUNTS_KEY);
+
+        assertEquals(lastHandledTime, state.getLastModifiedTime());
+        assertTrue(state instanceof OnDiskStateImpl);
+    }
+
     private void givenStateWithMockChildren() {
-        given(state.accounts()).willReturn(accounts);
+        given(state.accounts()).willReturn(accountsAdapter);
         given(state.storage()).willReturn(storage);
         given(state.contractStorage()).willReturn(contractStorage);
         given(state.topics()).willReturn(topics);
@@ -126,7 +147,7 @@ class StatesImplTest {
     private void assertChildrenAreExpectedMocks() {
         final var children = subject.getChildren();
 
-        assertSame(accounts, children.accounts());
+        assertSame(accountsAdapter, children.accounts());
         assertSame(storage, children.storage());
         assertSame(contractStorage, children.contractStorage());
         assertSame(topics, children.topics());
