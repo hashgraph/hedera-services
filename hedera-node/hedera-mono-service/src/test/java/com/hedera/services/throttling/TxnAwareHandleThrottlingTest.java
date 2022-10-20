@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.CongestibleThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -104,11 +105,9 @@ class TxnAwareHandleThrottlingTest {
         ThrottleDefinitions defs = new ThrottleDefinitions();
         List<DeterministicThrottle> whatever = List.of(DeterministicThrottle.withTps(1));
 
-        given(delegate.allActiveThrottles()).willReturn(whatever);
         given(delegate.activeThrottlesFor(HederaFunctionality.CryptoTransfer)).willReturn(whatever);
 
         // when:
-        var all = subject.allActiveThrottles();
         var onlyXfer = subject.activeThrottlesFor(HederaFunctionality.CryptoTransfer);
         subject.rebuildFor(defs);
         subject.resetUsage();
@@ -116,7 +115,6 @@ class TxnAwareHandleThrottlingTest {
         // then:
         verify(delegate).rebuildFor(defs);
         verify(delegate).resetUsage();
-        assertSame(whatever, all);
         assertSame(whatever, onlyXfer);
     }
 

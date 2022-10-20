@@ -181,7 +181,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     public void resetThrottlingFromSavedSnapshots(final FunctionalityThrottling throttling) {
-        var activeThrottles = throttling.allActiveThrottles();
+        var activeThrottles = throttling.<DeterministicThrottle>allActiveThrottles();
         if (activeThrottles.size() != usageSnapshots.length) {
             log.warn(
                     "There are {} active throttles, but {} usage snapshots from saved state. "
@@ -690,7 +690,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     /* --- Internal helpers --- */
     void updateSnapshotsFrom(final FunctionalityThrottling throttling) {
         throwIfImmutable("Cannot update usage snapshots on an immutable context");
-        var activeThrottles = throttling.allActiveThrottles();
+        var activeThrottles = throttling.<DeterministicThrottle>allActiveThrottles();
         int n = activeThrottles.size();
         if (n == 0) {
             usageSnapshots = NO_SNAPSHOTS;

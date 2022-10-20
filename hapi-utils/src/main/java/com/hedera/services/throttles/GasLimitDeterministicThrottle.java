@@ -26,7 +26,8 @@ import java.time.Instant;
  * last decision was made and calculates the time elapsed since then. Uses a {@link
  * GasLimitBucketThrottle} under the hood.
  */
-public class GasLimitDeterministicThrottle {
+public class GasLimitDeterministicThrottle implements CongestibleThrottle {
+    private static final String THROTTLE_NAME = "Gas";
     private final GasLimitBucketThrottle delegate;
     private Instant lastDecisionTime;
     private final long capacity;
@@ -91,8 +92,19 @@ public class GasLimitDeterministicThrottle {
      *
      * @return the capacity of the throttle.
      */
-    public long getCapacity() {
+    @Override
+    public long capacity() {
         return capacity;
+    }
+
+    @Override
+    public long mtps() {
+        return capacity * 1_000;
+    }
+
+    @Override
+    public String name() {
+        return THROTTLE_NAME;
     }
 
     /**
@@ -100,7 +112,8 @@ public class GasLimitDeterministicThrottle {
      *
      * @return the used capacity of the throttle.
      */
-    public long getUsed() {
+    @Override
+    public long used() {
         return delegate.bucket().capacityUsed();
     }
 
