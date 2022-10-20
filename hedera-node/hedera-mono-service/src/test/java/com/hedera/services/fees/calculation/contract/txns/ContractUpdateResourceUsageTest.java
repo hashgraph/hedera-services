@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -68,7 +69,7 @@ class ContractUpdateResourceUsageTest {
         accounts = mock(MerkleMap.class);
         given(accounts.get(accountKey)).willReturn(account);
         view = mock(StateView.class);
-        given(view.accounts()).willReturn(accounts);
+        given(view.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
 
         sigUsage = mock(SigValueObj.class);
         usageEstimator = mock(SmartContractFeeBuilder.class);

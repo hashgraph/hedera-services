@@ -26,6 +26,7 @@ import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
@@ -52,7 +53,7 @@ class RemovalHelperTest {
                     FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
                     NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS,
                     false);
-    private MerkleMap<EntityNum, MerkleAccount> accounts;
+    private AccountStorageAdapter accounts;
     private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
     @Mock private ContractGC contractGC;
     @Mock private AccountGC accountGC;
@@ -66,7 +67,7 @@ class RemovalHelperTest {
 
     @BeforeEach
     void setUp() {
-        accounts = new MerkleMap<>();
+        accounts = AccountStorageAdapter.fromInMemory(new MerkleMap<>());
         accounts.put(EntityNum.fromLong(expiredDeletedAccountNum), expiredDeletedAccount);
         accounts.put(EntityNum.fromLong(expiredDeletedContractNum), expiredDeletedContract);
         lookup = new EntityLookup(() -> accounts);

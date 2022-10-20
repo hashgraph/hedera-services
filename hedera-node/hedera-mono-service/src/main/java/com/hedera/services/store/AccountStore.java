@@ -25,7 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -38,12 +38,12 @@ import javax.inject.Singleton;
 @Singleton
 public class AccountStore {
     private final OptionValidator validator;
-    private final BackingStore<AccountID, MerkleAccount> accounts;
+    private final BackingStore<AccountID, HederaAccount> accounts;
 
     @Inject
     public AccountStore(
             final OptionValidator validator,
-            final BackingStore<AccountID, MerkleAccount> accounts) {
+            final BackingStore<AccountID, HederaAccount> accounts) {
         this.validator = validator;
         this.accounts = accounts;
     }
@@ -123,7 +123,7 @@ public class AccountStore {
         return loadMerkleAccount(merkleAccount, id);
     }
 
-    private Account loadMerkleAccount(final MerkleAccount merkleAccount, final Id id) {
+    private Account loadMerkleAccount(final HederaAccount merkleAccount, final Id id) {
         final var account = new Account(id);
         account.setExpiry(merkleAccount.getExpiry());
         account.initBalance(merkleAccount.getBalance());
@@ -134,7 +134,7 @@ public class AccountStore {
             account.setProxy(merkleAccount.getProxy().asId());
         }
         account.setReceiverSigRequired(merkleAccount.isReceiverSigRequired());
-        account.setKey(merkleAccount.state().key());
+        account.setKey(merkleAccount.getAccountKey());
         account.setMemo(merkleAccount.getMemo());
         account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
         account.setDeleted(merkleAccount.isDeleted());
@@ -164,7 +164,7 @@ public class AccountStore {
         accounts.put(grpcId, mutableAccount);
     }
 
-    private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {
+    private void mapModelToMutable(Account model, HederaAccount mutableAccount) {
         if (model.getProxy() != null) {
             mutableAccount.setProxy(model.getProxy().asEntityId());
         }
@@ -173,7 +173,7 @@ public class AccountStore {
         mutableAccount.setNftsOwned(model.getOwnedNfts());
         mutableAccount.setMaxAutomaticAssociations(model.getMaxAutomaticAssociations());
         mutableAccount.setUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
-        mutableAccount.state().setAccountKey(model.getKey());
+        mutableAccount.setAccountKey(model.getKey());
         mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
         mutableAccount.setDeleted(model.isDeleted());
         mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
@@ -188,7 +188,7 @@ public class AccountStore {
     }
 
     private void validateUsable(
-            MerkleAccount merkleAccount,
+            HederaAccount merkleAccount,
             @Nullable ResponseCodeEnum explicitResponse,
             ResponseCodeEnum nonExistingCode,
             ResponseCodeEnum deletedCode) {

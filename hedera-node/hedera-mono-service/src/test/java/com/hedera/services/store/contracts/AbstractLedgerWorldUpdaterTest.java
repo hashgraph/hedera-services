@@ -62,6 +62,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -354,7 +355,7 @@ class AbstractLedgerWorldUpdaterTest {
         final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
         final var wrappedAccounts = wrappedLedgers.accounts();
         final var aAccountMock = mock(MerkleAccount.class);
-        final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+        final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
         backingAccounts.put(aAccount, aAccountMock);
         wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
 

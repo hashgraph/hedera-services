@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -48,6 +49,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
@@ -180,7 +182,7 @@ class GetAccountDetailsAnswerTest {
                         .explicitNftAllowances(nftAllowances)
                         .get();
 
-        children.setAccounts(accounts);
+        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
         children.setTokenAssociations(tokenRels);
         children.setTokens(tokens);
 
@@ -370,7 +372,7 @@ class GetAccountDetailsAnswerTest {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId), accounts))
+        given(optionValidator.queryableAccountStatus(eq(EntityNum.fromAccountId(payerId)), any()))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
@@ -387,7 +389,7 @@ class GetAccountDetailsAnswerTest {
 
         given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
-        given(optionValidator.queryableAccountStatus(entityNum, accounts))
+        given(optionValidator.queryableAccountStatus(eq(entityNum), any()))
                 .willReturn(INVALID_ACCOUNT_ID);
 
         ResponseCodeEnum validity = subject.checkValidity(query, view);

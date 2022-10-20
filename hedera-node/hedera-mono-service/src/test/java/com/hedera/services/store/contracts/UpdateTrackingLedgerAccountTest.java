@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -49,7 +49,7 @@ class UpdateTrackingLedgerAccountTest {
     private static final Address targetAddress = EntityIdUtils.asTypedEvmAddress(targetId);
 
     @Mock private EntityAccess entityAccess;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
     private CodeCache codeCache;
 

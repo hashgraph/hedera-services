@@ -52,6 +52,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -79,7 +80,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransferLogicTest {
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
     private AccountNumbers accountNums = new MockAccountNumbers();
     private final long initialBalance = 1_000_000L;

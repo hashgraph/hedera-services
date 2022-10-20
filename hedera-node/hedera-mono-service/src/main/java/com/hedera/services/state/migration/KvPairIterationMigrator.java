@@ -17,14 +17,12 @@ package com.hedera.services.state.migration;
 
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +42,7 @@ public class KvPairIterationMigrator
     private final SortedSet<EntityNum> presentContractNums = new TreeSet<>();
     private final Map<EntityNum, ContractKey> rootKeys = new HashMap<>();
     private final Map<EntityNum, Integer> numNonZeroKvPairs = new HashMap<>();
-    private final MerkleMap<EntityNum, MerkleAccount> contracts;
+    private final AccountStorageAdapter contracts;
     private final SizeLimitedStorage.IterableStorageUpserter storageUpserter;
 
     private int numInsertions = 0;
@@ -53,7 +51,7 @@ public class KvPairIterationMigrator
 
     public KvPairIterationMigrator(
             final int insertionsPerCopy,
-            final MerkleMap<EntityNum, MerkleAccount> contracts,
+            final AccountStorageAdapter contracts,
             final SizeLimitedStorage.IterableStorageUpserter storageUpserter,
             final VirtualMap<ContractKey, IterableContractValue> iterableContractStorage) {
         this.contracts = contracts;

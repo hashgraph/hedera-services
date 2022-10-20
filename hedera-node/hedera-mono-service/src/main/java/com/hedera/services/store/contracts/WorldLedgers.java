@@ -55,9 +55,9 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -80,7 +80,7 @@ public class WorldLedgers {
     private final StaticEntityAccess staticEntityAccess;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private final TransactionalLedger<
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
@@ -95,7 +95,7 @@ public class WorldLedgers {
             final TransactionalLedger<
                             Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
                     tokenRelsLedger,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
             final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
         this.tokenRelsLedger = tokenRelsLedger;
@@ -389,7 +389,7 @@ public class WorldLedgers {
         return tokenRelsLedger;
     }
 
-    public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts() {
+    public TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts() {
         return accountsLedger;
     }
 

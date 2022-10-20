@@ -22,8 +22,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -97,7 +97,7 @@ public enum TestContextValidator implements OptionValidator {
 
     @Override
     public ResponseCodeEnum expiryStatusGiven(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts,
             final AccountID id) {
         return id.getAccountNum() == 666_666L ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : OK;
     }

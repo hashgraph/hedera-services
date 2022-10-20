@@ -13,21 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.migration;
+package com.hedera.services.store.contracts.precompile.codec;
 
-/**
- * Recalls the Services 0.16.0 Merkle node children with indices different from 0.17.0, used for
- * migration.
- */
-public final class LegacyStateChildIndices {
-    static final int ADDRESS_BOOK = 0;
-    static final int NETWORK_CTX = 1;
-    static final int TOKEN_ASSOCIATIONS = 6;
-    public static final int UNIQUE_TOKENS = 10;
+import java.util.List;
 
-    public static final int NUM_0160_CHILDREN = 11;
-
-    private LegacyStateChildIndices() {
-        throw new UnsupportedOperationException("Utility Class");
-    }
-}
+public record CryptoTransferWrapper(
+        TransferWrapper transferWrapper, List<TokenTransferWrapper> tokenTransferWrappers) {}

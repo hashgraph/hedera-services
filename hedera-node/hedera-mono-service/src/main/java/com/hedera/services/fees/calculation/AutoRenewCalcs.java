@@ -27,7 +27,7 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
@@ -112,11 +112,11 @@ public class AutoRenewCalcs {
     }
 
     public RenewAssessment assessCryptoRenewal(
-            final MerkleAccount expiredAccountOrContract,
+            final HederaAccount expiredAccountOrContract,
             final long reqPeriod,
             final Instant at,
             final ExchangeRate rate,
-            final MerkleAccount payer) {
+            final HederaAccount payer) {
         final long balance = payer.getBalance();
         if (balance == 0L) {
             return NO_RENEWAL_POSSIBLE;
@@ -128,7 +128,7 @@ public class AutoRenewCalcs {
     private RenewalFees renewalFees(
             final Instant at,
             final ExchangeRate rate,
-            final MerkleAccount expiredAccountOrContract,
+            final HederaAccount expiredAccountOrContract,
             final long reqPeriod) {
         if (expiredAccountOrContract.isSmartContract()) {
             return contractRenewalPrices(at, rate, expiredAccountOrContract, reqPeriod);
@@ -140,7 +140,7 @@ public class AutoRenewCalcs {
     private RenewalFees contractRenewalPrices(
             final Instant at,
             final ExchangeRate rate,
-            final MerkleAccount contract,
+            final HederaAccount contract,
             final long reqPeriod) {
         if (contractPricesSeq == null) {
             throw new IllegalStateException("No contract usage prices are set!");
@@ -171,7 +171,7 @@ public class AutoRenewCalcs {
     }
 
     private RenewalFees accountRenewalPrices(
-            final Instant at, final ExchangeRate rate, final MerkleAccount account) {
+            final Instant at, final ExchangeRate rate, final HederaAccount account) {
         if (accountPricesSeq == null) {
             throw new IllegalStateException("No account usage prices are set!");
         }
@@ -207,13 +207,13 @@ public class AutoRenewCalcs {
         return Math.min(affordableHours, requestedHours);
     }
 
-    private ExtantContractContext contractContextFrom(final MerkleAccount contract) {
+    private ExtantContractContext contractContextFrom(final HederaAccount contract) {
         final var accountContext = accountContextFrom(contract);
         final var numKvPairs = contract.getNumContractKvPairs();
         return new ExtantContractContext(numKvPairs, accountContext);
     }
 
-    private ExtantCryptoContext accountContextFrom(final MerkleAccount account) {
+    private ExtantCryptoContext accountContextFrom(final HederaAccount account) {
         return ExtantCryptoContext.newBuilder()
                 .setCurrentExpiry(0L)
                 .setCurrentKey(asKeyUnchecked(account.getAccountKey()))
@@ -240,7 +240,7 @@ public class AutoRenewCalcs {
     }
 
     @VisibleForTesting
-    long rbUsedBy(final MerkleAccount account) {
+    long rbUsedBy(final HederaAccount account) {
         final var accountContext = accountContextFrom(account);
         return cryptoOpsUsage.cryptoAutoRenewRb(accountContext);
     }

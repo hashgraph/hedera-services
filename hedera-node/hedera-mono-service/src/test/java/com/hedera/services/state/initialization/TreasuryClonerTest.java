@@ -30,6 +30,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,13 +46,13 @@ public class TreasuryClonerTest {
             new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
     private static final AccountNumbers nums = new MockAccountNumbers();
 
-    @Mock private BackingStore<AccountID, MerkleAccount> accounts;
+    @Mock private BackingStore<AccountID, HederaAccount> accounts;
 
     private TreasuryCloner subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TreasuryCloner(nums, accounts);
+        subject = new TreasuryCloner(nums, MerkleAccount::new, accounts);
     }
 
     @Test
@@ -93,14 +94,15 @@ public class TreasuryClonerTest {
     }
 
     public static MerkleAccount accountWith(final long expiry, final JKey someKey) {
-        return new HederaAccountCustomizer()
-                .isReceiverSigRequired(true)
-                .isDeleted(false)
-                .expiry(expiry)
-                .memo("123")
-                .isSmartContract(false)
-                .key(someKey)
-                .autoRenewPeriod(expiry)
-                .customizing(new MerkleAccount());
+        return (MerkleAccount)
+                new HederaAccountCustomizer()
+                        .isReceiverSigRequired(true)
+                        .isDeleted(false)
+                        .expiry(expiry)
+                        .memo("123")
+                        .isSmartContract(false)
+                        .key(someKey)
+                        .autoRenewPeriod(expiry)
+                        .customizing(new MerkleAccount());
     }
 }

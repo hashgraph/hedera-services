@@ -19,6 +19,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -38,19 +39,12 @@ import java.util.Set;
 import java.util.SortedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 
 public class MerkleAccount extends PartialNaryMerkleInternal
-        implements MerkleInternal, Keyed<EntityNum> {
+        implements MerkleInternal, Keyed<EntityNum>, HederaAccount {
     private static final Logger log = LogManager.getLogger(MerkleAccount.class);
 
     static Runnable stackDump = Thread::dumpStack;
-
-    static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
-
-    static {
-        IMMUTABLE_EMPTY_FCQ.copy();
-    }
 
     private static final int RELEASE_0240_VERSION = 4;
     static final int MERKLE_VERSION = RELEASE_0240_VERSION;
@@ -178,122 +172,149 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     }
 
     // ----  Bean  ----
+    @Override
     public long getNftsOwned() {
         return state().nftsOwned();
     }
 
+    @Override
     public void setNftsOwned(final long nftsOwned) {
         throwIfImmutable("Cannot change this account's owned NFTs if it's immutable.");
         state().setNftsOwned(nftsOwned);
     }
 
+    @Override
     public boolean isTokenTreasury() {
         return state().isTokenTreasury();
     }
 
+    @Override
     public int getNumTreasuryTitles() {
         return state().getNumTreasuryTitles();
     }
 
+    @Override
     public void setNumTreasuryTitles(final int treasuryTitles) {
         // This will throw MutabilityException if we are immutable
         state().setNumTreasuryTitles(treasuryTitles);
     }
 
+    @Override
     public String getMemo() {
         return state().memo();
     }
 
+    @Override
     public void setMemo(final String memo) {
         throwIfImmutable("Cannot change this account's memo if it's immutable.");
         state().setMemo(memo);
     }
 
+    @Override
     public boolean isSmartContract() {
         return state().isSmartContract();
     }
 
+    @Override
     public void setSmartContract(final boolean smartContract) {
         throwIfImmutable("Cannot change this account's smart contract if it's immutable.");
         state().setSmartContract(smartContract);
     }
 
+    @Override
     public ByteString getAlias() {
         return state().getAlias();
     }
 
+    @Override
     public void setAlias(final ByteString alias) {
         throwIfImmutable("Cannot change this account's alias if it's immutable.");
         Objects.requireNonNull(alias);
         state().setAlias(alias);
     }
 
+    @Override
     public long getEthereumNonce() {
         return state().ethereumNonce();
     }
 
+    @Override
     public void setEthereumNonce(final long ethereumNonce) {
         throwIfImmutable("Cannot change this account's ethereumNonce if it's immutable.");
         state().setEthereumNonce(ethereumNonce);
     }
 
+    @Override
     public int getNumAssociations() {
         return state().getNumAssociations();
     }
 
+    @Override
     public void setNumAssociations(final int numAssociations) {
         throwIfImmutable("Cannot change this account's numAssociations if it's immutable");
         state().setNumAssociations(numAssociations);
     }
 
+    @Override
     public int getNumPositiveBalances() {
         return state().getNumPositiveBalances();
     }
 
+    @Override
     public void setNumPositiveBalances(final int numPositiveBalances) {
         throwIfImmutable("Cannot change this account's numPositiveBalances if it's immutable");
         state().setNumPositiveBalances(numPositiveBalances);
     }
 
+    @Override
     public long getHeadTokenId() {
         return state().getHeadTokenId();
     }
 
+    @Override
     public void setHeadTokenId(final long headTokenId) {
         throwIfImmutable("Cannot change this account's headTokenId if it's immutable");
         state().setHeadTokenId(headTokenId);
     }
 
+    @Override
     public long getHeadNftTokenNum() {
         return state().getHeadNftId();
     }
 
+    @Override
     public void setHeadNftId(final long headNftId) {
         throwIfImmutable("Cannot change this account's headNftId if it's immutable");
         state().setHeadNftId(headNftId);
     }
 
+    @Override
     public EntityNumPair getHeadNftKey() {
         return EntityNumPair.fromLongs(getHeadNftTokenNum(), getHeadNftSerialNum());
     }
 
+    @Override
     public long getHeadNftSerialNum() {
         return state().getHeadNftSerialNum();
     }
 
+    @Override
     public void setHeadNftSerialNum(final long headNftSerialNum) {
         throwIfImmutable("Cannot change this account's headNftSerialNum if it's immutable");
         state().setHeadNftSerialNum(headNftSerialNum);
     }
 
+    @Override
     public EntityNumPair getLatestAssociation() {
         return EntityNumPair.fromLongs(state().number(), getHeadTokenId());
     }
 
+    @Override
     public long getBalance() {
         return state().balance();
     }
 
+    @Override
     public void setBalance(final long balance) throws NegativeAccountBalanceException {
         if (balance < 0) {
             throw new NegativeAccountBalanceException(
@@ -303,6 +324,7 @@ public class MerkleAccount extends PartialNaryMerkleInternal
         state().setHbarBalance(balance);
     }
 
+    @Override
     public void setBalanceUnchecked(final long balance) {
         if (balance < 0) {
             throw new IllegalArgumentException("Cannot set an ℏ balance to " + balance);
@@ -311,10 +333,12 @@ public class MerkleAccount extends PartialNaryMerkleInternal
         state().setHbarBalance(balance);
     }
 
+    @Override
     public boolean isReceiverSigRequired() {
         return state().isReceiverSigRequired();
     }
 
+    @Override
     public void setReceiverSigRequired(final boolean receiverSigRequired) {
         throwIfImmutable(
                 "Cannot change this account's receiver signature required setting if it's"
@@ -322,67 +346,82 @@ public class MerkleAccount extends PartialNaryMerkleInternal
         state().setReceiverSigRequired(receiverSigRequired);
     }
 
+    @Override
     public JKey getAccountKey() {
         return state().key();
     }
 
+    @Override
     public void setAccountKey(final JKey key) {
         throwIfImmutable("Cannot change this account's key if it's immutable.");
         state().setAccountKey(key);
     }
 
+    @Override
     public int number() {
         return state().number();
     }
 
+    @Override
     public EntityId getProxy() {
         return state().proxy();
     }
 
+    @Override
     public void setProxy(final EntityId proxy) {
         throwIfImmutable("Cannot change this account's proxy if it's immutable.");
         state().setProxy(proxy);
     }
 
+    @Override
     public long getAutoRenewSecs() {
         return state().autoRenewSecs();
     }
 
+    @Override
     public void setAutoRenewSecs(final long autoRenewSecs) {
         throwIfImmutable("Cannot change this account's auto renewal seconds if it's immutable.");
         state().setAutoRenewSecs(autoRenewSecs);
     }
 
+    @Override
     public boolean isDeleted() {
         return state().isDeleted();
     }
 
+    @Override
     public void setDeleted(final boolean deleted) {
         throwIfImmutable("Cannot change this account's deleted status if it's immutable.");
         state().setDeleted(deleted);
     }
 
+    @Override
     public long getExpiry() {
         return state().expiry();
     }
 
+    @Override
     public void setExpiry(final long expiry) {
         throwIfImmutable("Cannot change this account's expiry time if it's immutable.");
         state().setExpiry(expiry);
     }
 
+    @Override
     public int getMaxAutomaticAssociations() {
         return state().getMaxAutomaticAssociations();
     }
 
+    @Override
     public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
         state().setMaxAutomaticAssociations(maxAutomaticAssociations);
     }
 
+    @Override
     public int getUsedAutoAssociations() {
         return state().getUsedAutomaticAssociations();
     }
 
+    @Override
     public void setUsedAutomaticAssociations(final int usedAutoAssociations) {
         if (usedAutoAssociations < 0 || usedAutoAssociations > getMaxAutomaticAssociations()) {
             throw new IllegalArgumentException(
@@ -391,63 +430,77 @@ public class MerkleAccount extends PartialNaryMerkleInternal
         state().setUsedAutomaticAssociations(usedAutoAssociations);
     }
 
+    @Override
     public int getNumContractKvPairs() {
         return state().getNumContractKvPairs();
     }
 
+    @Override
     public void setNumContractKvPairs(final int numContractKvPairs) {
         /* The MerkleAccountState will throw a MutabilityException if this MerkleAccount is immutable */
         state().setNumContractKvPairs(numContractKvPairs);
     }
 
+    @Override
     public ContractKey getFirstContractStorageKey() {
         return state().getFirstContractStorageKey();
     }
 
+    @Override
     public int[] getFirstUint256Key() {
         return state().getFirstUint256Key();
     }
 
+    @Override
     public void setFirstUint256StorageKey(final int[] firstUint256Key) {
         state().setFirstUint256Key(firstUint256Key);
     }
 
+    @Override
     public Map<EntityNum, Long> getCryptoAllowances() {
         return state().getCryptoAllowances();
     }
 
+    @Override
     public void setCryptoAllowances(final SortedMap<EntityNum, Long> cryptoAllowances) {
         throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
         state().setCryptoAllowances(cryptoAllowances);
     }
 
+    @Override
     public Map<EntityNum, Long> getCryptoAllowancesUnsafe() {
         return state().getCryptoAllowancesUnsafe();
     }
 
+    @Override
     public void setCryptoAllowancesUnsafe(final Map<EntityNum, Long> cryptoAllowances) {
         throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
         state().setCryptoAllowancesUnsafe(cryptoAllowances);
     }
 
+    @Override
     public Set<FcTokenAllowanceId> getApproveForAllNfts() {
         return state().getApproveForAllNfts();
     }
 
+    @Override
     public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
         throwIfImmutable(
                 "Cannot change this account's approved for all NFTs allowances if it's immutable.");
         state().setApproveForAllNfts(approveForAllNfts);
     }
 
+    @Override
     public Set<FcTokenAllowanceId> getApproveForAllNftsUnsafe() {
         return state().getApproveForAllNftsUnsafe();
     }
 
+    @Override
     public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
         return state().getFungibleTokenAllowances();
     }
 
+    @Override
     public void setFungibleTokenAllowances(
             final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         throwIfImmutable(
@@ -455,10 +508,12 @@ public class MerkleAccount extends PartialNaryMerkleInternal
         state().setFungibleTokenAllowances(fungibleTokenAllowances);
     }
 
+    @Override
     public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowancesUnsafe() {
         return state().getFungibleTokenAllowancesUnsafe();
     }
 
+    @Override
     public void setFungibleTokenAllowancesUnsafe(
             final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         throwIfImmutable(
@@ -466,23 +521,28 @@ public class MerkleAccount extends PartialNaryMerkleInternal
         state().setFungibleTokenAllowancesUnsafe(fungibleTokenAllowances);
     }
 
+    @Override
     public boolean isDeclinedReward() {
         return state().isDeclineReward();
     }
 
+    @Override
     public void setDeclineReward(boolean declineReward) {
         throwIfImmutable("Cannot change this account's declineReward if it's immutable");
         state().setDeclineReward(declineReward);
     }
 
+    @Override
     public boolean hasBeenRewardedSinceLastStakeMetaChange() {
         return state().getStakeAtStartOfLastRewardedPeriod() != -1L;
     }
 
+    @Override
     public long totalStakeAtStartOfLastRewardedPeriod() {
         return state().getStakeAtStartOfLastRewardedPeriod();
     }
 
+    @Override
     public void setStakeAtStartOfLastRewardedPeriod(final long balanceAtStartOfLastRewardedPeriod) {
         throwIfImmutable(
                 "Cannot change this account's balanceAtStartOfLastRewardedPeriod if it's"
@@ -490,23 +550,28 @@ public class MerkleAccount extends PartialNaryMerkleInternal
         state().setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
     }
 
+    @Override
     public long getStakedToMe() {
         return state().getStakedToMe();
     }
 
+    @Override
     public void setStakedToMe(long stakedToMe) {
         throwIfImmutable("Cannot change this account's stakedToMe if it's immutable");
         state().setStakedToMe(stakedToMe);
     }
 
+    @Override
     public long totalStake() {
         return state().balance() + state().getStakedToMe();
     }
 
+    @Override
     public long getStakePeriodStart() {
         return state().getStakePeriodStart();
     }
 
+    @Override
     public void setStakePeriodStart(final long stakePeriodStart) {
         throwIfImmutable("Cannot change this account's stakePeriodStart if it's immutable");
         state().setStakePeriodStart(stakePeriodStart);
@@ -520,6 +585,7 @@ public class MerkleAccount extends PartialNaryMerkleInternal
      *
      * @return num [of shard.realm.num] of node/account
      */
+    @Override
     public long getStakedId() {
         return state().getStakedNum();
     }
@@ -530,15 +596,18 @@ public class MerkleAccount extends PartialNaryMerkleInternal
      *
      * @param stakedId The node num of the node
      */
+    @Override
     public void setStakedId(long stakedId) {
         throwIfImmutable("Cannot change this account's staked id if it's immutable");
         state().setStakedNum(stakedId);
     }
 
+    @Override
     public boolean mayHavePendingReward() {
         return getStakedId() < 0 && !isDeclinedReward();
     }
 
+    @Override
     public long getStakedNodeAddressBookId() {
         if (state().getStakedNum() >= 0) {
             throw new IllegalStateException("Account is not staked to a node");
@@ -554,21 +623,29 @@ public class MerkleAccount extends PartialNaryMerkleInternal
         return records().size();
     }
 
+    @Override
     public boolean hasAlias() {
         return !getAlias().isEmpty();
     }
 
+    @Override
     public boolean hasAutoRenewAccount() {
         return state().hasAutoRenewAccount();
     }
 
-    @Nullable
+    @Override
     public EntityId getAutoRenewAccount() {
         return state().getAutoRenewAccount();
     }
 
+    @Override
     public void setAutoRenewAccount(final EntityId autoRenewAccount) {
         throwIfImmutable("Cannot change this account's autoRenewAccount if it's immutable.");
         state().setAutoRenewAccount(autoRenewAccount);
+    }
+
+    @Override
+    public void setEntityNum(final EntityNum num) {
+        setKey(num);
     }
 }

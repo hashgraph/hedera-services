@@ -107,7 +107,7 @@ class MigrationRecordsManagerTest {
     private static final long pretendExpiry = 2 * now.getEpochSecond();
     private static final JKey pretendTreasuryKey =
             new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
-    private final List<MerkleAccount> treasuryClones = new ArrayList<>();
+    private final List<HederaAccount> treasuryClones = new ArrayList<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final AtomicInteger nextTracker = new AtomicInteger();
     @Mock private BootstrapProperties bootstrapProperties;
@@ -144,7 +144,7 @@ class MigrationRecordsManagerTest {
                         recordsHistorian,
                         () -> networkCtx,
                         consensusTimeTracker,
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         factory,
                         accountNumbers,
                         bootstrapProperties);
@@ -352,8 +352,8 @@ class MigrationRecordsManagerTest {
                 List.of(
                         accountWith(pretendExpiry, pretendTreasuryKey),
                         accountWith(pretendExpiry, pretendTreasuryKey)));
-        treasuryClones.get(0).setKey(EntityNum.fromLong(200L));
-        treasuryClones.get(1).setKey(EntityNum.fromLong(201L));
+        treasuryClones.get(0).setEntityNum(EntityNum.fromLong(200L));
+        treasuryClones.get(1).setEntityNum(EntityNum.fromLong(201L));
         given(treasuryCloner.getClonesCreated()).willReturn(treasuryClones);
     }
 

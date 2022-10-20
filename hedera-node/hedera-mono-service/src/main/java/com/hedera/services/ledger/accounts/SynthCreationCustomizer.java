@@ -17,7 +17,7 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
@@ -29,11 +29,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class SynthCreationCustomizer {
-    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     @Inject
     public SynthCreationCustomizer(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         this.accountsLedger = accountsLedger;
     }
 

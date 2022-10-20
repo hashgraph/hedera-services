@@ -41,7 +41,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -182,7 +182,7 @@ public class AutoCreationLogic {
      */
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final List<BalanceChange> changes) {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
