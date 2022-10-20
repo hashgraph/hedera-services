@@ -31,14 +31,10 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.SortedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.*;
 
 public class MerkleAccount extends PartialNaryMerkleInternal
         implements MerkleInternal, Keyed<EntityNum>, HederaAccount {
@@ -150,19 +146,6 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     }
 
     /* ----  Merkle children  ---- */
-    public void forgetThirdChildIfPlaceholder() {
-        if (getNumberOfChildren() == 3) {
-            if (getChild(2) instanceof MerkleAccountTokensPlaceholder) {
-                addDeserializedChildren(List.of(state(), records()), RELEASE_0240_VERSION);
-            } else {
-                log.error(
-                        "Third child of account {} had unexpected type {}",
-                        state(),
-                        getChild(2).getClass().getSimpleName());
-            }
-        }
-    }
-
     public MerkleAccountState state() {
         return getChild(ChildIndices.STATE);
     }
