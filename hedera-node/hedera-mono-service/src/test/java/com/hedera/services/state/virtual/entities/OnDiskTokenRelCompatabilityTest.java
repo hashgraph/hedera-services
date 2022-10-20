@@ -34,4 +34,22 @@ class OnDiskTokenRelCompatabilityTest {
         assertEquals(inMemory.isAutomaticAssociation(), onDisk.isAutomaticAssociation());
         assertEquals(inMemory.getRelatedTokenNum(), onDisk.getRelatedTokenNum());
     }
+
+    @Test
+    void flagsWork() {
+        final var subject = new OnDiskTokenRel();
+        subject.setFrozen(true);
+        subject.setKycGranted(true);
+        subject.setAutomaticAssociation(true);
+        assertTrue(subject.isFrozen());
+        assertTrue(subject.isKycGranted());
+        assertTrue(subject.isAutomaticAssociation());
+
+        subject.setFrozen(false);
+        subject.setKycGranted(false);
+        subject.setAutomaticAssociation(false);
+        assertFalse(subject.isFrozen());
+        assertFalse(subject.isKycGranted());
+        assertFalse(subject.isAutomaticAssociation());
+    }
 }
