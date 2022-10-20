@@ -146,7 +146,7 @@ public class MigrationRecordsManager {
                 systemAccountsCreator.getSystemAccountsCreated(),
                 now,
                 SYSTEM_ACCOUNT_CREATION_MEMO,
-                "system account creation");
+                "system creation");
 
         curNetworkCtx.markMigrationRecordsStreamed();
         systemAccountsCreator.forgetCreations();
