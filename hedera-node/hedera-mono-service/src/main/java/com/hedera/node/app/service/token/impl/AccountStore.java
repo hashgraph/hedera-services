@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
+import static com.hedera.node.app.spi.state.StateKey.ALIASES;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 import com.google.protobuf.ByteString;
@@ -52,8 +52,8 @@ public class AccountStore {
      * @param states The state to use.
      */
     public AccountStore(@Nonnull States states) {
-        this.accountState = states.get(ACCOUNT_STORE);
-        this.aliases = states.get(ALIASES_STORE);
+        this.accountState = states.get(ACCOUNTS);
+        this.aliases = states.get(ALIASES);
         Objects.requireNonNull(accountState);
         Objects.requireNonNull(aliases);
     }

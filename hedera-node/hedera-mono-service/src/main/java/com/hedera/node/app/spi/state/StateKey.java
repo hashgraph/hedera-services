@@ -17,7 +17,7 @@ package com.hedera.node.app.spi.state;
 
 /** IDs for representing different state's keys. */
 public enum StateKey {
-    ACCOUNT_STORE,
-    ALIASES_STORE,
-    TOKEN_STORE
+	ACCOUNTS,
+	ALIASES,
+	TOKENS
 }

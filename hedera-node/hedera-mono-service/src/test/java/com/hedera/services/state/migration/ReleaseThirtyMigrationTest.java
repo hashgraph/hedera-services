@@ -67,7 +67,8 @@ class ReleaseThirtyMigrationTest {
         accountsMap.put(cKey, c);
         final var instant = Instant.ofEpochSecond(123456789L);
 
-        given(initializingState.accounts()).willReturn(accountsMap);
+        given(initializingState.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(accountsMap));
 
         ReleaseThirtyMigration.grantFreeAutoRenew(initializingState, instant);
 
@@ -125,7 +126,7 @@ class ReleaseThirtyMigrationTest {
         uniqueTokens.merkleMap().put(nftId5, nft5);
         uniqueTokens.merkleMap().put(nftId6, nft6);
 
-        rebuildNftOwners(accounts, uniqueTokens);
+        rebuildNftOwners(AccountStorageAdapter.fromInMemory(accounts), uniqueTokens);
         // keySet() returns values in the order 2,5,4,1,3
         assertEquals(nftId3.getHiOrderAsLong(), accounts.get(accountNum1).getHeadNftTokenNum());
         assertEquals(nftId3.getLowOrderAsLong(), accounts.get(accountNum1).getHeadNftSerialNum());
@@ -143,7 +144,7 @@ class ReleaseThirtyMigrationTest {
         assertEquals(nftId2.asNftNumPair(), uniqueTokens.merkleMap().get(nftId4).getNext());
     }
 
-    private static void registerForMerkleMap() throws ConstructableRegistryException {
+    static void registerForMerkleMap() throws ConstructableRegistryException {
         ConstructableRegistry.registerConstructable(
                 new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
         ConstructableRegistry.registerConstructable(

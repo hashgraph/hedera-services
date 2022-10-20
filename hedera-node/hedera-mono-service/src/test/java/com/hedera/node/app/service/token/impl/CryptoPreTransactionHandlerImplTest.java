@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
+import static com.hedera.node.app.spi.state.StateKey.ALIASES;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -66,8 +66,8 @@ class CryptoPreTransactionHandlerImplTest {
 
     @BeforeEach
     public void setUp() {
-        given(states.get(ACCOUNT_STORE)).willReturn(accounts);
-        given(states.get(ALIASES_STORE)).willReturn(aliases);
+        given(states.get(ACCOUNTS)).willReturn(accounts);
+        given(states.get(ALIASES)).willReturn(aliases);
 
         store = new AccountStore(states);
 

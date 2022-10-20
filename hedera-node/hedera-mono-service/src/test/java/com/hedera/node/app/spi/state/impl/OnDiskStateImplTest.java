@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.TOKEN_STORE;
+import static com.hedera.node.app.spi.state.StateKey.TOKENS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,13 +47,13 @@ class OnDiskStateImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new OnDiskStateImpl<>(TOKEN_STORE, nftsMap, lastModifiedTime);
+        subject = new OnDiskStateImpl<>(TOKENS, nftsMap, lastModifiedTime);
     }
 
     @Test
     void gettersWork() {
         assertEquals(lastModifiedTime, subject.getLastModifiedTime());
-        assertEquals(TOKEN_STORE, subject.getStateKey());
+        assertEquals(TOKENS, subject.getStateKey());
     }
 
     @Test

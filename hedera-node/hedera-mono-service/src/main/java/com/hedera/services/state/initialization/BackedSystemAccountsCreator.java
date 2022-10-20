@@ -16,9 +16,7 @@
 package com.hedera.services.state.initialization;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.context.properties.PropertyNames.*;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -31,7 +29,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -53,6 +51,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     private final PropertySource properties;
     private final Supplier<JEd25519Key> genesisKeySource;
     private final TreasuryCloner treasuryCloner;
+    private final Supplier<HederaAccount> accountSupplier;
 
     private JKey genesisKey;
 
@@ -61,17 +60,19 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
             final AccountNumbers accountNums,
             final @CompositeProps PropertySource properties,
             final Supplier<JEd25519Key> genesisKeySource,
+            final Supplier<HederaAccount> accountSupplier,
             final TreasuryCloner treasuryCloner) {
         this.accountNums = accountNums;
         this.properties = properties;
         this.genesisKeySource = genesisKeySource;
         this.treasuryCloner = treasuryCloner;
+        this.accountSupplier = accountSupplier;
     }
 
     /** {@inheritDoc} */
     @Override
     public void ensureSystemAccounts(
-            final BackingStore<AccountID, MerkleAccount> accounts, final AddressBook addressBook) {
+            final BackingStore<AccountID, HederaAccount> accounts, final AddressBook addressBook) {
         long systemAccounts = properties.getIntProperty(LEDGER_NUM_SYSTEM_ACCOUNTS);
         long expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
         long tinyBarFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
@@ -96,7 +97,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         final var stakingFundAccounts = List.of(stakingRewardAccountId, nodeRewardAccountId);
         for (final var id : stakingFundAccounts) {
             if (!accounts.contains(id)) {
-                final var stakingFundAccount = new MerkleAccount();
+                final var stakingFundAccount = accountSupplier.get();
                 customizeAsStakingFund(stakingFundAccount);
                 accounts.put(id, stakingFundAccount);
             }
@@ -118,7 +119,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         log.info("Ledger float is {} tinyBars in {} accounts.", ledgerFloat, allIds.size());
     }
 
-    public static void customizeAsStakingFund(final MerkleAccount account) {
+    public static void customizeAsStakingFund(final HederaAccount account) {
         account.setExpiry(FUNDING_ACCOUNT_EXPIRY);
         account.setAccountKey(EMPTY_KEY);
         account.setSmartContract(false);
@@ -126,7 +127,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         account.setMaxAutomaticAssociations(0);
     }
 
-    private MerkleAccount accountWith(long balance, long expiry) {
+    private HederaAccount accountWith(final long balance, final long expiry) {
         var account =
                 new HederaAccountCustomizer()
                         .isReceiverSigRequired(false)
@@ -136,7 +137,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
                         .isSmartContract(false)
                         .key(getGenesisKey())
                         .autoRenewPeriod(expiry)
-                        .customizing(new MerkleAccount());
+                        .customizing(accountSupplier.get());
         try {
             account.setBalance(balance);
         } catch (NegativeAccountBalanceException e) {

@@ -23,15 +23,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -42,12 +41,11 @@ import org.jetbrains.annotations.NotNull;
 @Singleton
 public class QueryFeeCheck {
     private final OptionValidator validator;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
     public QueryFeeCheck(
-            final OptionValidator validator,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+            final OptionValidator validator, final Supplier<AccountStorageAdapter> accounts) {
         this.accounts = accounts;
         this.validator = validator;
     }
@@ -165,7 +163,7 @@ public class QueryFeeCheck {
         return OK;
     }
 
-    private ResponseCodeEnum balanceCheck(@Nullable MerkleAccount payingAccount, long req) {
+    private ResponseCodeEnum balanceCheck(@Nullable HederaAccount payingAccount, long req) {
         if (payingAccount == null) {
             return ACCOUNT_ID_DOES_NOT_EXIST;
         }

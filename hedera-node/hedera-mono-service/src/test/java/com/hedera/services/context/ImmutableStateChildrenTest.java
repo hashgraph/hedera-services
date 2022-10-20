@@ -21,7 +21,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -29,6 +28,8 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -51,7 +52,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ImmutableStateChildrenTest {
     @Mock private ServicesState state;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
+    @Mock private RecordsStorageAdapter payerRecords;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
@@ -97,6 +99,7 @@ class ImmutableStateChildrenTest {
         given(state.runningHashLeaf()).willReturn(runningHashLeaf);
         given(state.aliases()).willReturn(aliases);
         given(state.stakingInfo()).willReturn(stakingInfo);
+        given(state.payerRecords()).willReturn(payerRecords);
     }
 
     private void assertChildrenAreExpectedMocks() {
@@ -114,6 +117,7 @@ class ImmutableStateChildrenTest {
         assertSame(runningHashLeaf, subject.runningHashLeaf());
         assertSame(aliases, subject.aliases());
         assertSame(stakingInfo, subject.stakingInfo());
+        assertSame(payerRecords, subject.payerRecords());
     }
 
     private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);

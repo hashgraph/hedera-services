@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
+import static com.hedera.node.app.spi.state.StateKey.ALIASES;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -40,8 +40,8 @@ class CryptoServiceImplTest {
     void createsNewInstance() {
         subject = new CryptoServiceImpl();
 
-        given(states.get(ACCOUNT_STORE)).willReturn(accounts);
-        given(states.get(ALIASES_STORE)).willReturn(aliases);
+        given(states.get(ACCOUNTS)).willReturn(accounts);
+        given(states.get(ALIASES)).willReturn(aliases);
 
         final var serviceImpl = subject.createPreTransactionHandler(states);
         final var serviceImpl1 = subject.createPreTransactionHandler(states);

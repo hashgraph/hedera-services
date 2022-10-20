@@ -27,9 +27,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.expiry.classification.EntityLookup;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -100,8 +100,8 @@ public class TreasuryReturns {
     }
 
     @Nullable
-    public FungibleTreasuryReturns returnFungibleUnitsFrom(final MerkleAccount expired) {
-        final var expiredNum = expired.getKey();
+    public FungibleTreasuryReturns returnFungibleUnitsFrom(final HederaAccount expired) {
+        final var expiredNum = expired.getEntityNum();
         final var numRels = expired.getNumAssociations();
         if (numRels == 0) {
             return FINISHED_NOOP_FUNGIBLE_RETURNS;
@@ -122,8 +122,8 @@ public class TreasuryReturns {
     }
 
     @Nullable
-    public NonFungibleTreasuryReturns returnNftsFrom(final MerkleAccount expired) {
-        final var expiredNum = expired.getKey();
+    public NonFungibleTreasuryReturns returnNftsFrom(final HederaAccount expired) {
+        final var expiredNum = expired.getEntityNum();
         final var numNfts = expired.getNftsOwned();
         if (numNfts == 0) {
             return FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
@@ -145,7 +145,7 @@ public class TreasuryReturns {
     }
 
     private NftReturnOutcome tryNftReturns(
-            final EntityNum expiredNum, final MerkleAccount expired) {
+            final EntityNum expiredNum, final HederaAccount expired) {
         final var curNfts = nfts.get();
         final var expectedNfts = expired.getNftsOwned();
 
@@ -200,7 +200,7 @@ public class TreasuryReturns {
 
     @SuppressWarnings("java:S3776")
     private FungibleReturnOutcome tryFungibleReturns(
-            final EntityNum expiredNum, final MerkleAccount expired) {
+            final EntityNum expiredNum, final HederaAccount expired) {
         final var curRels = tokenRels.get();
         final var listRemoval = new TokenRelsListMutation(expiredNum.longValue(), curRels);
         final var expectedRels = expired.getNumAssociations();

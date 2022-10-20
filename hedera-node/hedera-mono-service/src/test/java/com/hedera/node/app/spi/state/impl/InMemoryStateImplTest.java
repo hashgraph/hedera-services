@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNT_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,13 +46,13 @@ class InMemoryStateImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new InMemoryStateImpl(ACCOUNT_STORE, accountsMap, lastModifiedTime);
+        subject = new InMemoryStateImpl(ACCOUNTS, accountsMap, lastModifiedTime);
     }
 
     @Test
     void gettersWork() {
         assertEquals(lastModifiedTime, subject.getLastModifiedTime());
-        assertEquals(ACCOUNT_STORE, subject.getStateKey());
+        assertEquals(ACCOUNTS, subject.getStateKey());
     }
 
     @Test
@@ -64,7 +64,7 @@ class InMemoryStateImplTest {
 
     @Test
     void initializesToEmptyMerkleMapIfNotProvided() {
-        subject = new InMemoryStateImpl(ACCOUNT_STORE, lastModifiedTime);
+        subject = new InMemoryStateImpl(ACCOUNTS, lastModifiedTime);
         assertEquals(Optional.empty(), subject.get(num));
     }
 

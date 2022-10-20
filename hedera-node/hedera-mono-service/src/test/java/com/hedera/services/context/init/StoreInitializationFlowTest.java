@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context.init;
 
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -26,6 +26,8 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
@@ -49,7 +51,7 @@ class StoreInitializationFlowTest {
 
     @Mock private UsageLimits usageLimits;
     @Mock private AliasManager aliasManager;
-    @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
+    @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
     @Mock private BackingStore<NftId, UniqueTokenAdapter> backingNfts;
     @Mock private BackingStore<TokenID, MerkleToken> backingTokens;
     @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
@@ -73,9 +75,9 @@ class StoreInitializationFlowTest {
     @Test
     @SuppressWarnings("unchecked")
     void initsAsExpected() {
-        final ArgumentCaptor<BiConsumer<EntityNum, MerkleAccount>> captor =
+        final ArgumentCaptor<BiConsumer<EntityNum, HederaAccount>> captor =
                 ArgumentCaptor.forClass(BiConsumer.class);
-        given(workingState.accounts()).willReturn(accounts);
+        given(workingState.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
 
         // when:
         subject.run();
@@ -85,7 +87,7 @@ class StoreInitializationFlowTest {
         verify(backingAccounts).rebuildFromSources();
         verify(backingNfts).rebuildFromSources();
         verify(usageLimits).resetNumContracts();
-        verify(aliasManager).rebuildAliasesMap(eq(accounts), captor.capture());
+        verify(aliasManager).rebuildAliasesMap(any(), captor.capture());
         final var observer = captor.getValue();
         observer.accept(EntityNum.fromInt(1), MerkleAccountFactory.newAccount().get());
         observer.accept(EntityNum.fromInt(2), MerkleAccountFactory.newContract().get());

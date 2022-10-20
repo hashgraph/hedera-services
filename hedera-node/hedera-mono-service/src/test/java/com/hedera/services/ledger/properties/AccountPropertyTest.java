@@ -195,16 +195,17 @@ class AccountPropertyTest {
         final int[] explicitNewFirstKey = ContractKey.asPackedInts(newFirstKey);
 
         final var account =
-                new HederaAccountCustomizer()
-                        .key(JKey.mapKey(origKey))
-                        .expiry(origExpiry)
-                        .autoRenewPeriod(origAutoRenew)
-                        .isDeleted(origIsDeleted)
-                        .alias(oldAlias)
-                        .memo(origMemo)
-                        .isSmartContract(origIsContract)
-                        .isReceiverSigRequired(origIsReceiverSigReq)
-                        .customizing(new MerkleAccount());
+                (MerkleAccount)
+                        new HederaAccountCustomizer()
+                                .key(JKey.mapKey(origKey))
+                                .expiry(origExpiry)
+                                .autoRenewPeriod(origAutoRenew)
+                                .isDeleted(origIsDeleted)
+                                .alias(oldAlias)
+                                .memo(origMemo)
+                                .isSmartContract(origIsContract)
+                                .isReceiverSigRequired(origIsReceiverSigReq)
+                                .customizing(new MerkleAccount());
         account.setFirstUint256StorageKey(explicitOldFirstKey);
         account.setNumContractKvPairs(oldNumKvPairs);
         account.setNftsOwned(origNumNfts);

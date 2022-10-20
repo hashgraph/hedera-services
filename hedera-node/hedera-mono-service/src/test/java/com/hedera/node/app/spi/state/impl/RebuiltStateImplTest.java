@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ALIASES_STORE;
+import static com.hedera.node.app.spi.state.StateKey.ALIASES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,20 +47,20 @@ class RebuiltStateImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new RebuiltStateImpl<>(ALIASES_STORE, aliases, lastModifiedTime);
+        subject = new RebuiltStateImpl<>(ALIASES, aliases, lastModifiedTime);
     }
 
     @Test
     void gettersWork() {
         assertEquals(lastModifiedTime, subject.getLastModifiedTime());
-        assertEquals(ALIASES_STORE, subject.getStateKey());
+        assertEquals(ALIASES, subject.getStateKey());
     }
 
     @Test
     void constructorsWork() {
-        subject = new RebuiltStateImpl<>(ALIASES_STORE, lastModifiedTime);
+        subject = new RebuiltStateImpl<>(ALIASES, lastModifiedTime);
         assertEquals(lastModifiedTime, subject.getLastModifiedTime());
-        assertEquals(ALIASES_STORE, subject.getStateKey());
+        assertEquals(ALIASES, subject.getStateKey());
     }
 
     @Test
