@@ -209,7 +209,8 @@ class TxnRateFeeMultiplierSourceTest {
 
     @Test
     void toStringIndicatesUnavailableConfig() {
-        final var desired = "The new cutoffs for CryptoTransfer throughput congestion pricing are :  <N/A>";
+        final var desired =
+                "The new cutoffs for CryptoTransfer throughput congestion pricing are :  <N/A>";
 
         subject.getDelegate().logReadableCutoffs();
 

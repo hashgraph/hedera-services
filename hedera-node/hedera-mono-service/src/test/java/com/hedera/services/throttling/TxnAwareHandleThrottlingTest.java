@@ -25,7 +25,6 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
-import com.hedera.services.throttles.CongestibleThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;

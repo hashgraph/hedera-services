@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.fees.congestion;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -5,14 +20,13 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.throttles.CongestibleThrottle;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.Logger;
 
 public class ThrottleMultiplierSource implements FeeMultiplierSource {
     private static final long DEFAULT_MULTIPLIER = 1L;
@@ -86,8 +100,10 @@ public class ThrottleMultiplierSource implements FeeMultiplierSource {
     public void resetExpectations() {
         activeThrottles = throttleSource.get();
         if (activeThrottles.isEmpty()) {
-            log.warn("Throttle multiplier for {} congestion has no throttle buckets, " +
-                    "fee multiplier will remain at one!", congestionType);
+            log.warn(
+                    "Throttle multiplier for {} congestion has no throttle buckets, "
+                            + "fee multiplier will remain at one!",
+                    congestionType);
         }
         ensureConfigUpToDate();
         rebuildState();
@@ -120,8 +136,7 @@ public class ThrottleMultiplierSource implements FeeMultiplierSource {
                     .append(throttle.name())
                     .append(") When ")
                     .append(usageType)
-                    .append(" exceeds:\n")
-            ;
+                    .append(" exceeds:\n");
             for (int j = 0; j < multipliers.length; j++) {
                 sb.append("    ")
                         .append(
@@ -171,6 +186,7 @@ public class ThrottleMultiplierSource implements FeeMultiplierSource {
 
         logReadableCutoffs();
     }
+
     private long maxMultiplierOfActiveConfig(final long[] multipliers) {
         long max = DEFAULT_MULTIPLIER;
         for (int i = 0; i < activeTriggerValues.length; i++) {
@@ -213,11 +229,9 @@ public class ThrottleMultiplierSource implements FeeMultiplierSource {
         }
     }
 
-
     @VisibleForTesting
     public void logReadableCutoffs() {
-        log.info("The new cutoffs for {} congestion pricing are : {}",
-                congestionType, this);
+        log.info("The new cutoffs for {} congestion pricing are : {}", congestionType, this);
     }
 
     @VisibleForTesting

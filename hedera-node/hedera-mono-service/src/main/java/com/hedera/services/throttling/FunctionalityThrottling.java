@@ -16,7 +16,6 @@
 package com.hedera.services.throttling;
 
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
-import com.hedera.services.throttles.CongestibleThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.accessors.TxnAccessor;

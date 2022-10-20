@@ -15,22 +15,19 @@
  */
 package com.hedera.services.fees;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.congestion.ThrottleMultiplierSource;
-import com.hedera.services.throttles.CongestibleThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
@@ -41,14 +38,15 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
     public TxnRateFeeMultiplierSource(
             GlobalDynamicProperties properties,
             @HandleThrottle FunctionalityThrottling throttling) {
-        delegate = new ThrottleMultiplierSource(
-                "logical TPS",
-                "TPS",
-                "CryptoTransfer throughput",
-                log,
-                properties::feesMinCongestionPeriod,
-                properties::congestionMultipliers,
-                () -> throttling.activeThrottlesFor(CryptoTransfer));
+        delegate =
+                new ThrottleMultiplierSource(
+                        "logical TPS",
+                        "TPS",
+                        "CryptoTransfer throughput",
+                        log,
+                        properties::feesMinCongestionPeriod,
+                        properties::congestionMultipliers,
+                        () -> throttling.activeThrottlesFor(CryptoTransfer));
     }
 
     @Override
