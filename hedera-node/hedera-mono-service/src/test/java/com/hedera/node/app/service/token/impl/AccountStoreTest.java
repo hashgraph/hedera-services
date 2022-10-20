@@ -72,58 +72,6 @@ class AccountStoreTest {
         subject = new AccountStore(states);
     }
 
-    @Test
-    void createAccountSigningMetaChecksAccounts() throws DecoderException {
-        final var jkey = JKey.mapKey(key);
-        final var payerJkey = JKey.mapKey(payerKey);
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn(payerJkey);
-
-        final var txn = createAccountTransaction(payer);
-        final var meta = subject.createAccountSigningMetadata(txn, Optional.of(jkey), true, payer);
-
-        assertFalse(meta.failed());
-        assertEquals(txn, meta.getTxn());
-        assertEquals(List.of(jkey, payerJkey), meta.getReqKeys());
-    }
-
-    @Test
-    void createAccountSigningMetaChecksAlias() throws DecoderException {
-        final var jkey = JKey.mapKey(key);
-        final var payerJkey = JKey.mapKey(payerKey);
-        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn(payerJkey);
-
-        final var txn = createAccountTransaction(payerAlias);
-        final var meta =
-                subject.createAccountSigningMetadata(txn, Optional.of(jkey), true, payerAlias);
-
-        assertFalse(meta.failed());
-        assertEquals(txn, meta.getTxn());
-        assertEquals(List.of(jkey, payerJkey), meta.getReqKeys());
-    }
-
-    @Test
-    void fetchingNonExistingLeafFails() throws DecoderException {
-        final var jkey = JKey.mapKey(key);
-        given(accounts.get(payerNum)).willReturn(Optional.empty());
-        final var txn = createAccountTransaction(payer);
-        var meta = subject.createAccountSigningMetadata(txn, Optional.of(jkey), true, payer);
-
-        assertTrue(meta.failed());
-        assertEquals(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID, meta.status());
-
-        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
-        final var aliasedTxn = createAccountTransaction(payerAlias);
-
-        meta =
-                subject.createAccountSigningMetadata(
-                        aliasedTxn, Optional.of(jkey), true, payerAlias);
-        assertTrue(meta.failed());
-        assertEquals(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID, meta.status());
-    }
-
     private Transaction createAccountTransaction(final AccountID payer) {
         final var transactionID =
                 TransactionID.newBuilder()
