@@ -75,6 +75,8 @@ public class PropertyNames {
     /* ---- Global dynamic properties ---- */
     public static final String ACCOUNTS_MAX_NUM = "accounts.maxNumber";
     public static final String AUTO_CREATION_ENABLED = "autoCreation.enabled";
+    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final String BALANCES_EXPORT_DIR_PATH = "balances.exportDir.path";
     public static final String BALANCES_EXPORT_ENABLED = "balances.exportEnabled";
     public static final String BALANCES_EXPORT_PERIOD_SECS = "balances.exportPeriodSecs";

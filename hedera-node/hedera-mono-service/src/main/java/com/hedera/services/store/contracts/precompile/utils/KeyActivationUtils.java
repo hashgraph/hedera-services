@@ -89,7 +89,7 @@ public final class KeyActivationUtils {
     }
 
     private static Optional<MessageFrame> getParentOf(final MessageFrame frame) {
-        final var it = frame.getMessageFrameStack().descendingIterator();
+        final var it = frame.getMessageFrameStack().iterator();
 
         if (it.hasNext()) {
             it.next();
