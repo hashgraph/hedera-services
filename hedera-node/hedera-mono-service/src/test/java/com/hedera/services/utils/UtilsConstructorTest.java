@@ -79,13 +79,12 @@ import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TokenListChecks;
 import com.hedera.services.utils.forensics.OrderedComparison;
 import com.hedera.services.utils.forensics.RecordParsers;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested =

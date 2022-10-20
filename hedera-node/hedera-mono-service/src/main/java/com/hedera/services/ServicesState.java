@@ -15,6 +15,16 @@
  */
 package com.hedera.services;
 
+import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.services.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
+import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
+import static com.hedera.services.state.migration.StateVersions.*;
+import static com.hedera.services.state.migration.UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.swirlds.common.system.InitTrigger.*;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -46,31 +56,18 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
-import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.context.properties.PropertyNames.*;
-import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.services.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
-import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
-import static com.hedera.services.state.migration.StateVersions.*;
-import static com.hedera.services.state.migration.UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.swirlds.common.system.InitTrigger.*;
-
-/**
- * The Merkle tree root of the Hedera Services world state.
- */
+/** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2 {
     private static final VirtualMapDataAccess VIRTUAL_MAP_DATA_ACCESS =
@@ -118,9 +115,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         this.enableVirtualAccounts = that.enableVirtualAccounts;
     }
 
-    /**
-     * Log out the sizes the state children.
-     */
+    /** Log out the sizes the state children. */
     private void logStateChildrenSizes() {
         log.info(
                 "  (@ {}) # NFTs               = {}",
@@ -192,8 +187,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             }
             // Note this returns the app in case we need to do something with it  after making
             // final changes to state (e.g. after migrating something from memory to disk)
-            deserializedInit(
-                    platform, addressBook, dualState, trigger, deserializedVersion);
+            deserializedInit(platform, addressBook, dualState, trigger, deserializedVersion);
             final var isUpgrade =
                     SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion);
             if (isUpgrade) {
@@ -428,11 +422,11 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var accountsStorage = getChild(StateChildIndices.ACCOUNTS);
         return (accountsStorage instanceof VirtualMap)
                 ? AccountStorageAdapter.fromOnDisk(
-                VIRTUAL_MAP_DATA_ACCESS,
-                getChild(StateChildIndices.PAYER_RECORDS),
-                (VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage)
+                        VIRTUAL_MAP_DATA_ACCESS,
+                        getChild(StateChildIndices.PAYER_RECORDS),
+                        (VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage)
                 : AccountStorageAdapter.fromInMemory(
-                (MerkleMap<EntityNum, MerkleAccount>) accountsStorage);
+                        (MerkleMap<EntityNum, MerkleAccount>) accountsStorage);
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
@@ -475,9 +469,9 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var tokensMap = getChild(StateChildIndices.UNIQUE_TOKENS);
         return tokensMap.getClass() == MerkleMap.class
                 ? UniqueTokenMapAdapter.wrap(
-                (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
+                        (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
                 : UniqueTokenMapAdapter.wrap(
-                (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
+                        (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
     }
 
     public RecordsStorageAdapter payerRecords() {

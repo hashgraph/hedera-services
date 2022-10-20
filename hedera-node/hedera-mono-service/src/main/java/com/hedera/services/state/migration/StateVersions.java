@@ -46,7 +46,6 @@ public final class StateVersions {
     public static final int RELEASE_030X_VERSION = 23;
     public static final int RELEASE_0310_VERSION = 24;
 
-
     public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_030X_VERSION;
     public static final int CURRENT_VERSION = RELEASE_0310_VERSION;
 
