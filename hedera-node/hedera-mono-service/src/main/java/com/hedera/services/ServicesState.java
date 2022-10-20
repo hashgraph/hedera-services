@@ -50,7 +50,6 @@ import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
-import com.hedera.services.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -72,9 +71,10 @@ import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.fchashmap.FCHashMap;
-import com.swirlds.jasperdb.JasperDbBuilder;
+import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import java.time.Instant;
@@ -82,9 +82,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+
+import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -120,11 +123,17 @@ public class ServicesState extends PartialNaryMerkleInternal
     public ServicesState() {
         // RuntimeConstructable
         bootstrapProperties = null;
+        boolean enabledJasperdbToMerkleDb =
+                getBootstrapProperties().getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
+        VirtualMapFactory.setUseMerkleDb(enabledJasperdbToMerkleDb);
     }
 
     @VisibleForTesting
     ServicesState(final BootstrapProperties bootstrapProperties) {
         this.bootstrapProperties = bootstrapProperties;
+        boolean enabledJasperdbToMerkleDb =
+                getBootstrapProperties().getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
+        VirtualMapFactory.setUseMerkleDb(enabledJasperdbToMerkleDb);
     }
 
     private ServicesState(final ServicesState that) {
@@ -193,6 +202,13 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @Override
     public void addDeserializedChildren(final List<MerkleNode> children, final int version) {
+        final boolean enabledVirtualNft =
+                getBootstrapProperties().getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
+        final boolean enabledJasperdbToMerkleDb =
+                getBootstrapProperties().getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
+        if (enabledJasperdbToMerkleDb) {
+            migrateVirtualMapsToMerkleDb(children, enabledVirtualNft);
+        }
         super.addDeserializedChildren(children, version);
         deserializedStateVersion = version;
     }
@@ -516,12 +532,10 @@ public class ServicesState extends PartialNaryMerkleInternal
             final AddressBook addressBook,
             final long seqStart,
             final BootstrapProperties bootstrapProperties) {
-        final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
+        final var virtualMapFactory = new VirtualMapFactory();
 
         if (enabledVirtualNft) {
-            setChild(
-                    StateChildIndices.UNIQUE_TOKENS,
-                    virtualMapFactory.newVirtualizedUniqueTokenStorage());
+            setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapFactory.newVirtualizedUniqueTokenStorage());
         } else {
             setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
         }
@@ -535,9 +549,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions());
         setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
         setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
-        setChild(
-                StateChildIndices.CONTRACT_STORAGE,
-                virtualMapFactory.newVirtualizedIterableStorage());
+        setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
         setChild(
                 StateChildIndices.STAKING_INFO,
                 stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties));
@@ -561,8 +573,6 @@ public class ServicesState extends PartialNaryMerkleInternal
             ReleaseThirtyMigration::grantFreeAutoRenew;
     private static StakingInfoBuilder stakingInfoBuilder =
             ReleaseTwentySevenMigration::buildStakingInfoMap;
-    private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory =
-            VirtualMapFactory::new;
     private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
     private static Consumer<ServicesState> scheduledTxnsMigrator =
             LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
@@ -574,7 +584,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                     this,
                     KvPairIterationMigrator::new,
                     VirtualMapMigration::extractVirtualMapData,
-                    vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
+                    new VirtualMapFactory().newVirtualizedIterableStorage());
         }
         if (FIRST_027X_VERSION.isAfter(deserializedVersion)) {
             final var bootstrapProps = getBootstrapProperties();
@@ -608,6 +618,68 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     boolean shouldMigrateNfts() {
         return enabledVirtualNft && !uniqueTokens().isVirtual();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void migrateVirtualMapsToMerkleDb(final List<MerkleNode> children, boolean enabledVirtualNft) {
+        final VirtualMapFactory vmFactory = new VirtualMapFactory();
+
+        // virtualized blobs
+        final VirtualMap<VirtualBlobKey, VirtualBlobValue> storageMap =
+//                state.getChild(StateChildIndices.STORAGE);
+                (VirtualMap<VirtualBlobKey, VirtualBlobValue>) children.get(StateChildIndices.STORAGE);
+        if (jasperDbBacked(storageMap)) {
+            final VirtualMap<VirtualBlobKey, VirtualBlobValue> merkleDbBackedMap =
+                    vmFactory.newVirtualizedBlobs();
+            migrateVirtualMap(storageMap, merkleDbBackedMap);
+//            state.setChild(StateChildIndices.STORAGE, merkleDbBackedMap);
+            children.set(StateChildIndices.STORAGE, merkleDbBackedMap);
+        }
+
+        // virtualized iterable storage
+        final VirtualMap<ContractKey, IterableContractValue> contractStorageMap =
+//                state.getChild(StateChildIndices.CONTRACT_STORAGE);
+                (VirtualMap<ContractKey, IterableContractValue>) children.get(StateChildIndices.CONTRACT_STORAGE);
+        if (jasperDbBacked(contractStorageMap)) {
+            final VirtualMap<ContractKey, IterableContractValue> merkleDbBackedMap =
+                    vmFactory.newVirtualizedIterableStorage();
+            migrateVirtualMap(contractStorageMap, merkleDbBackedMap);
+//            state.setChild(StateChildIndices.CONTRACT_STORAGE, merkleDbBackedMap);
+            children.set(StateChildIndices.CONTRACT_STORAGE, merkleDbBackedMap);
+        }
+
+        // virtualized unique token storage, if enabled
+//        if (state.enabledVirtualNft) {
+        if (enabledVirtualNft) {
+            final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokensMap =
+//                    state.getChild(StateChildIndices.UNIQUE_TOKENS);
+                    (VirtualMap<UniqueTokenKey, UniqueTokenValue>) children.get(StateChildIndices.UNIQUE_TOKENS);
+            if (jasperDbBacked(uniqueTokensMap)) {
+                final VirtualMap<UniqueTokenKey, UniqueTokenValue> merkleDbBackedMap =
+                        vmFactory.newVirtualizedUniqueTokenStorage();
+                migrateVirtualMap(uniqueTokensMap, merkleDbBackedMap);
+//                state.setChild(StateChildIndices.UNIQUE_TOKENS, merkleDbBackedMap);
+                children.set(StateChildIndices.UNIQUE_TOKENS, merkleDbBackedMap);
+            }
+        }
+    }
+
+    private static boolean jasperDbBacked(final VirtualMap<?, ?> map) {
+        final VirtualRootNode<?, ?> virtualRootNode = map.getRight();
+        return virtualRootNode.getDataSource() instanceof VirtualDataSourceJasperDB;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <K extends VirtualKey<? super K>, V extends VirtualValue>
+            void migrateVirtualMap(final VirtualMap<K, V> source, final VirtualMap<K, V> target) {
+        source.forEachNode(node -> {
+            if (node instanceof VirtualLeafNode leafNode) {
+                final K key = (K) leafNode.getKey();
+                final V value = (V) leafNode.getValue();
+                log.info("Migrating " + key + " to " + value);
+                target.put(key, value);
+            }
+        });
     }
 
     private BootstrapProperties getBootstrapProperties() {
@@ -678,11 +750,6 @@ public class ServicesState extends PartialNaryMerkleInternal
     @VisibleForTesting
     static void setAutoRenewalMigrator(final ContractAutoRenewalMigrator autoRenewalMigrator) {
         ServicesState.autoRenewalMigrator = autoRenewalMigrator;
-    }
-
-    @VisibleForTesting
-    static void setVmFactory(final Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory) {
-        ServicesState.vmFactory = vmFactory;
     }
 
     static void setScheduledTransactionsMigrator(

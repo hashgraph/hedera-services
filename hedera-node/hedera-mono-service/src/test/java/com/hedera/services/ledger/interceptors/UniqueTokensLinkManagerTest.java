@@ -54,7 +54,7 @@ class UniqueTokensLinkManagerTest {
             UniqueTokenMapAdapter.wrap(new MerkleMap<>());
     private final UniqueTokenMapAdapter virtualUniqueTokens =
             UniqueTokenMapAdapter.wrap(
-                    new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage());
+                    new VirtualMapFactory().newVirtualizedUniqueTokenStorage());
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private UniqueTokensLinkManager subject;

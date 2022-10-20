@@ -95,6 +95,7 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
@@ -157,7 +158,6 @@ class ServicesStateTest {
     @Mock private ServicesState.StakingInfoBuilder stakingInfoBuilder;
     @Mock private ServicesState.IterableStorageMigrator iterableStorageMigrator;
     @Mock private ServicesState.ContractAutoRenewalMigrator autoRenewalMigrator;
-    @Mock private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
     @Mock private Consumer<ServicesState> scheduledTxnsMigrator;
     @Mock private BootstrapProperties bootstrapProperties;
     @Mock private SystemAccountsCreator accountsCreator;
@@ -209,7 +209,6 @@ class ServicesStateTest {
                         autoRenewalMigrator,
                         scheduledTxnsMigrator,
                         iterableStorageMigrator,
-                        vmf,
                         workingState);
 
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
@@ -221,7 +220,6 @@ class ServicesStateTest {
         given(metadata.app()).willReturn(app);
         given(app.workingState()).willReturn(workingState);
         given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
-        given(vmf.apply(any())).willReturn(virtualMapFactory);
         doAnswer(
                         inv -> {
                             subject.setChild(
@@ -654,7 +652,6 @@ class ServicesStateTest {
         mockMigrators();
         givenSpecialAccountsForMigration();
         given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
-        given(vmf.apply(any())).willReturn(virtualMapFactory);
         subject.setMetadata(metadata);
         given(app.workingState()).willReturn(workingState);
 
@@ -928,7 +925,7 @@ class ServicesStateTest {
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
-        when(platform.getCryptography()).thenReturn(new CryptoEngine());
+        when(platform.getCryptography()).thenReturn(new CryptoEngine(AdHocThreadManager.getStaticThreadManager()));
         assertNotNull(platform.getCryptography());
         return platform;
     }
@@ -981,7 +978,6 @@ class ServicesStateTest {
         ServicesState.setAutoRenewalMigrator(autoRenewalMigrator);
         ServicesState.setIterableStorageMigrator(iterableStorageMigrator);
         ServicesState.setOwnedNftsLinkMigrator(nftLinksRepair);
-        ServicesState.setVmFactory(vmf);
         ServicesState.setScheduledTransactionsMigrator(scheduledTxnsMigrator);
         ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
     }
@@ -990,7 +986,6 @@ class ServicesStateTest {
         ServicesState.setAutoRenewalMigrator(ReleaseThirtyMigration::grantFreeAutoRenew);
         ServicesState.setIterableStorageMigrator(ReleaseTwentySixMigration::makeStorageIterable);
         ServicesState.setOwnedNftsLinkMigrator(ReleaseThirtyMigration::rebuildNftOwners);
-        ServicesState.setVmFactory(VirtualMapFactory::new);
         ServicesState.setScheduledTransactionsMigrator(
                 LongTermScheduledTransactionsMigration::migrateScheduledTransactions);
         ServicesState.setStakingInfoBuilder(ReleaseTwentySevenMigration::buildStakingInfoMap);

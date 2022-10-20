@@ -19,12 +19,9 @@ import static com.hedera.services.setup.InfrastructureBundle.allImplied;
 import static com.hedera.services.setup.InfrastructureInitializer.initializeBundle;
 
 import com.hedera.services.state.virtual.VirtualMapFactory;
-import com.hedera.services.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,7 +32,7 @@ import org.apache.commons.io.FileUtils;
 
 public class InfrastructureManager {
     private static final String BASE_STORAGE_DIR = "databases";
-    public static final Cryptography CRYPTO = new CryptoEngine();
+    public static final Cryptography CRYPTO = new CryptoEngine(AdHocThreadManager.getStaticThreadManager());
 
     private InfrastructureManager() {
         throw new UnsupportedOperationException();
@@ -98,16 +95,7 @@ public class InfrastructureManager {
     }
 
     public static VirtualMapFactory newVmFactory(final String storageLoc) {
-        final var jdbBuilderFactory =
-                new JasperDbBuilderFactory() {
-                    @Override
-                    @SuppressWarnings({"rawtypes", "unchecked"})
-                    public <K extends VirtualKey<? super K>, V extends VirtualValue>
-                            JasperDbBuilder<K, V> newJdbBuilder() {
-                        return new JasperDbBuilder().storageDir(Paths.get(storageLoc));
-                    }
-                };
-        return new VirtualMapFactory(jdbBuilderFactory);
+        return new VirtualMapFactory(Paths.get(storageLoc));
     }
 
     private static String bundleDirFor(

@@ -27,7 +27,6 @@ import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.models.NftId;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import org.junit.jupiter.api.Test;
 
 class StoresModuleTest {
@@ -39,7 +38,7 @@ class StoresModuleTest {
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
         final var virtualMap =
-                new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
+                new VirtualMapFactory().newVirtualizedUniqueTokenStorage();
         final var transactionalLedger =
                 StoresModule.provideNftsLedger(
                         bootstrapProperties,

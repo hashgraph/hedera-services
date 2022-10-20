@@ -28,13 +28,19 @@ import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKeySerializer;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKeySupplier;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
-import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 
 public class VirtualMapFactory {
     private static final short CURRENT_SERIALIZATION_VERSION = 1;
@@ -54,69 +60,108 @@ public class VirtualMapFactory {
     private static final String SCHEDULE_EQUALITY_STORAGE_VM_NAME = "scheduleEqualityStore";
     private static final String UNIQUE_TOKENS_VM_NAME = "uniqueTokenStore";
 
-    @FunctionalInterface
-    public interface JasperDbBuilderFactory {
-        <K extends VirtualKey<? super K>, V extends VirtualValue>
-                JasperDbBuilder<K, V> newJdbBuilder();
+    private static boolean useMerkleDb = false;
+
+    private final Path storageDir;
+
+    public VirtualMapFactory() {
+        this(null);
     }
 
-    private final JasperDbBuilderFactory jdbBuilderFactory;
+    public VirtualMapFactory(final Path storageDir) {
+        if (storageDir != null) {
+            this.storageDir = storageDir;
+        } else {
+            try {
+                this.storageDir = TemporaryFileBuilder.buildTemporaryDirectory(useMerkleDb ? "merkledb" : "jasperdb");
+            } catch (final IOException z) {
+                throw new UncheckedIOException(z);
+            }
+        }
+    }
 
-    public VirtualMapFactory(final JasperDbBuilderFactory jdbBuilderFactory) {
-        this.jdbBuilderFactory = jdbBuilderFactory;
+    public static void setUseMerkleDb(final boolean value) {
+        useMerkleDb = value;
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs() {
-        final var blobKeySerializer = new VirtualBlobKeySerializer();
-        final VirtualLeafRecordSerializer<VirtualBlobKey, VirtualBlobValue>
-                blobLeafRecordSerializer =
-                        new VirtualLeafRecordSerializer<>(
-                                CURRENT_SERIALIZATION_VERSION,
-                                DigestType.SHA_384,
-                                CURRENT_SERIALIZATION_VERSION,
-                                VirtualBlobKey.sizeInBytes(),
-                                new VirtualBlobKeySupplier(),
-                                CURRENT_SERIALIZATION_VERSION,
-                                VirtualBlobValue.sizeInBytes(),
-                                new VirtualBlobValueSupplier(),
-                                false);
-
-        final JasperDbBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder =
-                jdbBuilderFactory.newJdbBuilder();
-        dsBuilder
-                .virtualLeafRecordSerializer(blobLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
-                .keySerializer(blobKeySerializer)
-                .maxNumOfKeys(MAX_BLOBS)
-                .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        final VirtualDataSourceBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder;
+        if (useMerkleDb) {
+            final MerkleDbTableConfig<VirtualBlobKey, VirtualBlobValue> tableConfig =
+                    new MerkleDbTableConfig<>(
+                            CURRENT_SERIALIZATION_VERSION,
+                            DigestType.SHA_384,
+                            CURRENT_SERIALIZATION_VERSION,
+                            new VirtualBlobMerkleDbKeySerializer(),
+                            CURRENT_SERIALIZATION_VERSION,
+                            new VirtualBlobMerkleDbValueSerializer());
+            tableConfig.maxNumberOfKeys(MAX_BLOBS);
+            tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        } else {
+            final var blobKeySerializer = new VirtualBlobKeySerializer();
+            final VirtualLeafRecordSerializer<VirtualBlobKey, VirtualBlobValue>
+                    blobLeafRecordSerializer = new VirtualLeafRecordSerializer<>(
+                    CURRENT_SERIALIZATION_VERSION,
+                    DigestType.SHA_384,
+                    CURRENT_SERIALIZATION_VERSION,
+                    VirtualBlobKey.sizeInBytes(),
+                    new VirtualBlobKeySupplier(),
+                    CURRENT_SERIALIZATION_VERSION,
+                    VirtualBlobValue.sizeInBytes(),
+                    new VirtualBlobValueSupplier(),
+                    false);
+            dsBuilder = new JasperDbBuilder<VirtualBlobKey, VirtualBlobValue>()
+                    .storageDir(storageDir)
+                    .virtualLeafRecordSerializer(blobLeafRecordSerializer)
+                    .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                    .keySerializer(blobKeySerializer)
+                    .maxNumOfKeys(MAX_BLOBS)
+                    .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        }
         return new VirtualMap<>(BLOBS_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage() {
-        final var storageKeySerializer = new ContractKeySerializer();
-        final VirtualLeafRecordSerializer<ContractKey, IterableContractValue>
-                storageLeafRecordSerializer =
-                        new VirtualLeafRecordSerializer<>(
-                                CURRENT_SERIALIZATION_VERSION,
-                                DigestType.SHA_384,
-                                CURRENT_SERIALIZATION_VERSION,
-                                storageKeySerializer.getSerializedSize(),
-                                new ContractKeySupplier(),
-                                CURRENT_SERIALIZATION_VERSION,
-                                IterableContractValue.ITERABLE_SERIALIZED_SIZE,
-                                new IterableContractValueSupplier(),
-                                false);
-
-        final JasperDbBuilder<ContractKey, IterableContractValue> dsBuilder =
-                jdbBuilderFactory.newJdbBuilder();
-        dsBuilder
-                .virtualLeafRecordSerializer(storageLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
-                .keySerializer(storageKeySerializer)
-                .maxNumOfKeys(MAX_STORAGE_ENTRIES)
-                .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        final VirtualDataSourceBuilder<ContractKey, IterableContractValue> dsBuilder;
+        if (useMerkleDb) {
+            final MerkleDbTableConfig<ContractKey, IterableContractValue> tableConfig =
+                    new MerkleDbTableConfig<>(
+                            CURRENT_SERIALIZATION_VERSION,
+                            DigestType.SHA_384,
+                            CURRENT_SERIALIZATION_VERSION,
+                            new ContractMerkleDbKeySerializer(),
+                            CURRENT_SERIALIZATION_VERSION,
+                            new IterableContractValueMerkleDbValueSerializer());
+            tableConfig.maxNumberOfKeys(MAX_STORAGE_ENTRIES);
+            tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        } else {
+            final var storageKeySerializer = new ContractKeySerializer();
+            final VirtualLeafRecordSerializer<ContractKey, IterableContractValue>
+                    storageLeafRecordSerializer =
+                    new VirtualLeafRecordSerializer<>(
+                            CURRENT_SERIALIZATION_VERSION,
+                            DigestType.SHA_384,
+                            CURRENT_SERIALIZATION_VERSION,
+                            storageKeySerializer.getSerializedSize(),
+                            new ContractKeySupplier(),
+                            CURRENT_SERIALIZATION_VERSION,
+                            IterableContractValue.ITERABLE_SERIALIZED_SIZE,
+                            new IterableContractValueSupplier(),
+                            false);
+            dsBuilder = new JasperDbBuilder<ContractKey, IterableContractValue>()
+                    .storageDir(storageDir)
+                    .virtualLeafRecordSerializer(storageLeafRecordSerializer)
+                    .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                    .keySerializer(storageKeySerializer)
+                    .maxNumOfKeys(MAX_STORAGE_ENTRIES)
+                    .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        }
         return new VirtualMap<>(ITERABLE_STORAGE_VM_NAME, dsBuilder);
     }
 
@@ -136,8 +181,9 @@ public class VirtualMapFactory {
                                 false);
 
         final JasperDbBuilder<EntityNumVirtualKey, ScheduleVirtualValue> dsBuilder =
-                jdbBuilderFactory.newJdbBuilder();
+                new JasperDbBuilder<>();
         dsBuilder
+                .storageDir(storageDir)
                 .virtualLeafRecordSerializer(storageLeafRecordSerializer)
                 .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
                 .keySerializer(keySerializer)
@@ -147,8 +193,7 @@ public class VirtualMapFactory {
         return new VirtualMap<>(SCHEDULE_LIST_STORAGE_VM_NAME, dsBuilder);
     }
 
-    public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>
-            newScheduleTemporalStorage() {
+    public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> newScheduleTemporalStorage() {
         final var keySerializer = new SecondSinceEpocVirtualKeySerializer();
         final VirtualLeafRecordSerializer<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>
                 storageLeafRecordSerializer =
@@ -164,8 +209,9 @@ public class VirtualMapFactory {
                                 false);
 
         final JasperDbBuilder<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> dsBuilder =
-                jdbBuilderFactory.newJdbBuilder();
+                new JasperDbBuilder<>();
         dsBuilder
+                .storageDir(storageDir)
                 .virtualLeafRecordSerializer(storageLeafRecordSerializer)
                 .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
                 .keySerializer(keySerializer)
@@ -175,8 +221,7 @@ public class VirtualMapFactory {
         return new VirtualMap<>(SCHEDULE_TEMPORAL_STORAGE_VM_NAME, dsBuilder);
     }
 
-    public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>
-            newScheduleEqualityStorage() {
+    public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> newScheduleEqualityStorage() {
         final var keySerializer = new ScheduleEqualityVirtualKeySerializer();
         final VirtualLeafRecordSerializer<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>
                 storageLeafRecordSerializer =
@@ -192,8 +237,9 @@ public class VirtualMapFactory {
                                 false);
 
         final JasperDbBuilder<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> dsBuilder =
-                jdbBuilderFactory.newJdbBuilder();
+                new JasperDbBuilder<>();
         dsBuilder
+                .storageDir(storageDir)
                 .virtualLeafRecordSerializer(storageLeafRecordSerializer)
                 .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
                 .keySerializer(keySerializer)
@@ -204,28 +250,43 @@ public class VirtualMapFactory {
     }
 
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage() {
-        var storageKeySerializer = new UniqueTokenKeySerializer();
-        VirtualLeafRecordSerializer<UniqueTokenKey, UniqueTokenValue> storageLeafRecordSerializer =
-                new VirtualLeafRecordSerializer<>(
-                        CURRENT_SERIALIZATION_VERSION,
-                        DigestType.SHA_384,
-                        CURRENT_SERIALIZATION_VERSION,
-                        storageKeySerializer.getSerializedSize(),
-                        new UniqueTokenKeySupplier(),
-                        CURRENT_SERIALIZATION_VERSION,
-                        UniqueTokenValue.sizeInBytes(),
-                        new UniqueTokenValueSupplier(),
-                        false); // Note: Don't use the maxKeyValueSizeLessThan198 optimization with
-        // variable-sized keys.
-        final JasperDbBuilder<UniqueTokenKey, UniqueTokenValue> dsBuilder =
-                jdbBuilderFactory.newJdbBuilder();
-        dsBuilder
-                .virtualLeafRecordSerializer(storageLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
-                .keySerializer(storageKeySerializer)
-                .maxNumOfKeys(MAX_MINTABLE_NFTS)
-                .preferDiskBasedIndexes(false)
-                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        final VirtualDataSourceBuilder<UniqueTokenKey, UniqueTokenValue> dsBuilder;
+        if (useMerkleDb) {
+            final MerkleDbTableConfig<UniqueTokenKey, UniqueTokenValue> tableConfig =
+                    new MerkleDbTableConfig<>(
+                            CURRENT_SERIALIZATION_VERSION,
+                            DigestType.SHA_384,
+                            CURRENT_SERIALIZATION_VERSION,
+                            new UniqueTokenMerkleDbKeySerializer(),
+                            CURRENT_SERIALIZATION_VERSION,
+                            new UniqueTokenMerkleDbValueSerializer());
+            tableConfig.maxNumberOfKeys(MAX_MINTABLE_NFTS);
+            tableConfig.preferDiskIndices(false);
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        } else {
+            var storageKeySerializer = new UniqueTokenKeySerializer();
+            VirtualLeafRecordSerializer<UniqueTokenKey, UniqueTokenValue> storageLeafRecordSerializer =
+                    new VirtualLeafRecordSerializer<>(
+                            CURRENT_SERIALIZATION_VERSION,
+                            DigestType.SHA_384,
+                            CURRENT_SERIALIZATION_VERSION,
+                            storageKeySerializer.getSerializedSize(),
+                            new UniqueTokenKeySupplier(),
+                            CURRENT_SERIALIZATION_VERSION,
+                            UniqueTokenValue.sizeInBytes(),
+                            new UniqueTokenValueSupplier(),
+                            false); // Note: Don't use the maxKeyValueSizeLessThan198 optimization with
+            // variable-sized keys.
+            dsBuilder = new JasperDbBuilder<UniqueTokenKey, UniqueTokenValue>()
+                    .storageDir(storageDir)
+                    .virtualLeafRecordSerializer(storageLeafRecordSerializer)
+                    .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                    .keySerializer(storageKeySerializer)
+                    .maxNumOfKeys(MAX_MINTABLE_NFTS)
+                    .preferDiskBasedIndexes(false)
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        }
         return new VirtualMap<>(UNIQUE_TOKENS_VM_NAME, dsBuilder);
     }
 }
