@@ -33,12 +33,7 @@ public class InvalidTransactionMetadata implements TransactionMetadata {
     }
 
     @Override
-    public boolean failed() {
-        return true;
-    }
-
-    @Override
-    public ResponseCodeEnum failureStatus() {
+    public ResponseCodeEnum status() {
         return status;
     }
 

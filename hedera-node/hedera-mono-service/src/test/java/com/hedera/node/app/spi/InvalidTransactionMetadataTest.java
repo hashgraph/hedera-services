@@ -38,7 +38,7 @@ class InvalidTransactionMetadataTest {
         subject = new InvalidTransactionMetadata(txn, INVALID_TRANSACTION_BODY);
 
         assertTrue(subject.failed());
-        assertEquals(INVALID_TRANSACTION_BODY, subject.failureStatus());
+        assertEquals(INVALID_TRANSACTION_BODY, subject.status());
         assertEquals(txn, subject.getTxn());
         assertEquals(Collections.emptyList(), subject.getReqKeys());
     }

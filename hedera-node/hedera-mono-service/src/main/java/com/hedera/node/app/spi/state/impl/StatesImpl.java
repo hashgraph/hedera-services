@@ -53,9 +53,9 @@ public class StatesImpl implements States {
             return (State<K, V>)
                     (accounts.areOnDisk()
                             ? new OnDiskStateImpl<>(
-                            stateKey, accounts.getOnDiskAccounts(), children.signedAt())
+                                    stateKey, accounts.getOnDiskAccounts(), children.signedAt())
                             : new InMemoryStateImpl<>(
-                            stateKey, accounts.getInMemoryAccounts(), children.signedAt()));
+                                    stateKey, accounts.getInMemoryAccounts(), children.signedAt()));
         } else if (stateKey.equals(ALIASES)) {
             final var state =
                     new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());

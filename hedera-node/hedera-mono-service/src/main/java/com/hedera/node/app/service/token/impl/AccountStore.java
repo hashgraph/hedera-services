@@ -30,7 +30,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
@@ -40,7 +39,7 @@ import javax.annotation.Nonnull;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class AccountStore {
+public final class AccountStore {
     /** The underlying data storage class that holds the account data. */
     private final State<EntityNum, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
@@ -54,8 +53,6 @@ public class AccountStore {
     public AccountStore(@Nonnull States states) {
         this.accountState = states.get(ACCOUNTS);
         this.aliases = states.get(ALIASES);
-        Objects.requireNonNull(accountState);
-        Objects.requireNonNull(aliases);
     }
 
     public TransactionMetadata createAccountSigningMetadata(

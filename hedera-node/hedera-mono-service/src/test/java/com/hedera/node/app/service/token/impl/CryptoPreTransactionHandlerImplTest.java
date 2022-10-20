@@ -89,7 +89,7 @@ class CryptoPreTransactionHandlerImplTest {
         assertEquals(2, meta.getReqKeys().size());
         assertTrue(meta.getReqKeys().contains(jkey));
         assertEquals(false, meta.failed());
-        assertEquals(OK, meta.failureStatus());
+        assertEquals(OK, meta.status());
     }
 
     @Test

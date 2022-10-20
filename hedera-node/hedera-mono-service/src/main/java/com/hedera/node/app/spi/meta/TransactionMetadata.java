@@ -32,14 +32,17 @@ public interface TransactionMetadata {
      *
      * @return returns true if status is not OK
      */
-    boolean failed();
+    default boolean failed() {
+        return !status().equals(ResponseCodeEnum.OK);
+    }
 
     /**
-     * Returns the failure {@link ResponseCodeEnum}, which gives more information on the failure
+     * Returns the status {@link ResponseCodeEnum}, which gives the reason if there is a failure. If
+     * there is no failure in "pre-handle" the status returned will be {@code ResponseCodeEnum.OK}.
      *
      * @return response code of the failure
      */
-    ResponseCodeEnum failureStatus();
+    ResponseCodeEnum status();
 
     /**
      * Transaction that is being pre-handled

@@ -75,12 +75,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
     }
 
     @Override
-    public boolean failed() {
-        return !status.equals(OK);
-    }
-
-    @Override
-    public ResponseCodeEnum failureStatus() {
+    public ResponseCodeEnum status() {
         return status;
     }
 }
