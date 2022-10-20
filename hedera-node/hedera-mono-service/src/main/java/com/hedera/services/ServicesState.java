@@ -626,40 +626,36 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         // virtualized blobs
         final VirtualMap<VirtualBlobKey, VirtualBlobValue> storageMap =
-//                state.getChild(StateChildIndices.STORAGE);
                 (VirtualMap<VirtualBlobKey, VirtualBlobValue>) children.get(StateChildIndices.STORAGE);
         if (jasperDbBacked(storageMap)) {
             final VirtualMap<VirtualBlobKey, VirtualBlobValue> merkleDbBackedMap =
                     vmFactory.newVirtualizedBlobs();
             migrateVirtualMap(storageMap, merkleDbBackedMap);
-//            state.setChild(StateChildIndices.STORAGE, merkleDbBackedMap);
             children.set(StateChildIndices.STORAGE, merkleDbBackedMap);
+            storageMap.release();
         }
 
         // virtualized iterable storage
         final VirtualMap<ContractKey, IterableContractValue> contractStorageMap =
-//                state.getChild(StateChildIndices.CONTRACT_STORAGE);
                 (VirtualMap<ContractKey, IterableContractValue>) children.get(StateChildIndices.CONTRACT_STORAGE);
         if (jasperDbBacked(contractStorageMap)) {
             final VirtualMap<ContractKey, IterableContractValue> merkleDbBackedMap =
                     vmFactory.newVirtualizedIterableStorage();
             migrateVirtualMap(contractStorageMap, merkleDbBackedMap);
-//            state.setChild(StateChildIndices.CONTRACT_STORAGE, merkleDbBackedMap);
             children.set(StateChildIndices.CONTRACT_STORAGE, merkleDbBackedMap);
+            contractStorageMap.release();
         }
 
         // virtualized unique token storage, if enabled
-//        if (state.enabledVirtualNft) {
         if (enabledVirtualNft) {
             final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokensMap =
-//                    state.getChild(StateChildIndices.UNIQUE_TOKENS);
                     (VirtualMap<UniqueTokenKey, UniqueTokenValue>) children.get(StateChildIndices.UNIQUE_TOKENS);
             if (jasperDbBacked(uniqueTokensMap)) {
                 final VirtualMap<UniqueTokenKey, UniqueTokenValue> merkleDbBackedMap =
                         vmFactory.newVirtualizedUniqueTokenStorage();
                 migrateVirtualMap(uniqueTokensMap, merkleDbBackedMap);
-//                state.setChild(StateChildIndices.UNIQUE_TOKENS, merkleDbBackedMap);
                 children.set(StateChildIndices.UNIQUE_TOKENS, merkleDbBackedMap);
+                uniqueTokensMap.release();
             }
         }
     }
