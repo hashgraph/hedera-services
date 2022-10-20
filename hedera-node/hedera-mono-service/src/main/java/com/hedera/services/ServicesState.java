@@ -70,6 +70,8 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.common.threading.manager.StandardThreadManager;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.merkle.map.MerkleMap;
@@ -81,6 +83,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -205,7 +209,12 @@ public class ServicesState extends PartialNaryMerkleInternal
         final boolean enabledJasperdbToMerkleDb =
                 getBootstrapProperties().getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
         if (enabledJasperdbToMerkleDb) {
-            migrateVirtualMapsToMerkleDb(this);
+            try {
+                migrateVirtualMapsToMerkleDb(this);
+            } catch (final InterruptedException e) {
+                log.error("VirtualMap migration to MerkleDb is interrupted", e);
+                // exit?
+            }
         }
         return MerkleInternal.super.migrate(version);
     }
@@ -618,16 +627,16 @@ public class ServicesState extends PartialNaryMerkleInternal
         return enabledVirtualNft && !uniqueTokens().isVirtual();
     }
 
-    private static void migrateVirtualMapsToMerkleDb(final ServicesState state) {
+    private static void migrateVirtualMapsToMerkleDb(final ServicesState state) throws InterruptedException {
         final VirtualMapFactory vmFactory = new VirtualMapFactory();
 
         // virtualized blobs
         final VirtualMap<VirtualBlobKey, VirtualBlobValue> storageMap =
                 state.getChild(StateChildIndices.STORAGE);
         if (jasperDbBacked(storageMap)) {
-            final VirtualMap<VirtualBlobKey, VirtualBlobValue> merkleDbBackedMap =
+            VirtualMap<VirtualBlobKey, VirtualBlobValue> merkleDbBackedMap =
                     vmFactory.newVirtualizedBlobs();
-            migrateVirtualMap(storageMap, merkleDbBackedMap);
+            merkleDbBackedMap = migrateVirtualMap(storageMap, merkleDbBackedMap);
             state.setChild(StateChildIndices.STORAGE, merkleDbBackedMap);
         }
 
@@ -635,9 +644,9 @@ public class ServicesState extends PartialNaryMerkleInternal
         final VirtualMap<ContractKey, IterableContractValue> contractStorageMap =
                 state.getChild(StateChildIndices.CONTRACT_STORAGE);
         if (jasperDbBacked(contractStorageMap)) {
-            final VirtualMap<ContractKey, IterableContractValue> merkleDbBackedMap =
+            VirtualMap<ContractKey, IterableContractValue> merkleDbBackedMap =
                     vmFactory.newVirtualizedIterableStorage();
-            migrateVirtualMap(contractStorageMap, merkleDbBackedMap);
+            merkleDbBackedMap = migrateVirtualMap(contractStorageMap, merkleDbBackedMap);
             state.setChild(StateChildIndices.CONTRACT_STORAGE, merkleDbBackedMap);
         }
 
@@ -646,9 +655,9 @@ public class ServicesState extends PartialNaryMerkleInternal
             final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokensMap =
                     state.getChild(StateChildIndices.UNIQUE_TOKENS);
             if (jasperDbBacked(uniqueTokensMap)) {
-                final VirtualMap<UniqueTokenKey, UniqueTokenValue> merkleDbBackedMap =
+                VirtualMap<UniqueTokenKey, UniqueTokenValue> merkleDbBackedMap =
                         vmFactory.newVirtualizedUniqueTokenStorage();
-                migrateVirtualMap(uniqueTokensMap, merkleDbBackedMap);
+                merkleDbBackedMap = migrateVirtualMap(uniqueTokensMap, merkleDbBackedMap);
                 state.setChild(StateChildIndices.UNIQUE_TOKENS, merkleDbBackedMap);
             }
         }
@@ -659,17 +668,30 @@ public class ServicesState extends PartialNaryMerkleInternal
         return virtualRootNode.getDataSource() instanceof VirtualDataSourceJasperDB;
     }
 
-    @SuppressWarnings("unchecked")
     private static <K extends VirtualKey<? super K>, V extends VirtualValue>
-            void migrateVirtualMap(final VirtualMap<K, V> source, final VirtualMap<K, V> target) {
-        source.forEachNode(node -> {
-            if (node instanceof VirtualLeafNode leafNode) {
-                final K key = (K) leafNode.getKey();
-                final V value = (V) leafNode.getValue();
-                log.info("Migrating " + key + " to " + value);
-                target.put(key, value);
-            }
-        });
+            VirtualMap<K, V> migrateVirtualMap(final VirtualMap<K, V> source, final VirtualMap<K, V> target
+    ) throws InterruptedException {
+        final int copyTargetMapEveryPuts = 10_000;
+        final AtomicInteger count = new AtomicInteger(copyTargetMapEveryPuts);
+        final AtomicReference<VirtualMap<K, V>> targetMapRef = new AtomicReference<>(target);
+        VirtualMapMigration.extractVirtualMapData(
+                AdHocThreadManager.getStaticThreadManager(),
+                source,
+                kvPair -> {
+                    final K key = kvPair.getKey();
+                    final V value = kvPair.getValue();
+                    log.info("Migrating " + key + " to " + value);
+                    final VirtualMap<K, V> curCopy = targetMapRef.get();
+                    curCopy.put(key, value);
+                    // Make a map copy every X rounds to flush map cache to disk
+                    if (count.decrementAndGet() == 0) {
+                        targetMapRef.set(curCopy.copy());
+                        curCopy.release();
+                        count.set(copyTargetMapEveryPuts);
+                    }
+                },
+                4);
+        return targetMapRef.get();
     }
 
     private BootstrapProperties getBootstrapProperties() {
