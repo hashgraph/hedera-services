@@ -63,14 +63,15 @@ class ImpliedTransfersTest {
                     + " maxExplicitHbarAdjusts=5, maxExplicitTokenAdjusts=50,"
                     + " maxExplicitOwnershipChanges=12, maxNestedCustomFees=1,"
                     + " maxXferBalanceChanges=20, areNftsEnabled=true, isAutoCreationEnabled=true,"
-                    + " tokenFeeSchedules=[], areAllowancesEnabled=true}, changes=[],"
-                    + " tokenFeeSchedules=[], assessedCustomFees=[], resolvedAliases={},"
-                    + " numAutoCreations=0, numLazyCreations=0}";
+                    + " isLazyCreationEnabled=true, tokenFeeSchedules=[],"
+                    + " areAllowancesEnabled=true}, changes=[], tokenFeeSchedules=[],"
+                    + " assessedCustomFees=[], resolvedAliases={}, numAutoCreations=0,"
+                    + " numLazyCreations=0}";
         final var twoRepr =
                 "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5,"
                     + " maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12,"
                     + " maxNestedCustomFees=1, maxXferBalanceChanges=20, areNftsEnabled=true,"
-                    + " isAutoCreationEnabled=true,"
+                    + " isAutoCreationEnabled=true, isLazyCreationEnabled=true,"
                     + " tokenFeeSchedules=[CustomFeeMeta[tokenId=0.0.123, treasuryId=2.3.4,"
                     + " customFees=[]]], areAllowancesEnabled=true},"
                     + " changes=[BalanceChange{token=1.2.3, account=4.5.6, alias=, units=7,"
