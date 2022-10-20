@@ -16,7 +16,9 @@
 package com.hedera.services.state.initialization;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -34,6 +36,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.system.address.AddressBook;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -46,6 +49,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
 
     public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
+    private static final int ZERO_BALANCE = 0;
 
     private final AccountNumbers accountNums;
     private final PropertySource properties;
@@ -54,6 +58,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     private final Supplier<HederaAccount> accountSupplier;
 
     private JKey genesisKey;
+    private final List<HederaAccount> systemAccountsCreated = new ArrayList<>();
 
     @Inject
     public BackedSystemAccountsCreator(
@@ -65,8 +70,8 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         this.accountNums = accountNums;
         this.properties = properties;
         this.genesisKeySource = genesisKeySource;
-        this.treasuryCloner = treasuryCloner;
         this.accountSupplier = accountSupplier;
+        this.treasuryCloner = treasuryCloner;
     }
 
     /** {@inheritDoc} */
@@ -82,11 +87,14 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
             if (accounts.contains(id)) {
                 continue;
             }
+            final HederaAccount account;
             if (num == accountNums.treasury()) {
-                accounts.put(id, accountWith(tinyBarFloat, expiry));
+                account = accountWith(tinyBarFloat, expiry);
             } else {
-                accounts.put(id, accountWith(0, expiry));
+                account = accountWith(ZERO_BALANCE, expiry);
             }
+            accounts.put(id, account);
+            systemAccountsCreated.add(account);
         }
 
         final var stakingRewardAccountNum = accountNums.stakingRewardAccount();
@@ -105,7 +113,9 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         for (long num = 900; num <= 1000; num++) {
             var id = STATIC_PROPERTIES.scopedAccountWith(num);
             if (!accounts.contains(id)) {
-                accounts.put(id, accountWith(0, expiry));
+                final var account = accountWith(ZERO_BALANCE, expiry);
+                accounts.put(id, account);
+                systemAccountsCreated.add(account);
             }
         }
 
@@ -160,5 +170,18 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
                                     .build());
         }
         return genesisKey;
+    }
+
+    public List<HederaAccount> getSystemAccountsCreated() {
+        return systemAccountsCreated;
+    }
+
+    public List<HederaAccount> getTreasuryClonesCreated() {
+        return treasuryCloner.getClonesCreated();
+    }
+
+    public void forgetCreations() {
+        treasuryCloner.forgetScannedSystemAccounts();
+        systemAccountsCreated.clear();
     }
 }

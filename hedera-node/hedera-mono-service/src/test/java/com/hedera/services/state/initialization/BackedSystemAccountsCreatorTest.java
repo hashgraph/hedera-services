@@ -161,6 +161,7 @@ class BackedSystemAccountsCreatorTest {
 
         // then:
         verify(backingAccounts).put(accountWith(4), withExpectedBalance(0));
+        assertEquals(1, subject.getSystemAccountsCreated().size());
     }
 
     @Test
@@ -172,6 +173,7 @@ class BackedSystemAccountsCreatorTest {
 
         // then:
         verify(backingAccounts).put(accountWith(2), withExpectedBalance(totalBalance));
+        assertEquals(1, subject.getSystemAccountsCreated().size());
     }
 
     @Test
@@ -182,6 +184,7 @@ class BackedSystemAccountsCreatorTest {
 
         verify(backingAccounts).put(accountWith(900), withExpectedBalance(0));
         verify(backingAccounts).put(accountWith(1000), withExpectedBalance(0));
+        assertEquals(2, subject.getSystemAccountsCreated().size());
     }
 
     @Test

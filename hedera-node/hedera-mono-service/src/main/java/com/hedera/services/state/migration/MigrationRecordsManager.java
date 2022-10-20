@@ -33,7 +33,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.initialization.TreasuryCloner;
+import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -70,9 +70,10 @@ public class MigrationRecordsManager {
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
+    private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
 
     private final EntityCreator creator;
-    private final TreasuryCloner treasuryCloner;
+    private final BackedSystemAccountsCreator systemAccountsCreator;
     private final SigImpactHistorian sigImpactHistorian;
     private final RecordsHistorian recordsHistorian;
     private final Supplier<MerkleNetworkContext> networkCtx;
@@ -86,7 +87,7 @@ public class MigrationRecordsManager {
     @Inject
     public MigrationRecordsManager(
             final EntityCreator creator,
-            final TreasuryCloner treasuryCloner,
+            final BackedSystemAccountsCreator systemAccountsCreator,
             final SigImpactHistorian sigImpactHistorian,
             final RecordsHistorian recordsHistorian,
             final Supplier<MerkleNetworkContext> networkCtx,
@@ -95,7 +96,7 @@ public class MigrationRecordsManager {
             final SyntheticTxnFactory syntheticTxnFactory,
             final AccountNumbers accountNumbers,
             final BootstrapProperties bootstrapProperties) {
-        this.treasuryCloner = treasuryCloner;
+        this.systemAccountsCreator = systemAccountsCreator;
         this.sigImpactHistorian = sigImpactHistorian;
         this.recordsHistorian = recordsHistorian;
         this.networkCtx = networkCtx;
@@ -133,23 +134,40 @@ public class MigrationRecordsManager {
             publishContractFreeAutoRenewalRecords();
         }
 
-        // And we always publish records for any treasury clones that needed to be created
-        treasuryCloner
-                .getClonesCreated()
-                .forEach(
-                        account ->
-                                publishSyntheticCreation(
-                                        EntityNum.fromInt(account.number()),
-                                        account.getExpiry() - now.getEpochSecond(),
-                                        account.isReceiverSigRequired(),
-                                        account.isDeclinedReward(),
-                                        asKeyUnchecked(account.getAccountKey()),
-                                        account.getMemo(),
-                                        TREASURY_CLONE_MEMO,
-                                        "treasury clone"));
+        // Always publish records for any treasury clones that needed to be created
+        publishAccountsCreated(
+                systemAccountsCreator.getTreasuryClonesCreated(),
+                now,
+                TREASURY_CLONE_MEMO,
+                "treasury clone");
+
+        // Always publish records for any system accounts created at genesis start up
+        publishAccountsCreated(
+                systemAccountsCreator.getSystemAccountsCreated(),
+                now,
+                SYSTEM_ACCOUNT_CREATION_MEMO,
+                "system account creation");
 
         curNetworkCtx.markMigrationRecordsStreamed();
-        treasuryCloner.forgetScannedSystemAccounts();
+        systemAccountsCreator.forgetCreations();
+    }
+
+    private void publishAccountsCreated(
+            final List<HederaAccount> createdAccounts,
+            final Instant now,
+            final String memo,
+            final String description) {
+        createdAccounts.forEach(
+                account ->
+                        publishSyntheticCreation(
+                                EntityNum.fromInt(account.number()),
+                                account.getExpiry() - now.getEpochSecond(),
+                                account.isReceiverSigRequired(),
+                                account.isDeclinedReward(),
+                                asKeyUnchecked(account.getAccountKey()),
+                                account.getMemo(),
+                                memo,
+                                description));
     }
 
     private boolean grantingFreeAutoRenewals() {
