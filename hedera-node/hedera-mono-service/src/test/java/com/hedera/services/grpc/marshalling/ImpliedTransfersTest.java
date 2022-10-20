@@ -65,7 +65,7 @@ class ImpliedTransfersTest {
                     + " maxXferBalanceChanges=20, areNftsEnabled=true, isAutoCreationEnabled=true,"
                     + " tokenFeeSchedules=[], areAllowancesEnabled=true}, changes=[],"
                     + " tokenFeeSchedules=[], assessedCustomFees=[], resolvedAliases={},"
-                    + " numAutoCreations=0}";
+                    + " numAutoCreations=0, numLazyCreations=0}";
         final var twoRepr =
                 "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5,"
                     + " maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12,"
@@ -78,7 +78,8 @@ class ImpliedTransfersTest {
                     + " treasuryId=2.3.4, customFees=[]]],"
                     + " assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0,"
                     + " num=123}, account=EntityId{shard=0, realm=0, num=124}, units=123, effective"
-                    + " payer accounts=[123]}], resolvedAliases={}, numAutoCreations=0}";
+                    + " payer accounts=[123]}], resolvedAliases={}, numAutoCreations=0,"
+                    + " numLazyCreations=0}";
 
         // expect:
         assertNotEquals(oneImpliedXfers, twoImpliedXfers);

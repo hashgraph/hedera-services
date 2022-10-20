@@ -368,7 +368,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -425,7 +425,7 @@ class TransferPrecompilesTest {
 
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code())
@@ -512,7 +512,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -592,7 +592,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -670,7 +670,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -755,7 +755,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -844,7 +844,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -917,7 +917,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(hbarOnlyChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -996,7 +996,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(hbarAndTokenChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1073,7 +1073,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(hbarAndNftsTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1130,7 +1130,7 @@ class TransferPrecompilesTest {
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_WRAPPER);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);

@@ -56,6 +56,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
@@ -131,8 +132,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final String TOKEN_B_CREATE = "tokenBCreateTxn";
     private static final String NFT_CREATE = "nftCreateTxn";
     private static final String SPONSOR = "autoCreateSponsor";
+    private static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
 
     private static final String FEATURE_FLAG = "tokens.autoCreations.isEnabled";
+    private static final String AUTO_CREATE_FEATURE_FLAG = "autoCreation.enabled";
+    private static final String LAZY_CREATE_FEATURE_FLAG = "lazyCreation.enabled";
 
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
     private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
@@ -170,6 +174,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 canGetBalanceAndInfoViaAlias(),
                 noStakePeriodStartIfNotStakingToNode(),
                 hollowAccountCreationWithCryptoTransfer(),
+                hollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled(),
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
                 multipleTokenTransfersSucceed(),
@@ -744,12 +749,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec hollowAccountCreationWithCryptoTransfer() {
-        final var lazyCreateSponsor = "lazyCreateSponsor";
         return defaultHapiSpec("HollowAccountCreationWithCryptoTransfer")
                 .given(
-                        UtilVerbs.overriding("lazyCreation.enabled", "true"),
+                        UtilVerbs.overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(lazyCreateSponsor)
+                        cryptoCreate(LAZY_CREATE_SPONSOR)
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
                                 .key(SECP_256K1_SOURCE_KEY))
                 .when()
@@ -767,7 +771,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     final var op =
                                             cryptoTransfer(
                                                             tinyBarsFromTo(
-                                                                    lazyCreateSponsor,
+                                                                    LAZY_CREATE_SPONSOR,
                                                                     evmAddress,
                                                                     ONE_HUNDRED_HBARS))
                                                     .hasKnownStatus(SUCCESS)
@@ -787,7 +791,45 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                     .memo(LAZY_MEMO));
 
                                     allRunFor(spec, op, op2);
-                                    UtilVerbs.resetToDefault("lazyCreation.enabled");
+                                    resetToDefault(LAZY_CREATE_FEATURE_FLAG);
+                                }));
+    }
+
+    private HapiApiSpec
+            hollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled() {
+        return defaultHapiSpec(
+                        "HollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled")
+                .given(
+                        overriding(AUTO_CREATE_FEATURE_FLAG, "true"),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, "false"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR)
+                                .balance(INITIAL_BALANCE * ONE_HBAR)
+                                .key(SECP_256K1_SOURCE_KEY))
+                .when()
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(
+                                                    EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
+                                    final var op =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    evmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(NOT_SUPPORTED)
+                                                    .via(TRANSFER_TXN);
+
+                                    allRunFor(spec, op);
+                                    resetToDefault(LAZY_CREATE_FEATURE_FLAG);
+                                    resetToDefault(AUTO_CREATE_FEATURE_FLAG);
                                 }));
     }
 

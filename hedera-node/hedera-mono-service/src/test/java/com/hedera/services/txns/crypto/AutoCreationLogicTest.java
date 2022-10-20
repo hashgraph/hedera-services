@@ -161,7 +161,6 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithHbarChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
-        given(properties.isLazyCreationEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 0))
                 .willReturn(mockSyntheticCreation);
 

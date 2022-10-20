@@ -45,8 +45,10 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  */
 public class ImpliedTransfersMeta {
     private static final int NO_AUTO_CREATIONS = 0;
+    private static final int NO_LAZY_CREATIONS = 0;
 
     private final int numAutoCreations;
+    private final int numLazyCreations;
     private final ResponseCodeEnum code;
     private final ValidationProps validationProps;
     private final List<CustomFeeMeta> customFeeMeta;
@@ -66,11 +68,28 @@ public class ImpliedTransfersMeta {
             final List<CustomFeeMeta> customFeeMeta,
             final Map<ByteString, EntityNum> resolutions,
             final int numAutoCreations) {
+        this(
+                validationProps,
+                code,
+                customFeeMeta,
+                resolutions,
+                numAutoCreations,
+                NO_LAZY_CREATIONS);
+    }
+
+    public ImpliedTransfersMeta(
+            final ValidationProps validationProps,
+            final ResponseCodeEnum code,
+            final List<CustomFeeMeta> customFeeMeta,
+            final Map<ByteString, EntityNum> resolutions,
+            final int numAutoCreations,
+            final int numLazyCreations) {
         this.code = code;
         this.resolutions = resolutions;
         this.customFeeMeta = customFeeMeta;
         this.validationProps = validationProps;
         this.numAutoCreations = numAutoCreations;
+        this.numLazyCreations = numLazyCreations;
     }
 
     public Map<ByteString, EntityNum> getResolutions() {
@@ -79,6 +98,10 @@ public class ImpliedTransfersMeta {
 
     public int getNumAutoCreations() {
         return numAutoCreations;
+    }
+
+    public int getNumLazyCreations() {
+        return numLazyCreations;
     }
 
     public List<CustomFeeMeta> getCustomFeeMeta() {

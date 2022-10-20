@@ -234,14 +234,14 @@ class ImpliedTransfersMarshalTest {
         setupPropsWithAutoAndLazyCreation(false, true);
         given(aliasCheck.test(op)).willReturn(true);
         given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
-        given(aliasResolver.perceivedAutoCreations()).willReturn(1);
+        given(aliasResolver.perceivedLazyCreations()).willReturn(1);
         given(aliasResolver.resolutions()).willReturn(mockAliases);
 
         final var expectedChanges = expNonFeeChanges(false);
         // and:
         final var expectedMeta =
                 new ImpliedTransfersMeta(
-                        propsWithLazyCreation, OK, Collections.emptyList(), mockAliases, 1);
+                        propsWithLazyCreation, OK, Collections.emptyList(), mockAliases, 0, 1);
 
         givenValidity(OK, propsWithLazyCreation);
 

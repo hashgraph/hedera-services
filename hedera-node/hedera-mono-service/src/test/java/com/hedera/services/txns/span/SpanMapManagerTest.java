@@ -107,7 +107,8 @@ class SpanMapManagerTest {
                     NO_CUSTOM_FEE_META,
                     NO_CUSTOM_FEES,
                     NO_ALIASES,
-                    2);
+                    2,
+                    0);
 
     private final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
     private final Id treasury = new Id(0, 0, 2);

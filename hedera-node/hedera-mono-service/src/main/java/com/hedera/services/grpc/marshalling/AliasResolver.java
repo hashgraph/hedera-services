@@ -41,6 +41,7 @@ import java.util.function.Consumer;
 public class AliasResolver {
     private int perceivedMissing = 0;
     private int perceivedCreations = 0;
+    private int perceivedLazyCreations = 0;
     private int perceivedInvalidCreations = 0;
     private final Map<ByteString, EntityNum> resolutions = new HashMap<>();
 
@@ -80,6 +81,10 @@ public class AliasResolver {
 
     public int perceivedAutoCreations() {
         return perceivedCreations;
+    }
+
+    public int perceivedLazyCreations() {
+        return perceivedLazyCreations;
     }
 
     public int perceivedInvalidCreations() {
@@ -262,7 +267,7 @@ public class AliasResolver {
         } else if (repetitionsAreInvalid && result == Result.REPEATED_UNKNOWN_ALIAS) {
             perceivedInvalidCreations++;
         } else if (result == Result.UNKNOWN_EVM_ADDRESS) {
-            perceivedCreations++;
+            perceivedLazyCreations++;
         }
     }
 

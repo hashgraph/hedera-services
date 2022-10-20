@@ -267,7 +267,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         explicitChanges = constructBalanceChanges(transferOp);
         impliedTransfers =
                 impliedTransfersMarshal.assessCustomFeesAndValidate(
-                        0, 0, explicitChanges, NO_ALIASES, impliedTransfersMarshal.currentProps());
+                        0,
+                        0,
+                        0,
+                        explicitChanges,
+                        NO_ALIASES,
+                        impliedTransfersMarshal.currentProps());
     }
 
     @Override

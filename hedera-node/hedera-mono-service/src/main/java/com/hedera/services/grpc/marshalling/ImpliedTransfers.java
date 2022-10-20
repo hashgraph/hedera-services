@@ -78,10 +78,16 @@ public class ImpliedTransfers {
             final List<CustomFeeMeta> customFeeMeta,
             final List<FcAssessedCustomFee> assessedCustomFees,
             final Map<ByteString, EntityNum> aliases,
-            final int numAutoCreations) {
+            final int numAutoCreations,
+            final int numLazyCreations) {
         final var meta =
                 new ImpliedTransfersMeta(
-                        validationProps, OK, customFeeMeta, aliases, numAutoCreations);
+                        validationProps,
+                        OK,
+                        customFeeMeta,
+                        aliases,
+                        numAutoCreations,
+                        numLazyCreations);
         return new ImpliedTransfers(meta, changes, assessedCustomFees);
     }
 
@@ -143,6 +149,7 @@ public class ImpliedTransfers {
                 .add("assessedCustomFees", assessedCustomFees)
                 .add("resolvedAliases", meta.getResolutions())
                 .add("numAutoCreations", meta.getNumAutoCreations())
+                .add("numLazyCreations", meta.getNumLazyCreations())
                 .toString();
     }
 }

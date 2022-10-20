@@ -198,10 +198,15 @@ public class AutoCreationLogic {
                     "Cannot auto-create an account from unaliased change " + change);
         }
 
+        final var isAliasEVMAddress = alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE;
+        if (isAliasEVMAddress && !properties.isLazyCreationEnabled()) {
+            return Pair.of(NOT_SUPPORTED, 0L);
+        }
+
         TransactionBody.Builder syntheticCreation;
         String memo;
         HederaAccountCustomizer customizer = new HederaAccountCustomizer();
-        if (properties.isLazyCreationEnabled() && alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
+        if (isAliasEVMAddress) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             memo = LAZY_MEMO;
         } else {
