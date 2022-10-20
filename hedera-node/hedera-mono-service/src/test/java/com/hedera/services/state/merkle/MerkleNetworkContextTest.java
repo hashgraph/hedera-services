@@ -27,7 +27,8 @@ import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -81,10 +82,11 @@ class MerkleNetworkContextTest {
     private ExchangeRates midnightRateSet;
     private ExchangeRates midnightRateSetCopy;
     private Instant[] congestionStarts;
+    private Instant[] gasCongestionStarts;
     private DeterministicThrottle.UsageSnapshot[] usageSnapshots;
 
     private FunctionalityThrottling throttling;
-    private FeeMultiplierSource feeMultiplierSource;
+    private MultiplierSources multiplierSources;
 
     private GasLimitDeterministicThrottle gasLimitDeterministicThrottle;
     private DeterministicThrottle.UsageSnapshot gasLimitUsageSnapshot;
@@ -252,9 +254,9 @@ class MerkleNetworkContextTest {
         assertTrue(subject.isImmutable());
         assertFalse(subjectCopy.isImmutable());
         assertNull(subject.getThrottling());
-        assertNull(subject.getMultiplierSource());
+        assertNull(subject.getMultiplierSources());
         assertNull(subjectCopy.getThrottling());
-        assertNull(subjectCopy.getMultiplierSource());
+        assertNull(subjectCopy.getMultiplierSources());
         // and:
         assertEquals(subject.getHash(), subjectCopy.getHash());
         subjectCopy.setBlockNo(subject.getAlignmentBlockNo() + 1L);
@@ -269,24 +271,26 @@ class MerkleNetworkContextTest {
         // setup:
         throttling = mock(FunctionalityThrottling.class);
         final var expiryThrottle = mock(ExpiryThrottle.class);
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
         gasLimitDeterministicThrottle = mock(GasLimitDeterministicThrottle.class);
 
         final var someThrottle = DeterministicThrottle.withTpsAndBurstPeriod(1, 23);
         someThrottle.allow(1, Instant.now());
         final var someStart = Instant.ofEpochSecond(7_654_321L, 0);
         final var syncedStarts = new Instant[] {someStart};
+        final var syncedGasStarts = new Instant[] {someStart};
 
         given(throttling.allActiveThrottles()).willReturn(List.of(someThrottle));
 
         given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
         given(expiryThrottle.getThrottleSnapshot()).willReturn(expiryUsageSnapshot);
         given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
-        given(feeMultiplierSource.congestionLevelStarts()).willReturn(syncedStarts);
+        given(multiplierSources.genericCongestionStarts()).willReturn(syncedStarts);
+        given(multiplierSources.gasCongestionStarts()).willReturn(syncedGasStarts);
         // and:
         subject.syncThrottling(throttling);
         subject.syncExpiryThrottle(expiryThrottle);
-        subject.syncMultiplierSource(feeMultiplierSource);
+        subject.syncMultiplierSources(multiplierSources);
 
         // when:
         var subjectCopy = subject.copy();
@@ -317,9 +321,9 @@ class MerkleNetworkContextTest {
         // and:
         assertNull(subject.getThrottling());
         assertNull(subject.getExpiryThrottle());
-        assertNull(subject.getMultiplierSource());
+        assertNull(subject.getMultiplierSources());
         assertNull(subjectCopy.getThrottling());
-        assertNull(subjectCopy.getMultiplierSource());
+        assertNull(subjectCopy.getMultiplierSources());
         assertNull(subjectCopy.getExpiryThrottle());
     }
 
@@ -350,6 +354,7 @@ class MerkleNetworkContextTest {
         assertArrayEquals(a.usageSnapshots(), b.usageSnapshots());
         assertEquals(a.expiryUsageSnapshot(), b.expiryUsageSnapshot());
         assertArrayEquals(a.getCongestionLevelStarts(), b.getCongestionLevelStarts());
+        assertArrayEquals(a.getEvmCongestionLevelStarts(), b.getEvmCongestionLevelStarts());
         assertEquals(a.getStateVersion(), b.getStateVersion());
         assertEquals(a.idsScannedThisSecond(), b.idsScannedThisSecond());
         assertEquals(a.getEntitiesTouchedThisSecond(), b.getEntitiesTouchedThisSecond());
@@ -440,15 +445,15 @@ class MerkleNetworkContextTest {
     void syncsWork() {
         // setup:
         throttling = mock(FunctionalityThrottling.class);
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
 
         // when:
         subject.syncThrottling(throttling);
-        subject.syncMultiplierSource(feeMultiplierSource);
+        subject.syncMultiplierSources(multiplierSources);
 
         // then:
         assertSame(throttling, subject.getThrottling());
-        assertSame(feeMultiplierSource, subject.getMultiplierSource());
+        assertSame(multiplierSources, subject.getMultiplierSources());
     }
 
     @Test
@@ -758,12 +763,13 @@ class MerkleNetworkContextTest {
     @Test
     void updatesEmptyLevelStartsAsExpected() {
         // setup:
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
 
-        given(feeMultiplierSource.congestionLevelStarts()).willReturn(NO_CONGESTION_STARTS);
+        given(multiplierSources.gasCongestionStarts()).willReturn(NO_CONGESTION_STARTS);
+        given(multiplierSources.genericCongestionStarts()).willReturn(NO_CONGESTION_STARTS);
 
         // when:
-        subject.updateCongestionStartsFrom(feeMultiplierSource);
+        subject.updateCongestionStartsFrom(multiplierSources);
 
         // then:
         assertEquals(NO_CONGESTION_STARTS, subject.getCongestionLevelStarts());
@@ -772,12 +778,13 @@ class MerkleNetworkContextTest {
     @Test
     void updatesNullCongestionLevelStartsAsExpected() {
         // setup:
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
 
-        given(feeMultiplierSource.congestionLevelStarts()).willReturn(null);
+        given(multiplierSources.gasCongestionStarts()).willReturn(null);
+        given(multiplierSources.genericCongestionStarts()).willReturn(null);
 
         // when:
-        subject.updateCongestionStartsFrom(feeMultiplierSource);
+        subject.updateCongestionStartsFrom(multiplierSources);
 
         // then:
         assertEquals(NO_CONGESTION_STARTS, subject.getCongestionLevelStarts());
@@ -817,12 +824,13 @@ class MerkleNetworkContextTest {
         // setup:
         subject = new MerkleNetworkContext();
 
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
 
-        given(feeMultiplierSource.congestionLevelStarts()).willReturn(congestionStarts);
+        given(multiplierSources.genericCongestionStarts()).willReturn(congestionStarts);
+        given(multiplierSources.gasCongestionStarts()).willReturn(gasCongestionStarts);
 
         // when:
-        subject.updateCongestionStartsFrom(feeMultiplierSource);
+        subject.updateCongestionStartsFrom(multiplierSources);
 
         // then:
         assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
@@ -964,17 +972,18 @@ class MerkleNetworkContextTest {
     @Test
     void updatesFromSavedCongestionStartsEvenIfNull() {
         // setup:
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
         congestionStarts[1] = null;
 
         // given:
         subject.getCongestionLevelStarts()[1] = null;
 
         // when:
-        subject.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
+        subject.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
 
         // then:
-        verify(feeMultiplierSource, times(1)).resetCongestionLevelStarts(congestionStarts);
+        verify(multiplierSources, times(1))
+                .resetCongestionLevelStarts(gasCongestionStarts, congestionStarts);
     }
 
     @Test
@@ -985,16 +994,17 @@ class MerkleNetworkContextTest {
 
     @Test
     void updatesFromSavedCongestionStarts() {
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
 
         // when:
-        subject.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
+        subject.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
         // and:
         subject.setCongestionLevelStarts(NO_CONGESTION_STARTS);
-        subject.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
+        subject.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
 
         // then:
-        verify(feeMultiplierSource, times(1)).resetCongestionLevelStarts(congestionStarts);
+        verify(multiplierSources, times(1))
+                .resetCongestionLevelStarts(gasCongestionStarts, congestionStarts);
     }
 
     @Test

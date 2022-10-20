@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.fees;
+package com.hedera.services.fees.congestion;
 
 import com.hedera.services.utils.accessors.TxnAccessor;
 import java.time.Instant;

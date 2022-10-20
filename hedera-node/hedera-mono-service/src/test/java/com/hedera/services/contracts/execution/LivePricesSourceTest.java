@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
@@ -54,7 +54,6 @@ class LivePricesSourceTest {
     private static final ExchangeRate activeRate =
             ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(12).build();
     private static final long reasonableMultiplier = 7;
-    private static final long insaneMultiplier = Long.MAX_VALUE / 2;
 
     @Mock private HbarCentExchange exchange;
     @Mock private UsagePricesProvider usagePrices;
@@ -87,23 +86,6 @@ class LivePricesSourceTest {
         final var expected = resourcePriceFn.applyAsLong(providerPrices.getServicedata()) / 1000;
 
         assertEquals(expected, subject.currentGasPriceInTinycents(now, ContractCall));
-    }
-
-    @Test
-    void getsExpectedSbhPriceWithReasonableMultiplier() {
-        givenCollabsWithMultiplier(reasonableMultiplier);
-
-        final var expected =
-                getTinybarsFromTinyCents(activeRate, sbhPriceTinybars) * reasonableMultiplier;
-
-        assertEquals(expected, subject.currentStorageByteHoursPrice(now, ContractCall));
-    }
-
-    @Test
-    void getsExpectedSbhPriceWithInsaneMultiplier() {
-        givenCollabsWithMultiplier(insaneMultiplier);
-
-        assertEquals(Long.MAX_VALUE, subject.currentStorageByteHoursPrice(now, ContractCall));
     }
 
     private void givenCollabsWithMultiplier(final long multiplier) {

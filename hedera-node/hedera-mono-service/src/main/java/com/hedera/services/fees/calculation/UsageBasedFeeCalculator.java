@@ -27,7 +27,8 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.annotations.GenericPriceMultiplier;
+import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -81,7 +82,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             final HbarCentExchange exchange,
             final AutoCreationLogic autoCreationLogic,
             final UsagePricesProvider usagePrices,
-            final FeeMultiplierSource feeMultiplierSource,
+            final @GenericPriceMultiplier FeeMultiplierSource feeMultiplierSource,
             final PricedUsageCalculator pricedUsageCalculator,
             final Set<QueryResourceUsageEstimator> queryUsageEstimators,
             final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators) {

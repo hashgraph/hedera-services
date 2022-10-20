@@ -16,7 +16,6 @@
 package com.hedera.services.fees.congestion;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.throttles.CongestibleThrottle;
 import com.hedera.services.utils.accessors.TxnAccessor;
