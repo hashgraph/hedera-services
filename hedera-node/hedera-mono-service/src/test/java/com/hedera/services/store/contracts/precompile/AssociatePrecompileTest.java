@@ -762,18 +762,18 @@ class AssociatePrecompileTest {
         given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
         given(parentFrame.getRecipientAddress()).willReturn(parentRecipientAddress);
         givenCommonFrameContext();
-        given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
-        given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
+        given(frame.getMessageFrameStack().iterator().hasNext()).willReturn(true);
+        given(frame.getMessageFrameStack().iterator().next()).willReturn(parentFrame);
     }
 
     private void givenFrameContextWithEmptyMessageFrameStack() {
         givenCommonFrameContext();
-        given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(false);
+        given(frame.getMessageFrameStack().iterator().hasNext()).willReturn(false);
     }
 
     private void givenFrameContextWithoutParentFrame() {
         givenCommonFrameContext();
-        given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true, false);
+        given(frame.getMessageFrameStack().iterator().hasNext()).willReturn(true, false);
     }
 
     private void givenCommonFrameContext() {
@@ -781,7 +781,7 @@ class AssociatePrecompileTest {
         given(frame.getRecipientAddress()).willReturn(contractAddress);
         given(frame.getSenderAddress()).willReturn(senderAddress);
         given(frame.getMessageFrameStack()).willReturn(frameDeque);
-        given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);

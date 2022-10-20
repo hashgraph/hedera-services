@@ -220,7 +220,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (shouldMigrateNfts()) {
                 migrateFromUniqueTokenMerkleMap(this);
             }
-            if (shouldMigrateNonNftsToDisk()) {
+            if (shouldMigrateSomethingToDisk()) {
                 mapToDiskMigration.migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
                         this,
@@ -652,7 +652,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         return enabledVirtualNft && !uniqueTokens().isVirtual();
     }
 
-    boolean shouldMigrateNonNftsToDisk() {
+    boolean shouldMigrateSomethingToDisk() {
         return shouldMigrateAccountsToDisk() || shouldMigrateTokenRelsToDisk();
     }
 
