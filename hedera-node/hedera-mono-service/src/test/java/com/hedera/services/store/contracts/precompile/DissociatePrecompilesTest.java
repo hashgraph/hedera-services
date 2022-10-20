@@ -65,9 +65,9 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
@@ -142,7 +142,7 @@ class DissociatePrecompilesTest {
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRels;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
@@ -462,9 +462,9 @@ class DissociatePrecompilesTest {
         given(frame.getRecipientAddress()).willReturn(contractAddr);
         given(frame.getSenderAddress()).willReturn(senderAddr);
         given(frame.getMessageFrameStack()).willReturn(frameDeque);
-        given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
-        given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
-        given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
+        given(frame.getMessageFrameStack().iterator().hasNext()).willReturn(true);
+        given(frame.getMessageFrameStack().iterator().next()).willReturn(parentFrame);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);

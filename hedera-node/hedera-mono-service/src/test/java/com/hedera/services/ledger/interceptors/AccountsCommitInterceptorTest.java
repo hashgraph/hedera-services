@@ -23,6 +23,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
@@ -64,9 +65,9 @@ class AccountsCommitInterceptorTest {
         verifyNoInteractions(usageTracking);
     }
 
-    private EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges(
+    private EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges(
             final boolean includeContract, final boolean includeAccounts) {
-        final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges =
+        final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges =
                 new EntityChangeSet<>();
         if (includeAccounts) {
             pendingChanges.include(idWith(1234L), null, Map.of(IS_SMART_CONTRACT, false));

@@ -29,7 +29,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
@@ -55,7 +55,7 @@ public class RenewalHelper implements RenewalWork {
     private final ExpiryThrottle expiryThrottle;
     private final ExpiryStats expiryStats;
     private final NonHapiFeeCharging nonHapiFeeCharging;
-    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private final SideEffectsTracker sideEffectsTracker;
 
     @Inject
@@ -67,7 +67,7 @@ public class RenewalHelper implements RenewalWork {
             final FeeCalculator fees,
             final ExpiryRecordsHelper recordsHelper,
             final NonHapiFeeCharging nonHapiFeeCharging,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final SideEffectsTracker sideEffectsTracker) {
         this.expiryStats = expiryStats;
         this.expiryThrottle = expiryThrottle;
@@ -123,7 +123,7 @@ public class RenewalHelper implements RenewalWork {
         return DONE;
     }
 
-    private List<MapAccessType> workFor(final MerkleAccount payer, final MerkleAccount expired) {
+    private List<MapAccessType> workFor(final HederaAccount payer, final HederaAccount expired) {
         return (payer == expired) ? SELF_RENEWAL_WORK : SUPPORTED_RENEWAL_WORK;
     }
 

@@ -30,6 +30,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -81,7 +82,8 @@ public class FeeCalcUtilsTest {
         given(account.getExpiry()).willReturn(Long.MAX_VALUE);
         given(accounts.get(key)).willReturn(account);
 
-        assertEquals(expected, lookupAccountExpiry(key, accounts));
+        assertEquals(
+                expected, lookupAccountExpiry(key, AccountStorageAdapter.fromInMemory(accounts)));
     }
 
     @Test

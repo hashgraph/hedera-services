@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -75,7 +75,7 @@ public class AllowanceHelpers {
         return totalSerials;
     }
 
-    public static Set<AllowanceId> getNftApprovedForAll(final MerkleAccount account) {
+    public static Set<AllowanceId> getNftApprovedForAll(final HederaAccount account) {
         if (!account.getApproveForAllNfts().isEmpty()) {
             Set<AllowanceId> nftAllowances = new HashSet<>();
             for (var a : account.getApproveForAllNfts()) {
@@ -89,7 +89,7 @@ public class AllowanceHelpers {
     }
 
     public static Map<AllowanceId, Long> getFungibleTokenAllowancesList(
-            final MerkleAccount account) {
+            final HederaAccount account) {
         if (!account.getFungibleTokenAllowances().isEmpty()) {
             Map<AllowanceId, Long> tokenAllowances = new HashMap<>();
             for (var a : account.getFungibleTokenAllowances().entrySet()) {
@@ -104,7 +104,7 @@ public class AllowanceHelpers {
         return Collections.emptyMap();
     }
 
-    public static Map<Long, Long> getCryptoAllowancesList(final MerkleAccount account) {
+    public static Map<Long, Long> getCryptoAllowancesList(final HederaAccount account) {
         if (!account.getCryptoAllowances().isEmpty()) {
             Map<Long, Long> cryptoAllowances = new HashMap<>();
 
@@ -189,7 +189,7 @@ public class AllowanceHelpers {
      * @param nft given nft
      * @param ownerId owner given in allowance
      * @param token token for which nft belongs to
-     * @return
+     * @return whether the owner is valid
      */
     public static boolean validOwner(final UniqueToken nft, final Id ownerId, final Token token) {
         final var listedOwner = nft.getOwner();
@@ -214,7 +214,7 @@ public class AllowanceHelpers {
     }
 
     public static List<GrantedNftAllowance> getNftGrantedAllowancesList(
-            final MerkleAccount account) {
+            final HederaAccount account) {
         if (!account.getApproveForAllNfts().isEmpty()) {
             List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
             for (var a : account.getApproveForAllNfts()) {
@@ -229,7 +229,7 @@ public class AllowanceHelpers {
     }
 
     public static List<GrantedTokenAllowance> getFungibleGrantedTokenAllowancesList(
-            final MerkleAccount account) {
+            final HederaAccount account) {
         if (!account.getFungibleTokenAllowances().isEmpty()) {
             List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
             final var tokenAllowance = GrantedTokenAllowance.newBuilder();
@@ -245,7 +245,7 @@ public class AllowanceHelpers {
     }
 
     public static List<GrantedCryptoAllowance> getCryptoGrantedAllowancesList(
-            final MerkleAccount account) {
+            final HederaAccount account) {
         if (!account.getCryptoAllowances().isEmpty()) {
             List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
             final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();

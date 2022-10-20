@@ -24,10 +24,11 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.LongStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -40,13 +41,16 @@ public class TreasuryCloner {
     private static final Logger log = LogManager.getLogger(TreasuryCloner.class);
 
     private final AccountNumbers accountNums;
-    private final BackingStore<AccountID, MerkleAccount> accounts;
-    private final List<MerkleAccount> clonesCreated = new ArrayList<>();
+    private final Supplier<HederaAccount> accountSupplier;
+    private final BackingStore<AccountID, HederaAccount> accounts;
+    private final List<HederaAccount> clonesCreated = new ArrayList<>();
 
     @Inject
     public TreasuryCloner(
             final AccountNumbers accountNums,
-            final BackingStore<AccountID, MerkleAccount> accounts) {
+            final Supplier<HederaAccount> accountSupplier,
+            final BackingStore<AccountID, HederaAccount> accounts) {
+        this.accountSupplier = accountSupplier;
         this.accountNums = accountNums;
         this.accounts = accounts;
     }
@@ -70,7 +74,7 @@ public class TreasuryCloner {
                             .isSmartContract(false)
                             .key(treasury.getAccountKey())
                             .autoRenewPeriod(treasury.getAutoRenewSecs())
-                            .customizing(new MerkleAccount());
+                            .customizing(accountSupplier.get());
             accounts.put(nextCloneId, nextClone);
             clonesCreated.add(nextClone);
         }
@@ -81,7 +85,7 @@ public class TreasuryCloner {
                 NUM_RESERVED_SYSTEM_ENTITIES);
     }
 
-    public List<MerkleAccount> getClonesCreated() {
+    public List<HederaAccount> getClonesCreated() {
         return clonesCreated;
     }
 

@@ -46,7 +46,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
@@ -88,7 +88,7 @@ class EthereumTransitionLogicTest {
     @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
     @Mock private ContractCallTransitionLogic contractCallTransitionLogic;
     @Mock private ContractCreateTransitionLogic contractCreateTransitionLogic;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private SwirldsTxnAccessor swirldsTxnAccessor;
     @Mock private RationalizedSigMeta rationalizedSigMeta;
 
