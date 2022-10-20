@@ -22,7 +22,7 @@ import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZON
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
+import static com.hedera.services.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
