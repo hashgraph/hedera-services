@@ -245,6 +245,7 @@ public class SStoreSuite extends HapiApiSuite {
         };
     }
 
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
