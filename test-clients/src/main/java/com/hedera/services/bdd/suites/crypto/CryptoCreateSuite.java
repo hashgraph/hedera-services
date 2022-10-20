@@ -497,11 +497,11 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(ecdsaKey.toByteString())
+                                                    .alias(ecdsaKey.toByteString())
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(ecdsaKey.toByteString())
+                                                    .alias(ecdsaKey.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
@@ -539,16 +539,16 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(ecdsaKey.toByteString())
+                                                    .alias(ecdsaKey.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
@@ -581,11 +581,11 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     var ed25519Key = spec.registry().getKey(ED_25519_KEY);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(ed25519Key.toByteString())
+                                                    .alias(ed25519Key.toByteString())
                                                     .balance(1000 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(ed25519Key.toByteString())
+                                                    .alias(ed25519Key.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY);
 
                                     allRunFor(spec, op, op2);
@@ -623,12 +623,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(ecdsaKey.toByteString())
+                                                    .alias(ecdsaKey.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
@@ -683,16 +683,16 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .withAlias(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(ecdsaKey.toByteString())
+                                                    .alias(ecdsaKey.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
@@ -703,9 +703,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op5 =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .withAlias(
-                                                            ByteString.copyFromUtf8(
-                                                                    "Invalid alias"))
+                                                    .alias(ByteString.copyFromUtf8("Invalid alias"))
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
@@ -740,11 +738,11 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op =
                                             cryptoCreate(ACCOUNT)
                                                     .key(ED_25519_KEY)
-                                                    .withAlias(ed25519Key.toByteString())
+                                                    .alias(ed25519Key.toByteString())
                                                     .balance(1000 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(ed25519Key.toByteString())
+                                                    .alias(ed25519Key.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY);
 
                                     allRunFor(spec, op, op2);
@@ -783,7 +781,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .withAlias(ecdsaKey.toByteString())
+                                                    .alias(ecdsaKey.toByteString())
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
@@ -792,12 +790,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(ecdsaKey.toByteString())
+                                                    .alias(ecdsaKey.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
                                             cryptoCreate(ACCOUNT)
-                                                    .withAlias(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
