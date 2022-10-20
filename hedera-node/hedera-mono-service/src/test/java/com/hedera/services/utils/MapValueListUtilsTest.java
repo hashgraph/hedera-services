@@ -50,7 +50,7 @@ class MapValueListUtilsTest {
 
         final var k3 = removeFromMapValueList(k2, k2, relsListRemoval);
         assertNull(k3);
-        assertTrue(tokenRels.size() == 0L);
+        assertEquals(0L, tokenRels.size());
     }
 
     @Test

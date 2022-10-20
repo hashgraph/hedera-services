@@ -18,7 +18,6 @@ package com.hedera.services.state.virtual.entities;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.Test;
 
 class OnDiskTokenRelCompatabilityTest {
@@ -34,13 +33,5 @@ class OnDiskTokenRelCompatabilityTest {
         assertEquals(inMemory.isKycGranted(), onDisk.isKycGranted());
         assertEquals(inMemory.isAutomaticAssociation(), onDisk.isAutomaticAssociation());
         assertEquals(inMemory.getRelatedTokenNum(), onDisk.getRelatedTokenNum());
-    }
-
-    @Test
-    void hmm() {
-        final var unhexed =
-                CommonUtils.unhex(
-                        "073816709fdc059318a44ee1c76401bdec64c81c37b0bd0cb6497b1ba4b55fc6df");
-        System.out.println(unhexed.length);
     }
 }
