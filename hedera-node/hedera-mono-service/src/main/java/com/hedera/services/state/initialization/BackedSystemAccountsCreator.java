@@ -181,7 +181,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     }
 
     public void forgetCreations() {
-        treasuryCloner.forgetScannedSystemAccounts();
+        treasuryCloner.forgetCreatedClones();
         systemAccountsCreated.clear();
     }
 }
