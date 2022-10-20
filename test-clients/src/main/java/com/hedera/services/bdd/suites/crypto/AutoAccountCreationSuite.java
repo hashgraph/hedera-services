@@ -780,7 +780,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .hasDefaultKey()
-                                                                    .alias(evmAddress)
+                                                                    .evmAddressAlias(evmAddress)
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)
                                                                     .autoRenew(
