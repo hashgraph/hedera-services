@@ -20,7 +20,7 @@ plugins {
 
 spotless {
     // optional: limit format enforcement to just the files changed by this feature branch
-    ratchetFrom("origin/master")
+    ratchetFrom("origin/develop")
 
     format("misc", {
         // define the files to apply `misc` to
