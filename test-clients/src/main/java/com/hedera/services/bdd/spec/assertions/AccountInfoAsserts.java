@@ -35,6 +35,9 @@ import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.Assertions;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
+
+    public static final String BAD_ALIAS = "Bad Alias!";
+
     public static AccountInfoAsserts accountWith() {
         return new AccountInfoAsserts();
     }
@@ -297,15 +300,19 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                         assertEquals(
                                 expectedKey.getECDSASecp256K1(),
                                 ((AccountInfo) o).getAlias(),
-                                "Bad ECDSA key alias!");
-                    }
-                });
+                                BAD_ALIAS));
+        return this;
+    }
+
+    public AccountInfoAsserts evmAddressAlias(ByteString evmAddress) {
+        registerProvider(
+                (spec, o) -> assertEquals(evmAddress, ((AccountInfo) o).getAlias(), BAD_ALIAS));
         return this;
     }
 
     public AccountInfoAsserts noAlias() {
         registerProvider(
-                (spec, o) -> assertTrue(((AccountInfo) o).getAlias().isEmpty(), "Bad Alias!"));
+                (spec, o) -> assertTrue(((AccountInfo) o).getAlias().isEmpty(), BAD_ALIAS));
         return this;
     }
 
