@@ -17,9 +17,6 @@ package com.hedera.services.state.migration;
 
 /** Gives the versions of the current and previous world states. */
 public final class StateVersions {
-    private static final String BASE_0260_VERSION = "0.26.0";
-    private static final String BASE_0270_VERSION = "0.27.0";
-
     // For the record,
     //   - Release 0.7.x was state version 1
     //   - Release 0.8.x was state version 2
