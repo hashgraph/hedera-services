@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -60,7 +61,7 @@ public class MutableStateChildren implements StateChildren {
     private WeakReference<MerkleScheduledTransactions> schedules;
     private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
     private WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
-    private WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
+    private NonAtomicReference<TokenRelStorageAdapter> tokenAssociations;
     private WeakReference<MerkleNetworkContext> networkCtx;
     private WeakReference<AddressBook> addressBook;
     private WeakReference<MerkleSpecialFiles> specialFiles;
@@ -154,7 +155,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
+    public TokenRelStorageAdapter tokenAssociations() {
         return Objects.requireNonNull(tokenAssociations.get());
     }
 
@@ -163,8 +164,8 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void setTokenAssociations(
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
-        this.tokenAssociations = new WeakReference<>(tokenAssociations);
+            final TokenRelStorageAdapter tokenAssociations) {
+        this.tokenAssociations = new NonAtomicReference<>(tokenAssociations);
     }
 
     @Override
@@ -247,7 +248,7 @@ public class MutableStateChildren implements StateChildren {
         storage = new WeakReference<>(state.storage());
         contractStorage = new WeakReference<>(state.contractStorage());
         tokens = new WeakReference<>(state.tokens());
-        tokenAssociations = new WeakReference<>(state.tokenAssociations());
+        tokenAssociations = new NonAtomicReference<>(state.tokenAssociations());
         schedules = new WeakReference<>(state.scheduleTxs());
         networkCtx = new WeakReference<>(state.networkCtx());
         addressBook = new WeakReference<>(state.addressBook());

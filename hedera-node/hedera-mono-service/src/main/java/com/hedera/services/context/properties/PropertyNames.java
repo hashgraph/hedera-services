@@ -188,6 +188,7 @@ public class PropertyNames {
     public static final String STAKING_REWARD_RATE = "staking.rewardRate";
     public static final String STAKING_START_THRESH = "staking.startThreshold";
     public static final String TOKENS_MAX_AGGREGATE_RELS = "tokens.maxAggregateRels";
+    public static final String TOKENS_STORE_RELS_ON_DISK = "tokens.storeRelsOnDisk";
     public static final String TOKENS_MAX_NUM = "tokens.maxNumber";
     public static final String TOKENS_MAX_RELS_PER_INFO_QUERY = "tokens.maxRelsPerInfoQuery";
     public static final String TOKENS_MAX_PER_ACCOUNT = "tokens.maxPerAccount";

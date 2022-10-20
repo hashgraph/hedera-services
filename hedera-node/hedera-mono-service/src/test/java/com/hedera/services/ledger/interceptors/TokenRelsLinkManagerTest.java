@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
@@ -39,7 +40,8 @@ class TokenRelsLinkManagerTest {
     void setUp() {
         subject =
                 new TokenRelsLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts), () -> tokenRels);
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> TokenRelStorageAdapter.fromInMemory(tokenRels));
     }
 
     @Test

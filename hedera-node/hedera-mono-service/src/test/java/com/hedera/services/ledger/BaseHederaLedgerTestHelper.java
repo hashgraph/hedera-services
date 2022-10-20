@@ -49,6 +49,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.MutableEntityAccess;
@@ -89,7 +90,7 @@ public class BaseHederaLedgerTestHelper {
     protected TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     protected TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
     protected AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
     protected long MISC_BALANCE = 1_234L;

@@ -26,11 +26,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 class MapValueListUtilsTest {
-    private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+    private TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
     @Test
     void sequentialRemovalWorksAsExpected() {
@@ -48,7 +49,7 @@ class MapValueListUtilsTest {
 
         final var k3 = removeFromMapValueList(k2, k2, relsListRemoval);
         assertNull(k3);
-        assertTrue(tokenRels.isEmpty());
+        assertTrue(tokenRels.size() == 0L);
     }
 
     @Test

@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
@@ -35,7 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenRelsListMutationTest {
     private static final long accountNum = 1_234L;
 
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    @Mock private TokenRelStorageAdapter tokenRels;
 
     private TokenRelsListMutation subject;
 

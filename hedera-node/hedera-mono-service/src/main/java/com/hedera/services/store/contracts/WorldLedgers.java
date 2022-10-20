@@ -58,6 +58,7 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -82,7 +83,7 @@ public class WorldLedgers {
     private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private final TransactionalLedger<
-                    Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+                    Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
 
     public static WorldLedgers staticLedgersWith(
@@ -93,7 +94,7 @@ public class WorldLedgers {
     public WorldLedgers(
             final ContractAliases aliases,
             final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+                            Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
@@ -384,7 +385,7 @@ public class WorldLedgers {
         return aliases;
     }
 
-    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRels() {
         return tokenRelsLedger;
     }

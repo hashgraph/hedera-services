@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
@@ -45,7 +46,7 @@ class ReleaseThirtyMigrationTest {
 
     @Test
     void grantsAutoRenewToNonDeletedContracts() throws ConstructableRegistryException {
-        registerForMerkleMap();
+        registerForAccountsMerkleMap();
 
         final var aKey = EntityNum.fromLong(1L);
         final var bKey = EntityNum.fromLong(2L);
@@ -144,7 +145,19 @@ class ReleaseThirtyMigrationTest {
         assertEquals(nftId2.asNftNumPair(), uniqueTokens.merkleMap().get(nftId4).getNext());
     }
 
-    static void registerForMerkleMap() throws ConstructableRegistryException {
+    static void registerForAccountsMerkleMap() throws ConstructableRegistryException {
+        registerForMM();
+        ConstructableRegistry.registerConstructable(
+                new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+    }
+
+    static void registerForTokenRelsMerkleMap() throws ConstructableRegistryException {
+        registerForMM();
+        ConstructableRegistry.registerConstructable(
+                new ClassConstructorPair(MerkleTokenRelStatus.class, MerkleTokenRelStatus::new));
+    }
+
+    private static void registerForMM() throws ConstructableRegistryException {
         ConstructableRegistry.registerConstructable(
                 new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
         ConstructableRegistry.registerConstructable(
@@ -154,7 +167,5 @@ class ReleaseThirtyMigrationTest {
         ConstructableRegistry.registerConstructable(
                 new ClassConstructorPair(
                         MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
     }
 }

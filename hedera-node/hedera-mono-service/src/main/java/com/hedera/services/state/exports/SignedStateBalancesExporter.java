@@ -29,6 +29,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -263,7 +264,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
             final HederaAccount account,
             final SingleAccountBalances.Builder sabBuilder,
             final MerkleMap<EntityNum, MerkleToken> tokens,
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
+            final TokenRelStorageAdapter tokenAssociations) {
         doBoundedIteration(
                 tokenAssociations,
                 tokens,

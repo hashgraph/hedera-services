@@ -29,7 +29,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -37,6 +39,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +55,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
     @Mock private TransactionContext txnCtx;
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private TokenRelsLinkManager relsLinkManager;
+    @Mock private Supplier<HederaTokenRel> tokenRelSupplier;
 
     private LinkAwareTokenRelsCommitInterceptor subject;
 
@@ -58,7 +63,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
     void setUp() {
         subject =
                 new LinkAwareTokenRelsCommitInterceptor(
-                        usageLimits, txnCtx, sideEffectsTracker, relsLinkManager);
+                        usageLimits, txnCtx, sideEffectsTracker, relsLinkManager, tokenRelSupplier);
     }
 
     @Test
@@ -70,7 +75,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
     void noChangesAreNoop() {
         final var changes =
                 new EntityChangeSet<
-                        Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty>();
+                        Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
 
         subject.preview(changes);
 
@@ -81,6 +86,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
     void tracksNothingIfOpIsNotAutoAssociating() {
         given(accessor.getFunction()).willReturn(CryptoUpdate);
         given(txnCtx.accessor()).willReturn(accessor);
+        given(tokenRelSupplier.get()).willReturn(new OnDiskTokenRel());
 
         final var changes = someChanges();
 
@@ -93,6 +99,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
     void tracksSideEffectsIfOpIsAutoAssociating() {
         given(accessor.getFunction()).willReturn(TokenCreate);
         given(txnCtx.accessor()).willReturn(accessor);
+        given(tokenRelSupplier.get()).willReturn(new OnDiskTokenRel());
 
         final var changes = someChanges();
 
@@ -105,8 +112,9 @@ class LinkAwareTokenRelsCommitInterceptorTest {
     void addsAndRemovesRelsAsExpected() {
         given(accessor.getFunction()).willReturn(ContractCall);
         given(txnCtx.accessor()).willReturn(accessor);
+        given(tokenRelSupplier.get()).willReturn(new OnDiskTokenRel());
 
-        final var expectedNewRel = new MerkleTokenRelStatus();
+        final var expectedNewRel = new OnDiskTokenRel();
         expectedNewRel.setKey(
                 EntityNumPair.fromLongs(aAccountId.getAccountNum(), newAssocTokenId.getTokenNum()));
         final var changes = someChanges();
@@ -121,11 +129,11 @@ class LinkAwareTokenRelsCommitInterceptorTest {
         verify(usageLimits).refreshTokenRels();
     }
 
-    private EntityChangeSet<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty>
+    private EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>
             someChanges() {
         final var changes =
                 new EntityChangeSet<
-                        Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty>();
+                        Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
         changes.include(Pair.of(aAccountId, alreadyAssocTokenId), extantRel, Map.of());
         changes.include(Pair.of(aAccountId, newAssocTokenId), null, Map.of());
         tbdExtantRel.setKey(

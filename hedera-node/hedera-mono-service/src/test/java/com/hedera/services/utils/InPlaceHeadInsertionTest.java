@@ -21,11 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 class InPlaceHeadInsertionTest {
-    private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+    private TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
     @Test
     void canInsertToEmptyList() {

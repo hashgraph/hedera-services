@@ -25,6 +25,7 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -47,7 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TreasuryReturnHelperTest {
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    @Mock private TokenRelStorageAdapter tokenRels;
     @Mock private UniqueTokenMapAdapter nfts;
 
     private final List<CurrencyAdjustments> returnTransfers = new ArrayList<>();

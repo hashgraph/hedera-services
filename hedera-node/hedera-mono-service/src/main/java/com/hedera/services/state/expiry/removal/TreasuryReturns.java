@@ -30,6 +30,7 @@ import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -75,7 +76,7 @@ public class TreasuryReturns {
 
     private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
     private final Supplier<UniqueTokenMapAdapter> nfts;
-    private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
+    private final Supplier<TokenRelStorageAdapter> tokenRels;
 
     private final EntityLookup entityLookup;
     private final ExpiryThrottle expiryThrottle;
@@ -88,7 +89,7 @@ public class TreasuryReturns {
             final EntityLookup entityLookup,
             final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
             final Supplier<UniqueTokenMapAdapter> nfts,
-            final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
+            final Supplier<TokenRelStorageAdapter> tokenRels,
             final ExpiryThrottle expiryThrottle,
             final TreasuryReturnHelper returnHelper) {
         this.nfts = nfts;

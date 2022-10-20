@@ -43,11 +43,10 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
-import com.hedera.services.state.migration.UniqueTokenMapAdapter;
+import com.hedera.services.state.migration.*;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -127,20 +126,20 @@ public interface StoresModule {
 
     @Binds
     @Singleton
-    BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> bindBackingTokenRels(
-            TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> bindBackingTokenRels(
+            TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger);
 
     @Provides
     @Singleton
-    static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             provideTokenRelsLedger(
                     final UsageLimits usageLimits,
                     final TransactionContext txnCtx,
                     final SideEffectsTracker sideEffectsTracker,
                     final TokenRelsLinkManager relsLinkManager,
-                    final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>>
-                            tokenAssociations) {
+                    final Supplier<HederaTokenRel> tokenRelSupplier,
+                    final Supplier<TokenRelStorageAdapter> tokenAssociations) {
         final var tokenRelsLedger =
                 new TransactionalLedger<>(
                         TokenRelProperty.class,
@@ -150,7 +149,7 @@ public interface StoresModule {
         tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
         final var interceptor =
                 new LinkAwareTokenRelsCommitInterceptor(
-                        usageLimits, txnCtx, sideEffectsTracker, relsLinkManager);
+                        usageLimits, txnCtx, sideEffectsTracker, relsLinkManager, tokenRelSupplier);
         tokenRelsLedger.setCommitInterceptor(interceptor);
         return tokenRelsLedger;
     }
@@ -162,6 +161,15 @@ public interface StoresModule {
         return bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
                 ? OnDiskAccount::new
                 : MerkleAccount::new;
+    }
+
+    @Provides
+    @Singleton
+    static Supplier<HederaTokenRel> provideTokenRelSupplier(
+            final BootstrapProperties bootstrapProperties) {
+        return bootstrapProperties.getBooleanProperty(TOKENS_STORE_RELS_ON_DISK)
+                ? OnDiskTokenRel::new
+                : MerkleTokenRelStatus::new;
     }
 
     @Provides

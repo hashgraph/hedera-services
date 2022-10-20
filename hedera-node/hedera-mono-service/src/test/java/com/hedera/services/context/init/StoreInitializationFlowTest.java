@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
@@ -54,7 +55,7 @@ class StoreInitializationFlowTest {
     @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
     @Mock private BackingStore<NftId, UniqueTokenAdapter> backingNfts;
     @Mock private BackingStore<TokenID, MerkleToken> backingTokens;
-    @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
+    @Mock private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingTokenRels;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
 
     private StoreInitializationFlow subject;

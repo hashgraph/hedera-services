@@ -47,6 +47,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -381,7 +382,7 @@ class DeleteAllowanceChecksTest {
                                 new byte[0],
                                 RichInstant.MISSING_INSTANT));
 
-        BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> rels =
+        BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> rels =
                 mock(BackingTokenRels.class);
         given(view.asReadOnlyAccountStore()).willReturn(store);
         given(view.asReadOnlyTokenStore()).willReturn(tokens);

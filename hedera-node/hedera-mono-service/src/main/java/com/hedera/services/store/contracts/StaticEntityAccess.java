@@ -36,10 +36,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
-import com.hedera.services.state.migration.UniqueTokenMapAdapter;
+import com.hedera.services.state.migration.*;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -68,7 +65,7 @@ public class StaticEntityAccess implements EntityAccess {
     private final MerkleMap<EntityNum, MerkleToken> tokens;
     private final AccountStorageAdapter accounts;
     private final UniqueTokenMapAdapter nfts;
-    private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    private final TokenRelStorageAdapter tokenAssociations;
     private final VirtualMap<ContractKey, IterableContractValue> storage;
     private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 

@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -75,7 +76,7 @@ class SignedStateViewFactoryTest {
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleScheduledTransactions scheduleTxs;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private AddressBook addressBook;

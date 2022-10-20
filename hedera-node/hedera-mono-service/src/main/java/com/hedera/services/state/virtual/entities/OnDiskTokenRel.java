@@ -55,7 +55,19 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
     }
 
     public static OnDiskTokenRel from(final MerkleTokenRelStatus inMemoryTokenRel) {
-        throw new AssertionError("Not implemented");
+        final var onDisk = new OnDiskTokenRel();
+        onDisk.setPrev(inMemoryTokenRel.getPrev());
+        onDisk.setNext(inMemoryTokenRel.getNext());
+        onDisk.setNumbers(inMemoryTokenRel.getKey().value());
+        onDisk.setBalance(inMemoryTokenRel.getBalance());
+        onDisk.setFrozen(inMemoryTokenRel.isFrozen());
+        onDisk.setKycGranted(inMemoryTokenRel.isKycGranted());
+        onDisk.setAutomaticAssociation(inMemoryTokenRel.isAutomaticAssociation());
+        return onDisk;
+    }
+
+    public static int serializedSizeInBytes() {
+        return 1 + 4 * Long.SIZE;
     }
 
     @Override

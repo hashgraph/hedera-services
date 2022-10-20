@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -54,7 +55,7 @@ public interface StateChildren {
 
     VirtualMap<ContractKey, IterableContractValue> contractStorage();
 
-    MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations();
+    TokenRelStorageAdapter tokenAssociations();
 
     MerkleNetworkContext networkCtx();
 

@@ -53,6 +53,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.store.contracts.MutableEntityAccess;
@@ -113,7 +114,7 @@ public class HederaLedger {
 
     private MutableEntityAccess mutableEntityAccess;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger = null;
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger = null;
 
     private final AutoCreationLogic autoCreationLogic;
@@ -156,7 +157,7 @@ public class HederaLedger {
 
     public void setTokenRelsLedger(
             final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+                            Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger) {
         this.tokenRelsLedger = tokenRelsLedger;
     }
@@ -169,7 +170,7 @@ public class HederaLedger {
         return nftsLedger;
     }
 
-    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             getTokenRelsLedger() {
         return tokenRelsLedger;
     }

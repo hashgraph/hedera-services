@@ -16,8 +16,9 @@
 package com.hedera.services.state.migration;
 
 import com.hedera.services.utils.EntityNumPair;
+import com.swirlds.common.FastCopyable;
 
-public interface HederaTokenRel {
+public interface HederaTokenRel extends FastCopyable {
     long getBalance();
 
     void setBalance(long balance);
