@@ -15,11 +15,10 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.ImpactHistorian;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoExpiry;
@@ -30,11 +29,14 @@ import com.hedera.services.txns.schedule.ScheduleProcessing;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.system.transaction.Transaction;
-import java.time.Instant;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
+
+import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 @Singleton
 public class StandardProcessLogic implements ProcessLogic {
@@ -46,6 +48,7 @@ public class StandardProcessLogic implements ProcessLogic {
     private final ExpandHandleSpan expandHandleSpan;
     private final EntityAutoExpiry autoRenewal;
     private final ServicesTxnManager txnManager;
+    private final ImpactHistorian impactHistorian;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
     private final ExecutionTimeTracker executionTimeTracker;
@@ -62,6 +65,7 @@ public class StandardProcessLogic implements ProcessLogic {
             final EntityAutoExpiry autoRenewal,
             final ServicesTxnManager txnManager,
             final SigImpactHistorian sigImpactHistorian,
+            final ImpactHistorian impactHistorian,
             final TransactionContext txnCtx,
             final ScheduleProcessing scheduleProcessing,
             final ExecutionTimeTracker executionTimeTracker,
@@ -71,6 +75,7 @@ public class StandardProcessLogic implements ProcessLogic {
         this.invariantChecks = invariantChecks;
         this.expandHandleSpan = expandHandleSpan;
         this.executionTimeTracker = executionTimeTracker;
+        this.impactHistorian = impactHistorian;
         this.consensusTimeTracker = consensusTimeTracker;
         this.autoRenewal = autoRenewal;
         this.txnManager = txnManager;
@@ -101,8 +106,10 @@ public class StandardProcessLogic implements ProcessLogic {
 
             consensusTimeTracker.reset(consensusTime);
 
+            impactHistorian.setChangeTime(consensusTime);
             sigImpactHistorian.setChangeTime(consensusTime);
             expiries.purge(consensusTime.getEpochSecond());
+            impactHistorian.purge();
             sigImpactHistorian.purge();
             recordStreaming.resetBlockNo();
 

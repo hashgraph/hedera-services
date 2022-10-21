@@ -57,6 +57,7 @@ import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
+import com.hedera.services.store.cache.ImmutableState;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.ProcessLogic;
@@ -79,11 +80,13 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
+
+import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import javax.inject.Singleton;
 
 /** The infrastructure used to implement the platform contract for a Hedera Services node. */
 @Singleton
@@ -187,6 +190,8 @@ public interface ServicesApp {
     Supplier<NotificationEngine> notificationEngine();
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
+    @ImmutableState
+    AtomicReference<ServicesState> immutableStateRef();
 
     @Component.Builder
     interface Builder {

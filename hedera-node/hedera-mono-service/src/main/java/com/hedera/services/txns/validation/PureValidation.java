@@ -15,31 +15,22 @@
  */
 package com.hedera.services.txns.validation;
 
-import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
-import static com.hedera.services.utils.EntityNum.fromContractId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
-
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.*;
+import org.apache.commons.codec.DecoderException;
+
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
+
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
+import static com.hedera.services.utils.EntityNum.fromContractId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public final class PureValidation {
     private PureValidation() {
@@ -65,12 +56,20 @@ public final class PureValidation {
         return internalQueryableAccountStatus(false, entityNum, accounts);
     }
 
+    public static ResponseCodeEnum payerAccountStatus(@Nullable final HederaAccount account) {
+        return fetchedAccountStatus(false, account);
+    }
+
     private static ResponseCodeEnum internalQueryableAccountStatus(
             final boolean contractIsOk,
             final EntityNum entityNum,
             final AccountStorageAdapter accounts) {
-        final var account = accounts.get(entityNum);
+        return fetchedAccountStatus(contractIsOk, accounts.get(entityNum));
+    }
 
+    private static ResponseCodeEnum fetchedAccountStatus(
+            final boolean contractIsOk,
+            @Nullable final HederaAccount account) {
         return Optional.ofNullable(account)
                 .map(
                         v -> {

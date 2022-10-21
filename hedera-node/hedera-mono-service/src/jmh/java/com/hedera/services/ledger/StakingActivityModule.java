@@ -15,9 +15,7 @@
  */
 package com.hedera.services.ledger;
 
-import static com.hedera.services.context.properties.PropertyNames.*;
-import static com.hedera.services.mocks.MockDynamicProperties.mockPropertiesWith;
-
+import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -35,12 +33,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.mocks.MockAccountNumbers;
-import com.hedera.services.mocks.MockAccountTracking;
-import com.hedera.services.mocks.MockEntityCreator;
-import com.hedera.services.mocks.MockProps;
-import com.hedera.services.mocks.MockRecordsHistorian;
-import com.hedera.services.mocks.MockTransactionContext;
+import com.hedera.services.mocks.*;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.setup.InfrastructureBundle;
 import com.hedera.services.setup.InfrastructureType;
@@ -53,16 +46,22 @@ import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.store.cache.ImmutableState;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+
+import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import javax.inject.Singleton;
+
+import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.mocks.MockDynamicProperties.mockPropertiesWith;
 
 @Module
 public interface StakingActivityModule {
@@ -96,6 +95,13 @@ public interface StakingActivityModule {
                 AccountStorageAdapter.fromInMemory(
                         (MerkleMap<EntityNum, MerkleAccount>)
                                 bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
+    }
+
+    @Provides
+    @Singleton
+    @ImmutableState
+    static AtomicReference<ServicesState> provideImmutableStateRef() {
+        return new AtomicReference<>();
     }
 
     @Provides

@@ -15,16 +15,6 @@
  */
 package com.hedera.services.txns.submission;
 
-import static com.hedera.services.txns.validation.PureValidation.queryableAccountStatus;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
@@ -33,16 +23,23 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.store.cache.AccountCache;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
-import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Objects;
+import java.util.function.Supplier;
+
+import static com.hedera.services.txns.validation.PureValidation.payerAccountStatus;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * Determines if the payer account set in the {@code TransactionID} is expected to be both willing
@@ -65,6 +62,7 @@ public class SolvencyPrecheck {
     private final PrecheckVerifier precheckVerifier;
     private final Supplier<StateView> stateView;
     private final Supplier<AccountStorageAdapter> accounts;
+    private final AccountCache accountCache;
 
     @Inject
     public SolvencyPrecheck(
@@ -73,13 +71,15 @@ public class SolvencyPrecheck {
             OptionValidator validator,
             PrecheckVerifier precheckVerifier,
             Supplier<StateView> stateView,
-            Supplier<AccountStorageAdapter> accounts) {
+            Supplier<AccountStorageAdapter> accounts,
+            AccountCache accountCache) {
         this.accounts = accounts;
         this.validator = validator;
         this.stateView = stateView;
         this.feeExemptions = feeExemptions;
         this.feeCalculator = feeCalculator;
         this.precheckVerifier = precheckVerifier;
+        this.accountCache = accountCache;
     }
 
     TxnValidityAndFeeReq assessSansSvcFees(SignedTxnAccessor accessor) {
@@ -91,9 +91,9 @@ public class SolvencyPrecheck {
     }
 
     private TxnValidityAndFeeReq assess(SignedTxnAccessor accessor, boolean includeSvcFee) {
-        final var payerStatus =
-                queryableAccountStatus(
-                        EntityNum.fromAccountId(accessor.getPayer()), accounts.get());
+        final var payerNum = EntityNum.fromAccountId(accessor.getPayer());
+        final var payerAccount  = accountCache.getIfAvailable(payerNum);
+        final var payerStatus = payerAccountStatus(payerAccount);
         if (payerStatus != OK) {
             return new TxnValidityAndFeeReq(PAYER_ACCOUNT_NOT_FOUND);
         }
@@ -107,14 +107,13 @@ public class SolvencyPrecheck {
             return VERIFIED_EXEMPT;
         }
 
-        return solvencyOfVerifiedPayer(accessor, includeSvcFee);
+        return solvencyOfVerifiedPayer(accessor, includeSvcFee, Objects.requireNonNull(payerAccount));
     }
 
     private TxnValidityAndFeeReq solvencyOfVerifiedPayer(
-            SignedTxnAccessor accessor, boolean includeSvcFee) {
-        final var payerId = EntityNum.fromAccountId(accessor.getPayer());
-        final var payerAccount = accounts.get().get(payerId);
-
+            SignedTxnAccessor accessor,
+            boolean includeSvcFee,
+            HederaAccount payerAccount) {
         try {
             final var now = accessor.getTxnId().getTransactionValidStart();
             final var payerKey = payerAccount.getAccountKey();

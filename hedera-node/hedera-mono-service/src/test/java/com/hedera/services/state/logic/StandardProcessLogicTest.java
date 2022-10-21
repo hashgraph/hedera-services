@@ -15,22 +15,11 @@
  */
 package com.hedera.services.state.logic;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.keys.HederaKeyActivation;
+import com.hedera.services.ledger.ImpactHistorian;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoExpiry;
@@ -46,7 +35,6 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +42,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class StandardProcessLogicTest {
@@ -74,6 +72,7 @@ class StandardProcessLogicTest {
     @Mock private TxnAccessor triggeredAccessor;
     @Mock private ExecutionTimeTracker executionTimeTracker;
     @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock private ImpactHistorian impactHistorian;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
     @Mock private RecordStreaming recordStreaming;
     @Mock private ScheduleProcessing scheduleProcessing;
@@ -95,6 +94,7 @@ class StandardProcessLogicTest {
                         autoRenewal,
                         txnManager,
                         sigImpactHistorian,
+                        impactHistorian,
                         txnCtx,
                         scheduleProcessing,
                         executionTimeTracker,

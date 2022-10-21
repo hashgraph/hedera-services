@@ -15,8 +15,7 @@
  */
 package com.hedera.services.store;
 
-import static com.hedera.services.context.properties.PropertyNames.*;
-
+import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -34,11 +33,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.ledger.interceptors.*;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.ledger.properties.*;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -48,6 +43,7 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.store.cache.ImmutableState;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -62,9 +58,13 @@ import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-import java.util.function.Supplier;
-import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
+
+import javax.inject.Singleton;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
+import static com.hedera.services.context.properties.PropertyNames.*;
 
 @Module
 public interface StoresModule {
@@ -102,6 +102,13 @@ public interface StoresModule {
                 new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
         uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
         return uniqueTokensLedger;
+    }
+
+    @Provides
+    @Singleton
+    @ImmutableState
+    static AtomicReference<ServicesState> provideImmutableStateRef() {
+        return new AtomicReference<>(null);
     }
 
     @Provides

@@ -15,10 +15,9 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.ImpactHistorian;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.records.RecordCache;
@@ -27,11 +26,14 @@ import com.hedera.services.state.annotations.RunTopLevelTransition;
 import com.hedera.services.state.annotations.RunTriggeredTransition;
 import com.hedera.services.state.migration.MigrationRecordsManager;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import java.time.Instant;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class ServicesTxnManager {
@@ -46,6 +48,7 @@ public class ServicesTxnManager {
     private final HederaLedger ledger;
     private final TransactionContext txnCtx;
     private final SigImpactHistorian sigImpactHistorian;
+    private final ImpactHistorian impactHistorian;
     private final RecordsHistorian recordsHistorian;
     private final MigrationRecordsManager migrationRecordsManager;
     private final RecordStreaming recordStreaming;
@@ -60,6 +63,7 @@ public class ServicesTxnManager {
             final HederaLedger ledger,
             final TransactionContext txnCtx,
             final SigImpactHistorian sigImpactHistorian,
+            final ImpactHistorian impactHistorian,
             final RecordsHistorian recordsHistorian,
             final MigrationRecordsManager migrationRecordsManager,
             final RecordStreaming recordStreaming,
@@ -70,6 +74,7 @@ public class ServicesTxnManager {
         this.recordCache = recordCache;
         this.recordStreaming = recordStreaming;
         this.recordsHistorian = recordsHistorian;
+        this.impactHistorian = impactHistorian;
         this.scopedProcessing = scopedProcessing;
         this.sigImpactHistorian = sigImpactHistorian;
         this.migrationRecordsManager = migrationRecordsManager;
@@ -88,6 +93,7 @@ public class ServicesTxnManager {
         try {
             txnCtx.resetFor(accessor, consensusTime, submittingMember);
             sigImpactHistorian.setChangeTime(consensusTime);
+            impactHistorian.setChangeTime(consensusTime);
             recordsHistorian.clearHistory();
             blockManager.reset();
             rewardCalculator.reset();

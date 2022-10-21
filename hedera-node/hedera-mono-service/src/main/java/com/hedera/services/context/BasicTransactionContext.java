@@ -15,10 +15,6 @@
  */
 package com.hedera.services.context;
 
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
-
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
@@ -28,36 +24,24 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.submerkle.*;
+import com.hedera.services.store.cache.AccountCache;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.hederahashgraph.api.proto.java.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Consumer;
+
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 /**
  * Implements a transaction context using infrastructure known to be available in the node context.
@@ -78,8 +62,10 @@ public class BasicTransactionContext implements TransactionContext {
 
     private TxnAccessor triggeredTxn = null;
 
-    private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> {};
-    private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {};
+    private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> {
+    };
+    private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {
+    };
 
     private long submittingMember;
     private long otherNonThresholdFees;
@@ -97,28 +83,28 @@ public class BasicTransactionContext implements TransactionContext {
     private List<FcAssessedCustomFee> assessedCustomFees;
 
     private final NodeInfo nodeInfo;
+    private final AccountCache accountCache;
     private final EntityCreator creator;
     private final EntityIdSource ids;
     private final NarratedCharging narratedCharging;
     private final HbarCentExchange exchange;
     private final SideEffectsTracker sideEffectsTracker;
     private final List<ExpiringEntity> expiringEntities = new ArrayList<>();
-    private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
     BasicTransactionContext(
+            final AccountCache accountCache,
             final NarratedCharging narratedCharging,
-            final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo,
             final HbarCentExchange exchange,
             final EntityCreator creator,
             final SideEffectsTracker sideEffectsTracker,
             final EntityIdSource ids) {
         this.ids = ids;
-        this.accounts = accounts;
         this.narratedCharging = narratedCharging;
         this.nodeInfo = nodeInfo;
         this.exchange = exchange;
+        this.accountCache = accountCache;
         this.sideEffectsTracker = sideEffectsTracker;
         this.creator = creator;
     }
@@ -180,7 +166,9 @@ public class BasicTransactionContext implements TransactionContext {
     @Override
     public JKey activePayerKey() {
         return isPayerSigKnownActive
-                ? accounts.get().get(fromAccountId(accessor.getPayer())).getAccountKey()
+                ? Objects.requireNonNull(
+                        accountCache.getGuaranteedLatestInHandle(
+                                fromAccountId(accessor.getPayer()))).getAccountKey()
                 : EMPTY_KEY;
     }
 

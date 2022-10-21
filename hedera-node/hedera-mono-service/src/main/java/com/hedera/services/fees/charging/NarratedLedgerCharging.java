@@ -18,15 +18,15 @@ package com.hedera.services.fees.charging;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.store.cache.AccountCache;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.fee.FeeObject;
-import java.util.Optional;
-import java.util.function.Supplier;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Optional;
 
 /**
  * Implements the {@link NarratedCharging} contract using a injected {@link HederaLedger} to charge
@@ -41,7 +41,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
     private final NodeInfo nodeInfo;
     private final FeeExemptions feeExemptions;
     private final FeeDistribution feeDistribution;
-    private final Supplier<AccountStorageAdapter> accounts;
+    private final AccountCache accountCache;
 
     private long effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
     private long nodeFee;
@@ -61,8 +61,8 @@ public class NarratedLedgerCharging implements NarratedCharging {
             final NodeInfo nodeInfo,
             final FeeDistribution feeDistribution,
             final FeeExemptions feeExemptions,
-            final Supplier<AccountStorageAdapter> accounts) {
-        this.accounts = accounts;
+            final AccountCache accountCache) {
+        this.accountCache = accountCache;
         this.nodeInfo = nodeInfo;
         this.feeDistribution = feeDistribution;
         this.feeExemptions = feeExemptions;
@@ -208,7 +208,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
     }
 
     private void initEffPayerBalance(EntityNum effPayerId) {
-        final var payerAccount = accounts.get().get(effPayerId);
+        final var payerAccount = accountCache.getGuaranteedLatestInHandle(effPayerId);
         if (payerAccount == null) {
             throw new IllegalStateException(
                     "Invariant failure, effective payer account "

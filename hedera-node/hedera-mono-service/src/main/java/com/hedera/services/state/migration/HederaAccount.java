@@ -28,6 +28,10 @@ import java.util.Set;
 import java.util.SortedMap;
 
 public interface HederaAccount {
+    default HederaAccount asReadOnly() {
+       throw new UnsupportedOperationException();
+    }
+
     boolean isImmutable();
 
     long getNftsOwned();

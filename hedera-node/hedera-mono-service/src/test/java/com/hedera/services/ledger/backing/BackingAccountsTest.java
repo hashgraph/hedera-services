@@ -15,16 +15,11 @@
  */
 package com.hedera.services.ledger.backing;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import com.hedera.services.ledger.ImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.services.store.cache.AccountCache;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.FcLong;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -35,12 +30,16 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Set;
+
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class BackingAccountsTest {
@@ -51,6 +50,8 @@ class BackingAccountsTest {
     private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
     private final MerkleAccount bValue = MerkleAccountFactory.newAccount().balance(122L).get();
 
+    @Mock private AccountCache accountCache;
+    @Mock private ImpactHistorian impactHistorian;
     @Mock private RecordsStorageAdapter payerRecords;
     private MerkleMap<EntityNum, MerkleAccount> delegate;
     private BackingAccounts subject;
@@ -63,6 +64,7 @@ class BackingAccountsTest {
 
         subject =
                 new BackingAccounts(
+                        accountCache, impactHistorian,
                         () -> AccountStorageAdapter.fromInMemory(delegate), () -> payerRecords);
 
         subject.rebuildFromSources();

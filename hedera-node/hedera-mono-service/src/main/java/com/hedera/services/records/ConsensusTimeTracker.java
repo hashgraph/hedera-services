@@ -15,17 +15,18 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import java.time.Instant;
-import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
+import java.util.function.Supplier;
+
+import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 /**
  * Provides a tracker of the usable consensus time space during a {@link
@@ -337,9 +338,9 @@ public class ConsensusTimeTracker {
         return minConsensusTime.plusNanos(currentTxnMinTime);
     }
 
-    @VisibleForTesting
-    Instant getCurrentTxnTime() {
-        return minConsensusTime.plusNanos(currentTxnTime);
+    public Instant getCurrentTxnTime() {
+        return (minConsensusTime == null)
+                ? Instant.MIN : minConsensusTime.plusNanos(currentTxnTime);
     }
 
     @VisibleForTesting

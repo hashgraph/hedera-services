@@ -64,6 +64,7 @@ public enum InfrastructureType {
                 final String dir, final InfrastructureBundle bundle) {
             final var backingAccounts =
                     new BackingAccounts(
+                            null, null,
                             () ->
                                     AccountStorageAdapter.fromInMemory(
                                             (MerkleMap<EntityNum, MerkleAccount>)

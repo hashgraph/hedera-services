@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public final record CongestionMultipliers(int[] usagePercentTriggers, long[] multipliers) {
+public record CongestionMultipliers(int[] usagePercentTriggers, long[] multipliers) {
     public static CongestionMultipliers from(final String csv) {
         final List<Integer> triggers = new ArrayList<>();
         final List<Long> multipliers = new ArrayList<>();

@@ -15,17 +15,9 @@
  */
 package com.hedera.services.state.logic;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
-
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.ImpactHistorian;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.records.RecordCache;
@@ -40,7 +32,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +39,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class ServicesTxnManagerTest {
@@ -63,6 +63,7 @@ class ServicesTxnManagerTest {
     @Mock private TransactionContext txnCtx;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock private ImpactHistorian impactHistorian;
     @Mock private MigrationRecordsManager migrationRecordsManager;
     @Mock private RecordStreaming recordStreaming;
     @Mock private BlockManager blockManager;
@@ -81,6 +82,7 @@ class ServicesTxnManagerTest {
                         ledger,
                         txnCtx,
                         sigImpactHistorian,
+                        impactHistorian,
                         recordsHistorian,
                         migrationRecordsManager,
                         recordStreaming,

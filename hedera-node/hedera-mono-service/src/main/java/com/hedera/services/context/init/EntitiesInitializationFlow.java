@@ -15,13 +15,15 @@
  */
 package com.hedera.services.context.init;
 
+import com.hedera.services.ledger.ImpactHistorian;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class EntitiesInitializationFlow {
@@ -29,14 +31,17 @@ public class EntitiesInitializationFlow {
 
     private final ExpiryManager expiries;
     private final NetworkCtxManager networkCtxManager;
+    private final ImpactHistorian impactHistorian;
     private final SigImpactHistorian sigImpactHistorian;
 
     @Inject
     public EntitiesInitializationFlow(
             final ExpiryManager expiries,
+            final ImpactHistorian impactHistorian,
             final SigImpactHistorian sigImpactHistorian,
             final NetworkCtxManager networkCtxManager) {
         this.expiries = expiries;
+        this.impactHistorian = impactHistorian;
         this.sigImpactHistorian = sigImpactHistorian;
         this.networkCtxManager = networkCtxManager;
     }
@@ -48,6 +53,7 @@ public class EntitiesInitializationFlow {
         expiries.reviewExistingShortLivedEntities();
         log.info("Short-lived entities reviewed");
 
+        impactHistorian.invalidateCurrentWindow();
         sigImpactHistorian.invalidateCurrentWindow();
         log.info("Signature impact history invalidated");
 

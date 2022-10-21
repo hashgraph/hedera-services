@@ -15,23 +15,6 @@
  */
 package com.hedera.services.context.primitives;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.ledger.accounts.AliasManager.tryAddressRecovery;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.models.Id.MISSING_ID;
-import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.swirlds.common.utility.CommonUtils.hex;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.unmodifiableMap;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
@@ -44,19 +27,11 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
-import com.hedera.services.ledger.backing.BackingAccounts;
-import com.hedera.services.ledger.backing.BackingNfts;
-import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.ledger.backing.BackingTokenRels;
-import com.hedera.services.ledger.backing.BackingTokens;
+import com.hedera.services.ledger.backing.*;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.*;
 import com.hedera.services.state.migration.*;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
@@ -70,45 +45,30 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.ScheduleInfo;
-import com.hederahashgraph.api.proto.java.StakingInfo;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
-import com.hederahashgraph.api.proto.java.TokenNftInfo;
-import com.hederahashgraph.api.proto.java.TokenPauseStatus;
-import com.hederahashgraph.api.proto.java.TokenRelationship;
-import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+
+import java.util.*;
+import java.util.function.BiConsumer;
+
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.ledger.accounts.AliasManager.tryAddressRecovery;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.*;
+import static com.hedera.services.utils.EntityIdUtils.*;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.swirlds.common.utility.CommonUtils.hex;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableMap;
 
 public class StateView {
 
@@ -703,7 +663,10 @@ public class StateView {
     public BackingStore<AccountID, HederaAccount> asReadOnlyAccountStore() {
         if (backingAccounts == null) {
             backingAccounts =
-                    new BackingAccounts(stateChildren::accounts, stateChildren::payerRecords);
+                    new BackingAccounts(
+                            null, null,
+                            stateChildren::accounts,
+                            stateChildren::payerRecords);
         }
         return backingAccounts;
     }

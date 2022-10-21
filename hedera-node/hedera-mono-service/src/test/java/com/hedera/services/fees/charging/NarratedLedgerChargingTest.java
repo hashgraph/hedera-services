@@ -15,35 +15,30 @@
  */
 package com.hedera.services.fees.charging;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.store.cache.AccountCache;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class NarratedLedgerChargingTest {
@@ -59,7 +54,7 @@ class NarratedLedgerChargingTest {
     @Mock private TxnAccessor accessor;
     @Mock private HederaLedger ledger;
     @Mock private FeeExemptions feeExemptions;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountCache accountCache;
     @Mock private FeeDistribution feeDistribution;
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
@@ -72,7 +67,7 @@ class NarratedLedgerChargingTest {
                         nodeInfo,
                         feeDistribution,
                         feeExemptions,
-                        () -> AccountStorageAdapter.fromInMemory(accounts));
+                        accountCache);
         subject.setLedger(ledger);
     }
 
@@ -267,7 +262,7 @@ class NarratedLedgerChargingTest {
 
     private void givenSetupToChargePayer(final long payerBalance, final long totalOfferedFee) {
         final var payerAccount = MerkleAccountFactory.newAccount().balance(payerBalance).get();
-        given(accounts.get(payerId)).willReturn(payerAccount);
+        given(accountCache.getGuaranteedLatestInHandle(payerId)).willReturn(payerAccount);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
 
         given(nodeInfo.accountOf(submittingNodeId)).willReturn(grpcNodeId);
@@ -281,7 +276,7 @@ class NarratedLedgerChargingTest {
 
     private void givenSetupToChargeNode(final long nodeBalance) {
         final var nodeAccount = MerkleAccountFactory.newAccount().balance(nodeBalance).get();
-        given(accounts.get(nodeId)).willReturn(nodeAccount);
+        given(accountCache.getGuaranteedLatestInHandle(nodeId)).willReturn(nodeAccount);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
 
         given(nodeInfo.accountOf(submittingNodeId)).willReturn(nodeId.toGrpcAccountId());

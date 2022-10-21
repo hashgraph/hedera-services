@@ -15,8 +15,7 @@
  */
 package com.hedera.services.context.init;
 
-import static org.mockito.Mockito.verify;
-
+import com.hedera.services.ledger.ImpactHistorian;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
@@ -26,10 +25,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class EntitiesInitializationFlowTest {
     @Mock private ExpiryManager expiryManager;
     @Mock private NetworkCtxManager networkCtxManager;
+    @Mock private ImpactHistorian impactHistorian;
     @Mock private SigImpactHistorian sigImpactHistorian;
 
     private EntitiesInitializationFlow subject;
@@ -38,7 +40,7 @@ class EntitiesInitializationFlowTest {
     void setUp() {
         subject =
                 new EntitiesInitializationFlow(
-                        expiryManager, sigImpactHistorian, networkCtxManager);
+                        expiryManager, impactHistorian, sigImpactHistorian, networkCtxManager);
     }
 
     @Test
