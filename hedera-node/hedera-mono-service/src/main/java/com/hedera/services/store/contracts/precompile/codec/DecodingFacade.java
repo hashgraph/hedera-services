@@ -182,8 +182,10 @@ public class DecodingFacade {
             final var receiver =
                     convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver);
             final var serialNo = (long) exchange.get(2);
+            final boolean isApproval = (exchange.size() > 3) && (boolean) exchange.get(3);
             nftExchanges.add(
-                    new SyntheticTxnFactory.NftExchange(serialNo, tokenType, sender, receiver));
+                    new SyntheticTxnFactory.NftExchange(
+                            serialNo, tokenType, sender, receiver, isApproval));
         }
         return nftExchanges;
     }
@@ -191,14 +193,14 @@ public class DecodingFacade {
     public static List<SyntheticTxnFactory.FungibleTokenTransfer> bindFungibleTransfersFrom(
             final TokenID tokenType,
             @NotNull final Tuple[] abiTransfers,
-            final UnaryOperator<byte[]> aliasResolver,
-            final boolean hasIsApproval) {
+            final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
             final AccountID accountID =
                     convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
-            final boolean isApproval = hasIsApproval ? transfer.get(2) : false;
+            // the isApproval parameter only exists in the new form of cryptoTransfer
+            final boolean isApproval = (transfer.size() > 2) && (boolean) transfer.get(2);
             addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, isApproval);
         }
         return fungibleTransfers;

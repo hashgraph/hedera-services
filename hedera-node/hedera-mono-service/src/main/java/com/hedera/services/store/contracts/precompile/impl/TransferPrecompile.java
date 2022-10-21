@@ -37,7 +37,6 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.google.common.annotations.*;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -354,7 +353,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
         for (final var tuple : decodedTuples) {
-            decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tuple, false);
+            decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tuple);
         }
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
@@ -384,8 +383,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         hbarTransfers = decodeHbarTransfers(aliasResolver, hbarTransfers, hbarTransferTuples);
 
-        decodeTokenTransfer(
-                aliasResolver, tokenTransferWrappers, (Tuple[]) tokenTransferTuples, true);
+        decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tokenTransferTuples);
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
@@ -403,8 +401,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public static void decodeTokenTransfer(
             UnaryOperator<byte[]> aliasResolver,
             List<TokenTransferWrapper> tokenTransferWrappers,
-            Tuple[] tokenTransferTuples,
-            final boolean hasIsApproval) {
+            Tuple[] tokenTransferTuples) {
         for (final var tupleNested : tokenTransferTuples) {
             final var tokenType = convertAddressBytesToTokenID(tupleNested.get(0));
 
@@ -414,8 +411,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var abiAdjustments = (Tuple[]) tupleNested.get(1);
             if (abiAdjustments.length > 0) {
                 fungibleTransfers =
-                        bindFungibleTransfersFrom(
-                                tokenType, abiAdjustments, aliasResolver, hasIsApproval);
+                        bindFungibleTransfersFrom(tokenType, abiAdjustments, aliasResolver);
             }
             final var abiNftExchanges = (Tuple[]) tupleNested.get(2);
             if (abiNftExchanges.length > 0) {
@@ -584,35 +580,20 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
             for (var hbarTransfer : transferOp.transferWrapper().hbarTransfers()) {
 
-                if (hbarTransfer.sender() != null && hbarTransfer.receiver() != null) {
-                    changes.add(
-                            BalanceChange.changingHbar(
-                                    aaWith(
-                                            hbarTransfer.receiver(),
-                                            -hbarTransfer.amount(),
-                                            hbarTransfer.isApproval()),
-                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
-                    changes.add(
-                            BalanceChange.changingHbar(
-                                    aaWith(
-                                            hbarTransfer.sender(),
-                                            hbarTransfer.amount(),
-                                            hbarTransfer.isApproval()),
-                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
-                } else if (hbarTransfer.sender() == null) {
-                    changes.add(
-                            BalanceChange.changingHbar(
-                                    aaWith(
-                                            hbarTransfer.receiver(),
-                                            hbarTransfer.amount(),
-                                            hbarTransfer.isApproval()),
-                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
-                } else {
+                if (hbarTransfer.sender() != null) {
                     changes.add(
                             BalanceChange.changingHbar(
                                     aaWith(
                                             hbarTransfer.sender(),
                                             -hbarTransfer.amount(),
+                                            hbarTransfer.isApproval()),
+                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+                } else if (hbarTransfer.receiver() == null) {
+                    changes.add(
+                            BalanceChange.changingHbar(
+                                    aaWith(
+                                            hbarTransfer.receiver(),
+                                            hbarTransfer.amount(),
                                             hbarTransfer.isApproval()),
                                     EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
                 }

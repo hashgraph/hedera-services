@@ -74,7 +74,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -1537,7 +1536,7 @@ class TransferPrecompilesTest {
                                         identity()))
                 .thenCallRealMethod();
         transferPrecompile
-                .when(() -> decodeTokenTransfer(any(), any(), any(), anyBoolean()))
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeHbarTransfers(any(), any(), any()))
@@ -1573,7 +1572,7 @@ class TransferPrecompilesTest {
                                         NEGATIVE_FUNGIBLE_AMOUNT_CRYPTO_TRANSFER_INPUT, identity()))
                 .thenCallRealMethod();
         transferPrecompile
-                .when(() -> decodeTokenTransfer(any(), any(), any(), anyBoolean()))
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeHbarTransfers(any(), any(), any()))
@@ -1684,7 +1683,7 @@ class TransferPrecompilesTest {
                 .when(() -> decodeTransferNFTs(TRANSFER_NFTS_INPUT, identity()))
                 .thenCallRealMethod();
         transferPrecompile
-                .when(() -> decodeTokenTransfer(any(), any(), any(), anyBoolean()))
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeHbarTransfers(any(), any(), any()))
@@ -1732,7 +1731,7 @@ class TransferPrecompilesTest {
                 .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_FUNGIBLE_INPUT, identity()))
                 .thenCallRealMethod();
         transferPrecompile
-                .when(() -> decodeTokenTransfer(any(), any(), any(), anyBoolean()))
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeHbarTransfers(any(), any(), any()))
@@ -1759,7 +1758,7 @@ class TransferPrecompilesTest {
                 .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_NFT_INPUT, identity()))
                 .thenCallRealMethod();
         transferPrecompile
-                .when(() -> decodeTokenTransfer(any(), any(), any(), anyBoolean()))
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeHbarTransfers(any(), any(), any()))
@@ -1786,7 +1785,7 @@ class TransferPrecompilesTest {
                 .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_FUNGIBLE_INPUT, identity()))
                 .thenCallRealMethod();
         transferPrecompile
-                .when(() -> decodeTokenTransfer(any(), any(), any(), anyBoolean()))
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeHbarTransfers(any(), any(), any()))
@@ -1815,7 +1814,7 @@ class TransferPrecompilesTest {
                 .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_NFT_INPUT, identity()))
                 .thenCallRealMethod();
         transferPrecompile
-                .when(() -> decodeTokenTransfer(any(), any(), any(), anyBoolean()))
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeHbarTransfers(any(), any(), any()))
