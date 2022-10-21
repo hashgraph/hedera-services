@@ -15,32 +15,6 @@
  */
 package com.hedera.services.sigs;
 
-import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.NEW_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
-import static com.hedera.test.factories.sigs.SigWrappers.asKind;
-import static com.hedera.test.factories.sigs.SigWrappers.asValid;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.swirlds.common.crypto.VerificationStatus.INVALID;
-import static com.swirlds.common.crypto.VerificationStatus.VALID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.mock;
-
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
@@ -53,15 +27,12 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
-import com.hedera.services.sigs.order.SigRequirements;
-import com.hedera.services.sigs.order.SignatureWaivers;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.sigs.order.SigningOrderResultFactory;
+import com.hedera.services.sigs.order.*;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.store.cache.AccountCache;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.RationalizedSigMeta;
@@ -74,12 +45,35 @@ import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.Test;
+
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.junit.jupiter.api.Test;
+
+import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
+import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
+import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
+import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.NEW_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.*;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.*;
+import static com.hedera.test.factories.sigs.SigWrappers.asKind;
+import static com.hedera.test.factories.sigs.SigWrappers.asValid;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.swirlds.common.crypto.VerificationStatus.INVALID;
+import static com.swirlds.common.crypto.VerificationStatus.VALID;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.mock;
 
 class SigOpsRegressionTest {
     private HederaFs hfs;
@@ -383,12 +377,15 @@ class SigOpsRegressionTest {
     }
 
     private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         SigRequirements keysOrder =
                 new SigRequirements(
                         defaultLookupsFor(
                                 aliasManager,
                                 null,
-                                () -> AccountStorageAdapter.fromInMemory(accounts),
+                                () -> adapter,
+                                new AccountCache(
+                                        new AtomicReference<>(), () -> adapter, null, null),
                                 () -> null,
                                 ref -> null,
                                 ref -> null),
@@ -407,12 +404,14 @@ class SigOpsRegressionTest {
         platformTxn.getPlatformTxn().clearSignatures();
         platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         SigRequirements keysOrder =
                 new SigRequirements(
                         defaultLookupsFor(
                                 aliasManager,
                                 hfsSigMetaLookup,
-                                () -> AccountStorageAdapter.fromInMemory(accounts),
+                                () -> adapter,
+                                new AccountCache(new AtomicReference<>(), () -> adapter, null, null),
                                 null,
                                 ref -> null,
                                 ref -> null),
@@ -423,11 +422,13 @@ class SigOpsRegressionTest {
 
     private void invokeExpansionScenario() {
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         SigMetadataLookup sigMetaLookups =
                 defaultLookupsFor(
                         aliasManager,
                         hfsSigMetaLookup,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> adapter,
+                        new AccountCache(new AtomicReference<>(), () -> adapter, null, null),
                         () -> null,
                         ref -> null,
                         ref -> null);
@@ -441,11 +442,13 @@ class SigOpsRegressionTest {
         // setup:
         SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         SigMetadataLookup sigMetaLookups =
                 defaultLookupsFor(
                         aliasManager,
                         hfsSigMetaLookup,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> adapter,
+                        new AccountCache(new AtomicReference<>(), () -> adapter, null, null),
                         () -> null,
                         ref -> null,
                         ref -> null);
@@ -469,12 +472,14 @@ class SigOpsRegressionTest {
         expectedErrorStatus = null;
 
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
         signingOrder =
                 new SigRequirements(
                         defaultLookupsFor(
                                 aliasManager,
                                 hfsSigMetaLookup,
-                                () -> AccountStorageAdapter.fromInMemory(accounts),
+                                () -> adapter,
+                                new AccountCache(new AtomicReference<>(), () -> adapter, null, null),
                                 () -> null,
                                 ref -> null,
                                 ref -> null),

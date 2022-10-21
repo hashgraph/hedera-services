@@ -15,38 +15,28 @@
  */
 package com.hedera.services.sigs.metadata;
 
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.sigs.metadata.lookups.*;
+import com.hedera.services.sigs.order.LinkedRefs;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.store.cache.AccountCache;
+import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.*;
+import com.swirlds.merkle.map.MerkleMap;
+
+import javax.annotation.Nullable;
+import java.time.Instant;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import static com.hedera.services.sigs.metadata.SafeLookupResult.failure;
 import static com.hedera.services.sigs.metadata.ScheduleSigningMetadata.from;
 import static com.hedera.services.sigs.metadata.TokenMetaUtils.signingMetaFrom;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
-
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.DefaultAccountLookup;
-import com.hedera.services.sigs.metadata.lookups.DefaultContractLookup;
-import com.hedera.services.sigs.metadata.lookups.DefaultTopicLookup;
-import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
-import com.hedera.services.sigs.order.LinkedRefs;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.merkle.map.MerkleMap;
-import java.time.Instant;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 /**
  * Convenience class that gives unified access to Hedera signing metadata by delegating to
@@ -89,12 +79,13 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
             final AliasManager aliasManager,
             final HfsSigMetaLookup hfsSigMetaLookup,
             final Supplier<AccountStorageAdapter> accounts,
+            final AccountCache accountCache,
             final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
             final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
             final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup) {
         return new DelegatingSigMetadataLookup(
                 hfsSigMetaLookup,
-                new DefaultAccountLookup(aliasManager, accounts),
+                new DefaultAccountLookup(aliasManager, accountCache),
                 new DefaultContractLookup(accounts),
                 new DefaultTopicLookup(topics),
                 tokenLookup,
