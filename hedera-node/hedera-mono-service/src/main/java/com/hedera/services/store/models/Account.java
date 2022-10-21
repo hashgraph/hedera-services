@@ -33,6 +33,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.evm.store.models.HederaEvmAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
@@ -63,7 +64,7 @@ import org.hyperledger.besu.datatypes.Address;
  * <p><b>NOTE:</b> This implementation is incomplete, and includes only the API needed to support
  * the Hedera Token Service. The memo field, for example, is not yet present.
  */
-public class Account {
+public class Account implements HederaEvmAccount {
     private final Id id;
 
     private long expiry;

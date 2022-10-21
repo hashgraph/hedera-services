@@ -16,14 +16,33 @@
 package com.hedera.services.state.merkle;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
-import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
+import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ALL_PRE_EXISTING_ENTITIES_SCANNED;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NEVER_USED_SNAPSHOT;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
 import com.google.protobuf.ByteString;
