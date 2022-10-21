@@ -69,7 +69,6 @@ dependencies {
     implementation(testLibs.snakeyaml)
     implementation(libs.swirlds.common)
     implementation(testLibs.testcontainers.core)
-//    itestImplementation(project.parent!!.project("hedera-node"))
     itestImplementation(libs.bundles.swirlds)
     itestImplementation(testLibs.bundles.testcontainers)
     eetImplementation(testLibs.bundles.testcontainers)

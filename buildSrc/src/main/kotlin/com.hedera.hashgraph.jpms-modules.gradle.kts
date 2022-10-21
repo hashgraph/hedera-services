@@ -6,7 +6,7 @@ import gradle.kotlin.dsl.accessors._34a132ac50631db3ea5353237b274f3d.extraJavaMo
  * This software is the confidential and proprietary information of
  * Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
  * disclose such Confidential Information and shall use it only in
- * accordance with the terms of the license agreement you entered into
+ * accordance with the terms of the license agreement yaou entered into
  * with Hedera Hashgraph.
  *
  * HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
@@ -46,8 +46,6 @@ extraJavaModuleInfo {
     automaticModule("javax.inject:javax.inject", "javax.inject")
 
     automaticModule("net.sf.jopt-simple:jopt-simple", "jopt.simple")
-//    automaticModule("commons-math3-3.2.jar", "commons.math3")
-//    automaticModule("commons-math3-3.6.1.jar", "commons.math3")
 
     automaticModule("org.apache.commons:commons-collections4", "commons.collections4")
 
