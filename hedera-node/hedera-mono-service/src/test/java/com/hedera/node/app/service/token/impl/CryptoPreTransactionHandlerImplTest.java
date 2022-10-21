@@ -15,6 +15,13 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
@@ -28,20 +35,13 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerImplTest {
@@ -83,7 +83,7 @@ class CryptoPreTransactionHandlerImplTest {
         assertEquals(txn, meta.getTxn());
         assertEquals(2, meta.getReqKeys().size());
         assertTrue(meta.getReqKeys().contains(jkey));
-        assertEquals(false, meta.failed());
+        assertFalse(meta.failed());
         assertEquals(OK, meta.status());
     }
 
@@ -116,8 +116,8 @@ class CryptoPreTransactionHandlerImplTest {
                         .build();
 
         return TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setCryptoCreateAccount(createTxnBody)
-                        .build();
+                .setTransactionID(transactionID)
+                .setCryptoCreateAccount(createTxnBody)
+                .build();
     }
 }

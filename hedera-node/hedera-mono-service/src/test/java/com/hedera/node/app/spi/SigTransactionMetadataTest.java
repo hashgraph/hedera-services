@@ -15,9 +15,13 @@
  */
 package com.hedera.node.app.spi;
 
+import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
+import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.token.impl.AccountStore;
@@ -32,7 +36,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
@@ -72,7 +75,7 @@ class SigTransactionMetadataTest {
     @Test
     void gettersWorkAsExpectedWhenOnlyPayerKeyExist() throws DecoderException {
         final var txn = createAccountTransaction();
-        final var payerKey = JKey.mapKey(key);
+        final var payerKey = mapKey(key);
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn(payerKey);
 
@@ -86,7 +89,7 @@ class SigTransactionMetadataTest {
     @Test
     void gettersWorkAsExpectedWhenOtherSigsExist() throws DecoderException {
         final var txn = createAccountTransaction();
-        final var payerKey = JKey.mapKey(key);
+        final var payerKey = mapKey(key);
 
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn(payerKey);
@@ -96,6 +99,22 @@ class SigTransactionMetadataTest {
         assertFalse(subject.failed());
         assertEquals(txn, subject.getTxn());
         assertEquals(List.of(payerKey, payerKey), subject.getReqKeys());
+    }
+
+    @Test
+    void failsWhenPayerKeyDoesntExist() {
+        final var txn = createAccountTransaction();
+        final var payerKey = (JKey) asHederaKey(key).get();
+
+        given(accounts.get(payerNum)).willReturn(Optional.empty());
+
+        subject = new SigTransactionMetadata(store, txn, payer, List.of(payerKey));
+
+        assertTrue(subject.failed());
+        assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.status());
+
+        assertEquals(txn, subject.getTxn());
+        assertEquals(List.of(payerKey), subject.getReqKeys());
     }
 
     private TransactionBody createAccountTransaction() {
@@ -110,8 +129,8 @@ class SigTransactionMetadataTest {
                         .setMemo("Create Account")
                         .build();
         return TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setCryptoCreateAccount(createTxnBody)
-                        .build();
+                .setTransactionID(transactionID)
+                .setCryptoCreateAccount(createTxnBody)
+                .build();
     }
 }

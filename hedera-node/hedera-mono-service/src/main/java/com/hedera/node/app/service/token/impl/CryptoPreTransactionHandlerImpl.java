@@ -15,19 +15,18 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
+
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
+import javax.annotation.Nonnull;
 
 /**
  * An implementation of {@code CryptoPreTransactionHandler} for validating all transactions defined
@@ -42,11 +41,11 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     }
 
     public TransactionMetadata preHandleCryptoCreate(final TransactionBody tx) {
-            final var op = tx.getCryptoCreateAccount();
-            final var key = asHederaKey(op.getKey());
-            final var receiverSigReq = op.getReceiverSigRequired();
-            final var payer = tx.getTransactionID().getAccountID();
-            return createAccountSigningMetadata(tx, key, receiverSigReq, payer);
+        final var op = tx.getCryptoCreateAccount();
+        final var key = asHederaKey(op.getKey());
+        final var receiverSigReq = op.getReceiverSigRequired();
+        final var payer = tx.getTransactionID().getAccountID();
+        return createAccountSigningMetadata(tx, key, receiverSigReq, payer);
     }
 
     private TransactionMetadata createAccountSigningMetadata(

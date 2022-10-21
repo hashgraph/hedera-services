@@ -18,10 +18,9 @@ package com.hedera.node.app.service.token.impl;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.spi.state.States;
-import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nonnull;
 import java.util.Objects;
+import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 /** An implementation of the {@link CryptoService} interface. */
 public final class CryptoServiceImpl implements CryptoService {

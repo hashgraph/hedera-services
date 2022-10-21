@@ -23,7 +23,6 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,9 +49,8 @@ public class SigTransactionMetadata implements TransactionMetadata {
         addPayerKey(payer);
     }
 
-    public SigTransactionMetadata(final AccountStore store,
-            final TransactionBody txn,
-            final AccountID payer) {
+    public SigTransactionMetadata(
+            final AccountStore store, final TransactionBody txn, final AccountID payer) {
         this(store, txn, payer, Collections.emptyList());
     }
 

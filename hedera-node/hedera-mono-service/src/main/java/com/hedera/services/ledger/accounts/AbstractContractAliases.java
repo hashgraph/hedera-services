@@ -26,6 +26,6 @@ public abstract class AbstractContractAliases implements ContractAliases {
     }
 
     public boolean isMirror(final byte[] address) {
-       return AliasUtils.isMirror(address);
+        return AliasUtils.isMirror(address);
     }
 }

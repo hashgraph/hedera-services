@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.state.States;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
 import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -57,17 +56,18 @@ public final class AccountStore {
         this.aliases = states.get("ALIASES");
     }
 
-    // In the future there will be an Account model object to retrieve all fields from MerkleAccount.
+    // In the future there will be an Account model object to retrieve all fields from
+    // MerkleAccount.
     // For Sig requirements we just need Key from the accounts.
     public record KeyOrReason(@Nullable HederaKey key, @Nullable ResponseCodeEnum reason) {
-        public boolean failed(){
+        public boolean failed() {
             return reason != OK;
         }
     }
 
     public KeyOrReason getKey(final AccountID idOrAlias) {
         final var account = getAccountLeaf(idOrAlias);
-        if(account.isEmpty()){
+        if (account.isEmpty()) {
             return new KeyOrReason(null, INVALID_ACCOUNT_ID);
         }
         return new KeyOrReason(account.get().getAccountKey(), OK);
@@ -82,7 +82,7 @@ public final class AccountStore {
      */
     private Optional<MerkleAccount> getAccountLeaf(final AccountID id) {
         final var accountNum = getAccountNum(id);
-        if (accountNum == MISSING_NUM) {
+        if (accountNum.equals(MISSING_NUM)) {
             return Optional.empty();
         }
         return accountState.get(accountNum);

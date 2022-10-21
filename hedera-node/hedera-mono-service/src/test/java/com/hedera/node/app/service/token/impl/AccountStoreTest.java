@@ -15,6 +15,16 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.States;
@@ -26,24 +36,13 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-
-import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asAliasAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
@@ -73,7 +72,7 @@ class AccountStoreTest {
     }
 
     @Test
-    void getsKeyIfAlias(){
+    void getsKeyIfAlias() {
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
@@ -86,7 +85,7 @@ class AccountStoreTest {
     }
 
     @Test
-    void getsKeyIfAccount(){
+    void getsKeyIfAccount() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
 
@@ -98,7 +97,7 @@ class AccountStoreTest {
     }
 
     @Test
-    void getsNullKeyIfMissingAlias(){
+    void getsNullKeyIfMissingAlias() {
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
 
         final var result = subject.getKey(payerAlias);
@@ -109,7 +108,7 @@ class AccountStoreTest {
     }
 
     @Test
-    void getsNullKeyIfMissingAccount(){
+    void getsNullKeyIfMissingAccount() {
         given(accounts.get(payerNum)).willReturn(Optional.empty());
 
         final var result = subject.getKey(payer);
@@ -120,10 +119,11 @@ class AccountStoreTest {
     }
 
     @Test
-    void getsMirrorAddress(){
+    void getsMirrorAddress() {
         final var num = EntityNum.fromLong(payerNum);
         final Address mirrorAddress = num.toEvmAddress();
-        final var mirrorAccount = asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
+        final var mirrorAccount =
+                asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
 
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
@@ -136,10 +136,11 @@ class AccountStoreTest {
     }
 
     @Test
-    void failsIfMirrorAddressDesntExist(){
+    void failsIfMirrorAddressDesntExist() {
         final var num = EntityNum.fromLong(payerNum);
         final Address mirrorAddress = num.toEvmAddress();
-        final var mirrorAccount = asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
+        final var mirrorAccount =
+                asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
 
         given(accounts.get(payerNum)).willReturn(Optional.empty());
 
