@@ -15,17 +15,15 @@
  */
 package com.hedera.node.app.service.token.util;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested = new HashSet<>(
-            Arrays.asList(AliasUtils.class));
+    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(AliasUtils.class));
 
     @Test
     void throwsInConstructor() {

@@ -66,9 +66,10 @@ public final class AccountStore {
     }
 
     /**
-     * Fetches the account's key from given {@link MerkleAccount}. If the key could not be fetched as
-     * the given accountId is invalid or doesn't exist provides information  about the failure reason.
-     * If there is no failure reason will be {@code ResponseCodeEnum.OK}
+     * Fetches the account's key from given {@link MerkleAccount}. If the key could not be fetched
+     * as the given accountId is invalid or doesn't exist provides information about the failure
+     * reason. If there is no failure reason will be {@code ResponseCodeEnum.OK}
+     *
      * @param idOrAlias account id whose key should be fetched
      * @return key if successfully fetched or reason for failure
      */
