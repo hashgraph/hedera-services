@@ -61,9 +61,11 @@ public class ClassLoaderHelper {
                 RuntimeConstructable object = (RuntimeConstructable) constructor.newInstance();
                 long classId = object.getClassId();
                 if (ConstructableRegistry.getInstance().getConstructor(classId) == null) {
-                    ConstructableRegistry.getInstance().registerConstructable(
-                            new ClassConstructorPair(
-                                    object.getClass(), tryOrNull(constructor::newInstance)));
+                    ConstructableRegistry.getInstance()
+                            .registerConstructable(
+                                    new ClassConstructorPair(
+                                            object.getClass(),
+                                            tryOrNull(constructor::newInstance)));
                 }
             } catch (Exception ignore) {
                 // Skip class since not valid
