@@ -219,16 +219,6 @@ public class DecodingFacade {
         return hbarTransfers;
     }
 
-    public static void addApprovedAdjustment(
-            @NotNull final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
-            final TokenID tokenId,
-            final AccountID accountId,
-            final long amount) {
-        fungibleTransfers.add(
-                new SyntheticTxnFactory.FungibleTokenTransfer(
-                        -amount, true, tokenId, accountId, null));
-    }
-
     public static void addSignedAdjustment(
             final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
             final TokenID tokenType,

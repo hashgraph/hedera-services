@@ -579,7 +579,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             }
 
             for (var hbarTransfer : transferOp.transferWrapper().hbarTransfers()) {
-
                 if (hbarTransfer.sender() != null) {
                     changes.add(
                             BalanceChange.changingHbar(
@@ -588,7 +587,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                             -hbarTransfer.amount(),
                                             hbarTransfer.isApproval()),
                                     EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
-                } else if (hbarTransfer.receiver() == null) {
+                } else if (hbarTransfer.receiver() != null) {
                     changes.add(
                             BalanceChange.changingHbar(
                                     aaWith(
