@@ -24,6 +24,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_EMPTY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER;
@@ -32,6 +33,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_RECEIVER_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_SENDER_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_TOKEN_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -905,6 +907,10 @@ class TransferPrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
                 .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         transferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any()))
                 .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER);
@@ -1453,6 +1459,43 @@ class TransferPrecompilesTest {
     }
 
     @Test
+    void minimumFeeInTinybarsTwoHbarCryptoTransfer() {
+        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+
+        // given
+        givenMinFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(syntheticTxnFactory.createCryptoTransfer(any()))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(input), any()))
+                .thenReturn(CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER);
+
+        feeBuilder
+                .when(() -> getTinybarsFromTinyCents(any(), anyLong()))
+                .thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
+
+        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
+
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+
+        // then
+        // expect 2 times the fee as there are two transfers
+        assertEquals(2 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
+
+        feeBuilder.close();
+    }
+
+    @Test
     void minimumFeeInTinybarsHbarFungibleCryptoTransfer() {
         var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
 
@@ -1522,6 +1565,43 @@ class TransferPrecompilesTest {
         // then
         // 2 for nfts transfers and 1 for hbars
         assertEquals(3 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
+
+        feeBuilder.close();
+    }
+
+    @Test
+    void minimumFeeInTinybarsHbarFungibleNftCryptoTransfer() {
+        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+
+        // given
+        givenMinFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(syntheticTxnFactory.createCryptoTransfer(any()))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(input), any()))
+                .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER);
+
+        feeBuilder
+                .when(() -> getTinybarsFromTinyCents(any(), anyLong()))
+                .thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
+
+        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
+
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+
+        // then
+        // 1 for fungible + 2 for nfts transfers + 1 for hbars
+        assertEquals(4 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
 
         feeBuilder.close();
     }

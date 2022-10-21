@@ -522,12 +522,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(
                 transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         final List<BalanceChange> allChanges = new ArrayList<>();
+        var accountId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
         for (final TokenTransferWrapper tokenTransferWrapper : transferOp.tokenTransferWrappers()) {
-            final List<BalanceChange> changes = new ArrayList<>();
-
             for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
                 if (fungibleTransfer.sender() != null && fungibleTransfer.receiver() != null) {
-                    changes.addAll(
+                    allChanges.addAll(
                             List.of(
                                     BalanceChange.changingFtUnits(
                                             Id.fromGrpcToken(fungibleTransfer.getDenomination()),
@@ -536,7 +535,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                                     fungibleTransfer.receiver(),
                                                     fungibleTransfer.amount(),
                                                     fungibleTransfer.isApproval()),
-                                            EntityIdUtils.accountIdFromEvmAddress(senderAddress)),
+                                            accountId),
                                     BalanceChange.changingFtUnits(
                                             Id.fromGrpcToken(fungibleTransfer.getDenomination()),
                                             fungibleTransfer.getDenomination(),
@@ -544,9 +543,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                                     fungibleTransfer.sender(),
                                                     -fungibleTransfer.amount(),
                                                     fungibleTransfer.isApproval()),
-                                            EntityIdUtils.accountIdFromEvmAddress(senderAddress))));
+                                            accountId)));
                 } else if (fungibleTransfer.sender() == null) {
-                    changes.add(
+                    allChanges.add(
                             BalanceChange.changingFtUnits(
                                     Id.fromGrpcToken(fungibleTransfer.getDenomination()),
                                     fungibleTransfer.getDenomination(),
@@ -554,9 +553,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                             fungibleTransfer.receiver(),
                                             fungibleTransfer.amount(),
                                             fungibleTransfer.isApproval()),
-                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+                                    accountId));
                 } else {
-                    changes.add(
+                    allChanges.add(
                             BalanceChange.changingFtUnits(
                                     Id.fromGrpcToken(fungibleTransfer.getDenomination()),
                                     fungibleTransfer.getDenomination(),
@@ -564,41 +563,37 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                             fungibleTransfer.sender(),
                                             -fungibleTransfer.amount(),
                                             fungibleTransfer.isApproval()),
-                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+                                    accountId));
                 }
             }
-            if (changes.isEmpty()) {
-                for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
-                    changes.add(
-                            BalanceChange.changingNftOwnership(
-                                    Id.fromGrpcToken(nftExchange.getTokenType()),
-                                    nftExchange.getTokenType(),
-                                    nftExchange.asGrpc(),
-                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
-                }
+            for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
+                allChanges.add(
+                        BalanceChange.changingNftOwnership(
+                                Id.fromGrpcToken(nftExchange.getTokenType()),
+                                nftExchange.getTokenType(),
+                                nftExchange.asGrpc(),
+                                accountId));
             }
+        }
 
-            for (var hbarTransfer : transferOp.transferWrapper().hbarTransfers()) {
-                if (hbarTransfer.sender() != null) {
-                    changes.add(
-                            BalanceChange.changingHbar(
-                                    aaWith(
-                                            hbarTransfer.sender(),
-                                            -hbarTransfer.amount(),
-                                            hbarTransfer.isApproval()),
-                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
-                } else if (hbarTransfer.receiver() != null) {
-                    changes.add(
-                            BalanceChange.changingHbar(
-                                    aaWith(
-                                            hbarTransfer.receiver(),
-                                            hbarTransfer.amount(),
-                                            hbarTransfer.isApproval()),
-                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
-                }
+        for (var hbarTransfer : transferOp.transferWrapper().hbarTransfers()) {
+            if (hbarTransfer.sender() != null) {
+                allChanges.add(
+                        BalanceChange.changingHbar(
+                                aaWith(
+                                        hbarTransfer.sender(),
+                                        -hbarTransfer.amount(),
+                                        hbarTransfer.isApproval()),
+                                accountId));
+            } else if (hbarTransfer.receiver() != null) {
+                allChanges.add(
+                        BalanceChange.changingHbar(
+                                aaWith(
+                                        hbarTransfer.receiver(),
+                                        hbarTransfer.amount(),
+                                        hbarTransfer.isApproval()),
+                                accountId));
             }
-
-            allChanges.addAll(changes);
         }
         return allChanges;
     }
