@@ -483,6 +483,7 @@ class MerkleNetworkContextTest {
     @Test
     void summarizesUnavailableAsExpected() {
         subject.setCongestionLevelStarts(new Instant[0]);
+        subject.setEvmCongestionLevelStarts(new Instant[0]);
         subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[0]);
         subject.setExpiryUsageSnapshot(NEVER_USED_SNAPSHOT);
 
@@ -500,7 +501,8 @@ class MerkleNetworkContextTest {
                     + "  Entities touched last consensus second     :: 123\n"
                     + "  Expiry work usage snapshot is              :: <N/A>\n"
                     + "  Throttle usage snapshots are               :: <N/A>\n"
-                    + "  Congestion level start times are           :: <N/A>\n"
+                    + "  Generic congestion level start times are   :: <N/A>\n"
+                    + "  EVM congestion level start times are       :: <N/A>\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -515,6 +517,7 @@ class MerkleNetworkContextTest {
     @Test
     void summarizesHashesAsExpected() {
         subject.setCongestionLevelStarts(new Instant[0]);
+        subject.setEvmCongestionLevelStarts(new Instant[0]);
         subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[0]);
         final var aFixedHash =
                 org.hyperledger.besu.datatypes.Hash.wrap(
@@ -540,7 +543,8 @@ class MerkleNetworkContextTest {
                     + "  Expiry work usage snapshot is              :: \n"
                     + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: <N/A>\n"
-                    + "  Congestion level start times are           :: <N/A>\n"
+                    + "  Generic congestion level start times are   :: <N/A>\n"
+                    + "  EVM congestion level start times are       :: <N/A>\n"
                     + "  Block number is                            :: 2\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:11.000013579Z\n"
@@ -586,9 +590,12 @@ class MerkleNetworkContextTest {
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
                     + "    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n"
                     + "    0 gas used (last decision time <N/A>)\n"
-                    + "  Congestion level start times are           :: \n"
+                    + "  Generic congestion level start times are   :: \n"
                     + "    1970-01-15T06:56:07.000054321Z\n"
                     + "    1970-01-15T06:59:49.000012345Z\n"
+                    + "  EVM congestion level start times are       :: \n"
+                    + "    1970-01-26T20:42:47.000054321Z\n"
+                    + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -615,9 +622,12 @@ class MerkleNetworkContextTest {
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
                     + "    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n"
                     + "    0 gas used (last decision time <N/A>)\n"
-                    + "  Congestion level start times are           :: \n"
-                    + "    1970-01-15T06:56:07.000054321Z\n"
-                    + "    1970-01-15T06:59:49.000012345Z\n"
+                        + "  Generic congestion level start times are   :: \n"
+                        + "    1970-01-15T06:56:07.000054321Z\n"
+                        + "    1970-01-15T06:59:49.000012345Z\n"
+                        + "  EVM congestion level start times are       :: \n"
+                        + "    1970-01-26T20:42:47.000054321Z\n"
+                        + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -643,9 +653,12 @@ class MerkleNetworkContextTest {
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
                     + "    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n"
                     + "    0 gas used (last decision time <N/A>)\n"
-                    + "  Congestion level start times are           :: \n"
-                    + "    1970-01-15T06:56:07.000054321Z\n"
-                    + "    1970-01-15T06:59:49.000012345Z\n"
+                        + "  Generic congestion level start times are   :: \n"
+                        + "    1970-01-15T06:56:07.000054321Z\n"
+                        + "    1970-01-15T06:59:49.000012345Z\n"
+                        + "  EVM congestion level start times are       :: \n"
+                        + "    1970-01-26T20:42:47.000054321Z\n"
+                        + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -698,9 +711,12 @@ class MerkleNetworkContextTest {
                     + "    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
                     + "    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n"
                     + "    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
-                    + "  Congestion level start times are           :: \n"
-                    + "    1970-01-15T06:56:07.000054321Z\n"
-                    + "    1970-01-15T06:59:49.000012345Z\n"
+                        + "  Generic congestion level start times are   :: \n"
+                        + "    1970-01-15T06:56:07.000054321Z\n"
+                        + "    1970-01-15T06:59:49.000012345Z\n"
+                        + "  EVM congestion level start times are       :: \n"
+                        + "    1970-01-26T20:42:47.000054321Z\n"
+                        + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -728,9 +744,12 @@ class MerkleNetworkContextTest {
                     + "    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
                     + "    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n"
                     + "    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
-                    + "  Congestion level start times are           :: \n"
-                    + "    1970-01-15T06:56:07.000054321Z\n"
-                    + "    1970-01-15T06:59:49.000012345Z\n"
+                        + "  Generic congestion level start times are   :: \n"
+                        + "    1970-01-15T06:56:07.000054321Z\n"
+                        + "    1970-01-15T06:59:49.000012345Z\n"
+                        + "  EVM congestion level start times are       :: \n"
+                        + "    1970-01-26T20:42:47.000054321Z\n"
+                        + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"

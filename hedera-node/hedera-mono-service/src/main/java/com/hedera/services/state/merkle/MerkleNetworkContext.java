@@ -557,8 +557,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                 + expirySnapshotDesc()
                 + "\n  Throttle usage snapshots are               :: "
                 + usageSnapshotsDesc()
-                + "\n  Congestion level start times are           :: "
+                + "\n  Generic congestion level start times are   :: "
                 + congestionStartsDesc()
+                + "\n  EVM congestion level start times are       :: "
+                + evmCongestionStartsDesc()
                 + "\n  Block number is                            :: "
                 + blockNo
                 + "\n  Block timestamp is                         :: "
@@ -640,11 +642,19 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     private String congestionStartsDesc() {
-        if (congestionLevelStarts.length == 0) {
+        return internalCongestionStartsDesc(congestionLevelStarts);
+    }
+
+    private String evmCongestionStartsDesc() {
+        return internalCongestionStartsDesc(evmCongestionLevelStarts);
+    }
+
+    private String internalCongestionStartsDesc(final Instant[] levelStarts) {
+        if (levelStarts.length == 0) {
             return NOT_AVAILABLE_SUFFIX;
         } else {
             final var sb = new StringBuilder();
-            for (var start : congestionLevelStarts) {
+            for (var start : levelStarts) {
                 sb.append(LINE_WRAP).append(reprOf(start));
             }
             return sb.toString();
