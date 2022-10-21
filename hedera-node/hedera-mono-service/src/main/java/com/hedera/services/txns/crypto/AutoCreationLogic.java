@@ -50,6 +50,8 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -232,9 +234,11 @@ public class AutoCreationLogic {
                 .isSmartContract(false)
                 .alias(alias);
 
-        final var fee = autoCreationFeeFor(syntheticCreation);
-
+        var fee = autoCreationFeeFor(syntheticCreation);
         final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
+        if (isAliasEVMAddress) {
+            fee += getLazyCreationFinalizationFee();
+        }
         accountsLedger.create(newId);
         replaceAliasAndSetBalanceOnChange(change, newId);
 
@@ -287,6 +291,17 @@ public class AutoCreationLogic {
                 feeCalculator.computeFee(
                         accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+    }
+
+    public long getLazyCreationFinalizationFee() {
+        // an AccountID is already accounted for in the
+        // fee estimator, so we just need to pass a stub ECDSA key
+        // in the synthetic crypto update body
+        final var updateTxnBody =
+                CryptoUpdateTransactionBody.newBuilder()
+                        .setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
+        return autoCreationFeeFor(
+                TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody));
     }
 
     private void analyzeTokenTransferCreations(final List<BalanceChange> changes) {

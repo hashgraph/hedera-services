@@ -58,6 +58,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.NodeInfo;
@@ -67,6 +68,7 @@ import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -91,6 +93,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
+import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -139,6 +142,8 @@ class CryptoCreateTransitionLogicTest {
     private NodeInfo nodeInfo;
     private UsageLimits usageLimits;
     private AliasManager aliasManager;
+    private AutoCreationLogic autoCreationLogic;
+    private TransferLogic transferLogic;
 
     @BeforeEach
     void setup() {
@@ -154,6 +159,8 @@ class CryptoCreateTransitionLogicTest {
         accounts = mock(MerkleMap.class);
         accountsLedger = mock(TransactionalLedger.class);
         nodeInfo = mock(NodeInfo.class);
+        autoCreationLogic = mock(AutoCreationLogic.class);
+        transferLogic = mock(TransferLogic.class);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
         withRubberstampingValidator();
 
@@ -167,7 +174,9 @@ class CryptoCreateTransitionLogicTest {
                         dynamicProperties,
                         () -> AccountStorageAdapter.fromInMemory(accounts),
                         nodeInfo,
-                        aliasManager);
+                        aliasManager,
+                        autoCreationLogic,
+                        transferLogic);
     }
 
     @Test
@@ -573,10 +582,16 @@ class CryptoCreateTransitionLogicTest {
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        final var lazyCreationFinalizationFee = 100L;
+        given(autoCreationLogic.getLazyCreationFinalizationFee())
+                .willReturn(lazyCreationFinalizationFee);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
+                .willReturn(lazyCreationFinalizationFee + 1);
 
         subject.doStateTransition();
 
@@ -585,6 +600,7 @@ class CryptoCreateTransitionLogicTest {
         verify(txnCtx).setCreated(CREATED);
         verify(txnCtx).setStatus(SUCCESS);
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
+        verify(transferLogic).payAutoCreationFee(lazyCreationFinalizationFee);
 
         final var changes = captor.getValue().getChanges();
         assertEquals(7, changes.size());
@@ -595,6 +611,46 @@ class CryptoCreateTransitionLogicTest {
         assertEquals(MEMO, changes.get(AccountProperty.MEMO));
         assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
         assertEquals(false, changes.get(DECLINE_REWARD));
+    }
+
+    @Test
+    void followsEVMAddressAsAliasInsufficientBalanceForFinalizationFee() {
+        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setMemo(MEMO)
+                        .setReceiverSigRequired(false)
+                        .setDeclineReward(false)
+                        .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
+                        .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+        given(txnCtx.activePayer()).willReturn(ourAccount());
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
+
+        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        final var lazyCreationFinalizationFee = 100L;
+        given(autoCreationLogic.getLazyCreationFinalizationFee())
+                .willReturn(lazyCreationFinalizationFee);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
+                .willReturn(lazyCreationFinalizationFee - 1);
+
+        subject.doStateTransition();
+
+        verify(ledger)
+                .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
+        verify(txnCtx, never()).setCreated(CREATED);
+        verify(txnCtx).setStatus(INSUFFICIENT_PAYER_BALANCE);
+        verify(sigImpactHistorian, never()).markEntityChanged(CREATED.getAccountNum());
+        verify(transferLogic, never()).payAutoCreationFee(lazyCreationFinalizationFee);
+        verify(accountsLedger).undoCreations();
+        verify(accountsLedger).undoChangesOfType(List.of(AccountProperty.BALANCE));
     }
 
     @Test

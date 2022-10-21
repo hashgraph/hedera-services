@@ -150,19 +150,23 @@ public class TransferLogic {
             }
         }
 
-        if (validity == OK
-                && (autoCreationFee > 0)
-                && (autoCreationFee > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE))) {
-            validity = INSUFFICIENT_PAYER_BALANCE;
-        }
-
         if (validity == OK) {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
-                payAutoCreationFee(autoCreationFee);
-                autoCreationLogic.submitRecordsTo(recordsHistorian);
+                // try to pay auto creation fee only **after** balances have been adjusted,
+                // so we are certain the payer has enough balance after potential transfers
+                // from his account
+                if ((autoCreationFee > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE))) {
+                    validity = INSUFFICIENT_PAYER_BALANCE;
+                    accountsLedger.undoChangesOfType(List.of(BALANCE));
+                } else {
+                    payAutoCreationFee(autoCreationFee);
+                    autoCreationLogic.submitRecordsTo(recordsHistorian);
+                }
             }
-        } else {
+        }
+
+        if (validity != OK) {
             dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
             if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
                 accountsLedger.undoCreations();
@@ -171,7 +175,7 @@ public class TransferLogic {
         }
     }
 
-    private void payAutoCreationFee(final long autoCreationFee) {
+    public void payAutoCreationFee(final long autoCreationFee) {
         feeDistribution.distributeChargedFee(autoCreationFee, accountsLedger);
 
         // deduct the auto creation fee from payer of the transaction

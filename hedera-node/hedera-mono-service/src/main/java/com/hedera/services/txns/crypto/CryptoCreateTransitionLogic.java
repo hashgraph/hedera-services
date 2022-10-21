@@ -17,6 +17,7 @@ package com.hedera.services.txns.crypto;
 
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -48,6 +49,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -62,6 +64,7 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -90,6 +93,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     private final Supplier<AccountStorageAdapter> accounts;
     private final NodeInfo nodeInfo;
     private final AliasManager aliasManager;
+    private final AutoCreationLogic autoCreationLogic;
+    private final TransferLogic transferLogic;
 
     @Inject
     public CryptoCreateTransitionLogic(
@@ -101,7 +106,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             final GlobalDynamicProperties dynamicProperties,
             final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo,
-            final AliasManager aliasManager) {
+            final AliasManager aliasManager,
+            final AutoCreationLogic autoCreationLogic,
+            final TransferLogic transferLogic) {
         this.ledger = ledger;
         this.txnCtx = txnCtx;
         this.usageLimits = usageLimits;
@@ -111,6 +118,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
         this.aliasManager = aliasManager;
+        this.autoCreationLogic = autoCreationLogic;
+        this.transferLogic = transferLogic;
     }
 
     @Override
@@ -127,6 +136,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             long balance = op.getInitialBalance();
             final var customizer = asCustomizer(op);
             final var created = ledger.create(sponsor, balance, customizer);
+            if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
+                preChargeLazyCreateFinalizationFee();
+            }
             sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
             txnCtx.setCreated(created);
@@ -155,6 +167,18 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             log.warn("Avoidable exception!", e);
             txnCtx.setStatus(FAIL_INVALID);
         }
+    }
+
+    private void preChargeLazyCreateFinalizationFee() {
+        final var lazyCreationFinalizationFee = autoCreationLogic.getLazyCreationFinalizationFee();
+        final var accountsLedger = ledger.getAccountsLedger();
+        if (lazyCreationFinalizationFee
+                > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE)) {
+            accountsLedger.undoCreations();
+            accountsLedger.undoChangesOfType(List.of(BALANCE));
+            throw new InsufficientFundsException(txnCtx.activePayer(), lazyCreationFinalizationFee);
+        }
+        transferLogic.payAutoCreationFee(lazyCreationFinalizationFee);
     }
 
     private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
