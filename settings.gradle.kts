@@ -113,6 +113,7 @@ dependencyResolutionManagement {
             library("dagger-api", "com.google.dagger", "dagger").versionRef("dagger-version")
             library("dagger-compiler", "com.google.dagger", "dagger-compiler").versionRef("dagger-version")
             library("eddsa", "net.i2p.crypto", "eddsa").versionRef("eddsa-version")
+            library("grpc-context", "io.grpc", "grpc-context").versionRef("grpc-version")
             library("grpc-protobuf", "io.grpc", "grpc-protobuf").versionRef("grpc-version")
             library("grpc-netty", "io.grpc", "grpc-netty").versionRef("grpc-version")
             library("guava", "com.google.guava", "guava").versionRef("guava-version")

@@ -15,7 +15,9 @@
  */
 package com.hedera.services.bdd.suites.schedule;
 
+import io.grpc.Contexts;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -2687,7 +2689,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
         AtomicLong normalPrice = new AtomicLong();
 
-        return defaultHapiSpec("CongestionPricingAffectsImmediateScheduleExecution")
+        return onlyDefaultHapiSpec("CongestionPricingAffectsImmediateScheduleExecution")
                 .given(
                         cryptoCreate(ACCOUNT).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         overriding("scheduling.whitelist", "ContractCall"),

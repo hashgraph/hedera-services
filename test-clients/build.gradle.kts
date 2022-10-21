@@ -72,6 +72,9 @@ dependencies {
     itestImplementation(libs.bundles.swirlds)
     itestImplementation(testLibs.bundles.testcontainers)
     eetImplementation(testLibs.bundles.testcontainers)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.grpc.netty)
+    implementation(libs.grpc.context)
 }
 
 tasks.itest {

@@ -16,4 +16,7 @@ module com.hedera.services.test.clients {
     requires org.hyperledger.besu.crypto;
     requires org.junit.jupiter.api;
     requires org.testcontainers;
+    requires net.i2p.crypto.eddsa;
+    requires com.hedera.hashgraph.protobuf.java.api;
+    requires com.google.protobuf;
 }
