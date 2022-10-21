@@ -191,13 +191,15 @@ public class DecodingFacade {
     public static List<SyntheticTxnFactory.FungibleTokenTransfer> bindFungibleTransfersFrom(
             final TokenID tokenType,
             @NotNull final Tuple[] abiTransfers,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final UnaryOperator<byte[]> aliasResolver,
+            final boolean hasIsApproval) {
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
             final AccountID accountID =
                     convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
-            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount);
+            final boolean isApproval = hasIsApproval ? transfer.get(2) : false;
+            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, isApproval);
         }
         return fungibleTransfers;
     }
@@ -229,15 +231,16 @@ public class DecodingFacade {
             final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
             final TokenID tokenType,
             final AccountID accountID,
-            final long amount) {
+            final long amount,
+            final boolean isApproval) {
         if (amount > 0) {
             fungibleTransfers.add(
                     new SyntheticTxnFactory.FungibleTokenTransfer(
-                            amount, false, tokenType, null, accountID));
+                            amount, isApproval, tokenType, null, accountID));
         } else {
             fungibleTransfers.add(
                     new SyntheticTxnFactory.FungibleTokenTransfer(
-                            -amount, false, tokenType, accountID, null));
+                            -amount, isApproval, tokenType, accountID, null));
         }
     }
 

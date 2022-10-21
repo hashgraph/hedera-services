@@ -37,6 +37,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.google.common.annotations.*;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -282,10 +283,15 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (impliedValidity != ResponseCodeEnum.OK) {
             return;
         }
-        explicitChanges = constructBalanceChanges(transferOp);
+        explicitChanges = constructBalanceChanges();
+        final var hbarOnly = transferOp.transferWrapper().hbarTransfers().size();
         impliedTransfers =
                 impliedTransfersMarshal.assessCustomFeesAndValidate(
-                        0, 0, explicitChanges, NO_ALIASES, impliedTransfersMarshal.currentProps());
+                        hbarOnly,
+                        0,
+                        explicitChanges,
+                        NO_ALIASES,
+                        impliedTransfersMarshal.currentProps());
     }
 
     @Override
@@ -316,6 +322,15 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
             accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
         }
+
+        // add the cost for transferring hbars
+        // Hbar transfer is similar to fungible tokens so only charge half for each operation
+        long hbarTxCost =
+                pricingUtils.getMinimumPriceInTinybars(
+                                PrecompilePricingUtils.GasCostType.TRANSFER_HBAR, consensusTime)
+                        / 2;
+        accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
+
         return accumulatedCost;
     }
 
@@ -339,7 +354,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
         for (final var tuple : decodedTuples) {
-            decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tuple);
+            decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tuple, false);
         }
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
@@ -369,7 +384,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         hbarTransfers = decodeHbarTransfers(aliasResolver, hbarTransfers, hbarTransferTuples);
 
-        decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tokenTransferTuples);
+        decodeTokenTransfer(
+                aliasResolver, tokenTransferWrappers, (Tuple[]) tokenTransferTuples, true);
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
@@ -387,7 +403,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public static void decodeTokenTransfer(
             UnaryOperator<byte[]> aliasResolver,
             List<TokenTransferWrapper> tokenTransferWrappers,
-            Tuple[] tokenTransferTuples) {
+            Tuple[] tokenTransferTuples,
+            final boolean hasIsApproval) {
         for (final var tupleNested : tokenTransferTuples) {
             final var tokenType = convertAddressBytesToTokenID(tupleNested.get(0));
 
@@ -397,7 +414,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var abiAdjustments = (Tuple[]) tupleNested.get(1);
             if (abiAdjustments.length > 0) {
                 fungibleTransfers =
-                        bindFungibleTransfersFrom(tokenType, abiAdjustments, aliasResolver);
+                        bindFungibleTransfersFrom(
+                                tokenType, abiAdjustments, aliasResolver, hasIsApproval);
             }
             final var abiNftExchanges = (Tuple[]) tupleNested.get(2);
             if (abiNftExchanges.length > 0) {
@@ -423,7 +441,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var accountID = accountIDs.get(i);
             final var amount = amounts[i];
 
-            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount);
+            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, false);
         }
 
         final var tokenTransferWrappers =
@@ -504,7 +522,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
 
-    private List<BalanceChange> constructBalanceChanges(final CryptoTransferWrapper transferOp) {
+    private List<BalanceChange> constructBalanceChanges() {
+        Objects.requireNonNull(
+                transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         final List<BalanceChange> allChanges = new ArrayList<>();
         for (final TokenTransferWrapper tokenTransferWrapper : transferOp.tokenTransferWrappers()) {
             final List<BalanceChange> changes = new ArrayList<>();
@@ -558,6 +578,42 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     Id.fromGrpcToken(nftExchange.getTokenType()),
                                     nftExchange.getTokenType(),
                                     nftExchange.asGrpc(),
+                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+                }
+            }
+
+            for (var hbarTransfer : transferOp.transferWrapper().hbarTransfers()) {
+
+                if (hbarTransfer.sender() != null && hbarTransfer.receiver() != null) {
+                    changes.add(
+                            BalanceChange.changingHbar(
+                                    aaWith(
+                                            hbarTransfer.receiver(),
+                                            -hbarTransfer.amount(),
+                                            hbarTransfer.isApproval()),
+                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+                    changes.add(
+                            BalanceChange.changingHbar(
+                                    aaWith(
+                                            hbarTransfer.sender(),
+                                            hbarTransfer.amount(),
+                                            hbarTransfer.isApproval()),
+                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+                } else if (hbarTransfer.sender() == null) {
+                    changes.add(
+                            BalanceChange.changingHbar(
+                                    aaWith(
+                                            hbarTransfer.receiver(),
+                                            hbarTransfer.amount(),
+                                            hbarTransfer.isApproval()),
+                                    EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+                } else {
+                    changes.add(
+                            BalanceChange.changingHbar(
+                                    aaWith(
+                                            hbarTransfer.sender(),
+                                            -hbarTransfer.amount(),
+                                            hbarTransfer.isApproval()),
                                     EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
                 }
             }
