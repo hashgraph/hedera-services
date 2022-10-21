@@ -159,6 +159,9 @@ class ImpliedTransfersTest {
         given(dynamicProperties.areAllowancesEnabled()).willReturn(!areAllowancesEnabled);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
         assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
+
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(!lazyCreationEnabled);
+        assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
     }
 
     private final int maxExplicitHbarAdjusts = 5;
