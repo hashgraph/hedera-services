@@ -59,31 +59,31 @@ public final class AccountStore {
     // In the future there will be an Account model object to retrieve all fields from
     // MerkleAccount.
     // For Sig requirements we just need Key from the accounts.
-    public record KeyOrReason(@Nullable HederaKey key, @Nullable ResponseCodeEnum reason) {
+    public record KeyOrLookupFailureReason(@Nullable HederaKey key, @Nullable ResponseCodeEnum failureReason) {
         public boolean failed() {
-            return reason != OK;
+            return failureReason != null;
         }
     }
 
     /**
      * Fetches the account's key from given {@link MerkleAccount}. If the key could not be fetched
      * as the given accountId is invalid or doesn't exist provides information about the failure
-     * reason. If there is no failure reason will be {@code ResponseCodeEnum.OK}
+     * failureReason. If there is no failure failureReason will be {@code ResponseCodeEnum.OK}
      *
      * @param idOrAlias account id whose key should be fetched
-     * @return key if successfully fetched or reason for failure
+     * @return key if successfully fetched or failureReason for failure
      */
-    public KeyOrReason getKey(final AccountID idOrAlias) {
+    public KeyOrLookupFailureReason getKey(final AccountID idOrAlias) {
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
-            return new KeyOrReason(null, INVALID_ACCOUNT_ID);
+            return new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID);
         }
-        return new KeyOrReason(account.get().getAccountKey(), OK);
+        return new KeyOrLookupFailureReason(account.get().getAccountKey(), null);
     }
 
     /**
-     * Returns the account leaf for the given account number. If the account doesn't exist throws
-     * {@link IllegalArgumentException}
+     * Returns the account leaf for the given account number. If the account doesn't exist
+     * returns {@code Optional.empty()}
      *
      * @param id given account number
      * @return merkle leaf for the given account number
@@ -112,11 +112,7 @@ public final class AccountStore {
                     return fromMirror(evmAddress);
                 }
             }
-            final var num = aliases.get(alias);
-            if (num.isPresent()) {
-                return num.get();
-            }
-            return MISSING_NUM;
+            return aliases.get(alias).orElse(MISSING_NUM);
         }
         return id.getAccountNum();
     }

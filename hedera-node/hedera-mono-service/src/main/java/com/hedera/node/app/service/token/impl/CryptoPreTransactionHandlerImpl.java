@@ -29,9 +29,8 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 
 /**
- * An implementation of {@code CryptoPreTransactionHandler} for validating all transactions defined
- * in the protobuf "CryptoService" in pre-handle. It adds all the verified signatures to the
- * including signature verification.
+ * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
+ * (but not the candidate signatures) for each crypto operation.
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;

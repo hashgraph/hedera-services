@@ -27,7 +27,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
     /**
      * pre-handle {@link com.hederahashgraph.api.proto.java.CryptoCreate} transaction
      *
-     * @param txn crypto create transaction
+     * @param txn crypto create transaction body
      * @return metadata accumulated from pre-handling the transaction
      */
     TransactionMetadata preHandleCryptoCreate(final TransactionBody txn);
