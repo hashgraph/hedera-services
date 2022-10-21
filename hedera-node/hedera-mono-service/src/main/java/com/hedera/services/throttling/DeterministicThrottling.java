@@ -336,12 +336,15 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
         // maintain legacy behaviour
         if (!dynamicProperties.schedulingLongTermEnabled()) {
-            if (dynamicProperties.isAutoCreationEnabled() && scheduledFunction == CryptoTransfer) {
+            if ((dynamicProperties.isAutoCreationEnabled()
+                            || dynamicProperties.isLazyCreationEnabled())
+                    && scheduledFunction == CryptoTransfer) {
                 final var xfer = scheduled.getCryptoTransfer();
                 if (usesAliases(xfer)) {
                     final var resolver = new AliasResolver();
                     resolver.resolve(xfer, aliasManager);
-                    final var numAutoCreations = resolver.perceivedAutoCreations();
+                    final var numAutoCreations =
+                            resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
                     if (numAutoCreations > 0) {
                         return shouldThrottleAutoCreations(numAutoCreations, now);
                     }

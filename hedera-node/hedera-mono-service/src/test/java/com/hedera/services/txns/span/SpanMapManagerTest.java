@@ -250,6 +250,7 @@ class SpanMapManagerTest {
         given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
         given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(lazyCreationEnabled);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
         spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
 

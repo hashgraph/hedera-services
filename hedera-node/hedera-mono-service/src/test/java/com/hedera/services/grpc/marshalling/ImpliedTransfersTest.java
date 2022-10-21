@@ -102,6 +102,7 @@ class ImpliedTransfersTest {
         given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
         given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(lazyCreationEnabled);
         given(customFeeSchedules.lookupMetaFor(any())).willReturn(entityCustomFees.get(0));
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
 
@@ -157,6 +158,9 @@ class ImpliedTransfersTest {
 
         given(dynamicProperties.areAllowancesEnabled()).willReturn(!areAllowancesEnabled);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+        assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
+
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(!lazyCreationEnabled);
         assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
     }
 
