@@ -204,7 +204,7 @@ class AccountStorageAdapterTest {
         subject.forEach(visitor);
         verify(virtualMapDataAccess)
                 .extractVirtualMapData(
-                        getStaticThreadManager(), eq(onDiskAccounts), captor.capture(), eq(32));
+                        eq(getStaticThreadManager()), eq(onDiskAccounts), captor.capture(), eq(32));
         captor.getValue().accept(Pair.of(SOME_KEY, onDiskStandIn));
         verify(visitor).accept(SOME_NUM, onDiskStandIn);
     }
@@ -216,7 +216,7 @@ class AccountStorageAdapterTest {
         willThrow(InterruptedException.class)
                 .given(virtualMapDataAccess)
                 .extractVirtualMapData(
-                        getStaticThreadManager(),
+                        eq(getStaticThreadManager()),
                         eq(onDiskAccounts),
                         any(InterruptableConsumer.class),
                         eq(32));
