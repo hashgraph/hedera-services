@@ -281,22 +281,11 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts alias(String alias) {
         registerProvider(
-                (spec, o) -> {
-                    var expectedKey = spec.registry().getKey(alias);
-                    if (expectedKey.getEd25519().size() > 0) {
+                (spec, o) ->
                         assertEquals(
-                                expectedKey.toByteString(),
+                                spec.registry().getKey(alias).toByteString(),
                                 ((AccountInfo) o).getAlias(),
-                                "Bad Ed25519 key alias!");
-                    }
-
-                    if (expectedKey.getECDSASecp256K1().size() > 0) {
-                        assertEquals(
-                                expectedKey.getECDSASecp256K1(),
-                                ((AccountInfo) o).getAlias(),
-                                "Bad ECDSA key alias!");
-                    }
-                });
+                                BAD_ALIAS));
         return this;
     }
 
