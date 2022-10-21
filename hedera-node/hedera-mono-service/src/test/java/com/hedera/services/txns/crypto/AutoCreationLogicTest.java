@@ -249,8 +249,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(totalFee * 2, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee * 2), result);
         assertTrue(subject.getTokenAliasMap().isEmpty());
     }
 

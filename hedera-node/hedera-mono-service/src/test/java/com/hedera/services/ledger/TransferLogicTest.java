@@ -19,6 +19,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
+import static com.hedera.test.utils.TxnUtils.aaOf;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -425,6 +426,45 @@ class TransferLogicTest {
         assertEquals(0L, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
         assertEquals(0L, (long) accountsLedger.get(payer, AccountProperty.BALANCE));
         verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
+    }
+
+    @Test
+    void failsIfPayerDoesntHaveEnoughBalanceAfterTransfersFromHisAccount() {
+        final var autoFee = 500L;
+        final var firstAmount = 1_000L;
+        final var firstAlias = ByteString.copyFromUtf8("fake");
+        final var firstNewAccount = IdUtils.asAccount("0.0.1234");
+        final var firstNewAccountNum = EntityNum.fromAccountId(firstNewAccount);
+        final var firstTrigger = BalanceChange.changingHbar(aaOf(payer, -firstAmount), payer);
+        final var secondTrigger =
+                BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
+        final var changes = List.of(firstTrigger, secondTrigger);
+        given(autoCreationLogic.create(secondTrigger, accountsLedger, changes))
+                .willAnswer(
+                        invocationOnMock -> {
+                            accountsLedger.create(firstNewAccount);
+                            final var change = (BalanceChange) invocationOnMock.getArgument(0);
+                            change.replaceNonEmptyAliasWith(firstNewAccountNum);
+                            change.setNewBalance(change.getAggregatedUnits());
+                            return Pair.of(OK, autoFee);
+                        });
+        final var funding = IdUtils.asAccount("0.0.98");
+        accountsLedger.begin();
+        accountsLedger.create(funding);
+        accountsLedger.create(payer);
+        accountsLedger.set(payer, BALANCE, firstAmount);
+        given(txnCtx.activePayer()).willReturn(payer);
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
+
+        final var ex =
+                assertThrows(InvalidTransactionException.class, () -> subject.doZeroSum(changes));
+
+        assertEquals(INSUFFICIENT_PAYER_BALANCE, ex.getResponseCode());
+        assertEquals(0L, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
+        assertEquals(0L, (long) accountsLedger.get(payer, AccountProperty.BALANCE));
+        verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
+        verify(autoCreationLogic).reclaimPendingAliases();
     }
 
     @Test
