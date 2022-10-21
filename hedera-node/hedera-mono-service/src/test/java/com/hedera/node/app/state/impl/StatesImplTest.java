@@ -22,10 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.state.impl.OnDiskStateImpl;
-import com.hedera.node.app.state.impl.RebuiltStateImpl;
-import com.hedera.node.app.state.impl.StatesImpl;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;

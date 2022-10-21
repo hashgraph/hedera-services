@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.token.util.AliasUtils.isMirror;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -59,7 +58,8 @@ public final class AccountStore {
     // In the future there will be an Account model object to retrieve all fields from
     // MerkleAccount.
     // For Sig requirements we just need Key from the accounts.
-    public record KeyOrLookupFailureReason(@Nullable HederaKey key, @Nullable ResponseCodeEnum failureReason) {
+    public record KeyOrLookupFailureReason(
+            @Nullable HederaKey key, @Nullable ResponseCodeEnum failureReason) {
         public boolean failed() {
             return failureReason != null;
         }
@@ -82,8 +82,8 @@ public final class AccountStore {
     }
 
     /**
-     * Returns the account leaf for the given account number. If the account doesn't exist
-     * returns {@code Optional.empty()}
+     * Returns the account leaf for the given account number. If the account doesn't exist returns
+     * {@code Optional.empty()}
      *
      * @param id given account number
      * @return merkle leaf for the given account number

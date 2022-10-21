@@ -37,8 +37,9 @@ public interface TransactionMetadata {
     }
 
     /**
-     * Returns the status {@link ResponseCodeEnum}, which gives the failureReason if there is a failure. If
-     * there is no failure in "pre-handle" the status returned will be {@code ResponseCodeEnum.OK}.
+     * Returns the status {@link ResponseCodeEnum}, which gives the failureReason if there is a
+     * failure. If there is no failure in "pre-handle" the status returned will be {@code
+     * ResponseCodeEnum.OK}.
      *
      * @return response code of the failure
      */
