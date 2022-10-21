@@ -753,9 +753,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .given(
                         UtilVerbs.overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR)
-                                .balance(INITIAL_BALANCE * ONE_HBAR)
-                                .key(SECP_256K1_SOURCE_KEY))
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when()
                 .then(
                         withOpContext(
@@ -782,7 +780,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .hasDefaultKey()
-                                                                    .alias(evmAddress)
+                                                                    .evmAddressAlias(evmAddress)
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)
                                                                     .autoRenew(
@@ -803,9 +801,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         overriding(AUTO_CREATE_FEATURE_FLAG, "true"),
                         overriding(LAZY_CREATE_FEATURE_FLAG, "false"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR)
-                                .balance(INITIAL_BALANCE * ONE_HBAR)
-                                .key(SECP_256K1_SOURCE_KEY))
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when()
                 .then(
                         withOpContext(

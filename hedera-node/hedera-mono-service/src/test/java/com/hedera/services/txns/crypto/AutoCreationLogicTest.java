@@ -129,6 +129,24 @@ class AutoCreationLogicTest {
     }
 
     @Test
+    void doesntLazyCreateWhenLazyCreationFeatureDisabled()
+            throws InvalidProtocolBufferException, DecoderException {
+        given(usageLimits.areCreatableAccounts(anyInt())).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(false);
+
+        final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
+        final var evmAddressAlias =
+                ByteString.copyFrom(
+                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+
+        final var input = wellKnownChange(evmAddressAlias);
+        final var changes = List.of(input);
+
+        final var result = subject.create(input, accountsLedger, changes);
+        assertEquals(NOT_SUPPORTED, result.getLeft());
+    }
+
+    @Test
     void refusesToCreateBeyondMaxNumber() {
         final var input = wellKnownChange(edKeyAlias);
         final var changes = List.of(input);

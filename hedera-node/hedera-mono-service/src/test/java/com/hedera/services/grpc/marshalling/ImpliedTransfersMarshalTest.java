@@ -185,6 +185,42 @@ class ImpliedTransfersMarshalTest {
     }
 
     @Test
+    void rejectsAutoCreationIfAutoCreationDisabledAndLazyCreationEnabled() {
+        setupHbarOnlyFixture();
+        setupPropsWithAutoAndLazyCreation(false, true);
+
+        given(aliasCheck.test(op)).willReturn(true);
+        given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+        given(aliasResolver.perceivedAutoCreations()).willReturn(1);
+
+        final var expectedMeta =
+                new ImpliedTransfersMeta(
+                        propsWithLazyCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
+
+        final var result = subject.unmarshalFromGrpc(op, payer);
+
+        assertEquals(result.getMeta(), expectedMeta);
+    }
+
+    @Test
+    void rejectsLazyCreationIfAutoAndLazyCreationDisabled() {
+        setupHbarOnlyFixture();
+        setupPropsWithAutoAndLazyCreation(false, false);
+
+        given(aliasCheck.test(op)).willReturn(true);
+        given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+        given(aliasResolver.perceivedLazyCreations()).willReturn(1);
+
+        final var expectedMeta =
+                new ImpliedTransfersMeta(
+                        propsNoAutoCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
+
+        final var result = subject.unmarshalFromGrpc(op, payer);
+
+        assertEquals(result.getMeta(), expectedMeta);
+    }
+
+    @Test
     void startsWithChecks() {
         setupHbarOnlyFixture();
         setupPropsWithAutoAndLazyCreation(true, false);
@@ -260,13 +296,19 @@ class ImpliedTransfersMarshalTest {
         given(aliasCheck.test(op)).willReturn(true);
         given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
         given(aliasResolver.perceivedAutoCreations()).willReturn(1);
+        given(aliasResolver.perceivedLazyCreations()).willReturn(1);
         given(aliasResolver.resolutions()).willReturn(mockAliases);
 
         final var expectedChanges = expNonFeeChanges(false);
         // and:
         final var expectedMeta =
                 new ImpliedTransfersMeta(
-                        propsWithAutoAndLazyCreation, OK, Collections.emptyList(), mockAliases, 1);
+                        propsWithAutoAndLazyCreation,
+                        OK,
+                        Collections.emptyList(),
+                        mockAliases,
+                        1,
+                        1);
 
         givenValidity(OK, propsWithAutoAndLazyCreation);
 

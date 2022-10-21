@@ -302,7 +302,8 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
             case TokenMint:
                 return shouldThrottleMint(manager, txn.getTokenMint(), now);
             case CryptoTransfer:
-                if (dynamicProperties.isAutoCreationEnabled()) {
+                if (dynamicProperties.isAutoCreationEnabled()
+                        || dynamicProperties.isLazyCreationEnabled()) {
                     return shouldThrottleTransfer(manager, details.getNumAutoCreations(), now);
                 } else {
                     /* Since auto-creation is disabled, if this transfer does attempt one, it will
@@ -708,7 +709,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
         public int getNumAutoCreations() {
             final var resolver = new AliasResolver();
             resolver.resolve(txn.getCryptoTransfer(), aliasManager);
-            return resolver.perceivedAutoCreations();
+            return resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
         }
 
         @Override

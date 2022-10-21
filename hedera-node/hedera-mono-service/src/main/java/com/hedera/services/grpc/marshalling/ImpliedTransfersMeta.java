@@ -174,6 +174,7 @@ public class ImpliedTransfersMeta {
                 .add("maxXferBalanceChanges", validationProps.maxXferBalanceChanges)
                 .add("areNftsEnabled", validationProps.areNftsEnabled)
                 .add("isAutoCreationEnabled", validationProps.isAutoCreationEnabled)
+                .add("isLazyCreationEnabled", validationProps.isLazyCreationEnabled)
                 .add("tokenFeeSchedules", customFeeMeta)
                 .add("areAllowancesEnabled", validationProps.areAllowancesEnabled)
                 .toString();

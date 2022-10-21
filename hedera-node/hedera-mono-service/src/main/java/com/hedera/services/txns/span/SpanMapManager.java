@@ -330,7 +330,9 @@ public class SpanMapManager {
                 impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
         reCalculateXferMeta(accessor, impliedTransfers);
         spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
-        accessor.setNumAutoCreations(impliedTransfers.getMeta().getNumAutoCreations());
+        accessor.setNumAutoCreations(
+                impliedTransfers.getMeta().getNumAutoCreations()
+                        + impliedTransfers.getMeta().getNumLazyCreations());
     }
 
     public static void reCalculateXferMeta(
