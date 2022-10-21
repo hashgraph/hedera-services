@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
@@ -184,25 +184,6 @@ class HederaMessageCallProcessorTest {
     }
 
     @Test
-    void callsParentWhenRecipientIsNonExistentButInputDataIsPresent() {
-        given(frame.getWorldUpdater()).willReturn(updater);
-        given(frame.getValue()).willReturn(Wei.ONE);
-        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
-        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
-        given(frame.getInputData()).willReturn(Bytes.of(1));
-        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
-        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
-        given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
-        doCallRealMethod().when(frame).setState(CODE_EXECUTING);
-        doCallRealMethod().when(frame).getState();
-
-        subject.start(frame, hederaTracer);
-
-        verify(hederaTracer, never()).tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
-        verifyNoMoreInteractions(nonHtsPrecompile, frame);
-    }
-
-    @Test
     void callsParentWithNonTokenAccountReceivingNoValue() {
         final var sender = new UpdateTrackingLedgerAccount<>(SENDER_ADDRESS, null);
         sender.setBalance(Wei.of(123));
@@ -215,7 +196,7 @@ class HederaMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
         given(updater.getSenderAccount(frame)).willReturn(sender);
         given(updater.getOrCreate(RECIPIENT_ADDRESS)).willReturn(receiver);
-        given(frame.getInputData()).willReturn(Bytes.of(22));
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(receiver);
         doCallRealMethod().when(frame).setState(CODE_EXECUTING);
         doCallRealMethod().when(frame).getState();
 
@@ -313,7 +294,6 @@ class HederaMessageCallProcessorTest {
     void executesLazyCreate() {
         given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
         given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
-        given(frame.getInputData()).willReturn(Bytes.EMPTY);
         given(frame.getValue()).willReturn(Wei.of(1000L));
         final var gasPrice = Wei.of(5);
         given(frame.getGasPrice()).willReturn(gasPrice);
@@ -343,7 +323,6 @@ class HederaMessageCallProcessorTest {
     void executesLazyCreateNotSufficientGas() {
         given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
         given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
-        given(frame.getInputData()).willReturn(Bytes.EMPTY);
         given(frame.getValue()).willReturn(Wei.of(1000L));
         final var gasPrice = Wei.of(5);
         given(frame.getGasPrice()).willReturn(gasPrice);
@@ -382,10 +361,9 @@ class HederaMessageCallProcessorTest {
     }
 
     @Test
-    void executesLazyCreateMaxEntitiesReached() {
+    void lazyCreateFailsAsExpectedWhenAutoCreationWasNotSuccessful() {
         given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
         given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
-        given(frame.getInputData()).willReturn(Bytes.EMPTY);
         given(frame.getValue()).willReturn(Wei.of(1000L));
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
@@ -417,8 +395,7 @@ class HederaMessageCallProcessorTest {
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame, times(2)).getState();
         verify(hederaTracer)
-                .traceAccountCreationResult(
-                        frame, Optional.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
+                .traceAccountCreationResult(frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
         verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }

@@ -380,43 +380,6 @@ class ContractCallTransitionLogicTest {
     }
 
     @Test
-    void verifyEthLazyCreateThrowsWhenFunctionParametersIsNotEmpty() {
-        // setup:
-        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
-        var op =
-                TransactionBody.newBuilder()
-                        .setContractCall(
-                                ContractCallTransactionBody.newBuilder()
-                                        .setGas(gas)
-                                        .setAmount(sent)
-                                        .setFunctionParameters(
-                                                ByteStringUtils.wrapUnsafely(
-                                                        "parameters".getBytes()))
-                                        .setContractID(
-                                                ContractID.newBuilder()
-                                                        .setEvmAddress(alias)
-                                                        .build()));
-        contractCallTxn = op.build();
-        // and:
-        given(accessor.getTxn()).willReturn(contractCallTxn);
-        // and:
-        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
-        given(properties.isAutoCreationEnabled()).willReturn(true);
-        given(properties.isLazyCreationEnabled()).willReturn(true);
-        // when:
-        assertFailsWith(
-                () ->
-                        subject.doStateTransitionOperation(
-                                accessor.getTxn(),
-                                senderAccount.getId(),
-                                relayerAccount.getId(),
-                                maxGas,
-                                biOfferedGasPrice),
-                INVALID_ACCOUNT_ID);
-    }
-
-    @Test
     void verifyAccountStoreNotQueriedForTokenAddress() {
         // setup:
         givenValidTxnCtx();

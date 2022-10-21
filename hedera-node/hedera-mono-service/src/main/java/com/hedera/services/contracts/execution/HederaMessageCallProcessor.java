@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
@@ -86,8 +86,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
                 if (updater.isTokenAddress(frame.getRecipientAddress())) {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
-                } else if (updater.get(frame.getRecipientAddress()) == null
-                        && frame.getInputData().equals(Bytes.EMPTY)) {
+                } else if (updater.get(frame.getRecipientAddress()) == null) {
                     executeLazyCreate(frame, updater, operationTracer);
                 }
             }
@@ -161,7 +160,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             frame.decrementRemainingGas(frame.getRemainingGas());
             frame.setState(EXCEPTIONAL_HALT);
             operationTracer.traceAccountCreationResult(
-                    frame, Optional.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
+                    frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
         } else {
             final var creationFeeInTinybars = lazyCreateResult.getRight();
             final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();

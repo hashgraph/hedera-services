@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.contract;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -25,7 +26,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
@@ -118,10 +118,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 && properties.isAutoCreationEnabled()
                 && properties.isLazyCreationEnabled()) {
             // allow Ethereum transactions to lazy create a hollow account
-            // if `to` is non-existent, `value` is non-zero and `callData` is empty
-            if (op.getAmount() <= 0 || !op.getFunctionParameters().isEmpty()) {
-                throw new InvalidTransactionException(INVALID_ACCOUNT_ID);
-            }
+            // if `to` is non-existent and `value` is non-zero
+            validateTrue(op.getAmount() > 0, INVALID_ACCOUNT_ID);
             receiver = new Account(op.getContractID().getEvmAddress());
         } else {
             receiver =
