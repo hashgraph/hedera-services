@@ -1,7 +1,21 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.fees.congestion;
 
 import com.hedera.services.utils.accessors.TxnAccessor;
-
 import java.time.Instant;
 
 public class MultiplierSources {
@@ -20,12 +34,12 @@ public class MultiplierSources {
         genericFeeMultiplier.updateMultiplier(accessor, consensusNow);
     }
 
+    public void resetGenericCongestionLevelStarts(final Instant[] startTimes) {
+        genericFeeMultiplier.resetCongestionLevelStarts(startTimes);
+    }
 
-    public void resetCongestionLevelStarts(
-            final Instant[] gasSavedStartTimes,
-            final Instant[] genericSavedStartTimes) {
-        gasFeeMultiplier.resetCongestionLevelStarts(gasSavedStartTimes);
-        genericFeeMultiplier.resetCongestionLevelStarts(genericSavedStartTimes);
+    public void resetGasCongestionLevelStarts(final Instant[] startTimes) {
+        gasFeeMultiplier.resetCongestionLevelStarts(startTimes);
     }
 
     public Instant[] gasCongestionStarts() {

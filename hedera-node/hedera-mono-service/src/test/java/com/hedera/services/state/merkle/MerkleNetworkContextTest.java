@@ -27,7 +27,6 @@ import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.merkle.internals.BytesElement;
@@ -82,7 +81,7 @@ class MerkleNetworkContextTest {
     private ExchangeRates midnightRateSet;
     private ExchangeRates midnightRateSetCopy;
     private Instant[] congestionStarts;
-    private Instant[] gasCongestionStarts;
+    private Instant[] evmCongestionStarts;
     private DeterministicThrottle.UsageSnapshot[] usageSnapshots;
 
     private FunctionalityThrottling throttling;
@@ -102,6 +101,11 @@ class MerkleNetworkContextTest {
                 new Instant[] {
                     Instant.ofEpochSecond(1_234_567L, 54321L),
                     Instant.ofEpochSecond(1_234_789L, 12345L)
+                };
+        evmCongestionStarts =
+                new Instant[] {
+                    Instant.ofEpochSecond(2_234_567L, 54321L),
+                    Instant.ofEpochSecond(2_234_789L, 12345L)
                 };
 
         consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
@@ -132,6 +136,7 @@ class MerkleNetworkContextTest {
         subject.setGasThrottleUsageSnapshot(gasLimitUsageSnapshot);
         subject.setExpiryUsageSnapshot(expiryUsageSnapshot);
         subject.setCongestionLevelStarts(congestionStarts());
+        subject.setEvmCongestionLevelStarts(evmCongestionStarts);
         subject.setStateVersion(stateVersion);
         subject.updateAutoRenewSummaryCounts(
                 (int) entitiesScannedThisSecond, (int) entitiesTouchedThisSecond);
@@ -827,13 +832,14 @@ class MerkleNetworkContextTest {
         multiplierSources = mock(MultiplierSources.class);
 
         given(multiplierSources.genericCongestionStarts()).willReturn(congestionStarts);
-        given(multiplierSources.gasCongestionStarts()).willReturn(gasCongestionStarts);
+        given(multiplierSources.gasCongestionStarts()).willReturn(evmCongestionStarts);
 
         // when:
         subject.updateCongestionStartsFrom(multiplierSources);
 
         // then:
         assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
+        assertArrayEquals(evmCongestionStarts, subject.getEvmCongestionLevelStarts());
     }
 
     @Test
@@ -974,16 +980,18 @@ class MerkleNetworkContextTest {
         // setup:
         multiplierSources = mock(MultiplierSources.class);
         congestionStarts[1] = null;
+        evmCongestionStarts[1] = null;
 
         // given:
         subject.getCongestionLevelStarts()[1] = null;
+        subject.getEvmCongestionLevelStarts()[1] = null;
 
         // when:
         subject.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
 
         // then:
-        verify(multiplierSources, times(1))
-                .resetCongestionLevelStarts(gasCongestionStarts, congestionStarts);
+        verify(multiplierSources, times(1)).resetGenericCongestionLevelStarts(congestionStarts);
+        verify(multiplierSources, times(1)).resetGasCongestionLevelStarts(evmCongestionStarts);
     }
 
     @Test
@@ -995,16 +1003,19 @@ class MerkleNetworkContextTest {
     @Test
     void updatesFromSavedCongestionStarts() {
         multiplierSources = mock(MultiplierSources.class);
+        given(multiplierSources.genericCongestionStarts()).willReturn(congestionStarts);
+        given(multiplierSources.gasCongestionStarts()).willReturn(evmCongestionStarts);
 
         // when:
         subject.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
         // and:
         subject.setCongestionLevelStarts(NO_CONGESTION_STARTS);
+        subject.setEvmCongestionLevelStarts(NO_CONGESTION_STARTS);
         subject.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
 
         // then:
-        verify(multiplierSources, times(1))
-                .resetCongestionLevelStarts(gasCongestionStarts, congestionStarts);
+        verify(multiplierSources, times(1)).resetGenericCongestionLevelStarts(congestionStarts);
+        verify(multiplierSources, times(1)).resetGasCongestionLevelStarts(evmCongestionStarts);
     }
 
     @Test

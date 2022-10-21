@@ -52,6 +52,7 @@ public class ThrottlesCallback {
             hapiThrottling.rebuildFor(defs);
             handleThrottling.rebuildFor(defs);
             scheduleThrottling.rebuildFor(defs);
+            multiplierSources.resetExpectations();
         };
     }
 }

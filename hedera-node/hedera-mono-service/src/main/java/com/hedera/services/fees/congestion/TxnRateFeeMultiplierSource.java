@@ -20,7 +20,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +33,8 @@ public class TxnRateFeeMultiplierSource extends DelegatingMultiplierSource {
     public TxnRateFeeMultiplierSource(
             GlobalDynamicProperties properties,
             @HandleThrottle FunctionalityThrottling throttling) {
-        super(new ThrottleMultiplierSource(
+        super(
+                new ThrottleMultiplierSource(
                         "logical TPS",
                         "TPS",
                         "CryptoTransfer throughput",

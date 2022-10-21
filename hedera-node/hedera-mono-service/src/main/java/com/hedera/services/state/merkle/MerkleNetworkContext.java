@@ -26,7 +26,6 @@ import static com.hedera.services.utils.MiscUtils.safeResetThrottles;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.merkle.internals.BytesElement;
@@ -179,11 +178,14 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     // Helpers that reset the received argument based on the network context
-    public void resetMultiplierSourceFromSavedCongestionStarts(final MultiplierSources multiplierSources) {
-//        if (congestionLevelStarts.length > 0) {
-//            feeMultiplierSource.resetCongestionLevelStarts(congestionLevelStarts);
-//        }
-        throw new AssertionError("Not implemented");
+    public void resetMultiplierSourceFromSavedCongestionStarts(
+            final MultiplierSources multiplierSources) {
+        if (congestionLevelStarts.length > 0) {
+            multiplierSources.resetGenericCongestionLevelStarts(congestionLevelStarts);
+        }
+        if (evmCongestionLevelStarts.length > 0) {
+            multiplierSources.resetGasCongestionLevelStarts(evmCongestionLevelStarts);
+        }
     }
 
     public void resetThrottlingFromSavedSnapshots(final FunctionalityThrottling throttling) {
@@ -260,7 +262,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     public void syncMultiplierSources(final MultiplierSources multiplierSources) {
-        throw new AssertionError("Not implemented");
+        this.multiplierSources = multiplierSources;
     }
 
     public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
@@ -417,8 +419,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
     }
 
-    private void readCongestionControlData(
-            final SerializableDataInputStream in, final int version)
+    private void readCongestionControlData(final SerializableDataInputStream in, final int version)
             throws IOException {
         int numUsageSnapshots = in.readInt();
         if (numUsageSnapshots > 0) {
@@ -454,9 +455,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     private void readCongestionStarts(
             final IntConsumer lengthObserver,
             final ObjIntConsumer<Instant> startObserver,
-            final SerializableDataInputStream in) throws IOException {
+            final SerializableDataInputStream in)
+            throws IOException {
         final var n = in.readInt();
-        if (n > 0)  {
+        if (n > 0) {
             lengthObserver.accept(n);
             for (int i = 0; i < n; i++) {
                 final var levelStart = readNullable(in, RichInstant::from);
@@ -742,13 +744,12 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     void updateCongestionStartsFrom(final MultiplierSources multiplierSources) {
         throwIfImmutable("Cannot update congestion starts on an immutable context");
-//        final var congestionStarts = feeMultiplierSource.congestionLevelStarts();
-//        if (null == congestionStarts) {
-//            congestionLevelStarts = NO_CONGESTION_STARTS;
-//        } else {
-//            congestionLevelStarts = congestionStarts;
-//        }
-        throw new AssertionError("Not implemented");
+        final var genericCongestionStarts = multiplierSources.genericCongestionStarts();
+        congestionLevelStarts =
+                (genericCongestionStarts == null) ? NO_CONGESTION_STARTS : genericCongestionStarts;
+        final var gasCongestionStarts = multiplierSources.gasCongestionStarts();
+        evmCongestionLevelStarts =
+                (gasCongestionStarts == null) ? NO_CONGESTION_STARTS : gasCongestionStarts;
     }
 
     void serializeNonHashData(final SerializableDataOutputStream out) throws IOException {
@@ -789,8 +790,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     private void writeCongestionStarts(
-            final Instant[] starts,
-            final SerializableDataOutputStream out) throws IOException {
+            final Instant[] starts, final SerializableDataOutputStream out) throws IOException {
         final var n = starts.length;
         out.writeInt(n);
         for (var congestionStart : starts) {

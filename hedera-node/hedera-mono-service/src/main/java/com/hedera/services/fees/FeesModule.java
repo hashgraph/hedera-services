@@ -104,10 +104,10 @@ public interface FeesModule {
     @Singleton
     static MultiplierSources provideMultiplierSources(
             final @GasPriceMultiplier FeeMultiplierSource gasMultiplier,
-            final @GenericPriceMultiplier FeeMultiplierSource genericMultiplier
-    ) {
+            final @GenericPriceMultiplier FeeMultiplierSource genericMultiplier) {
         return new MultiplierSources(genericMultiplier, gasMultiplier);
     }
+
     @Binds
     @Singleton
     NarratedCharging bindNarratedCharging(NarratedLedgerCharging narratedLedgerCharging);

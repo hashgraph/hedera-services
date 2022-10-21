@@ -18,7 +18,6 @@ package com.hedera.services.state.logic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.throttling.FunctionalityThrottling;
