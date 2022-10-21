@@ -157,10 +157,8 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
         final var lazyCreateResult =
                 autoCreationLogic.create(syntheticBalanceChange, updater.trackingAccounts(), null);
         if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {
-            frame.decrementRemainingGas(frame.getRemainingGas());
-            frame.setState(EXCEPTIONAL_HALT);
-            operationTracer.traceAccountCreationResult(
-                    frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
+            haltFrameAndTraceCreationResult(
+                    frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
         } else {
             final var creationFeeInTinybars = lazyCreateResult.getRight();
             final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
@@ -168,10 +166,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
                 // ledgers won't be committed on unsuccessful frame,
                 // all we need to do is clear the alias link
                 autoCreationLogic.reclaimPendingAliases();
-
-                frame.decrementRemainingGas(frame.getRemainingGas());
-                frame.setState(EXCEPTIONAL_HALT);
-                operationTracer.traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
+                haltFrameAndTraceCreationResult(frame, operationTracer, INSUFFICIENT_GAS);
             } else {
                 frame.decrementRemainingGas(creationFeeInGas);
                 // track auto-creation preceding child record
@@ -181,5 +176,14 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
                         EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));
             }
         }
+    }
+
+    private void haltFrameAndTraceCreationResult(
+            final MessageFrame frame,
+            final OperationTracer operationTracer,
+            final ExceptionalHaltReason haltReason) {
+        frame.decrementRemainingGas(frame.getRemainingGas());
+        frame.setState(EXCEPTIONAL_HALT);
+        operationTracer.traceAccountCreationResult(frame, Optional.of(haltReason));
     }
 }
