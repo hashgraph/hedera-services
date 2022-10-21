@@ -43,7 +43,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferList;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -55,6 +54,9 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokens
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeCryptoTransfer;
+import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeCryptoTransferV2;
+import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeHbarTransfers;
+import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTokenTransfer;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferNFT;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferNFTs;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferToken;
@@ -127,10 +129,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.Optional;
+import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -199,6 +198,21 @@ class TransferPrecompilesTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    private static final Bytes CRYPTO_TRANSFER_HBAR_ONLY_INPUT =
+            Bytes.fromHexString(
+                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes CRYPTO_TRANSFER_FUNGIBLE_INPUT =
+            Bytes.fromHexString(
+                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes CRYPTO_TRANSFER_NFT_INPUT =
+            Bytes.fromHexString(
+                    "0x0e71804f000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes CRYPTO_TRANSFER_HBAR_FUNGIBLE_INPUT =
+            Bytes.fromHexString(
+                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes CRYPTO_TRANSFER_HBAR_NFT_INPUT =
+            Bytes.fromHexString(
+                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT =
             Bytes.fromHexString(
                     "0x189a554c00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004a4000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000004a1000000000000000000000000000000000000000000000000000000000000002b000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000004a100000000000000000000000000000000000000000000000000000000000004a10000000000000000000000000000000000000000000000000000000000000048");
@@ -1403,6 +1417,12 @@ class TransferPrecompilesTest {
                                         POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT,
                                         identity()))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput =
                 decodeCryptoTransfer(
                         POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT,
@@ -1432,6 +1452,12 @@ class TransferPrecompilesTest {
                         () ->
                                 decodeCryptoTransfer(
                                         NEGATIVE_FUNGIBLE_AMOUNT_CRYPTO_TRANSFER_INPUT, identity()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput =
                 decodeCryptoTransfer(NEGATIVE_FUNGIBLE_AMOUNT_CRYPTO_TRANSFER_INPUT, identity());
@@ -1538,6 +1564,12 @@ class TransferPrecompilesTest {
         transferPrecompile
                 .when(() -> decodeTransferNFTs(TRANSFER_NFTS_INPUT, identity()))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput = decodeTransferNFTs(TRANSFER_NFTS_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
         final var nonFungibleTransfers = decodedInput.tokenTransferWrappers().get(0).nftExchanges();
@@ -1554,20 +1586,171 @@ class TransferPrecompilesTest {
         assertEquals(0, hbarTransfers.size());
     }
 
-    private void givenFrameContext() {
-        given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
-        given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
-        given(parentFrame.getSenderAddress()).willReturn(parentContractAddress);
-        given(frame.getContractAddress()).willReturn(contractAddr);
-        given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getMessageFrameStack()).willReturn(frameDeque);
-        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
-        given(frame.getMessageFrameStack().iterator().hasNext()).willReturn(true);
-        given(frame.getMessageFrameStack().iterator().next()).willReturn(parentFrame);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-        given(worldUpdater.parentUpdater()).willReturn(parent);
-        given(worldUpdater.wrappedTrackingLedgers(sideEffects)).willReturn(wrappedLedgers);
+    @Test
+    void decodeCryptoTransferHBarOnlyTransfer() {
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_ONLY_INPUT, identity()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
+        final var decodedInput =
+                decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_ONLY_INPUT, identity());
+        final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
+        final var tokenTransferWrappers = decodedInput.tokenTransferWrappers();
+
+        assertNotNull(hbarTransfers);
+        assertNotNull(tokenTransferWrappers);
+        assertEquals(2, hbarTransfers.size());
+        assertEquals(0, tokenTransferWrappers.size());
+
+        assertHbarTransfers(hbarTransfers);
+    }
+
+    @Test
+    void decodeCryptoTransferFungibleTransfer() {
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_FUNGIBLE_INPUT, identity()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeCryptoTransferV2(CRYPTO_TRANSFER_FUNGIBLE_INPUT, identity());
+        final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
+        final var fungibleTransfers =
+                decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
+        final var nonFungibleTransfers = decodedInput.tokenTransferWrappers().get(0).nftExchanges();
+
+        assertNotNull(hbarTransfers);
+        assertNotNull(fungibleTransfers);
+        assertNotNull(nonFungibleTransfers);
+        assertEquals(0, hbarTransfers.size());
+        assertEquals(2, fungibleTransfers.size());
+        assertEquals(0, nonFungibleTransfers.size());
+
+        assertFungibleTransfers(fungibleTransfers);
+    }
+
+    @Test
+    void decodeCryptoTransferNftTransfer() {
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_NFT_INPUT, identity()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeCryptoTransferV2(CRYPTO_TRANSFER_NFT_INPUT, identity());
+        final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
+        final var fungibleTransfers =
+                decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
+        final var nonFungibleTransfers = decodedInput.tokenTransferWrappers().get(0).nftExchanges();
+
+        assertNotNull(hbarTransfers);
+        assertNotNull(fungibleTransfers);
+        assertNotNull(nonFungibleTransfers);
+        assertEquals(0, hbarTransfers.size());
+        assertEquals(0, fungibleTransfers.size());
+        assertEquals(1, nonFungibleTransfers.size());
+
+        assertNftTransfers(nonFungibleTransfers);
+    }
+
+    @Test
+    void decodeCryptoTransferHbarFungibleTransfer() {
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_FUNGIBLE_INPUT, identity()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
+        final var decodedInput =
+                decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_FUNGIBLE_INPUT, identity());
+        final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
+        final var fungibleTransfers =
+                decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
+        final var nonFungibleTransfers = decodedInput.tokenTransferWrappers().get(0).nftExchanges();
+
+        assertNotNull(hbarTransfers);
+        assertNotNull(fungibleTransfers);
+        assertNotNull(nonFungibleTransfers);
+        assertEquals(2, hbarTransfers.size());
+        assertEquals(2, fungibleTransfers.size());
+        assertEquals(0, nonFungibleTransfers.size());
+
+        assertHbarTransfers(hbarTransfers);
+        assertFungibleTransfers(fungibleTransfers);
+    }
+
+    @Test
+    void decodeCryptoTransferHbarNFTTransfer() {
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_NFT_INPUT, identity()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeTokenTransfer(any(), any(), any()))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> decodeHbarTransfers(any(), any(), any()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeCryptoTransferV2(CRYPTO_TRANSFER_HBAR_NFT_INPUT, identity());
+        final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
+        final var fungibleTransfers =
+                decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
+        final var nonFungibleTransfers = decodedInput.tokenTransferWrappers().get(0).nftExchanges();
+
+        assertNotNull(hbarTransfers);
+        assertNotNull(fungibleTransfers);
+        assertNotNull(nonFungibleTransfers);
+        assertEquals(2, hbarTransfers.size());
+        assertEquals(0, fungibleTransfers.size());
+        assertEquals(1, nonFungibleTransfers.size());
+
+        assertHbarTransfers(hbarTransfers);
+        assertNftTransfers(nonFungibleTransfers);
+    }
+
+    private void assertHbarTransfers(List<SyntheticTxnFactory.HbarTransfer> hbarTransfers) {
+        assertEquals(10, hbarTransfers.get(0).amount());
+        assertTrue(!hbarTransfers.get(0).isApproval());
+        assertNull(hbarTransfers.get(0).sender());
+        assertEquals(1, hbarTransfers.get(0).receiver().getAccountNum());
+
+        assertEquals(10, hbarTransfers.get(1).amount());
+        assertTrue(!hbarTransfers.get(1).isApproval());
+        assertNull(hbarTransfers.get(1).receiver());
+        assertEquals(2, hbarTransfers.get(1).sender().getAccountNum());
+    }
+
+    private void assertFungibleTransfers(
+            List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTokenTransfers) {
+        assertEquals(10, fungibleTokenTransfers.get(0).amount());
+        assertTrue(!fungibleTokenTransfers.get(0).isApproval());
+        assertNull(fungibleTokenTransfers.get(0).sender());
+        assertEquals(4, fungibleTokenTransfers.get(0).receiver().getAccountNum());
+        assertEquals(3, fungibleTokenTransfers.get(0).getDenomination().getTokenNum());
+
+        assertEquals(10, fungibleTokenTransfers.get(1).amount());
+        assertTrue(!fungibleTokenTransfers.get(1).isApproval());
+        assertNull(fungibleTokenTransfers.get(1).receiver());
+        assertEquals(5, fungibleTokenTransfers.get(1).sender().getAccountNum());
+        assertEquals(3, fungibleTokenTransfers.get(1).getDenomination().getTokenNum());
+    }
+
+    private void assertNftTransfers(List<SyntheticTxnFactory.NftExchange> nftExchanges) {
+        assertEquals(6, nftExchanges.get(0).getTokenType().getTokenNum());
+        assertEquals(2, nftExchanges.get(0).getSerialNo());
+        assertEquals(7, nftExchanges.get(0).asGrpc().getSenderAccountID().getAccountNum());
+        assertEquals(8, nftExchanges.get(0).asGrpc().getReceiverAccountID().getAccountNum());
+        assertTrue(!nftExchanges.get(0).isApproval());
     }
 
     private void givenMinimalFrameContext() {

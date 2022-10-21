@@ -105,6 +105,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.shouldDoTraceabilityExport());
         assertTrue(subject.isLazyCreationEnabled());
         assertFalse(subject.isCryptoCreateWithAliasEnabled());
+        assertFalse(subject.isAtomicCryptoTransferEnabled());
     }
 
     @Test
