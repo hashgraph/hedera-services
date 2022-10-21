@@ -15,23 +15,25 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES;
+import static com.hedera.node.app.service.token.util.AliasUtils.MISSING_NUM;
+import static com.hedera.node.app.service.token.util.AliasUtils.fromMirror;
+import static com.hedera.node.app.service.token.util.AliasUtils.isMirror;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.meta.impl.SigTransactionMetadata;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Transaction;
-import java.util.List;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
 import java.util.Optional;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Provides methods for interacting with the underlying data storage mechanisms for working with
@@ -41,9 +43,9 @@ import javax.annotation.Nonnull;
  */
 public final class AccountStore {
     /** The underlying data storage class that holds the account data. */
-    private final State<EntityNum, MerkleAccount> accountState;
+    private final State<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final State<ByteString, EntityNum> aliases;
+    private final State<ByteString, Long> aliases;
 
     /**
      * Create a new {@link AccountStore} instance.
@@ -51,19 +53,24 @@ public final class AccountStore {
      * @param states The state to use.
      */
     public AccountStore(@Nonnull States states) {
-        this.accountState = states.get(ACCOUNTS);
-        this.aliases = states.get(ALIASES);
+        this.accountState = states.get("ACCOUNTS");
+        this.aliases = states.get("ALIASES");
     }
 
-    public TransactionMetadata createAccountSigningMetadata(
-            final Transaction tx,
-            final Optional<JKey> key,
-            final boolean receiverSigReq,
-            final AccountID payer) {
-        if (receiverSigReq && key.isPresent()) {
-            return new SigTransactionMetadata(this, tx, payer, List.of(key.get()));
+    // In the future there will be an Account model object to retrieve all fields from MerkleAccount.
+    // For Sig requirements we just need Key from the accounts.
+    public record KeyOrReason(@Nullable HederaKey key, @Nullable ResponseCodeEnum reason) {
+        public boolean failed(){
+            return reason != OK;
         }
-        return new SigTransactionMetadata(this, tx, payer);
+    }
+
+    public KeyOrReason getKey(final AccountID idOrAlias) {
+        final var account = getAccountLeaf(idOrAlias);
+        if(account.isEmpty()){
+            return new KeyOrReason(null, INVALID_ACCOUNT_ID);
+        }
+        return new KeyOrReason(account.get().getAccountKey(), OK);
     }
 
     /**
@@ -73,9 +80,9 @@ public final class AccountStore {
      * @param id given account number
      * @return merkle leaf for the given account number
      */
-    public Optional<MerkleAccount> getAccountLeaf(final AccountID id) {
+    private Optional<MerkleAccount> getAccountLeaf(final AccountID id) {
         final var accountNum = getAccountNum(id);
-        if (accountNum == EntityNum.MISSING_NUM) {
+        if (accountNum == MISSING_NUM) {
             return Optional.empty();
         }
         return accountState.get(accountNum);
@@ -88,14 +95,21 @@ public final class AccountStore {
      * @param id provided account id
      * @return account number
      */
-    private EntityNum getAccountNum(final AccountID id) {
+    private Long getAccountNum(final AccountID id) {
         if (isAlias(id)) {
-            final var num = aliases.get(id.getAlias());
+            final var alias = id.getAlias();
+            if (alias.size() == EVM_ADDRESS_SIZE) {
+                final var evmAddress = alias.toByteArray();
+                if (isMirror(evmAddress)) {
+                    return fromMirror(evmAddress);
+                }
+            }
+            final var num = aliases.get(alias);
             if (num.isPresent()) {
                 return num.get();
             }
-            return EntityNum.MISSING_NUM;
+            return MISSING_NUM;
         }
-        return EntityNum.fromLong(id.getAccountNum());
+        return id.getAccountNum();
     }
 }

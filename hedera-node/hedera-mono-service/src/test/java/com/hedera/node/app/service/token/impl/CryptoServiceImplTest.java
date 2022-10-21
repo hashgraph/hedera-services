@@ -15,8 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -34,6 +32,8 @@ class CryptoServiceImplTest {
     @Mock private InMemoryStateImpl accounts;
     @Mock States states;
 
+    private static final String ACCOUNTS = "ACCOUNTS";
+    private static final String ALIASES = "ALIASES";
     private CryptoServiceImpl subject;
 
     @Test

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token;
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
  * Computes the pre-handle {@link TransactionMetadata} for each operation in the {@link
@@ -30,5 +31,5 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      * @param txn crypto create transaction
      * @return metadata accumulated from pre-handling the transaction
      */
-    TransactionMetadata cryptoCreate(final Transaction txn);
+    TransactionMetadata preHandleCryptoCreate(final TransactionBody txn);
 }

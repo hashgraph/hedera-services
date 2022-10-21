@@ -159,6 +159,7 @@ import static java.util.stream.Collectors.toSet;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.ledger.HederaLedger;

@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.TOKENS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,9 +36,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class OnDiskStateImplTest {
     private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
-
     private final EntityNumVirtualKey num = new EntityNumVirtualKey(2L);
-
+    private static final String TOKENS = "TOKENS";
     @Mock private UniqueTokenValue mockNft;
     @Mock private VirtualMap<EntityNumVirtualKey, UniqueTokenValue> nftsMap;
 
@@ -47,7 +45,7 @@ class OnDiskStateImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new OnDiskStateImpl<>(TOKENS, nftsMap, lastModifiedTime);
+        subject = new OnDiskStateImpl<>("TOKENS", nftsMap, lastModifiedTime);
     }
 
     @Test

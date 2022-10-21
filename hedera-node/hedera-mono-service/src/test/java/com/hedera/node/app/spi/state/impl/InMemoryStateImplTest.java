@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class InMemoryStateImplTest {
     private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
     private final EntityNum num = EntityNum.fromLong(2L);
-
+    private static final String ACCOUNTS = "ACCOUNTS";
     @Mock private MerkleMap<EntityNum, MerkleAccount> accountsMap;
     @Mock private MerkleAccount mockAccount;
 

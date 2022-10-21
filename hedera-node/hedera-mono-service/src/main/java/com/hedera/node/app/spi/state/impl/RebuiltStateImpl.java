@@ -16,7 +16,6 @@
 package com.hedera.node.app.spi.state.impl;
 
 import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.StateKey;
 import com.swirlds.fchashmap.FCHashMap;
 import java.time.Instant;
 import java.util.Map;
@@ -30,12 +29,12 @@ import javax.annotation.Nonnull;
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public class RebuiltStateImpl<K, V> extends StateBase<K, V> {
+public final class RebuiltStateImpl<K, V> extends StateBase<K, V> {
     private Map<K, V> aliases;
     private final Instant lastModifiedTime;
 
     public RebuiltStateImpl(
-            @Nonnull final StateKey stateKey,
+            @Nonnull final String stateKey,
             @Nonnull Map<K, V> aliases,
             @Nonnull final Instant lastModifiedTime) {
         super(stateKey);
@@ -43,7 +42,7 @@ public class RebuiltStateImpl<K, V> extends StateBase<K, V> {
         this.lastModifiedTime = lastModifiedTime;
     }
 
-    RebuiltStateImpl(@Nonnull final StateKey stateKey, @Nonnull final Instant lastModifiedTime) {
+    RebuiltStateImpl(@Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
         this(stateKey, new FCHashMap<>(), lastModifiedTime);
     }
 

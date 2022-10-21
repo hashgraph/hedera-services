@@ -24,7 +24,7 @@ import javax.annotation.Nonnull;
 import java.util.Objects;
 
 /** An implementation of the {@link CryptoService} interface. */
-public class CryptoServiceImpl implements CryptoService {
+public final class CryptoServiceImpl implements CryptoService {
     @NotNull
     @Override
     public CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull final States states) {

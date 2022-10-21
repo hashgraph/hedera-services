@@ -15,52 +15,43 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.meta.impl.InvalidTransactionMetadata;
-import com.hedera.node.app.spi.meta.impl.SigTransactionMetadata;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
+
 /**
  * An implementation of {@code CryptoPreTransactionHandler} for validating all transactions defined
  * in the protobuf "CryptoService" in pre-handle. It adds all the verified signatures to the
  * including signature verification.
  */
-public class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
+public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
 
     public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
         this.accountStore = Objects.requireNonNull(accountStore);
     }
 
-    public TransactionMetadata cryptoCreate(final Transaction tx) {
-        try {
-            final var txn = extractTransactionBody(tx);
-            final var op = txn.getCryptoCreateAccount();
-            final var key = asUsableFcKey(op.getKey());
+    public TransactionMetadata preHandleCryptoCreate(final TransactionBody tx) {
+            final var op = tx.getCryptoCreateAccount();
+            final var key = asHederaKey(op.getKey());
             final var receiverSigReq = op.getReceiverSigRequired();
-            final var payer = txn.getTransactionID().getAccountID();
+            final var payer = tx.getTransactionID().getAccountID();
             return createAccountSigningMetadata(tx, key, receiverSigReq, payer);
-        } catch (InvalidProtocolBufferException ex) {
-            return new InvalidTransactionMetadata(tx, ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-        }
     }
 
     private TransactionMetadata createAccountSigningMetadata(
-            final Transaction tx,
-            final Optional<JKey> key,
+            final TransactionBody tx,
+            final Optional<HederaKey> key,
             final boolean receiverSigReq,
             final AccountID payer) {
         if (receiverSigReq && key.isPresent()) {

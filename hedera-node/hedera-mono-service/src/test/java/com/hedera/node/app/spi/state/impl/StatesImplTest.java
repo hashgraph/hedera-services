@@ -15,9 +15,6 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES;
-import static com.hedera.node.app.spi.state.StateKey.TOKENS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,6 +56,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StatesImplTest {
+    private static final String ACCOUNTS = "ACCOUNTS";
+    private static final String ALIASES = "ALIASES";
+    private static final String TOKENS = "TOKENS";
     @Mock private ServicesState state;
     @Mock private MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
     @Mock private VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;

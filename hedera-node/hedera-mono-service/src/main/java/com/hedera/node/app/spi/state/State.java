@@ -33,7 +33,7 @@ public interface State<K, V> {
      *
      * @return The state key. This will never be null, and will always be the same value.
      */
-    StateKey getStateKey();
+    String getStateKey();
 
     /**
      * Gets the value associated with the given key in a <strong>READ-ONLY</strong> way. The

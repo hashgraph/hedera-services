@@ -15,22 +15,18 @@
  */
 package com.hedera.node.app.spi;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.token.impl.AccountStore;
-import com.hedera.node.app.spi.meta.impl.SigTransactionMetadata;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -53,7 +49,10 @@ class SigTransactionMetadataTest {
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private Key key = KeyUtils.A_COMPLEX_KEY;
     private AccountID payer = asAccount("0.0.3");
-    private EntityNum payerNum = EntityNum.fromInt(3);
+    private Long payerNum = 3L;
+
+    private static final String ACCOUNTS = "ACCOUNTS";
+    private static final String ALIASES = "ALIASES";
 
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
@@ -99,7 +98,7 @@ class SigTransactionMetadataTest {
         assertEquals(List.of(payerKey, payerKey), subject.getReqKeys());
     }
 
-    private Transaction createAccountTransaction() {
+    private TransactionBody createAccountTransaction() {
         final var transactionID =
                 TransactionID.newBuilder()
                         .setAccountID(payer)
@@ -110,11 +109,9 @@ class SigTransactionMetadataTest {
                         .setReceiverSigRequired(true)
                         .setMemo("Create Account")
                         .build();
-        final var transactionBody =
-                TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                         .setTransactionID(transactionID)
                         .setCryptoCreateAccount(createTxnBody)
                         .build();
-        return buildTransactionFrom(transactionBody);
     }
 }

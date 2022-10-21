@@ -15,12 +15,8 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.StateKey;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.MutableStateChildren;
@@ -45,10 +41,10 @@ public class StatesImpl implements States {
     }
 
     @Override
-    public @Nonnull <K, V> State<K, V> get(@Nonnull final StateKey stateKey) {
+    public @Nonnull <K, V> State<K, V> get(@Nonnull final String stateKey) {
         Objects.requireNonNull(stateKey);
 
-        if (stateKey.equals(ACCOUNTS)) {
+        if (stateKey.equals("ACCOUNTS")) {
             final var accounts = children.accounts();
             return (State<K, V>)
                     (accounts.areOnDisk()
@@ -56,7 +52,7 @@ public class StatesImpl implements States {
                                     stateKey, accounts.getOnDiskAccounts(), children.signedAt())
                             : new InMemoryStateImpl<>(
                                     stateKey, accounts.getInMemoryAccounts(), children.signedAt()));
-        } else if (stateKey.equals(ALIASES)) {
+        } else if (stateKey.equals("ALIASES")) {
             final var state =
                     new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
             return (StateBase) state;

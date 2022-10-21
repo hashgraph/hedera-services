@@ -15,9 +15,10 @@
  */
 package com.hedera.node.app.spi.meta;
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+
 import java.util.List;
 
 /**
@@ -49,7 +50,7 @@ public interface TransactionMetadata {
      *
      * @return transaction that is being pre-handled
      */
-    Transaction getTxn();
+    TransactionBody getTxn();
 
     /**
      * All the keys required for validation signing requirements in pre-handle. This list includes
@@ -57,5 +58,5 @@ public interface TransactionMetadata {
      *
      * @return keys needed for validating signing requirements
      */
-    List<JKey> getReqKeys();
+    List<HederaKey> getReqKeys();
 }

@@ -16,7 +16,6 @@
 package com.hedera.node.app.spi.state.impl;
 
 import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.StateKey;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -31,13 +30,13 @@ import javax.annotation.Nonnull;
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends VirtualValue>
+public final class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends VirtualValue>
         extends StateBase<K, V> {
     private final VirtualMap<K, V> virtualMap;
     private final Instant lastModifiedTime;
 
     public OnDiskStateImpl(
-            @Nonnull final StateKey stateKey,
+            @Nonnull final String stateKey,
             @Nonnull VirtualMap<K, V> virtualMap,
             @Nonnull final Instant lastModifiedTime) {
         super(stateKey);

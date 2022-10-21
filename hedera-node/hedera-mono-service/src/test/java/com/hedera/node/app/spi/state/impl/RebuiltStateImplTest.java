@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ALIASES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,6 +39,7 @@ class RebuiltStateImplTest {
 
     private final ByteString alias = ByteString.copyFromUtf8("testAlias");
     private final EntityNum account = EntityNum.fromLong(10001L);
+    private static final String ALIASES = "ALIASES";
 
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
 
@@ -47,7 +47,7 @@ class RebuiltStateImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new RebuiltStateImpl<>(ALIASES, aliases, lastModifiedTime);
+        subject = new RebuiltStateImpl<>("ALIASES", aliases, lastModifiedTime);
     }
 
     @Test
@@ -58,7 +58,7 @@ class RebuiltStateImplTest {
 
     @Test
     void constructorsWork() {
-        subject = new RebuiltStateImpl<>(ALIASES, lastModifiedTime);
+        subject = new RebuiltStateImpl<>("ALIASES", lastModifiedTime);
         assertEquals(lastModifiedTime, subject.getLastModifiedTime());
         assertEquals(ALIASES, subject.getStateKey());
     }

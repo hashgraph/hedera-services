@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.spi.state.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -29,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StateBaseTest {
+    private static final String ACCOUNTS = "ACCOUNTS";
     private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
 
     private StateBase subject = new InMemoryStateImpl(ACCOUNTS, lastModifiedTime);

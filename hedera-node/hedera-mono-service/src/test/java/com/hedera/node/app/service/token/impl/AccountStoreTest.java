@@ -15,17 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.spi.state.StateKey.ACCOUNTS;
-import static com.hedera.node.app.spi.state.StateKey.ALIASES;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asAliasAccount;
-import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;
@@ -34,35 +25,44 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.List;
-import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
+import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
-    private Key key = KeyUtils.A_COMPLEX_KEY;
-    private Key payerKey = KeyUtils.A_COMPLEX_KEY;
-    private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
-    private AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));
-    private AccountID payer = asAccount("0.0.3");
-    private EntityNum payerNum = EntityNum.fromInt(3);
-
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
+
     @Mock private MerkleAccount account;
     @Mock private States states;
+
+    private Key key = KeyUtils.A_COMPLEX_KEY;
+    private Key payerKey = KeyUtils.A_COMPLEX_KEY;
+
+    private Optional<HederaKey> payerHederaKey = asHederaKey(payerKey);
+    private AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));
+    private AccountID payer = asAccount("0.0.3");
+    private Long payerNum = 3L;
+    private static final String ACCOUNTS = "ACCOUNTS";
+    private static final String ALIASES = "ALIASES";
+
     private AccountStore subject;
 
     @BeforeEach
@@ -72,22 +72,81 @@ class AccountStoreTest {
         subject = new AccountStore(states);
     }
 
-    private Transaction createAccountTransaction(final AccountID payer) {
-        final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var createTxnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(key)
-                        .setReceiverSigRequired(true)
-                        .setMemo("Create Account")
-                        .build();
-        final var transactionBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setCryptoCreateAccount(createTxnBody)
-                        .build();
-        return buildTransactionFrom(transactionBody);
+    @Test
+    void getsKeyIfAlias(){
+        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+
+        final var result = subject.getKey(payerAlias);
+
+        assertFalse(result.failed());
+        assertEquals(OK, result.reason());
+        assertEquals(payerHederaKey.get(), result.key());
+    }
+
+    @Test
+    void getsKeyIfAccount(){
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+
+        final var result = subject.getKey(payer);
+
+        assertFalse(result.failed());
+        assertEquals(OK, result.reason());
+        assertEquals(payerHederaKey.get(), result.key());
+    }
+
+    @Test
+    void getsNullKeyIfMissingAlias(){
+        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
+
+        final var result = subject.getKey(payerAlias);
+
+        assertTrue(result.failed());
+        assertEquals(INVALID_ACCOUNT_ID, result.reason());
+        assertEquals(null, result.key());
+    }
+
+    @Test
+    void getsNullKeyIfMissingAccount(){
+        given(accounts.get(payerNum)).willReturn(Optional.empty());
+
+        final var result = subject.getKey(payer);
+
+        assertTrue(result.failed());
+        assertEquals(INVALID_ACCOUNT_ID, result.reason());
+        assertEquals(null, result.key());
+    }
+
+    @Test
+    void getsMirrorAddress(){
+        final var num = EntityNum.fromLong(payerNum);
+        final Address mirrorAddress = num.toEvmAddress();
+        final var mirrorAccount = asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
+
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+
+        final var result = subject.getKey(mirrorAccount);
+
+        assertFalse(result.failed());
+        assertEquals(OK, result.reason());
+        assertEquals(payerHederaKey.get(), result.key());
+    }
+
+    @Test
+    void failsIfMirrorAddressDesntExist(){
+        final var num = EntityNum.fromLong(payerNum);
+        final Address mirrorAddress = num.toEvmAddress();
+        final var mirrorAccount = asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
+
+        given(accounts.get(payerNum)).willReturn(Optional.empty());
+
+        final var result = subject.getKey(mirrorAccount);
+
+        assertTrue(result.failed());
+        assertEquals(INVALID_ACCOUNT_ID, result.reason());
+        assertEquals(null, result.key());
     }
 }

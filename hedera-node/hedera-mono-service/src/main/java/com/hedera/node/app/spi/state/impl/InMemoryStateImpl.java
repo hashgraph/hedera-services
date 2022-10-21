@@ -16,7 +16,6 @@
 package com.hedera.node.app.spi.state.impl;
 
 import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.StateKey;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
@@ -31,17 +30,17 @@ import javax.annotation.Nonnull;
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends StateBase<K, V> {
+public final class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends StateBase<K, V> {
     private final MerkleMap<K, V> merkle;
     private final Instant lastModifiedTime;
 
     public InMemoryStateImpl(
-            @Nonnull final StateKey stateKey, @Nonnull final Instant lastModifiedTime) {
+            @Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
         this(stateKey, new MerkleMap<>(), lastModifiedTime);
     }
 
     public InMemoryStateImpl(
-            @Nonnull StateKey stateKey,
+            @Nonnull String stateKey,
             @Nonnull MerkleMap<K, V> merkleMap,
             @Nonnull final Instant lastModifiedTime) {
         super(stateKey);
