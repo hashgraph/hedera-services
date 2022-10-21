@@ -164,7 +164,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     public void countAutoCreationsWith(final AliasManager aliasManager) {
         final var resolver = new AliasResolver();
         if (txn.hasEthereumTransaction()) {
-            resolver.resolve(getSpanMapAccessor().getEthTxDataMeta(this), aliasManager);
+            resolver.perceiveEthTxn(getSpanMapAccessor().getEthTxDataMeta(this), aliasManager);
         } else {
             resolver.resolve(txn.getCryptoTransfer(), aliasManager);
         }

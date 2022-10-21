@@ -182,7 +182,7 @@ class AliasResolverTest {
                         null);
         given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(to))).willReturn(MISSING_NUM);
 
-        subject.resolve(lazyCreateData, aliasManager);
+        subject.perceiveEthTxn(lazyCreateData, aliasManager);
 
         assertEquals(1, subject.perceivedAutoCreations());
     }
@@ -211,7 +211,7 @@ class AliasResolverTest {
         given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(to)))
                 .willReturn(EntityNum.fromLong(5));
 
-        subject.resolve(lazyCreateData, aliasManager);
+        subject.perceiveEthTxn(lazyCreateData, aliasManager);
 
         assertEquals(0, subject.perceivedAutoCreations());
     }
@@ -239,7 +239,7 @@ class AliasResolverTest {
                         null);
         given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(to))).willReturn(MISSING_NUM);
 
-        subject.resolve(lazyCreateData, aliasManager);
+        subject.perceiveEthTxn(lazyCreateData, aliasManager);
 
         assertEquals(0, subject.perceivedAutoCreations());
     }
@@ -267,7 +267,7 @@ class AliasResolverTest {
                         null);
         given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(to))).willReturn(MISSING_NUM);
 
-        subject.resolve(lazyCreateData, aliasManager);
+        subject.perceiveEthTxn(lazyCreateData, aliasManager);
 
         assertEquals(0, subject.perceivedAutoCreations());
     }

@@ -73,7 +73,7 @@ public class AliasResolver {
         return resolvedOp.build();
     }
 
-    public void resolve(final EthTxData ethTxDataMeta, final AliasManager aliasManager) {
+    public void perceiveEthTxn(final EthTxData ethTxDataMeta, final AliasManager aliasManager) {
         if (aliasManager
                         .lookupIdBy(ByteStringUtils.wrapUnsafely(ethTxDataMeta.to()))
                         .equals(MISSING_NUM)
