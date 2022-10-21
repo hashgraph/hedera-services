@@ -202,6 +202,19 @@ public class DecodingFacade {
         return fungibleTransfers;
     }
 
+    public static List<SyntheticTxnFactory.HbarTransfer> bindHBarTransfersFrom(
+            @NotNull final Tuple[] abiTransfers, final UnaryOperator<byte[]> aliasResolver) {
+        final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
+        for (final var transfer : abiTransfers) {
+            final AccountID accountID =
+                    convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
+            final long amount = transfer.get(1);
+            final boolean isApproval = transfer.get(2);
+            addSignedHBarAdjustment(hbarTransfers, accountID, amount, isApproval);
+        }
+        return hbarTransfers;
+    }
+
     public static void addApprovedAdjustment(
             @NotNull final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
             final TokenID tokenId,
@@ -225,6 +238,20 @@ public class DecodingFacade {
             fungibleTransfers.add(
                     new SyntheticTxnFactory.FungibleTokenTransfer(
                             -amount, false, tokenType, accountID, null));
+        }
+    }
+
+    public static void addSignedHBarAdjustment(
+            final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers,
+            final AccountID accountID,
+            final long amount,
+            final boolean isApproval) {
+        if (amount > 0) {
+            hbarTransfers.add(
+                    new SyntheticTxnFactory.HbarTransfer(amount, isApproval, null, accountID));
+        } else {
+            hbarTransfers.add(
+                    new SyntheticTxnFactory.HbarTransfer(-amount, isApproval, accountID, null));
         }
     }
 
