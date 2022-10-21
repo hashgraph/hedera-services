@@ -24,8 +24,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.spi.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.spi.state.impl.RebuiltStateImpl;
+import com.hedera.node.app.state.impl.InMemoryStateImpl;
+import com.hedera.node.app.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.KeyUtils;

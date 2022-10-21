@@ -13,34 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.spi.state.impl;
+package com.hedera.node.app.state.impl;
 
 import com.hedera.node.app.spi.state.State;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
 /**
- * An implementation of {@link State} backed by a {@link VirtualMap}, resulting in a state that is
- * stored on disk.
+ * An implementation of {@link State} backed by a {@link MerkleMap}, resulting in a state that is
+ * stored in memory.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends VirtualValue>
-        extends StateBase<K, V> {
-    private final VirtualMap<K, V> virtualMap;
+public final class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends StateBase<K, V> {
+    private final MerkleMap<K, V> merkle;
     private final Instant lastModifiedTime;
 
-    public OnDiskStateImpl(
-            @Nonnull final String stateKey,
-            @Nonnull VirtualMap<K, V> virtualMap,
+    public InMemoryStateImpl(
+            @Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
+        this(stateKey, new MerkleMap<>(), lastModifiedTime);
+    }
+
+    public InMemoryStateImpl(
+            @Nonnull String stateKey,
+            @Nonnull MerkleMap<K, V> merkleMap,
             @Nonnull final Instant lastModifiedTime) {
         super(stateKey);
-        this.virtualMap = Objects.requireNonNull(virtualMap);
+        this.merkle = Objects.requireNonNull(merkleMap);
         this.lastModifiedTime = lastModifiedTime;
     }
 
@@ -51,6 +55,6 @@ public final class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends Vi
 
     @Override
     protected V read(final K key) {
-        return virtualMap.get(key);
+        return merkle.get(key);
     }
 }

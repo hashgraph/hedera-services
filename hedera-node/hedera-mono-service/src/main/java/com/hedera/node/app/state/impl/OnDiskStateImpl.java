@@ -13,38 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.spi.state.impl;
+package com.hedera.node.app.state.impl;
 
 import com.hedera.node.app.spi.state.State;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.Keyed;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.VirtualValue;
 import java.time.Instant;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
 /**
- * An implementation of {@link State} backed by a {@link MerkleMap}, resulting in a state that is
- * stored in memory.
+ * An implementation of {@link State} backed by a {@link VirtualMap}, resulting in a state that is
+ * stored on disk.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends StateBase<K, V> {
-    private final MerkleMap<K, V> merkle;
+public final class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends VirtualValue>
+        extends StateBase<K, V> {
+    private final VirtualMap<K, V> virtualMap;
     private final Instant lastModifiedTime;
 
-    public InMemoryStateImpl(
-            @Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
-        this(stateKey, new MerkleMap<>(), lastModifiedTime);
-    }
-
-    public InMemoryStateImpl(
-            @Nonnull String stateKey,
-            @Nonnull MerkleMap<K, V> merkleMap,
+    public OnDiskStateImpl(
+            @Nonnull final String stateKey,
+            @Nonnull VirtualMap<K, V> virtualMap,
             @Nonnull final Instant lastModifiedTime) {
         super(stateKey);
-        this.merkle = Objects.requireNonNull(merkleMap);
+        this.virtualMap = Objects.requireNonNull(virtualMap);
         this.lastModifiedTime = lastModifiedTime;
     }
 
@@ -55,6 +51,6 @@ public final class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends
 
     @Override
     protected V read(final K key) {
-        return merkle.get(key);
+        return virtualMap.get(key);
     }
 }
