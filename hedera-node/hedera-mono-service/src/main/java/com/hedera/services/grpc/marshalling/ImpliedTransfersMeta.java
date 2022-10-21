@@ -134,6 +134,8 @@ public class ImpliedTransfersMeta {
                         && (validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled())
                         && (validationProps.isAutoCreationEnabled
                                 == dynamicProperties.isAutoCreationEnabled())
+                        && (validationProps.isLazyCreationEnabled
+                                == dynamicProperties.isLazyCreationEnabled())
                         && (validationProps.areAllowancesEnabled
                                 == dynamicProperties.areAllowancesEnabled());
         if (!validationParamsMatch) {
