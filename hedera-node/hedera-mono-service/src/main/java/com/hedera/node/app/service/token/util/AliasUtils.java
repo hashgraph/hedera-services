@@ -22,7 +22,7 @@ import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
 import com.google.common.primitives.Longs;
 import java.util.Arrays;
 
-/** Utility class needed for token service implementations */
+/** Utility class needed for resolving aliases */
 public final class AliasUtils {
     public static final Long MISSING_NUM = 0L;
 
