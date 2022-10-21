@@ -17,7 +17,6 @@ package com.hedera.services.throttles;
 
 import static com.hedera.services.throttles.DeterministicThrottle.elapsedNanosBetween;
 
-import com.google.common.annotations.VisibleForTesting;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -98,7 +97,9 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
     }
 
     @Override
+    @SuppressWarnings("java:S125")
     public long mtps() {
+        // We treat the "milli-TPS" of the throttle bucket as 1000x its gas/sec;
         return capacity * 1_000;
     }
 
@@ -162,7 +163,6 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
         delegate.resetLastAllowedUse();
     }
 
-    @VisibleForTesting
     Instant getLastDecisionTime() {
         return lastDecisionTime;
     }
