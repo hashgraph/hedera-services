@@ -207,16 +207,16 @@ class TransferPrecompilesTest {
                     "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes CRYPTO_TRANSFER_FUNGIBLE_INPUT =
             Bytes.fromHexString(
-                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000005fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000");
+                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000005fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes CRYPTO_TRANSFER_NFT_INPUT =
             Bytes.fromHexString(
-                    "0x0e71804f000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001");
+                    "0x0e71804f000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000b00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes CRYPTO_TRANSFER_HBAR_FUNGIBLE_INPUT =
             Bytes.fromHexString(
-                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000005fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000");
+                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000005fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes CRYPTO_TRANSFER_HBAR_NFT_INPUT =
             Bytes.fromHexString(
-                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001");
+                    "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000b00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT =
             Bytes.fromHexString(
                     "0x189a554c00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004a4000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000004a1000000000000000000000000000000000000000000000000000000000000002b000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000004a100000000000000000000000000000000000000000000000000000000000004a10000000000000000000000000000000000000000000000000000000000000048");
@@ -964,6 +964,86 @@ class TransferPrecompilesTest {
     }
 
     @Test
+    void hbarFungibleTransferHappyPathWorks() throws InvalidProtocolBufferException {
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+
+        givenMinimalFrameContext();
+        givenLedgers();
+        givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(tokensTransferList)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                        infrastructureFactory.newTransferLogic(
+                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+                .willReturn(transferLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(hbarAndTokenChanges);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(transferLogic).doZeroSum(hbarAndTokenChanges);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
     void hbarNFTTransferHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
 
@@ -1447,86 +1527,6 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void hbarFungibleTransferHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
-
-        givenMinimalFrameContext();
-        givenLedgers();
-        givenPricingUtilsContext();
-        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-
-        given(
-                        syntheticTxnFactory.createCryptoTransfer(
-                                Collections.singletonList(tokensTransferList)))
-                .willReturn(mockSynthBodyBuilder);
-        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
-                .willReturn(true);
-        given(
-                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
-                .willReturn(true);
-        transferPrecompile
-                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any()))
-                .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER);
-        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
-                .willReturn(OK);
-        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
-                .willReturn(hederaTokenStore);
-        given(
-                        infrastructureFactory.newTransferLogic(
-                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
-                .willReturn(transferLogic);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
-                .willReturn(1L);
-        given(mockSynthBodyBuilder.build())
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setCryptoTransfer(cryptoTransferTransactionBody)
-                                .build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
-                .willReturn(mockRecordBuilder);
-        given(
-                        impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
-                .willReturn(impliedTransfers);
-        given(impliedTransfers.getAllBalanceChanges()).willReturn(hbarAndTokenChanges);
-        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-        given(impliedTransfersMeta.code()).willReturn(OK);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(worldUpdater.aliases()).willReturn(aliases);
-        given(frame.getSenderAddress()).willReturn(contractAddress);
-        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
-        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
-        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
-
-        // when:
-        subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
-
-        // then:
-        assertEquals(successResult, result);
-        // and:
-        verify(transferLogic).doZeroSum(hbarAndTokenChanges);
-        verify(wrappedLedgers).commit();
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-    }
-
-    @Test
     void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
         transferPrecompile
                 .when(
@@ -1767,16 +1767,21 @@ class TransferPrecompilesTest {
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
         final var fungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
-        final var nonFungibleTransfers = decodedInput.tokenTransferWrappers().get(0).nftExchanges();
+        final var nonFungibleTransfers1 =
+                decodedInput.tokenTransferWrappers().get(0).nftExchanges();
+        final var nonFungibleTransfers2 =
+                decodedInput.tokenTransferWrappers().get(1).nftExchanges();
 
         assertNotNull(hbarTransfers);
         assertNotNull(fungibleTransfers);
-        assertNotNull(nonFungibleTransfers);
+        assertNotNull(nonFungibleTransfers1);
+        assertNotNull(nonFungibleTransfers2);
         assertEquals(0, hbarTransfers.size());
         assertEquals(0, fungibleTransfers.size());
-        assertEquals(1, nonFungibleTransfers.size());
+        assertEquals(1, nonFungibleTransfers1.size());
+        assertEquals(1, nonFungibleTransfers2.size());
 
-        assertNftTransfers(nonFungibleTransfers);
+        assertNftTransfers(nonFungibleTransfers1, nonFungibleTransfers2);
     }
 
     @Test
@@ -1823,17 +1828,22 @@ class TransferPrecompilesTest {
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
         final var fungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
-        final var nonFungibleTransfers = decodedInput.tokenTransferWrappers().get(0).nftExchanges();
+        final var nonFungibleTransfers1 =
+                decodedInput.tokenTransferWrappers().get(0).nftExchanges();
+        final var nonFungibleTransfers2 =
+                decodedInput.tokenTransferWrappers().get(1).nftExchanges();
 
         assertNotNull(hbarTransfers);
         assertNotNull(fungibleTransfers);
-        assertNotNull(nonFungibleTransfers);
+        assertNotNull(nonFungibleTransfers1);
+        assertNotNull(nonFungibleTransfers2);
         assertEquals(2, hbarTransfers.size());
         assertEquals(0, fungibleTransfers.size());
-        assertEquals(1, nonFungibleTransfers.size());
+        assertEquals(1, nonFungibleTransfers1.size());
+        assertEquals(1, nonFungibleTransfers2.size());
 
         assertHbarTransfers(hbarTransfers);
-        assertNftTransfers(nonFungibleTransfers);
+        assertNftTransfers(nonFungibleTransfers1, nonFungibleTransfers2);
     }
 
     private void assertHbarTransfers(List<SyntheticTxnFactory.HbarTransfer> hbarTransfers) {
@@ -1857,18 +1867,26 @@ class TransferPrecompilesTest {
         assertEquals(3, fungibleTokenTransfers.get(0).getDenomination().getTokenNum());
 
         assertEquals(10, fungibleTokenTransfers.get(1).amount());
-        assertTrue(fungibleTokenTransfers.get(1).isApproval());
+        assertTrue(!fungibleTokenTransfers.get(1).isApproval());
         assertNull(fungibleTokenTransfers.get(1).receiver());
         assertEquals(5, fungibleTokenTransfers.get(1).sender().getAccountNum());
         assertEquals(3, fungibleTokenTransfers.get(1).getDenomination().getTokenNum());
     }
 
-    private void assertNftTransfers(List<SyntheticTxnFactory.NftExchange> nftExchanges) {
-        assertEquals(6, nftExchanges.get(0).getTokenType().getTokenNum());
-        assertEquals(2, nftExchanges.get(0).getSerialNo());
-        assertEquals(7, nftExchanges.get(0).asGrpc().getSenderAccountID().getAccountNum());
-        assertEquals(8, nftExchanges.get(0).asGrpc().getReceiverAccountID().getAccountNum());
-        assertTrue(nftExchanges.get(0).isApproval());
+    private void assertNftTransfers(
+            List<SyntheticTxnFactory.NftExchange> nftExchanges1,
+            List<SyntheticTxnFactory.NftExchange> nftExchanges2) {
+        assertEquals(6, nftExchanges1.get(0).getTokenType().getTokenNum());
+        assertEquals(2, nftExchanges1.get(0).getSerialNo());
+        assertEquals(7, nftExchanges1.get(0).asGrpc().getSenderAccountID().getAccountNum());
+        assertEquals(8, nftExchanges1.get(0).asGrpc().getReceiverAccountID().getAccountNum());
+        assertTrue(nftExchanges1.get(0).isApproval());
+
+        assertEquals(9, nftExchanges2.get(0).getTokenType().getTokenNum());
+        assertEquals(3, nftExchanges2.get(0).getSerialNo());
+        assertEquals(10, nftExchanges2.get(0).asGrpc().getSenderAccountID().getAccountNum());
+        assertEquals(11, nftExchanges2.get(0).asGrpc().getReceiverAccountID().getAccountNum());
+        assertTrue(!nftExchanges2.get(0).isApproval());
     }
 
     private void givenMinimalFrameContext() {
