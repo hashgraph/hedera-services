@@ -609,9 +609,7 @@ public class HapiApiSpec implements Runnable {
     }
 
     private static <T> Def.Sourced customizedHapiSpec(
-            final boolean isOnly,
-            final String name,
-            final Stream<T> prioritySource) {
+            final boolean isOnly, final String name, final Stream<T> prioritySource) {
         return (Object... sources) -> {
             Object[] allSources =
                     Stream.of(
@@ -620,8 +618,7 @@ public class HapiApiSpec implements Runnable {
                                     Stream.of(HapiSpecSetup.getDefaultPropertySource()))
                             .flatMap(Function.identity())
                             .toArray();
-            return (isOnly ? onlyHapiSpec(name) : hapiSpec(name))
-                    .withSetup(setupFrom(allSources));
+            return (isOnly ? onlyHapiSpec(name) : hapiSpec(name)).withSetup(setupFrom(allSources));
         };
     }
 
@@ -630,13 +627,13 @@ public class HapiApiSpec implements Runnable {
     }
 
     public static Def.Setup hapiSpec(String name) {
-        return setup -> given -> when -> then ->
-                new HapiApiSpec(name, false, setup, given, when, then);
+        return setup ->
+                given -> when -> then -> new HapiApiSpec(name, false, setup, given, when, then);
     }
 
     public static Def.Setup onlyHapiSpec(String name) {
-        return setup -> given -> when -> then ->
-                new HapiApiSpec(name, true, setup, given, when, then);
+        return setup ->
+                given -> when -> then -> new HapiApiSpec(name, true, setup, given, when, then);
     }
 
     private HapiApiSpec(

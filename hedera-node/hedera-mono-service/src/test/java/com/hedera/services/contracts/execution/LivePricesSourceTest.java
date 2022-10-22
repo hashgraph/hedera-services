@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.fees.congestion.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -57,7 +57,7 @@ class LivePricesSourceTest {
 
     @Mock private HbarCentExchange exchange;
     @Mock private UsagePricesProvider usagePrices;
-    @Mock private FeeMultiplierSource feeMultiplierSource;
+    @Mock private MultiplierSources multiplierSources;
     @Mock private TransactionContext txnCtx;
     @Mock private TxnAccessor accessor;
 
@@ -65,7 +65,7 @@ class LivePricesSourceTest {
 
     @BeforeEach
     void setUp() {
-        subject = new LivePricesSource(exchange, usagePrices, feeMultiplierSource, txnCtx);
+        subject = new LivePricesSource(exchange, usagePrices, multiplierSources, txnCtx);
     }
 
     @Test
@@ -91,7 +91,7 @@ class LivePricesSourceTest {
     private void givenCollabsWithMultiplier(final long multiplier) {
         given(exchange.rate(timeNow)).willReturn(activeRate);
         given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
-        given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
+        given(multiplierSources.maxCurrentMultiplier(accessor)).willReturn(multiplier);
         given(txnCtx.accessor()).willReturn(accessor);
     }
 }
