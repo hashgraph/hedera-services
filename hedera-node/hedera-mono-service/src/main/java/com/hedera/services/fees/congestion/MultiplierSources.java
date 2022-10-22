@@ -29,6 +29,12 @@ public class MultiplierSources {
         this.gasFeeMultiplier = gasFeeMultiplier;
     }
 
+    public long maxCurrentMultiplier(final TxnAccessor accessor) {
+        return Math.max(
+                gasFeeMultiplier.currentMultiplier(accessor),
+                genericFeeMultiplier.currentMultiplier(accessor));
+    }
+
     public void updateMultiplier(final TxnAccessor accessor, final Instant consensusNow) {
         gasFeeMultiplier.updateMultiplier(accessor, consensusNow);
         genericFeeMultiplier.updateMultiplier(accessor, consensusNow);

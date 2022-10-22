@@ -52,6 +52,13 @@ class MultiplierSourcesTest {
     }
 
     @Test
+    void canMaxMultipliers() {
+        given(gasFeeMultiplier.currentMultiplier(accessor)).willReturn(2L);
+        given(genericFeeMultiplier.currentMultiplier(accessor)).willReturn(3L);
+        assertEquals(3L, subject.maxCurrentMultiplier(accessor));
+    }
+
+    @Test
     void delegatesExpectationsReset() {
         subject.resetExpectations();
         verify(gasFeeMultiplier).resetExpectations();
