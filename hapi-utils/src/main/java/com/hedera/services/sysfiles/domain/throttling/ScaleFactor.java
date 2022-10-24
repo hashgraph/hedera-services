@@ -20,6 +20,7 @@ import com.hedera.services.sysfiles.ParsingUtils;
 
 public record ScaleFactor(int numerator, int denominator) implements Comparable<ScaleFactor> {
     public static ScaleFactor ONE_TO_ONE = new ScaleFactor(1, 1);
+
     public static ScaleFactor from(String literal) {
         return ParsingUtils.fromTwoPartDelimited(
                 literal,
@@ -50,8 +51,7 @@ public record ScaleFactor(int numerator, int denominator) implements Comparable<
     @Override
     public int compareTo(final ScaleFactor that) {
         return Integer.compare(
-                this.numerator * that.denominator,
-                that.numerator * this.denominator);
+                this.numerator * that.denominator, that.numerator * this.denominator);
     }
 
     @Override

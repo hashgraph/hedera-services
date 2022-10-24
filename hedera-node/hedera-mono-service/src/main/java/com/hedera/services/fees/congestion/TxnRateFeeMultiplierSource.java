@@ -22,11 +22,9 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
-
+import com.hedera.services.utils.accessors.TxnAccessor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.hedera.services.utils.accessors.TxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,31 +57,40 @@ public class TxnRateFeeMultiplierSource extends DelegatingMultiplierSource {
     public long currentMultiplier(final TxnAccessor accessor) {
         final var throttleMultiplier = super.currentMultiplier(accessor);
         return switch (accessor.getFunction()) {
-            case CryptoCreate -> dynamicProperties.entityScaleFactors().scaleForNew(
-                    ACCOUNT,
-                    usageLimits.roundedAccountPercentUtil()).scaling((int) throttleMultiplier);
-            case ContractCreate -> dynamicProperties.entityScaleFactors().scaleForNew(
-                    CONTRACT,
-                    usageLimits.roundedContractPercentUtil()).scaling((int) throttleMultiplier);
-            case FileCreate -> dynamicProperties.entityScaleFactors().scaleForNew(
-                    FILE,
-                    usageLimits.roundedFilePercentUtil()).scaling((int) throttleMultiplier);
-            case TokenMint -> accessor.mintsWithMetadata() ?
-                    dynamicProperties.entityScaleFactors().scaleForNew(
-                            NFT,
-                            usageLimits.roundedNftPercentUtil()).scaling((int) throttleMultiplier) : throttleMultiplier;
-            case ScheduleCreate -> dynamicProperties.entityScaleFactors().scaleForNew(
-                    SCHEDULE,
-                    usageLimits.roundedSchedulePercentUtil()).scaling((int) throttleMultiplier);
-            case TokenCreate -> dynamicProperties.entityScaleFactors().scaleForNew(
-                    TOKEN,
-                    usageLimits.roundedTokenPercentUtil()).scaling((int) throttleMultiplier);
-            case TokenAssociateToAccount -> dynamicProperties.entityScaleFactors().scaleForNew(
-                    TOKEN_ASSOCIATION,
-                    usageLimits.roundedTokenRelPercentUtil()).scaling((int) throttleMultiplier);
-            case ConsensusCreateTopic -> dynamicProperties.entityScaleFactors().scaleForNew(
-                    TOPIC,
-                    usageLimits.roundedTopicPercentUtil()).scaling((int) throttleMultiplier);
+            case CryptoCreate -> dynamicProperties
+                    .entityScaleFactors()
+                    .scaleForNew(ACCOUNT, usageLimits.roundedAccountPercentUtil())
+                    .scaling((int) throttleMultiplier);
+            case ContractCreate -> dynamicProperties
+                    .entityScaleFactors()
+                    .scaleForNew(CONTRACT, usageLimits.roundedContractPercentUtil())
+                    .scaling((int) throttleMultiplier);
+            case FileCreate -> dynamicProperties
+                    .entityScaleFactors()
+                    .scaleForNew(FILE, usageLimits.roundedFilePercentUtil())
+                    .scaling((int) throttleMultiplier);
+            case TokenMint -> accessor.mintsWithMetadata()
+                    ? dynamicProperties
+                            .entityScaleFactors()
+                            .scaleForNew(NFT, usageLimits.roundedNftPercentUtil())
+                            .scaling((int) throttleMultiplier)
+                    : throttleMultiplier;
+            case ScheduleCreate -> dynamicProperties
+                    .entityScaleFactors()
+                    .scaleForNew(SCHEDULE, usageLimits.roundedSchedulePercentUtil())
+                    .scaling((int) throttleMultiplier);
+            case TokenCreate -> dynamicProperties
+                    .entityScaleFactors()
+                    .scaleForNew(TOKEN, usageLimits.roundedTokenPercentUtil())
+                    .scaling((int) throttleMultiplier);
+            case TokenAssociateToAccount -> dynamicProperties
+                    .entityScaleFactors()
+                    .scaleForNew(TOKEN_ASSOCIATION, usageLimits.roundedTokenRelPercentUtil())
+                    .scaling((int) throttleMultiplier);
+            case ConsensusCreateTopic -> dynamicProperties
+                    .entityScaleFactors()
+                    .scaleForNew(TOPIC, usageLimits.roundedTopicPercentUtil())
+                    .scaling((int) throttleMultiplier);
             default -> throttleMultiplier;
         };
     }

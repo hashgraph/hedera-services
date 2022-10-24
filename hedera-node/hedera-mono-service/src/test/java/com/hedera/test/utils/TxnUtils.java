@@ -499,10 +499,7 @@ public class TxnUtils {
     }
 
     public static TransactionBody fungibleMintOp() {
-        final var op =
-                TokenMintTransactionBody.newBuilder()
-                        .setAmount(1234L)
-                        .build();
+        final var op = TokenMintTransactionBody.newBuilder().setAmount(1234L).build();
         return TransactionBody.newBuilder()
                 .setTransactionID(
                         TransactionID.newBuilder()

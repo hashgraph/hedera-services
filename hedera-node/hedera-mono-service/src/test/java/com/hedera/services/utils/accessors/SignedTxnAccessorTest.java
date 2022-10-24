@@ -19,7 +19,6 @@ import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.test.utils.IdUtils.*;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;

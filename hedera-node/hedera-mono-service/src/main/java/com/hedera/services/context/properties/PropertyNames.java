@@ -98,8 +98,8 @@ public class PropertyNames {
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
     public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS =
             "contracts.allowAutoAssociations";
-   public static final String CONTRACTS_ENFORCE_CREATION_THROTTLE =
-           "contracts.enforceCreationThrottle";
+    public static final String CONTRACTS_ENFORCE_CREATION_THROTTLE =
+            "contracts.enforceCreationThrottle";
     public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     public static final String CONTRACTS_MAX_KV_PAIRS_AGGREGATE = "contracts.maxKvPairs.aggregate";
     public static final String CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL =

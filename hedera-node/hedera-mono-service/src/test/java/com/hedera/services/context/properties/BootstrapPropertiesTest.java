@@ -265,9 +265,7 @@ class BootstrapPropertiesTest {
                     entry(TOKENS_NFTS_MAX_BATCH_SIZE_BURN, 10),
                     entry(TOKENS_NFTS_MAX_METADATA_BYTES, 100),
                     entry(TOKENS_NFTS_MAX_ALLOWED_MINTS, 5000000L),
-                    entry(
-                            TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR,
-                            ScaleFactor.from("5:2")),
+                    entry(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR, ScaleFactor.from("5:2")),
                     entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, false),
                     entry(
                             UPGRADE_ARTIFACTS_PATH,

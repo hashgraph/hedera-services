@@ -328,7 +328,8 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
         enforceContractCreationThrottle =
                 properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
-        entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
+        entityScaleFactors =
+                properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
     }
 
     public int maxTokensPerAccount() {

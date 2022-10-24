@@ -36,13 +36,11 @@ public class ThrottleReqsManager {
         return allVerboseReqsMetAt(now, 0, null);
     }
 
-    public boolean allReqsMetAt(
-            Instant now, int nTransactions, ScaleFactor scaleFactor) {
+    public boolean allReqsMetAt(Instant now, int nTransactions, ScaleFactor scaleFactor) {
         return allVerboseReqsMetAt(now, nTransactions, scaleFactor);
     }
 
-    private boolean allVerboseReqsMetAt(
-            Instant now, int nTransactions, ScaleFactor scaleFactor) {
+    private boolean allVerboseReqsMetAt(Instant now, int nTransactions, ScaleFactor scaleFactor) {
         var allPassed = true;
         for (int i = 0; i < passedReq.length; i++) {
             var req = allReqs.get(i);

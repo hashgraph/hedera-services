@@ -15,12 +15,12 @@
  */
 package com.hedera.services.sysfiles.domain.throttling;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ScaleFactorTest {
     @CsvSource({"3:2,3,2", "1:5,1,5", "100:100,100,100"})
@@ -36,8 +36,7 @@ class ScaleFactorTest {
     @ParameterizedTest
     void throwsIaeOnInvalid(String invalidLiteral) {
         Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> ScaleFactor.from(invalidLiteral));
+                IllegalArgumentException.class, () -> ScaleFactor.from(invalidLiteral));
     }
 
     @Test

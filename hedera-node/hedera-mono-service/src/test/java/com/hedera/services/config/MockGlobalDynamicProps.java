@@ -36,7 +36,8 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private boolean schedulingLongTermEnabled = false;
     private boolean exportBalances = true;
     private CongestionMultipliers currentMultipliers = defaultMultipliers;
-    private EntityScaleFactors scaleFactors = EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)");
+    private EntityScaleFactors scaleFactors =
+            EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)");
     private boolean throttleByGas;
     private boolean shouldCompressAccountFiles;
 

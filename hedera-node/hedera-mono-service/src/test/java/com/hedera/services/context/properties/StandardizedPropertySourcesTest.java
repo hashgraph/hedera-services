@@ -91,8 +91,7 @@ class StandardizedPropertySourcesTest {
         final var prop = "DEFAULT(90,10:1,95,25:1,99,100:1)";
         final EntityScaleFactors scaleFactors =
                 (EntityScaleFactors) PropertySource.AS_ENTITY_SCALE_FACTORS.apply(prop);
-        final EntityScaleFactors expected =
-                EntityScaleFactors.from(prop);
+        final EntityScaleFactors expected = EntityScaleFactors.from(prop);
         assertEquals(expected, scaleFactors);
 
         final var name = "scaleFactors";

@@ -26,10 +26,10 @@ import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleGroup;
-import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.MiscUtils;
@@ -53,8 +53,7 @@ import org.apache.logging.log4j.Logger;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
     private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
-    private static final ScaleFactor ONE_TO_ONE_SCALE =
-            ScaleFactor.from("1:1");
+    private static final ScaleFactor ONE_TO_ONE_SCALE = ScaleFactor.from("1:1");
 
     private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL =
             "{} gas throttling enabled, but limited to 0 gas/sec";

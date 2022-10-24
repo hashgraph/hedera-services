@@ -30,7 +30,6 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.fees.congestion.TxnRateFeeMultiplierSource;
 import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -38,11 +37,10 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +54,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TxnRateFeeMultiplierSourceTest {
     private static final int ROUNDED_PERCENT_UTIL = 33;
     private static final long EXPECTED_MULTIPLIER = 7L;
-    private static final EntityScaleFactors ENTITY_SCALE_FACTORS = EntityScaleFactors.from("DEFAULT(32,7:1)");
+    private static final EntityScaleFactors ENTITY_SCALE_FACTORS =
+            EntityScaleFactors.from("DEFAULT(32,7:1)");
     private Instant[] congestionStarts =
             new Instant[] {
                 ofEpochSecond(1L), ofEpochSecond(2L), ofEpochSecond(3L),
@@ -158,6 +157,7 @@ class TxnRateFeeMultiplierSourceTest {
             assertEquals(expected, instant.getEpochSecond());
         }
     }
+
     @Test
     void usesAccountMultiplierAsExpected() {
         givenCreateSetup(CryptoCreate);

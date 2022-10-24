@@ -15,14 +15,11 @@
  */
 package com.hedera.services.fees.calculation;
 
-import com.hedera.services.fees.calculation.utils.TriggeredValuesParser;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-
 import static com.hedera.services.fees.calculation.utils.TriggeredValuesParser.sansDecimals;
+
+import com.hedera.services.fees.calculation.utils.TriggeredValuesParser;
+import java.util.Arrays;
+import java.util.Objects;
 
 public record CongestionMultipliers(int[] usagePercentTriggers, long[] multipliers) {
     public static CongestionMultipliers from(final String csv) {
