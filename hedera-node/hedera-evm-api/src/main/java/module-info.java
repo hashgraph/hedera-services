@@ -8,6 +8,7 @@ module com.hedera.services.evm {
     requires tuweni.bytes;
     requires javax.inject;
     requires com.swirlds.common;
+    requires com.google.common;
 
     exports com.hedera.services.evm;
     exports com.hedera.services.evm.contracts.execution;
