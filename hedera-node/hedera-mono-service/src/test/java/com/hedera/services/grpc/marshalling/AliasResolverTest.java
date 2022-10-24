@@ -245,34 +245,6 @@ class AliasResolverTest {
     }
 
     @Test
-    void resolvesEthDataWithNonEmptyCallData() {
-        final var to = "to".getBytes();
-        final var lazyCreateData =
-                new EthTxData(
-                        null,
-                        null,
-                        null,
-                        0L,
-                        null,
-                        null,
-                        null,
-                        0L,
-                        to,
-                        BigInteger.TEN,
-                        "callData".getBytes(),
-                        null,
-                        0,
-                        null,
-                        null,
-                        null);
-        given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(to))).willReturn(MISSING_NUM);
-
-        subject.perceiveEthTxn(lazyCreateData, aliasManager);
-
-        assertEquals(0, subject.perceivedAutoCreations());
-    }
-
-    @Test
     void resolvesMirrorAddressInNftTransfer() {
         final var op =
                 CryptoTransferTransactionBody.newBuilder()

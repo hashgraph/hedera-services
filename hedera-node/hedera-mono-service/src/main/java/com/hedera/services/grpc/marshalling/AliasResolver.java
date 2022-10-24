@@ -77,8 +77,7 @@ public class AliasResolver {
         if (aliasManager
                         .lookupIdBy(ByteStringUtils.wrapUnsafely(ethTxDataMeta.to()))
                         .equals(MISSING_NUM)
-                && ethTxDataMeta.value().compareTo(BigInteger.ZERO) > 0
-                && !ethTxDataMeta.hasCallData()) {
+                && ethTxDataMeta.value().compareTo(BigInteger.ZERO) > 0) {
             perceivedCreations++;
         }
     }
