@@ -228,8 +228,6 @@ class CallEvmTxProcessorTest {
     @Test
     void assertSuccessExecutionEthLazyCreate() {
         givenValidMockEth();
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(aliasManager.isMirror(receiverAddress)).willReturn(false);
         var evmAccount = mock(EvmAccount.class);
@@ -462,6 +460,8 @@ class CallEvmTxProcessorTest {
         var evmAccount = mock(EvmAccount.class);
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
                 .willReturn(evmAccount);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -790,7 +790,8 @@ class CallEvmTxProcessorTest {
         given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
 
         given(updater.getOrCreateSenderAccount(any())).willReturn(wrappedSenderAccount);
-
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1032,7 +1033,8 @@ class CallEvmTxProcessorTest {
         given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
 
         given(updater.getOrCreateSenderAccount(any())).willReturn(wrappedSenderAccount);
-
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1216,6 +1218,8 @@ class CallEvmTxProcessorTest {
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
                 .willReturn(evmAccount);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1251,7 +1255,8 @@ class CallEvmTxProcessorTest {
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
-        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
