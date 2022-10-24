@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.evm;
+package com.hedera.services.evm.contracts.execution;
 
 /*
  * -
@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import java.util.List;
 import java.util.Optional;
