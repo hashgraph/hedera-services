@@ -17,7 +17,6 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.evm.store.contracts.AbstractCodeCache;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
