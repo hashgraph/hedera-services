@@ -28,6 +28,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
@@ -50,27 +51,29 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ToStringAccountsExporterTest {
     private final String testExportLoc = "accounts.txt";
     private final MerkleAccount account1 =
-            new HederaAccountCustomizer()
-                    .isReceiverSigRequired(true)
-                    .proxy(EntityId.MISSING_ENTITY_ID)
-                    .isDeleted(false)
-                    .expiry(1_234_567L)
-                    .memo("This ecstasy doth unperplex")
-                    .isSmartContract(true)
-                    .key(new JEd25519Key("first-fake".getBytes()))
-                    .autoRenewPeriod(555_555L)
-                    .customizing(new MerkleAccount());
+            (MerkleAccount)
+                    new HederaAccountCustomizer()
+                            .isReceiverSigRequired(true)
+                            .proxy(EntityId.MISSING_ENTITY_ID)
+                            .isDeleted(false)
+                            .expiry(1_234_567L)
+                            .memo("This ecstasy doth unperplex")
+                            .isSmartContract(true)
+                            .key(new JEd25519Key("first-fake".getBytes()))
+                            .autoRenewPeriod(555_555L)
+                            .customizing(new MerkleAccount());
     private final MerkleAccount account2 =
-            new HederaAccountCustomizer()
-                    .isReceiverSigRequired(false)
-                    .proxy(EntityId.MISSING_ENTITY_ID)
-                    .isDeleted(true)
-                    .expiry(7_654_321L)
-                    .memo("We said, and show us what we love")
-                    .isSmartContract(false)
-                    .key(new JEd25519Key("second-fake".getBytes()))
-                    .autoRenewPeriod(444_444L)
-                    .customizing(new MerkleAccount());
+            (MerkleAccount)
+                    new HederaAccountCustomizer()
+                            .isReceiverSigRequired(false)
+                            .proxy(EntityId.MISSING_ENTITY_ID)
+                            .isDeleted(true)
+                            .expiry(7_654_321L)
+                            .memo("We said, and show us what we love")
+                            .isSmartContract(false)
+                            .key(new JEd25519Key("second-fake".getBytes()))
+                            .autoRenewPeriod(444_444L)
+                            .customizing(new MerkleAccount());
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private ToStringAccountsExporter subject;
@@ -85,7 +88,7 @@ class ToStringAccountsExporterTest {
     @Test
     void toFileDoesNothingIfNoExportRequested() {
         // when:
-        subject.toFile(new MerkleMap<>());
+        subject.toFile(AccountStorageAdapter.fromInMemory(new MerkleMap<>()));
 
         // expect:
         assertFalse(new File(testExportLoc).exists());
@@ -97,7 +100,8 @@ class ToStringAccountsExporterTest {
         given(nodeLocalProperties.accountsExportPath()).willReturn("/this/is/not/a/path");
 
         // expect:
-        assertDoesNotThrow(() -> subject.toFile(new MerkleMap<>()));
+        assertDoesNotThrow(
+                () -> subject.toFile(AccountStorageAdapter.fromInMemory(new MerkleMap<>())));
         // and:
         assertThat(
                 logCaptor.warnLogs(),
@@ -155,7 +159,7 @@ class ToStringAccountsExporterTest {
                     + " records=0}\n";
 
         // given:
-        MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+        AccountStorageAdapter accounts = AccountStorageAdapter.fromInMemory(new MerkleMap<>());
         // and:
         accounts.put(EntityNum.fromInt(2), account2);
         accounts.put(EntityNum.fromInt(1), account1);

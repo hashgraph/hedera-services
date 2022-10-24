@@ -19,7 +19,7 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -30,7 +30,7 @@ import java.util.Map;
 
 public final class HederaAccountCustomizer
         extends AccountCustomizer<
-                AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
+                AccountID, HederaAccount, AccountProperty, HederaAccountCustomizer> {
     private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
     public static final String STAKED_ID_NOT_SET_CASE = "STAKEDID_NOT_SET";
     public static final String STAKED_ACCOUNT_ID_CASE = "STAKED_ACCOUNT_ID";

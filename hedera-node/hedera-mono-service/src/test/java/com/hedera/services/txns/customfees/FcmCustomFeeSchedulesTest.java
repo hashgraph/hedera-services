@@ -17,14 +17,13 @@ package com.hedera.services.txns.customfees;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,7 +74,8 @@ class FcmCustomFeeSchedulesTest {
         assertEquals(aTreasury, tokenAFees.treasuryId().asEntityId());
         assertEquals(bToken.customFeeSchedule(), tokenBFees.customFees());
         assertEquals(bTreasury, tokenBFees.treasuryId().asEntityId());
-        assertSame(Collections.emptyList(), missingTokenFees.customFees());
+        final var missingId = missingToken.asId();
+        assertEquals(CustomFeeMeta.forMissingLookupOf(missingId), missingTokenFees);
     }
 
     @Test

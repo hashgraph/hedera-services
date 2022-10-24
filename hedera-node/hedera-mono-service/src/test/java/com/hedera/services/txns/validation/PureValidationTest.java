@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.TxnUtils;
@@ -47,8 +48,8 @@ class PureValidationTest {
     @Test
     @SuppressWarnings("unchecked")
     void contractOkIfExplicitlyAllowed() {
-        final MerkleMap<EntityNum, MerkleAccount> accounts = mock(MerkleMap.class);
-        final var account = MerkleAccountFactory.newAccount().get();
+        final AccountStorageAdapter accounts =
+                AccountStorageAdapter.fromInMemory(mock(MerkleMap.class));
         final var contract = MerkleAccountFactory.newContract().get();
         final var num = EntityNum.fromLong(1234L);
 
@@ -82,7 +83,7 @@ class PureValidationTest {
     void validatesStakedId() {
         final var stakedAccountID = asAccount("0.0.2");
         final var stakedNodeId = 0;
-        final MerkleMap<EntityNum, MerkleAccount> accounts = mock(MerkleMap.class);
+        final AccountStorageAdapter accounts = mock(AccountStorageAdapter.class);
         given(accounts.get(EntityNum.fromAccountId(stakedAccountID)))
                 .willReturn(new MerkleAccount());
 
@@ -103,7 +104,7 @@ class PureValidationTest {
         final var stakedAccountID = AccountID.getDefaultInstance();
         final var stakedNodeId = 2;
 
-        final MerkleMap<EntityNum, MerkleAccount> accounts = mock(MerkleMap.class);
+        final AccountStorageAdapter accounts = mock(AccountStorageAdapter.class);
         final NodeInfo nodeInfo = mock(NodeInfo.class);
 
         given(nodeInfo.isValidId(stakedNodeId)).willReturn(true);

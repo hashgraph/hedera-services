@@ -34,6 +34,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -56,7 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AccountStoreTest {
     @Mock private OptionValidator validator;
     @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private BackingStore<AccountID, MerkleAccount> accounts;
+    @Mock private BackingStore<AccountID, HederaAccount> accounts;
     @Mock private TypedTokenStore tokenStore;
 
     private AccountStore subject;

@@ -18,13 +18,13 @@ package com.hedera.services.state.forensics;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
@@ -49,7 +49,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class HashLoggerTest {
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
     @Mock private UniqueTokenMapAdapter uniqueTokens;

@@ -66,6 +66,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean shouldExportBalances;
     private boolean shouldExportTokenBalances;
     private AccountID fundingAccount;
+    private Address fundingAccountAddress;
     private int maxTransfersLen;
     private int maxTokenTransfersLen;
     private int maxMemoUtf8Bytes;
@@ -123,6 +124,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enableAllowances;
     private boolean limitTokenAssociations;
     private boolean enableHTSPrecompileCreate;
+    private boolean atomicCryptoTransferEnabled;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
     private long stakingRewardRate;
@@ -152,6 +154,10 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean tokenAutoCreationsEnabled;
     private boolean doTraceabilityExport;
     private boolean compressAccountBalanceFilesOnCreation;
+    private long traceabilityMaxExportsPerConsSec;
+    private long traceabilityMinFreeToUsedGasThrottleRatio;
+    private boolean lazyCreationEnabled;
+    private boolean cryptoCreateWithAliasEnabled;
 
     @Inject
     public GlobalDynamicProperties(
@@ -180,6 +186,7 @@ public class GlobalDynamicProperties implements EvmProperties {
                         .setRealmNum(hederaNums.realm())
                         .setAccountNum(properties.getLongProperty(LEDGER_FUNDING_ACCOUNT))
                         .build();
+        fundingAccountAddress = EntityIdUtils.asTypedEvmAddress(fundingAccount);
         cacheRecordsTtl = properties.getIntProperty(CACHE_RECORDS_TTL);
         ratesIntradayChangeLimitPercent =
                 properties.getIntProperty(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT);
@@ -265,6 +272,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         limitTokenAssociations = properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS);
         enableHTSPrecompileCreate =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE);
+        atomicCryptoTransferEnabled =
+                properties.getBooleanProperty(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
         exchangeRateGasReq =
                 properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
@@ -307,6 +316,13 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
         doTraceabilityExport =
                 properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
+        traceabilityMaxExportsPerConsSec =
+                properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC);
+        traceabilityMinFreeToUsedGasThrottleRatio =
+                properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
+        lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
+        cryptoCreateWithAliasEnabled =
+                properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
     }
 
     public int maxTokensPerAccount() {
@@ -366,7 +382,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     }
 
     public Address fundingAccountAddress() {
-        return EntityIdUtils.asTypedEvmAddress(fundingAccount);
+        return fundingAccountAddress;
     }
 
     public int cacheRecordsTtl() {
@@ -625,6 +641,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         return enableHTSPrecompileCreate;
     }
 
+    public boolean isAtomicCryptoTransferEnabled() {
+        return atomicCryptoTransferEnabled;
+    }
+
     public KnownBlockValues knownBlockValues() {
         return knownBlockValues;
     }
@@ -739,5 +759,21 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean shouldDoTraceabilityExport() {
         return doTraceabilityExport;
+    }
+
+    public long traceabilityMinFreeToUsedGasThrottleRatio() {
+        return traceabilityMinFreeToUsedGasThrottleRatio;
+    }
+
+    public long traceabilityMaxExportsPerConsSec() {
+        return traceabilityMaxExportsPerConsSec;
+    }
+
+    public boolean isLazyCreationEnabled() {
+        return lazyCreationEnabled;
+    }
+
+    public boolean isCryptoCreateWithAliasEnabled() {
+        return cryptoCreateWithAliasEnabled;
     }
 }

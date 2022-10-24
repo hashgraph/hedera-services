@@ -43,6 +43,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -217,7 +218,7 @@ class SignedStateBalancesExporterTest {
         state = mock(ServicesState.class);
         given(state.getAccountFromNodeId(nodeId)).willReturn(thisNode);
         given(state.tokens()).willReturn(tokens);
-        given(state.accounts()).willReturn(accounts);
+        given(state.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
         given(state.tokenAssociations()).willReturn(tokenRels);
         given(state.addressBook()).willReturn(book);
 

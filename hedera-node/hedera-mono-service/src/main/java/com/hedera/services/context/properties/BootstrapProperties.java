@@ -17,6 +17,7 @@ package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toSet;
@@ -187,6 +188,7 @@ public final class BootstrapProperties implements PropertySource {
                     ACCOUNTS_SYSTEM_DELETE_ADMIN,
                     ACCOUNTS_SYSTEM_UNDELETE_ADMIN,
                     ACCOUNTS_TREASURY,
+                    ACCOUNTS_STORE_ON_DISK,
                     AUTO_RENEW_GRANT_FREE_RENEWALS,
                     ENTITIES_MAX_LIFETIME,
                     ENTITIES_SYSTEM_DELETABLE,
@@ -211,6 +213,8 @@ public final class BootstrapProperties implements PropertySource {
             Set.of(
                     ACCOUNTS_MAX_NUM,
                     AUTO_CREATION_ENABLED,
+                    LAZY_CREATION_ENABLED,
+                    CRYPTO_CREATE_WITH_ALIAS_ENABLED,
                     BALANCES_EXPORT_DIR_PATH,
                     BALANCES_EXPORT_ENABLED,
                     BALANCES_EXPORT_PERIOD_SECS,
@@ -241,6 +245,7 @@ public final class BootstrapProperties implements PropertySource {
                     CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST,
                     CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS,
                     CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE,
+                    CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
                     CONTRACTS_EVM_VERSION,
                     CONTRACTS_DYNAMIC_EVM_VERSION,
                     EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
@@ -252,6 +257,8 @@ public final class BootstrapProperties implements PropertySource {
                     FEES_PERCENT_CONGESTION_MULTIPLIERS,
                     FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER,
                     HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION,
+                    TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO,
+                    TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC,
                     HEDERA_TXN_MAX_MEMO_UTF8_BYTES,
                     HEDERA_TXN_MAX_VALID_DURATION,
                     HEDERA_TXN_MIN_VALID_DURATION,
@@ -389,6 +396,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, AS_LONG),
                     entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, AS_LONG),
                     entry(ACCOUNTS_TREASURY, AS_LONG),
+                    entry(ACCOUNTS_STORE_ON_DISK, AS_BOOLEAN),
                     entry(BALANCES_EXPORT_ENABLED, AS_BOOLEAN),
                     entry(BALANCES_EXPORT_PERIOD_SECS, AS_INT),
                     entry(BALANCES_NODE_BALANCE_WARN_THRESHOLD, AS_LONG),
@@ -425,6 +433,8 @@ public final class BootstrapProperties implements PropertySource {
                     entry(HEDERA_RECORD_STREAM_QUEUE_CAPACITY, AS_INT),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, AS_INT),
                     entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, AS_BOOLEAN),
+                    entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, AS_LONG),
+                    entry(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, AS_LONG),
                     entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, AS_BOOLEAN),
                     entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, AS_BOOLEAN),
                     entry(HEDERA_SHARD, AS_LONG),
@@ -433,6 +443,8 @@ public final class BootstrapProperties implements PropertySource {
                     entry(HEDERA_TXN_MIN_VALID_DURATION, AS_LONG),
                     entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, AS_INT),
                     entry(AUTO_CREATION_ENABLED, AS_BOOLEAN),
+                    entry(LAZY_CREATION_ENABLED, AS_BOOLEAN),
+                    entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, AS_BOOLEAN),
                     entry(AUTO_RENEW_TARGET_TYPES, AS_ENTITY_TYPES),
                     entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, AS_INT),
                     entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, AS_INT),
@@ -520,6 +532,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, AS_LONG),
                     entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, AS_BOOLEAN),
                     entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, AS_BOOLEAN),
+                    entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, AS_BOOLEAN),
                     entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
                     entry(CONTRACTS_EVM_VERSION, AS_STRING),
                     entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),

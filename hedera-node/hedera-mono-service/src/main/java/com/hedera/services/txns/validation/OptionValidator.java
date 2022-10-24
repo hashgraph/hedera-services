@@ -20,8 +20,9 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -60,7 +61,7 @@ public interface OptionValidator {
     ResponseCodeEnum expiryStatusGiven(long balance, long expiry, boolean isContract);
     // This variant is to avoid unnecessary TransactionalLedger.get() calls
     ResponseCodeEnum expiryStatusGiven(
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts, AccountID id);
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts, AccountID id);
 
     ResponseCodeEnum memoCheck(String cand);
 
@@ -90,23 +91,22 @@ public interface OptionValidator {
 
     JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
-    default ResponseCodeEnum queryableAccountStatus(
-            AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
+    default ResponseCodeEnum queryableAccountStatus(AccountID id, AccountStorageAdapter accounts) {
         return queryableAccountStatus(EntityNum.fromAccountId(id), accounts);
     }
 
     default ResponseCodeEnum queryableAccountStatus(
-            EntityNum entityNum, MerkleMap<EntityNum, MerkleAccount> accounts) {
+            EntityNum entityNum, AccountStorageAdapter accounts) {
         return PureValidation.queryableAccountStatus(entityNum, accounts);
     }
 
     default ResponseCodeEnum queryableContractStatus(
-            ContractID cid, MerkleMap<EntityNum, MerkleAccount> contracts) {
+            ContractID cid, AccountStorageAdapter contracts) {
         return PureValidation.queryableContractStatus(cid, contracts);
     }
 
     default ResponseCodeEnum queryableContractStatus(
-            EntityNum cid, MerkleMap<EntityNum, MerkleAccount> contracts) {
+            EntityNum cid, AccountStorageAdapter contracts) {
         return PureValidation.queryableContractStatus(cid, contracts);
     }
 
@@ -153,7 +153,7 @@ public interface OptionValidator {
             final String idCase,
             final AccountID stakedAccountId,
             final long stakedNodeId,
-            final MerkleMap<EntityNum, MerkleAccount> accounts,
+            final AccountStorageAdapter accounts,
             final NodeInfo nodeInfo) {
         return PureValidation.isValidStakedId(
                 idCase, stakedAccountId, stakedNodeId, accounts, nodeInfo);
