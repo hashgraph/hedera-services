@@ -157,7 +157,8 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     }
 
     public int roundedAccountPercentUtil() {
-        return (int) ((100 * updatedNumAccounts()) / dynamicProperties.maxNumAccounts());
+        final var n = dynamicProperties.maxNumAccounts();
+        return n == 0 ? 100 : (int) ((100 * updatedNumAccounts()) / n);
     }
 
     public double percentContractsUsed() {
@@ -165,7 +166,8 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     }
 
     public int roundedContractPercentUtil() {
-        return (int) ((100 * numContracts) / dynamicProperties.maxNumContracts());
+        final var n = dynamicProperties.maxNumContracts();
+        return n == 0 ? 100 : (int) ((100 * numContracts) / n);
     }
 
     public double percentFilesUsed() {
@@ -173,7 +175,8 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     }
 
     public int roundedFilePercentUtil() {
-        return (int) ((100 * updatedNumFiles()) / dynamicProperties.maxNumFiles());
+        final var n = dynamicProperties.maxNumFiles();
+        return n == 0 ? 100 : (int) ((100 * updatedNumFiles()) / n);
     }
 
     public double percentNftsUsed() {
@@ -181,7 +184,8 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     }
 
     public int roundedNftPercentUtil() {
-        return (int) ((100 * updatedNumNfts()) / dynamicProperties.maxNftMints());
+        final var n = dynamicProperties.maxNftMints();
+        return n == 0 ? 100 : (int) ((100 * updatedNumNfts()) / n);
     }
 
     public double percentTokensUsed() {
@@ -189,7 +193,8 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     }
 
     public int roundedTokenPercentUtil() {
-        return (int) ((100 * updatedNumTokens()) / dynamicProperties.maxNumTokens());
+        final var n = dynamicProperties.maxNumTokens();
+        return n == 0 ? 100 : (int) ((100 * updatedNumTokens()) / n);
     }
 
     public double percentTopicsUsed() {
@@ -197,7 +202,8 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     }
 
     public int roundedTopicPercentUtil() {
-        return (int) ((100 * updatedNumTopics()) / dynamicProperties.maxNumTopics());
+        final var n = dynamicProperties.maxNumTopics();
+        return n == 0 ? 100 : (int) ((100 * updatedNumTopics()) / n);
     }
 
     public double percentStorageSlotsUsed() {
@@ -209,7 +215,8 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     }
 
     public int roundedTokenRelPercentUtil() {
-        return (int) ((100 * updatedNumTokenRels()) / dynamicProperties.maxNumTokenRels());
+        final var n = dynamicProperties.maxNumTokenRels();
+        return n == 0 ? 100 : (int) ((100 * updatedNumTokenRels()) / n);
     }
 
     public double percentSchedulesUsed() {
@@ -217,7 +224,8 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     }
 
     public int roundedSchedulePercentUtil() {
-        return (int) ((100 * updatedNumSchedules()) / dynamicProperties.maxNumSchedules());
+        final var n = dynamicProperties.maxNumSchedules();
+        return n == 0 ? 100 : (int) ((100 * updatedNumSchedules()) / n);
     }
 
     public long getNumAccounts() {

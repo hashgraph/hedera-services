@@ -111,6 +111,18 @@ class UsageLimitsTest {
     }
 
     @Test
+    void roundedPercentUsedIs100IfNoEntitiesAllowed() {
+        assertEquals(100, subject.roundedAccountPercentUtil());
+        assertEquals(100, subject.roundedContractPercentUtil());
+        assertEquals(100, subject.roundedFilePercentUtil());
+        assertEquals(100, subject.roundedSchedulePercentUtil());
+        assertEquals(100, subject.roundedTokenPercentUtil());
+        assertEquals(100, subject.roundedTokenRelPercentUtil());
+        assertEquals(100, subject.roundedTopicPercentUtil());
+        assertEquals(100, subject.roundedNftPercentUtil());
+    }
+
+    @Test
     void getsPercentsUsed() {
         given(dynamicProperties.maxNumAccounts()).willReturn(5L);
         given(dynamicProperties.maxNumContracts()).willReturn(5L);
