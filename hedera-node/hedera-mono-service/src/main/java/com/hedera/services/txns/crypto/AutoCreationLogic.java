@@ -200,22 +200,21 @@ public class AutoCreationLogic {
         TransactionBody.Builder syntheticCreation;
         String memo;
         HederaAccountCustomizer customizer = new HederaAccountCustomizer();
+        // checks tokenAliasMap if the change consists an alias that is already used in previous
+        // iteration of the token transfer list. This map is used to count number of
+        // maxAutoAssociations needed on auto created account
+        analyzeTokenTransferCreations(changes);
+        final var maxAutoAssociations =
+            tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+        customizer.maxAutomaticAssociations(maxAutoAssociations);
         if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             memo = LAZY_MEMO;
         } else {
-            // checks tokenAliasMap if the change consists an alias that is already used in previous
-            // iteration of the token transfer list. This map is used to count number of
-            // maxAutoAssociations needed on auto created account
-            analyzeTokenTransferCreations(changes);
-
-            final var maxAutoAssociations =
-                    tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
-
             final var key = asPrimitiveKeyUnchecked(alias);
             syntheticCreation = syntheticTxnFactory.createAccount(key, 0L, maxAutoAssociations);
             JKey jKey = asFcKeyUnchecked(key);
-            customizer.key(jKey).maxAutomaticAssociations(maxAutoAssociations);
+            customizer.key(jKey);
             memo = AUTO_MEMO;
         }
 

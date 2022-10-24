@@ -47,6 +47,7 @@ import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
@@ -87,6 +88,7 @@ public class InfrastructureFactory {
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
     private final FeeDistribution feeDistribution;
+    private final AutoCreationLogic autoCreationLogic;
 
     @Inject
     public InfrastructureFactory(
@@ -100,7 +102,7 @@ public class InfrastructureFactory {
             final GlobalDynamicProperties dynamicProperties,
             final TransactionContext txnCtx,
             final AliasManager aliasManager,
-            final FeeDistribution feeDistribution) {
+            final FeeDistribution feeDistribution, AutoCreationLogic autoCreationLogic) {
         this.ids = ids;
         this.encoder = encoder;
         this.validator = validator;
@@ -112,6 +114,7 @@ public class InfrastructureFactory {
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
         this.feeDistribution = feeDistribution;
+        this.autoCreationLogic = autoCreationLogic;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -202,7 +205,7 @@ public class InfrastructureFactory {
                 tokenStore,
                 sideEffects,
                 validator,
-                null,
+                autoCreationLogic,
                 recordsHistorian,
                 txnCtx,
                 aliasManager,

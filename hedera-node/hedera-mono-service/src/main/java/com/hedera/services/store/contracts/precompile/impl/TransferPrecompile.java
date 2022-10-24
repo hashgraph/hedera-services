@@ -248,6 +248,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                                     ledgers,
                                     updater.aliases());
+                    if (frame.getWorldUpdater().get(counterPartyAddress) == null) {
+                        change.changeCounterPartyToAlias();
+                    }
                 } else if (units > 0) {
                     hasReceiverSigIfReq =
                             KeyActivationUtils.validateKey(
@@ -256,6 +259,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                                     ledgers,
                                     updater.aliases());
+                    if (frame.getWorldUpdater().get(change.getAccount().asEvmAddress()) == null) {
+                        change.changeAccountToAlias();
+                    }
                 }
                 validateTrue(
                         hasReceiverSigIfReq,
