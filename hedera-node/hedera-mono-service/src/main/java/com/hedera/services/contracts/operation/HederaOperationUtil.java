@@ -41,8 +41,6 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
@@ -87,15 +85,15 @@ public final class HederaOperationUtil {
             final var address = Words.toAddress(supplierAddressBytes.get());
             if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                 return new Operation.OperationResult(
-                        OptionalLong.of(supplierHaltGasCost.getAsLong()),
-                        Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+                        supplierHaltGasCost.getAsLong(),
+                        HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
 
             return supplierExecution.get();
         } catch (final FixedStack.UnderflowException ufe) {
             return new Operation.OperationResult(
-                    OptionalLong.of(supplierHaltGasCost.getAsLong()),
-                    Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
+                    supplierHaltGasCost.getAsLong(),
+                    ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         }
     }
 
@@ -103,7 +101,7 @@ public final class HederaOperationUtil {
      * An extracted address and signature check, including a further execution of {@link
      * HederaCallOperation} and {@link HederaCallCodeOperation} Performs an existence check on the
      * {@link Address} to be called Halts the execution of the EVM transaction with {@link
-     * HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does not exist or it is
+     * HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does not exist, or it is
      * deleted.
      *
      * <p>If the target {@link Address} has {@link
@@ -137,8 +135,8 @@ public final class HederaOperationUtil {
         final var account = updater.get(address);
         if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
             return new Operation.OperationResult(
-                    OptionalLong.of(supplierHaltGasCost.getAsLong()),
-                    Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+                    supplierHaltGasCost.getAsLong(),
+                    HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
         boolean isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
         boolean sigReqIsMet;
@@ -161,8 +159,7 @@ public final class HederaOperationUtil {
         }
         if (!sigReqIsMet) {
             return new Operation.OperationResult(
-                    OptionalLong.of(supplierHaltGasCost.getAsLong()),
-                    Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE));
+                    supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SIGNATURE);
         }
 
         return supplierExecution.get();

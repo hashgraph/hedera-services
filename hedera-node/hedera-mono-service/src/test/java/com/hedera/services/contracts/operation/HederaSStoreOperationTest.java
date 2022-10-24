@@ -30,7 +30,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import java.util.ArrayDeque;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -80,9 +79,7 @@ class HederaSStoreOperationTest {
         given(frame.isStatic()).willReturn(true);
 
         final var expected =
-                new Operation.OperationResult(
-                        OptionalLong.of(storageCost + coldSloadCost),
-                        Optional.of(ILLEGAL_STATE_CHANGE));
+                new Operation.OperationResult(storageCost + coldSloadCost, ILLEGAL_STATE_CHANGE);
 
         final var actual = subject.execute(frame, evm);
 
@@ -108,9 +105,7 @@ class HederaSStoreOperationTest {
         givenColdSlot();
         givenRemainingGas(storageCost);
         final var expected =
-                new Operation.OperationResult(
-                        OptionalLong.of(storageCost + coldSloadCost),
-                        Optional.of(INSUFFICIENT_GAS));
+                new Operation.OperationResult(storageCost + coldSloadCost, INSUFFICIENT_GAS);
 
         final var actual = subject.execute(frame, evm);
 
@@ -124,9 +119,7 @@ class HederaSStoreOperationTest {
         givenRemainingGas(sufficientRemainingGas);
         given(gasCalculator.calculateStorageRefundAmount(mutableAccount, key, value))
                 .willReturn(storageRefundAmount);
-        final var expected =
-                new Operation.OperationResult(
-                        OptionalLong.of(storageCost + coldSloadCost), Optional.empty());
+        final var expected = new Operation.OperationResult(storageCost + coldSloadCost, null);
 
         final var actual = subject.execute(frame, evm);
 
@@ -144,9 +137,7 @@ class HederaSStoreOperationTest {
         givenRemainingGas(sufficientRemainingGas);
         given(gasCalculator.calculateStorageRefundAmount(mutableAccount, key, value))
                 .willReturn(storageRefundAmount);
-        final var expected =
-                new Operation.OperationResult(
-                        OptionalLong.of(storageCost + coldSloadCost), Optional.empty());
+        final var expected = new Operation.OperationResult(storageCost + coldSloadCost, null);
         final var messageStack = new ArrayDeque<MessageFrame>();
         messageStack.add(frame);
         given(frame.getMessageFrameStack()).willReturn(messageStack);

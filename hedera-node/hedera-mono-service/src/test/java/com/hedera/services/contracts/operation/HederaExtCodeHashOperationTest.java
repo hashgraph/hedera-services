@@ -21,8 +21,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -77,9 +75,8 @@ class HederaExtCodeHashOperationTest {
         var opResult = subject.execute(mf, evm);
 
         assertEquals(
-                Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS),
-                opResult.getHaltReason());
-        assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
+                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 
     @Test
@@ -89,8 +86,8 @@ class HederaExtCodeHashOperationTest {
 
         var opResult = subject.execute(mf, evm);
 
-        assertEquals(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS), opResult.getHaltReason());
-        assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
+        assertEquals(ExceptionalHaltReason.INSUFFICIENT_GAS, opResult.getHaltReason());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 
     @Test
@@ -101,7 +98,7 @@ class HederaExtCodeHashOperationTest {
 
         var opResult = subject.execute(mf, evm);
 
-        assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 
     @Test
@@ -112,7 +109,7 @@ class HederaExtCodeHashOperationTest {
 
         var opResult = subject.execute(mf, evm);
 
-        assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 
     @Test
@@ -124,7 +121,7 @@ class HederaExtCodeHashOperationTest {
 
         var opResult = subject.execute(mf, evm);
 
-        assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 
     @Test
@@ -133,8 +130,8 @@ class HederaExtCodeHashOperationTest {
 
         var opResult = subject.execute(mf, evm);
 
-        assertEquals(Optional.of(INSUFFICIENT_STACK_ITEMS), opResult.getHaltReason());
-        assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
+        assertEquals(INSUFFICIENT_STACK_ITEMS, opResult.getHaltReason());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 
     private void givenMessageFrameWithRemainingGas(long gas) {

@@ -40,8 +40,6 @@ package com.hedera.services.contracts.operation;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.stream.proto.SidecarType;
-import java.util.Optional;
-import java.util.OptionalLong;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -57,12 +55,12 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SLoadOperation}. No
- * externally visible changes, the result of sload is stored for the benefit of ther record stream.
+ * externally visible changes, the result of sload is stored for the benefit of their record stream.
  */
 public class HederaSLoadOperation extends AbstractOperation {
 
-    private final OptionalLong warmCost;
-    private final OptionalLong coldCost;
+    private final long warmCost;
+    private final long coldCost;
 
     private final OperationResult warmSuccess;
     private final OperationResult coldSuccess;
@@ -73,11 +71,11 @@ public class HederaSLoadOperation extends AbstractOperation {
             final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
         super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
         final long baseCost = gasCalculator.getSloadOperationGasCost();
-        warmCost = OptionalLong.of(baseCost + gasCalculator.getWarmStorageReadCost());
-        coldCost = OptionalLong.of(baseCost + gasCalculator.getColdSloadCost());
+        warmCost = baseCost + gasCalculator.getWarmStorageReadCost();
+        coldCost = baseCost + gasCalculator.getColdSloadCost();
 
-        warmSuccess = new OperationResult(warmCost, Optional.empty());
-        coldSuccess = new OperationResult(coldCost, Optional.empty());
+        warmSuccess = new OperationResult(warmCost, null);
+        coldSuccess = new OperationResult(coldCost, null);
         this.dynamicProperties = dynamicProperties;
     }
 
@@ -90,10 +88,9 @@ public class HederaSLoadOperation extends AbstractOperation {
             final Address address = account.getAddress();
             final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
             final boolean slotIsWarm = frame.warmUpStorage(address, key);
-            final OptionalLong optionalCost = slotIsWarm ? warmCost : coldCost;
-            if (frame.getRemainingGas() < optionalCost.orElse(0L)) {
-                return new OperationResult(
-                        optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+            final long optionalCost = slotIsWarm ? warmCost : coldCost;
+            if (frame.getRemainingGas() < optionalCost) {
+                return new OperationResult(optionalCost, ExceptionalHaltReason.INSUFFICIENT_GAS);
             } else {
                 UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
                 if (dynamicProperties
@@ -106,11 +103,9 @@ public class HederaSLoadOperation extends AbstractOperation {
                 return slotIsWarm ? warmSuccess : coldSuccess;
             }
         } catch (final UnderflowException ufe) {
-            return new OperationResult(
-                    warmCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
+            return new OperationResult(warmCost, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         } catch (final OverflowException ofe) {
-            return new OperationResult(
-                    warmCost, Optional.of(ExceptionalHaltReason.TOO_MANY_STACK_ITEMS));
+            return new OperationResult(warmCost, ExceptionalHaltReason.TOO_MANY_STACK_ITEMS);
         }
     }
 }

@@ -15,13 +15,7 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE;
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_DELEGATECALL;
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_STATICCALL;
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.*;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -29,11 +23,7 @@ import static com.hedera.services.contracts.operation.HederaExceptionalHaltReaso
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
@@ -42,6 +32,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
 import org.hyperledger.besu.evm.internal.Words;
+import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 
 public class HederaTracer implements HederaOperationTracer {
 
@@ -70,9 +61,7 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     @Override
-    public void traceExecution(MessageFrame currentFrame, ExecuteOperation executeOperation) {
-        executeOperation.execute();
-
+    public void tracePostExecution(MessageFrame currentFrame, OperationResult operationResult) {
         if (areActionSidecarsEnabled) {
             final var frameState = currentFrame.getState();
             if (frameState != State.CODE_EXECUTING) {

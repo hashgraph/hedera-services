@@ -37,9 +37,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
@@ -52,7 +50,6 @@ import com.hedera.services.store.contracts.WorldStateAccount;
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -92,8 +89,7 @@ class HederaOperationUtilTest {
 
     @Test
     void shortCircuitsForPrecompileSigCheck() {
-        final var degenerateResult =
-                new Operation.OperationResult(OptionalLong.empty(), Optional.empty());
+        final var degenerateResult = new Operation.OperationResult(0, null);
         given(precompiledContractMap.containsKey(PRETEND_RECIPIENT_ADDR.toShortHexString()))
                 .willReturn(true);
         given(executionSupplier.get()).willReturn(degenerateResult);
@@ -127,8 +123,8 @@ class HederaOperationUtilTest {
                         (a, b) -> true);
 
         // then:
-        assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason().get());
-        assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
+        assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
         // and:
         verify(messageFrame).getStackItem(0);
         verify(messageFrame, never()).getWorldUpdater();
@@ -152,9 +148,8 @@ class HederaOperationUtilTest {
                         (a, b) -> false);
 
         // then:
-        assertEquals(
-                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason().get());
-        assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
         // and:
         verify(messageFrame).getStackItem(0);
         verify(gasSupplier).getAsLong();
@@ -166,9 +161,7 @@ class HederaOperationUtilTest {
         // given:
         given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
         given(executionSupplier.get())
-                .willReturn(
-                        new Operation.OperationResult(
-                                OptionalLong.of(expectedSuccessfulGas), Optional.empty()));
+                .willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
 
         // when:
         final var result =
@@ -180,8 +173,8 @@ class HederaOperationUtilTest {
                         (a, b) -> true);
 
         // when:
-        assertTrue(result.getHaltReason().isEmpty());
-        assertEquals(expectedSuccessfulGas, result.getGasCost().getAsLong());
+        assertNull(result.getHaltReason());
+        assertEquals(expectedSuccessfulGas, result.getGasCost());
         // and:
         verify(messageFrame).getStackItem(0);
         verify(gasSupplier, never()).getAsLong();
@@ -206,9 +199,8 @@ class HederaOperationUtilTest {
                         precompiledContractMap);
 
         // then:
-        assertEquals(
-                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason().get());
-        assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
         // and:
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
@@ -244,8 +236,8 @@ class HederaOperationUtilTest {
                         precompiledContractMap);
 
         // then:
-        assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason().get());
-        assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
         // and:
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
@@ -284,8 +276,8 @@ class HederaOperationUtilTest {
                         precompiledContractMap);
 
         // then:
-        assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason().get());
-        assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
         // and:
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
@@ -310,9 +302,7 @@ class HederaOperationUtilTest {
                                 true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers))
                 .willReturn(true);
         given(executionSupplier.get())
-                .willReturn(
-                        new Operation.OperationResult(
-                                OptionalLong.of(expectedSuccessfulGas), Optional.empty()));
+                .willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
 
         // when:
         final var result =
@@ -326,8 +316,8 @@ class HederaOperationUtilTest {
                         precompiledContractMap);
 
         // then:
-        assertTrue(result.getHaltReason().isEmpty());
-        assertEquals(expectedSuccessfulGas, result.getGasCost().getAsLong());
+        assertNull(result.getHaltReason());
+        assertEquals(expectedSuccessfulGas, result.getGasCost());
         // and:
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
