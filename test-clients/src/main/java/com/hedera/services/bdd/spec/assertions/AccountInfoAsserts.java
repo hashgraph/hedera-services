@@ -181,6 +181,16 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
+    public AccountInfoAsserts hasDefaultKey() {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                ((AccountInfo) o).getKey(),
+                                com.hederahashgraph.api.proto.java.Key.getDefaultInstance(),
+                                "Has non-default key!"));
+        return this;
+    }
+
     public AccountInfoAsserts key(String key) {
         registerProvider(
                 (spec, o) ->
