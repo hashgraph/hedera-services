@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+package com.hedera.services.evm.contracts.execution;
 
-description = "Hedera Services API Fees"
+import org.hyperledger.besu.datatypes.Address;
 
-dependencies {
-    implementation(project(":hapi-utils"))
-    implementation(libs.bundles.logging)
-    implementation(libs.commons.lang3)
-    implementation(libs.hapi) {
-        exclude("javax.annotation", "javax.annotation-api")
-    }
-    implementation(libs.javax.inject)
-    implementation(libs.jackson)
-    implementation(libs.jetbrains.annotation)
-    testImplementation(testLibs.bundles.testing)
+public interface EvmProperties {
+
+    String evmVersion();
+
+    Address fundingAccountAddress();
+
+    boolean dynamicEvmVersion();
+
+    int maxGasRefundPercentage();
 }

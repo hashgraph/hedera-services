@@ -22,7 +22,9 @@ description = "Hedera Services API Utilities"
 dependencies {
     implementation(libs.bundles.logging)
     implementation(libs.protobuf.java)
-    implementation(libs.hapi)
+    implementation(libs.hapi) {
+        exclude("javax.annotation", "javax.annotation-api")
+    }
     implementation(libs.jackson)
     implementation(libs.swirlds.common)
     implementation(libs.javax.inject)
