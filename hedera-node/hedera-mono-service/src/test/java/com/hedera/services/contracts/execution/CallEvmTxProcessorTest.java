@@ -1092,7 +1092,7 @@ class CallEvmTxProcessorTest {
                 BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
 
         assertThrows(
-                IllegalStateException.class,
+                NullPointerException.class,
                 () ->
                         callEvmTxProcessor.executeEth(
                                 sender,
