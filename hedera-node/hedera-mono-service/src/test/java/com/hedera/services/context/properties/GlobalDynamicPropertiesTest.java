@@ -268,7 +268,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertFalse(subject.isLazyCreationEnabled());
         assertTrue(subject.isCryptoCreateWithAliasEnabled());
-        assertFalse(subject.shouldEnforceContractCreationThrottle());
+        assertFalse(subject.shouldEnforceAccountCreationThrottleForContracts());
     }
 
     @Test

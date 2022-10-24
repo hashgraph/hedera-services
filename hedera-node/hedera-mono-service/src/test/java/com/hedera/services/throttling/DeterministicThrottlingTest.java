@@ -885,6 +885,39 @@ class DeterministicThrottlingTest {
     }
 
     @Test
+    void alwaysThrottleNOfUnmanaged() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        assertTrue(subject.shouldThrottleNOfUnscaled(2, TokenBurn, consensusNow));
+    }
+
+    @Test
+    void canThrottleNOfManaged() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        assertFalse(subject.shouldThrottleNOfUnscaled(1, TokenMint, consensusNow));
+        final var oneUsed = subject.activeThrottlesFor(TokenMint).get(0).used();
+        assertFalse(subject.shouldThrottleNOfUnscaled(41, TokenMint, consensusNow));
+        final var fortyTwoUsed = subject.activeThrottlesFor(TokenMint).get(0).used();
+        assertEquals(42 * oneUsed, fortyTwoUsed);
+    }
+
+    @Test
+    void whenThrottlesUsesNoCapacity() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        assertTrue(subject.shouldThrottleNOfUnscaled(11, ContractCall, consensusNow));
+        final var used = subject.activeThrottlesFor(ContractCall).get(0).used();
+        assertEquals(0, used);
+    }
+
+    @Test
     void computesNumAutoCreationsIfNotAlreadyKnown() throws IOException {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 

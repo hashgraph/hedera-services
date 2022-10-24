@@ -788,7 +788,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         return entityScaleFactors;
     }
 
-    public boolean shouldEnforceContractCreationThrottle() {
+    public boolean shouldEnforceAccountCreationThrottleForContracts() {
         return enforceContractCreationThrottle;
     }
 }

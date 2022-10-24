@@ -53,7 +53,7 @@ import org.apache.logging.log4j.Logger;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
     private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
-    private static final ScaleFactor ONE_TO_ONE_SCALE = ScaleFactor.from("1:1");
+    private static final ScaleFactor ONE_TO_ONE = ScaleFactor.from("1:1");
 
     private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL =
             "{} gas throttling enabled, but limited to 0 gas/sec";
@@ -240,6 +240,20 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
         if (gasThrottle != null) {
             gasThrottle.resetUsage();
         }
+    }
+
+    public boolean shouldThrottleNOfUnscaled(
+            final int n, final HederaFunctionality function, final Instant now) {
+        resetLastAllowedUse();
+        ThrottleReqsManager manager;
+        if ((manager = functionReqs.get(function)) == null) {
+            return true;
+        }
+        if (!manager.allReqsMetAt(now, n, ONE_TO_ONE)) {
+            reclaimLastAllowedUse();
+            return true;
+        }
+        return false;
     }
 
     private void logResolvedDefinitions() {
@@ -431,7 +445,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
     private boolean shouldThrottleAutoCreations(final int n, final Instant now) {
         final var manager = functionReqs.get(CryptoCreate);
-        return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE_SCALE);
+        return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE);
     }
 
     private boolean shouldThrottleMint(
