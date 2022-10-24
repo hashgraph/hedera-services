@@ -85,7 +85,7 @@ public class TreasuryClonerTest {
         assertEquals(500, created.size());
         verifyNoMoreInteractions(accounts);
 
-        subject.forgetScannedSystemAccounts();
+        subject.forgetCreatedClones();
         assertTrue(subject.getClonesCreated().isEmpty());
     }
 
