@@ -74,7 +74,7 @@ tasks.jar {
                 attributes(
                     "Main-Class" to "com.hedera.services.ServicesMain",
                     "Class-Path" to configurations.getByName("runtimeClasspath")
-                        .joinToString(separator = " ") { "data/lib/" + it.name }
+                        .joinToString(separator = " ") { "../../data/lib/" + it.name }
 
                 )
             }
