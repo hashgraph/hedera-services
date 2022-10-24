@@ -33,4 +33,8 @@ dependencies {
         exclude("com.google.code.findbugs", "jsr305")
     }
     implementation(libs.javax.inject)
+    implementation(libs.tuweni.units) {
+        exclude("com.google.code.findbugs", "jsr305")
+    }
+    implementation(testLibs.mockito.jupiter)
 }

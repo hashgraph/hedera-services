@@ -123,16 +123,16 @@ public abstract class HederaEvmTxProcessor {
      * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
      *     address
      */
-    protected HederaEvmTransactionProcessingResult execute(
-            final HederaEvmAccount sender,
-            final Address receiver,
-            final long gasPrice,
-            final long gasLimit,
-            final long value,
-            final Bytes payload,
-            final boolean contractCreation,
-            final boolean isStatic,
-            final Address mirrorReceiver) {
+    public HederaEvmTransactionProcessingResult execute(
+        final HederaEvmAccount sender,
+        final Address receiver,
+        final long gasPrice,
+        final long gasLimit,
+        final long value,
+        final Bytes payload,
+        final boolean contractCreation,
+        final boolean isStatic,
+        final Address mirrorReceiver) {
         this.intrinsicGas =
                 gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
         this.updater = worldState.updater();
