@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doCallRealMethod;
 
+import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.throttling.MapAccessType;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import java.util.Collections;
@@ -83,6 +84,23 @@ class StandardizedPropertySourcesTest {
         given(mockSubject.getProperty(name)).willReturn(expected);
         doCallRealMethod().when(mockSubject).getTypedProperty(List.class, name);
         assertEquals(expected, mockSubject.getAccessListProperty(name));
+    }
+
+    @Test
+    void getsExpectedEntityScaleFactors() {
+        final var prop = "DEFAULT(90,10:1,95,25:1,99,100:1)";
+        final EntityScaleFactors scaleFactors =
+                (EntityScaleFactors) PropertySource.AS_ENTITY_SCALE_FACTORS.apply(prop);
+        final EntityScaleFactors expected =
+                EntityScaleFactors.from(prop);
+        assertEquals(expected, scaleFactors);
+
+        final var name = "scaleFactors";
+        final var mockSubject = Mockito.mock(PropertySource.class);
+        doCallRealMethod().when(mockSubject).getEntityScaleFactorsProperty(name);
+        given(mockSubject.getProperty(name)).willReturn(expected);
+        doCallRealMethod().when(mockSubject).getTypedProperty(EntityScaleFactors.class, name);
+        assertEquals(expected, mockSubject.getEntityScaleFactorsProperty(name));
     }
 
     @Test

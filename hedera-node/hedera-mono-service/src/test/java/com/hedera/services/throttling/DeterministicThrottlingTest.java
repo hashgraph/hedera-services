@@ -53,7 +53,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
@@ -107,7 +107,7 @@ class DeterministicThrottlingTest {
     private final int n = 2;
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
     private static final ScheduleID scheduleID = IdUtils.asSchedule("0.0.333333");
-    private final ThrottleReqOpsScaleFactor nftScaleFactor = ThrottleReqOpsScaleFactor.from("5:2");
+    private final ScaleFactor nftScaleFactor = ScaleFactor.from("5:2");
 
     @Mock private TxnAccessor accessor;
     @Mock private ThrottleReqsManager manager;

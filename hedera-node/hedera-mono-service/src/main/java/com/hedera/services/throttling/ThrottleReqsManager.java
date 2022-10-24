@@ -15,7 +15,7 @@
  */
 package com.hedera.services.throttling;
 
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,12 +37,12 @@ public class ThrottleReqsManager {
     }
 
     public boolean allReqsMetAt(
-            Instant now, int nTransactions, ThrottleReqOpsScaleFactor scaleFactor) {
+            Instant now, int nTransactions, ScaleFactor scaleFactor) {
         return allVerboseReqsMetAt(now, nTransactions, scaleFactor);
     }
 
     private boolean allVerboseReqsMetAt(
-            Instant now, int nTransactions, ThrottleReqOpsScaleFactor scaleFactor) {
+            Instant now, int nTransactions, ScaleFactor scaleFactor) {
         var allPassed = true;
         for (int i = 0; i < passedReq.length; i++) {
             var req = allReqs.get(i);

@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import javax.inject.Inject;
@@ -91,18 +92,6 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
         updatedNumTopics();
     }
 
-    public void updateCounts() {
-        // As a side effect these capture the snapshots; note the number of contracts cannot
-        // be directly "read off" from anywhere, hence depends on calls to recordContracts()
-        updatedNumAccounts();
-        updatedNumFiles();
-        updatedNumNfts();
-        updatedNumSchedules();
-        updatedNumStorageSlots();
-        updatedNumTokens();
-        updatedNumTokenRels();
-        updatedNumTopics();
-    }
 
     public void assertCreatableAccounts(final int n) {
         final var candidateNum = updatedNumAccounts() + n;
@@ -168,24 +157,48 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
         return 100.0 * numAccounts / dynamicProperties.maxNumAccounts();
     }
 
+    public int roundedAccountPercentUtil() {
+        return (int) ((100 * updatedNumAccounts()) / dynamicProperties.maxNumAccounts());
+    }
+
     public double percentContractsUsed() {
         return 100.0 * numContracts / dynamicProperties.maxNumContracts();
+    }
+
+    public int roundedContractPercentUtil() {
+        return (int) ((100 * numContracts) / dynamicProperties.maxNumContracts());
     }
 
     public double percentFilesUsed() {
         return 100.0 * numFiles / dynamicProperties.maxNumFiles();
     }
 
+    public int roundedFilePercentUtil() {
+        return (int) ((100 * updatedNumFiles()) / dynamicProperties.maxNumFiles());
+    }
+
     public double percentNftsUsed() {
         return 100.0 * numNfts / dynamicProperties.maxNftMints();
+    }
+
+    public int roundedNftPercentUtil() {
+        return (int) ((100 * updatedNumNfts()) / dynamicProperties.maxNftMints());
     }
 
     public double percentTokensUsed() {
         return 100.0 * numTokens / dynamicProperties.maxNumTokens();
     }
 
+    public int roundedTokenPercentUtil() {
+        return (int) ((100 * updatedNumTokens()) / dynamicProperties.maxNumTokens());
+    }
+
     public double percentTopicsUsed() {
         return 100.0 * numTopics / dynamicProperties.maxNumTopics();
+    }
+
+    public int roundedTopicPercentUtil() {
+        return (int) ((100 * updatedNumTopics()) / dynamicProperties.maxNumTopics());
     }
 
     public double percentStorageSlotsUsed() {
@@ -196,8 +209,16 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
         return 100.0 * numTokenRels / dynamicProperties.maxNumTokenRels();
     }
 
+    public int roundedTokenRelPercentUtil() {
+        return (int) ((100 * updatedNumTokenRels()) / dynamicProperties.maxNumTokenRels());
+    }
+
     public double percentSchedulesUsed() {
         return 100.0 * numSchedules / dynamicProperties.maxNumSchedules();
+    }
+
+    public int roundedSchedulePercentUtil() {
+        return (int) ((100 * updatedNumSchedules()) / dynamicProperties.maxNumSchedules());
     }
 
     public long getNumAccounts() {
@@ -280,5 +301,19 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
 
     private void ensure(final boolean test) {
         validateResourceLimit(test, MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+    }
+
+    @VisibleForTesting
+    void updateCounts() {
+        // As a side effect these capture the snapshots; note the number of contracts cannot
+        // be directly "read off" from anywhere, hence depends on calls to recordContracts()
+        updatedNumAccounts();
+        updatedNumFiles();
+        updatedNumNfts();
+        updatedNumSchedules();
+        updatedNumStorageSlots();
+        updatedNumTokens();
+        updatedNumTokenRels();
+        updatedNumTopics();
     }
 }
