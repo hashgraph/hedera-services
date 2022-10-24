@@ -16,8 +16,6 @@
 package com.hedera.services.evm.store.contracts;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.hedera.services.evm.store.contracts.AbstractCodeCache;
-import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.services.evm.store.contracts.utils.BytesKey;
 import org.hyperledger.besu.evm.Code;
 

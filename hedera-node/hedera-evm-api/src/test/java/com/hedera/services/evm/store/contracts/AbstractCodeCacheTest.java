@@ -76,7 +76,6 @@ class AbstractCodeCacheTest {
         Code code = Code.EMPTY;
 
         codeCache.cacheValue(key, code);
-        final var a = codeCache.size();
         Code codeResult = codeCache.getIfPresent(demoAddress);
 
         assertEquals(code, codeResult);

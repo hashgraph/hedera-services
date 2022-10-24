@@ -35,5 +35,4 @@ dependencies {
     }
     implementation(libs.javax.inject)
     testImplementation(testLibs.bundles.testing)
-    testImplementation(testLibs.classgraph)
 }
