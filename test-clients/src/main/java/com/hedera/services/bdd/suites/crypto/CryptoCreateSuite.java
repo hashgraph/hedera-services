@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
@@ -874,6 +875,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     allRunFor(spec, op, op2, op3, op4);
                                 }))
                 .then(
+                        uploadDefaultFeeSchedules(GENESIS),
                         UtilVerbs.resetToDefault(
                                 LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
