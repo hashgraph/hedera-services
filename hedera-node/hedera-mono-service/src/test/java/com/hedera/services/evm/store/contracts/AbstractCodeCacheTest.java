@@ -1,0 +1,104 @@
+package com.hedera.services.evm.store.contracts;
+
+import com.hedera.services.evm.store.contracts.utils.BytesKey;
+import com.hedera.services.store.contracts.MutableEntityAccess;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.evm.Code;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+@ExtendWith(MockitoExtension.class)
+class AbstractCodeCacheTest {
+	@Mock
+	MutableEntityAccess entityAccess;
+
+	MockAbstractCodeCache codeCache;
+
+	@BeforeEach
+	void setup() {
+		codeCache = new MockAbstractCodeCache(100, entityAccess);
+	}
+
+	@Test
+	void successfulCreate() {
+		assertNotNull(codeCache.getCache());
+	}
+
+	@Test
+	void getTriggeringLoad() {
+		given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.of("abc".getBytes()));
+		Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
+
+		assertEquals(
+				Hash.fromHexString(
+						"0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45"),
+				code.getCodeHash());
+	}
+
+	@Test
+	void getContractNotFound() {
+		given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
+		Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
+
+		assertTrue(code.getBytes().isEmpty());
+	}
+
+	@Test
+	void returnsCachedValue() {
+		Address demoAddress = Address.fromHexString("0xabc");
+		BytesKey key = new BytesKey(demoAddress.toArray());
+		Code code = Code.EMPTY;
+
+		codeCache.cacheValue(key, code);
+		final var a = codeCache.getCache().getIfPresent(key);
+		Code codeResult = codeCache.getIfPresent(demoAddress);
+
+		assertEquals(code, codeResult);
+		verifyNoInteractions(entityAccess);
+	}
+
+	@Test
+	void getTokenCodeReturnsRedirectCode() {
+		given(entityAccess.isTokenAccount(any())).willReturn(true);
+
+		assertEquals(
+				HederaEvmWorldStateTokenAccount.bytecodeForToken(Address.fromHexString("0xabc")),
+				codeCache.getIfPresent(Address.fromHexString("0xabc")).getBytes());
+	}
+
+	@Test
+	void invalidateSuccess() {
+		given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.of("abc".getBytes()));
+
+		codeCache.getIfPresent(Address.fromHexString("0xabc"));
+
+		assertDoesNotThrow(() -> codeCache.invalidate(Address.fromHexString("0xabc")));
+	}
+
+	@Test
+	void bytesKeyEquals() {
+		BytesKey key1 = new BytesKey("abc".getBytes());
+		BytesKey key2 = new BytesKey("abc".getBytes());
+		assertEquals(key1, key2);
+		assertEquals(key1, key1);
+
+		// Workaround to sonar code-smells. It should NOT be an error to use assertTrue/assertFalse.
+		boolean eq1 = key1.equals(null);
+		boolean eq2 = key1.equals("abc");
+
+		assertEquals(eq1, eq2);
+	}
+}
