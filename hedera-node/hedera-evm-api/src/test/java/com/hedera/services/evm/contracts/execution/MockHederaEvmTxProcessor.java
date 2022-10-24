@@ -15,10 +15,6 @@
  */
 package com.hedera.services.evm.contracts.execution;
 
-import com.hedera.services.evm.contracts.execution.BlockMetaSource;
-import com.hedera.services.evm.contracts.execution.EvmProperties;
-import com.hedera.services.evm.contracts.execution.HederaEvmTxProcessor;
-import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
