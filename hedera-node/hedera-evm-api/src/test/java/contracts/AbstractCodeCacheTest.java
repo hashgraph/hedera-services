@@ -13,18 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.evm.store.contracts;
+package contracts;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verifyNoInteractions;
-
+import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.services.evm.store.contracts.utils.BytesKey;
-import com.hedera.services.store.contracts.MutableEntityAccess;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -35,9 +28,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 @ExtendWith(MockitoExtension.class)
 class AbstractCodeCacheTest {
-    @Mock MutableEntityAccess entityAccess;
+    @Mock
+    HederaEvmEntityAccess entityAccess;
 
     MockAbstractCodeCache codeCache;
 
@@ -50,6 +52,7 @@ class AbstractCodeCacheTest {
     void successfulCreate() {
         assertNotNull(codeCache.getCache());
     }
+
 
     @Test
     void getTriggeringLoad() {
@@ -77,11 +80,21 @@ class AbstractCodeCacheTest {
         Code code = Code.EMPTY;
 
         codeCache.cacheValue(key, code);
-        final var a = codeCache.getCache().getIfPresent(key);
+        final var a = codeCache.size();
         Code codeResult = codeCache.getIfPresent(demoAddress);
 
         assertEquals(code, codeResult);
         verifyNoInteractions(entityAccess);
+    }
+
+    @Test
+    void cacheSize() {
+        Address demoAddress = Address.fromHexString("0xabc");
+        BytesKey key = new BytesKey(demoAddress.toArray());
+        Code code = Code.EMPTY;
+
+        codeCache.cacheValue(key, code);
+        assertEquals(1,codeCache.size());
     }
 
     @Test
