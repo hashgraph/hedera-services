@@ -37,6 +37,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.List;
@@ -48,7 +49,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
  * Hedera adapted interface for a view over the accounts of the world state and methods for
  * persisting state changes
  */
-public interface HederaMutableWorldState extends WorldState, WorldView {
+public interface HederaMutableWorldState extends HederaEvmMutableWorldState, WorldState, WorldView {
     /**
      * Given a the EVM address of a sponsoring account, returns an EVM address appropriate for a new
      * contract.

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 public record CustomFeeMeta(Id tokenId, Id treasuryId, List<FcCustomFee> customFees) {
-    public static final CustomFeeMeta MISSING_META =
-            new CustomFeeMeta(Id.MISSING_ID, Id.MISSING_ID, Collections.emptyList());
+    public static CustomFeeMeta forMissingLookupOf(final Id tokenId) {
+        return new CustomFeeMeta(tokenId, Id.MISSING_ID, Collections.emptyList());
+    }
 }
