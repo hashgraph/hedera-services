@@ -15,6 +15,16 @@
  */
 package com.hedera.services.state.merkle;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
+import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.services.utils.MiscUtils.safeResetThrottles;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.DualStateAccessor;
@@ -37,11 +47,6 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fcqueue.FCQueue;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes32;
-
-import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -49,16 +54,10 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
-
-import static com.hedera.services.ServicesState.EMPTY_HASH;
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.services.state.serdes.IoUtils.readNullable;
-import static com.hedera.services.state.serdes.IoUtils.writeNullable;
-import static com.hedera.services.state.submerkle.RichInstant.fromJava;
-import static com.hedera.services.utils.MiscUtils.safeResetThrottles;
-import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes32;
 
 public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLeaf {
     private static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;

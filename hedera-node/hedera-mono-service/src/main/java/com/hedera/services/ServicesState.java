@@ -15,6 +15,18 @@
  */
 package com.hedera.services;
 
+import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.services.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
+import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
+import static com.hedera.services.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
+import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
+import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
+import static com.hedera.services.state.migration.UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.swirlds.common.system.InitTrigger.*;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -47,29 +59,16 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.context.properties.PropertyNames.*;
-import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.services.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
-import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
-import static com.hedera.services.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
-import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
-import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
-import static com.hedera.services.state.migration.UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.swirlds.common.system.InitTrigger.*;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 /** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
