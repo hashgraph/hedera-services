@@ -17,7 +17,7 @@ package com.hedera.services.ledger.accounts.staking;
 
 import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
+import static com.hedera.services.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 

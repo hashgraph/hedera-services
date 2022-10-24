@@ -17,8 +17,12 @@ package com.hedera.test.serde;
 
 import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -26,13 +30,14 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.Versioned;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -164,6 +169,41 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         assertSameSerialization(getType(), this::getExpectedObject, version, testCaseNo);
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(GettersAndSettersArgumentsProvider.class)
+    void gettersAndSettersWork(
+            final Object mutableSubject,
+            @Nullable final Method getter,
+            @Nullable final Method setter) {
+        if (getter == null || setter == null) {
+            return;
+        }
+        final var param = validatedSetterParam(setter);
+        try {
+            setter.invoke(mutableSubject, param);
+            final var result = getter.invoke(mutableSubject);
+            assertEquals(
+                    param,
+                    result,
+                    "Set "
+                            + param
+                            + " via "
+                            + setter.getName()
+                            + " but got "
+                            + result
+                            + " via "
+                            + getter.getName());
+        } catch (IllegalAccessException | InvocationTargetException fatal) {
+            throw new RuntimeException(fatal);
+        }
+    }
+
+    protected Object validatedSetterParam(final Method setter) {
+        final var paramTypes = setter.getParameterTypes();
+        assertEquals(1, paramTypes.length, "A state setter should have one parameter");
+        return typicalValueOf(paramTypes[0]);
+    }
+
     static class SupportedVersionsArgumentsProvider implements ArgumentsProvider {
         @Override
         public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
@@ -174,13 +214,24 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         }
     }
 
-    static class CurrentVersionArgumentsProvider implements ArgumentsProvider {
+    protected static class CurrentVersionArgumentsProvider implements ArgumentsProvider {
         @Override
         public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
             final var testType = context.getRequiredTestClass();
             final var ref =
                     (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
             return currentTestCasesFrom(ref).stream();
+        }
+    }
+
+    static class GettersAndSettersArgumentsProvider implements ArgumentsProvider {
+        @Override
+        public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
+            final var testType = context.getRequiredTestClass();
+            final var ref =
+                    (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
+            final var subjectType = ref.getType();
+            return getterSetterTestCasesFor(subjectType);
         }
     }
 
@@ -192,6 +243,31 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     private static <T extends SelfSerializable> List<Arguments> currentTestCasesFrom(
             final SelfSerializableDataTest<T> refTest) {
         return testCasesFrom(refTest, true);
+    }
+
+    private static Stream<Arguments> getterSetterTestCasesFor(final Class<?> virtualValueType) {
+        final var mutableSubject = instantiate(virtualValueType);
+        return Stream.concat(
+                Arrays.stream(virtualValueType.getDeclaredMethods())
+                        .filter(m -> m.getAnnotation(StateSetter.class) != null)
+                        .map(m -> getterSetterArgs(mutableSubject, virtualValueType, m)),
+                Stream.of(Arguments.of(mutableSubject, null, null)));
+    }
+
+    private static Arguments getterSetterArgs(
+            final Object subject, final Class<?> virtualValueType, final Method setter) {
+        var getterName = setter.getName().substring(3);
+        if (getterName.startsWith("Is")) {
+            getterName = "is" + getterName.substring(2);
+        } else {
+            getterName = "get" + getterName;
+        }
+        try {
+            final var getter = virtualValueType.getMethod(getterName);
+            return Arguments.of(subject, getter, setter);
+        } catch (final NoSuchMethodException fatal) {
+            throw new RuntimeException(fatal);
+        }
     }
 
     private static <T extends SelfSerializable> List<Arguments> testCasesFrom(
@@ -235,6 +311,34 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException(
                     "No zero-args constructor available for " + type.getName(), e);
+        }
+    }
+
+    private Object typicalValueOf(final Class<?> type) {
+        if (byte.class.equals(type)) {
+            return (byte) 32;
+        } else if (int.class.equals(type)) {
+            return 666;
+        } else if (long.class.equals(type)) {
+            return 666L;
+        } else if (boolean.class.equals(type)) {
+            return true;
+        } else if (JKey.class.equals(type)) {
+            return new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+        } else if (ByteString.class.equals(type)) {
+            return ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        } else if (Set.class.equals(type)) {
+            return Collections.emptySet();
+        } else if (Map.class.equals(type)) {
+            return Collections.emptyMap();
+        } else if (type.isArray()) {
+            final var innerType = type.componentType();
+            final var array = Array.newInstance(innerType, 1);
+            final var tokenValue = typicalValueOf(innerType);
+            Array.set(array, 0, tokenValue);
+            return array;
+        } else {
+            return instantiate(type);
         }
     }
 }

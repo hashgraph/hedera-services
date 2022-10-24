@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
@@ -83,6 +84,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<String> stakedAccountId = Optional.empty();
     private Optional<Long> stakedNodeId = Optional.empty();
     private boolean isDeclinedReward = false;
+    private Optional<ByteString> alias = Optional.empty();
 
     @Override
     public HederaFunctionality type() {
@@ -203,6 +205,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return this;
     }
 
+    public HapiCryptoCreate alias(ByteString alias) {
+        this.alias = Optional.of(alias);
+        return this;
+    }
+
     @Override
     protected HapiCryptoCreate self() {
         return this;
@@ -241,7 +248,13 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                         .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                                 CryptoCreateTransactionBody.class,
                                 b -> {
-                                    b.setKey(key);
+                                    if (alias.isPresent()) {
+                                        b.setAlias(alias.get());
+                                        keyName.ifPresent(s -> b.setKey(spec.registry().getKey(s)));
+                                    } else {
+                                        b.setKey(key);
+                                    }
+
                                     proxy.ifPresent(b::setProxyAccountID);
                                     entityMemo.ifPresent(b::setMemo);
                                     sendThresh.ifPresent(b::setSendRecordThreshold);

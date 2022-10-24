@@ -15,16 +15,14 @@
  */
 package com.hedera.services.ledger;
 
-import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_RATE;
+import static com.hedera.services.context.properties.PropertyNames.*;
 import static com.hedera.services.mocks.MockDynamicProperties.mockPropertiesWith;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.SupplierMapPropertySource;
@@ -50,7 +48,11 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.validation.AccountUsageTracking;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -78,7 +80,7 @@ public interface StakingActivityModule {
 
     @Binds
     @Singleton
-    BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
+    BackingStore<AccountID, HederaAccount> bindBackingAccounts(BackingAccounts backingAccounts);
 
     @Provides
     @Singleton
@@ -88,9 +90,23 @@ public interface StakingActivityModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideAccountsSupplier(
+    @SuppressWarnings("unchecked")
+    static Supplier<AccountStorageAdapter> provideAccountsSupplier(InfrastructureBundle bundle) {
+        return () ->
+                AccountStorageAdapter.fromInMemory(
+                        (MerkleMap<EntityNum, MerkleAccount>)
+                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
+    }
+
+    @Provides
+    @Singleton
+    @SuppressWarnings("unchecked")
+    static Supplier<RecordsStorageAdapter> providePayerRecordsSupplier(
             InfrastructureBundle bundle) {
-        return bundle.getterFor(InfrastructureType.ACCOUNTS_MM);
+        return () ->
+                RecordsStorageAdapter.fromLegacy(
+                        (MerkleMap<EntityNum, MerkleAccount>)
+                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
     }
 
     @Provides
@@ -130,9 +146,10 @@ public interface StakingActivityModule {
 
     @Provides
     @Singleton
-    static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
-            final BackingStore<AccountID, MerkleAccount> backingAccounts,
+    static TransactionalLedger<AccountID, AccountProperty, HederaAccount> provideAccountsLedger(
+            final BackingStore<AccountID, HederaAccount> backingAccounts,
             final SideEffectsTracker sideEffectsTracker,
+            final BootstrapProperties bootstrapProperties,
             final Supplier<MerkleNetworkContext> networkCtx,
             final GlobalDynamicProperties dynamicProperties,
             final RewardCalculator rewardCalculator,
@@ -142,10 +159,14 @@ public interface StakingActivityModule {
             final @MockProps AccountNumbers accountNumbers,
             final TransactionContext txnCtx,
             final AccountUsageTracking usageTracking) {
+        final Supplier<HederaAccount> accountSupplier =
+                bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
+                        ? OnDiskAccount::new
+                        : MerkleAccount::new;
         final var accountsLedger =
                 new TransactionalLedger<>(
                         AccountProperty.class,
-                        MerkleAccount::new,
+                        accountSupplier,
                         backingAccounts,
                         new ChangeSummaryManager<>());
         final var accountsCommitInterceptor =

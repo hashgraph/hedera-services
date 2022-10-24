@@ -49,8 +49,8 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
@@ -123,7 +123,7 @@ class HederaScheduleStoreTest {
     private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
     private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
     private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private HederaLedger hederaLedger;
     private GlobalDynamicProperties globalDynamicProperties;
 

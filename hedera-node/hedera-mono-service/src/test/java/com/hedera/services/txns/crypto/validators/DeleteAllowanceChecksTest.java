@@ -43,10 +43,10 @@ import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -370,7 +370,7 @@ class DeleteAllowanceChecksTest {
 
     private void setUpForTest() {
         given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-        final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+        final BackingStore<AccountID, HederaAccount> store = mock(BackingAccounts.class);
         final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
         final BackingStore<NftId, UniqueTokenAdapter> nfts = mock(BackingNfts.class);
 
@@ -397,7 +397,6 @@ class DeleteAllowanceChecksTest {
         given(rels.contains(Pair.of(ownerId, nftToken))).willReturn(true);
 
         given(merkleToken.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
-        given(ownerMerkleAccount.state()).willReturn(new MerkleAccountState());
         given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
     }
 }

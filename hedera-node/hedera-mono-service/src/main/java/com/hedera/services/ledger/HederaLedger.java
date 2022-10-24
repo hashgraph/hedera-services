@@ -52,6 +52,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.store.contracts.MutableEntityAccess;
@@ -108,7 +109,7 @@ public class HederaLedger {
     private final SideEffectsTracker sideEffectsTracker;
     private final RecordsHistorian historian;
     private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     private MutableEntityAccess mutableEntityAccess;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger = null;
@@ -125,7 +126,7 @@ public class HederaLedger {
             final SideEffectsTracker sideEffectsTracker,
             final RecordsHistorian historian,
             final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final TransferLogic transferLogic,
             final AutoCreationLogic autoCreationLogic) {
         this.ids = ids;
@@ -160,7 +161,7 @@ public class HederaLedger {
         this.tokenRelsLedger = tokenRelsLedger;
     }
 
-    public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
+    public TransactionalLedger<AccountID, AccountProperty, HederaAccount> getAccountsLedger() {
         return accountsLedger;
     }
 

@@ -96,9 +96,9 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
@@ -190,7 +190,7 @@ class HederaTokenStoreTest {
     private EntityIdSource ids;
     private SideEffectsTracker sideEffectsTracker;
     private GlobalDynamicProperties properties;
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
@@ -234,7 +234,7 @@ class HederaTokenStoreTest {
         given(nftsLedger.exists(tNft)).willReturn(true);
 
         accountsLedger =
-                (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>)
+                (TransactionalLedger<AccountID, AccountProperty, HederaAccount>)
                         mock(TransactionalLedger.class);
         given(accountsLedger.exists(treasury)).willReturn(true);
         given(accountsLedger.exists(anotherFeeCollector)).willReturn(true);

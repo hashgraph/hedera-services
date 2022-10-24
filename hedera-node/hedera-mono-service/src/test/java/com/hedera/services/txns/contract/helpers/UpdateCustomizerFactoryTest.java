@@ -30,6 +30,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -93,7 +94,7 @@ class UpdateCustomizerFactoryTest {
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
         // and when:
-        mutableContract = result.getLeft().get().customizing(mutableContract);
+        mutableContract = (MerkleAccount) result.getLeft().get().customizing(mutableContract);
 
         // then:
         assertEquals(newAdminKey, MiscUtils.asKeyUnchecked(mutableContract.getAccountKey()));
@@ -146,7 +147,7 @@ class UpdateCustomizerFactoryTest {
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
         // and when:
-        mutableContract = result.getLeft().get().customizing(mutableContract);
+        mutableContract = (MerkleAccount) result.getLeft().get().customizing(mutableContract);
 
         // then:
         assertEquals(targetKey, MiscUtils.asKeyUnchecked(mutableContract.getAccountKey()));
