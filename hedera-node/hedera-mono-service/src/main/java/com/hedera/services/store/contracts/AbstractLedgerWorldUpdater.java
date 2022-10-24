@@ -23,6 +23,7 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -87,8 +88,8 @@ import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
  * @param <A> the most specialized account type to be updated
  * @param <W> the most specialized world updater to be used
  */
-public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account>
-        implements WorldUpdater {
+public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account> extends
+    AbstractLedgerEvmWorldUpdater {
     protected static final int UNKNOWN_RECORD_SOURCE_ID = -1;
 
     private final W world;
@@ -103,6 +104,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
     protected AbstractLedgerWorldUpdater(final W world, final WorldLedgers trackingLedgers) {
+        super(new AccountAccessorImpl(trackingLedgers));
         this.world = world;
         this.trackingLedgers = trackingLedgers;
     }
@@ -150,7 +152,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
     @Override
     public Account get(final Address addressOrAlias) {
-        if (!addressOrAlias.equals(trackingLedgers.canonicalAddress(addressOrAlias))) {
+        if (!addressOrAlias.equals(getCanonicalAddress(addressOrAlias))) {
             return null;
         }
 
