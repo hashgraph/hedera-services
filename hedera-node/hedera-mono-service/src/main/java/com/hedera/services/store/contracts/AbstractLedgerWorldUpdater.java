@@ -88,8 +88,8 @@ import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
  * @param <A> the most specialized account type to be updated
  * @param <W> the most specialized world updater to be used
  */
-public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account> extends
-    AbstractLedgerEvmWorldUpdater {
+public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account>
+        extends AbstractLedgerEvmWorldUpdater {
     protected static final int UNKNOWN_RECORD_SOURCE_ID = -1;
 
     private final W world;
