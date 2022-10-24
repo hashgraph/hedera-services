@@ -839,7 +839,15 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                             getAccountBalance(LAZY_CREATE_SPONSOR)
                                                     .hasTinyBars(0)
                                                     .logged();
-                                    allRunFor(spec, op, op2, op3, op4, op5, resetToDefault(LAZY_CREATE_FEATURE_FLAG), uploadDefaultFeeSchedules(GENESIS));
+                                    allRunFor(
+                                            spec,
+                                            op,
+                                            op2,
+                                            op3,
+                                            op4,
+                                            op5,
+                                            resetToDefault(LAZY_CREATE_FEATURE_FLAG),
+                                            uploadDefaultFeeSchedules(GENESIS));
                                 }));
     }
 
