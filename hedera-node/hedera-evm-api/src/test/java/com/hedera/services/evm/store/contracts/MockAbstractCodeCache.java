@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package contracts;
+package com.hedera.services.evm.store.contracts;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.hedera.services.evm.store.contracts.AbstractCodeCache;

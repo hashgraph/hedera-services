@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package contracts;
+package com.hedera.services.evm.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,8 +23,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
-import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.services.evm.store.contracts.utils.BytesKey;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
