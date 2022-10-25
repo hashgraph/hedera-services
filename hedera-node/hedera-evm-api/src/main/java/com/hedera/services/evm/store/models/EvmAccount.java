@@ -27,15 +27,26 @@ import org.hyperledger.besu.evm.account.AccountStorageEntry;
 
 public class EvmAccount implements Account {
 
-    private final Address address;
+    private Address address;
+    private long nonce;
+    private Wei balance;
 
     public EvmAccount(Address address) {
         this.address = address;
     }
 
+    public EvmAccount(long nonce, Wei balance) {
+        this.nonce = nonce;
+        this.balance = balance;
+    }
+
     @Override
     public Address getAddress() {
         return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
     }
 
     @Override
@@ -45,12 +56,20 @@ public class EvmAccount implements Account {
 
     @Override
     public long getNonce() {
-        return 0;
+        return nonce;
+    }
+
+    public void setNonce(final long value) {
+        this.nonce = value;
     }
 
     @Override
     public Wei getBalance() {
-        return null;
+        return balance;
+    }
+
+    public void setBalance(final Wei amount) {
+        this.balance = amount;
     }
 
     @Override
