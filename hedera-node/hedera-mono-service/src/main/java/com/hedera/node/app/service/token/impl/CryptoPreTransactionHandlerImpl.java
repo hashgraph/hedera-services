@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
+import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -39,12 +40,56 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         this.accountStore = Objects.requireNonNull(accountStore);
     }
 
+    @Override
+    /** {@inheritDoc} */
     public TransactionMetadata preHandleCryptoCreate(final TransactionBody tx) {
         final var op = tx.getCryptoCreateAccount();
         final var key = asHederaKey(op.getKey());
         final var receiverSigReq = op.getReceiverSigRequired();
         final var payer = tx.getTransactionID().getAccountID();
         return createAccountSigningMetadata(tx, key, receiverSigReq, payer);
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleCryptoTransfer(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleCryptoDelete(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleApproveAllowances(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleAddLiveHash(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleDeleteLiveHash(TransactionBody txn) {
+        throw new NotImplementedException();
     }
 
     private TransactionMetadata createAccountSigningMetadata(

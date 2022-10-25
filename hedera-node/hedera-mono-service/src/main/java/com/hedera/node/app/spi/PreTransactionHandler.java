@@ -15,5 +15,8 @@
  */
 package com.hedera.node.app.spi;
 
-/** Validates transactions during pre-handle. For example, signature verification. */
+/**
+ * Marks a type able to "pre-handle" transactions, extracting the metadata needed to set the stage
+ * for efficient processing of the transaction at consensus.
+ */
 public interface PreTransactionHandler {}
