@@ -91,6 +91,10 @@ public class HTSTestsUtil {
     public static final Address tokenAddress = Address.ECREC;
     public static final Address contractAddr = Address.ALTBN128_MUL;
     public static final Address senderAddress = Address.ALTBN128_PAIRING;
+    public static final Address create1ContractAddress =
+            Address.wrap(Bytes.fromHexString("0x4388985fc3efb7978b71b7fc59114aa64a42e285"));
+    public static final ContractID create1ContractId =
+            EntityIdUtils.contractIdFromEvmAddress(create1ContractAddress);
     public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
     public static final EntityId treasuryEntityId =
             EntityId.fromAddress(

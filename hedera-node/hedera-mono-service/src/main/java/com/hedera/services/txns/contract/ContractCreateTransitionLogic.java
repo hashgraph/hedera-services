@@ -169,7 +169,17 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         final var sender = accountStore.loadAccount(senderId);
         final var consensusTime = txnCtx.consensusTime();
         final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
-        final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
+
+        Address newContractAddress;
+
+        if (relayerId == null) {
+            newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
+        } else {
+            // Since there is an Ethereum origin, set the contract address as the CREATE format
+            // specified in the Yellow Paper
+            newContractAddress =
+                    Address.contractAddress(sender.canonicalAddress(), sender.getEthereumNonce());
+        }
 
         // --- Do the business logic ---
         ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
