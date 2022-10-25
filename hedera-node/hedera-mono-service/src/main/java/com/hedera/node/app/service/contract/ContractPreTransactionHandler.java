@@ -19,25 +19,78 @@ import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ * The pre-handler for the HAPI
+ * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/smart_contract_service.proto">Smart Contract Service</a>.
+ */
 public interface ContractPreTransactionHandler extends PreTransactionHandler {
-    /** Creates a contract */
+    /**
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ContractCreate}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ContractCreateTransactionBody}
+     * @return the metadata for the contract creation
+     */
     TransactionMetadata preHandleCreateContract(TransactionBody txn);
 
-    /** Updates a contract with the content */
+    /**
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ContractUpdate}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody}
+     * @return the metadata for the contract update
+     */
     TransactionMetadata preHandleUpdateContract(TransactionBody txn);
 
-    /** Calls a contract */
+    /**
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ContractCall}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ContractCallTransactionBody}
+     * @return the metadata for the contract call
+     */
     TransactionMetadata preHandleContractCallMethod(TransactionBody txn);
 
-    /** Deletes a contract instance and transfers any remaining hbars to a specified receiver */
+    /**
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ContractDelete}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody}
+     * @return the metadata for the contract deletion
+     */
     TransactionMetadata preHandleDeleteContract(TransactionBody txn);
 
-    /** Deletes a contract if the submitting account has network admin privileges */
+    /**
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#SystemDelete}
+     * transaction that targets a contract, returning the metadata required to, at minimum, validate the
+     * signatures of all required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody} targeting a contract
+     * @return the metadata for the system contract deletion
+     */
     TransactionMetadata preHandleSystemDelete(TransactionBody txn);
 
-    /** Undeletes a contract if the submitting account has network admin privileges */
+    /**
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#SystemUndelete}
+     * transaction that targets a system-deleted contract, returning the metadata required to, at minimum,
+     * validate the signatures of all required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody} targeting a contract
+     * @return the metadata for the system contract un-deletion
+     */
     TransactionMetadata preHandleSystemUndelete(TransactionBody txn);
 
-    /** Ethereum transaction */
+    /**
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#EthereumTransaction}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.EthereumTransactionBody}
+     * @return the metadata for the Ethereum transaction
+     */
     TransactionMetadata preHandleCallEthereum(TransactionBody txn);
 }

@@ -23,6 +23,8 @@ import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.NotImplementedException;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,12 +41,192 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         this.accountStore = Objects.requireNonNull(accountStore);
     }
 
+    @Override
+    /**
+     * {@inheritDoc}
+     */
     public TransactionMetadata preHandleCryptoCreate(final TransactionBody tx) {
         final var op = tx.getCryptoCreateAccount();
         final var key = asHederaKey(op.getKey());
         final var receiverSigReq = op.getReceiverSigRequired();
         final var payer = tx.getTransactionID().getAccountID();
         return createAccountSigningMetadata(tx, key, receiverSigReq, payer);
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleCryptoTransfer(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleCryptoDelete(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleApproveAllowances(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleAddLiveHash(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleDeleteLiveHash(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleCreateToken(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleUpdateToken(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleMintToken(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleBurnToken(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleDeleteToken(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleWipeTokenAccount(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleFreezeTokenAccount(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleUnfreezeTokenAccount(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleGrantKycToTokenAccount(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleRevokeKycFromTokenAccount(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleAssociateTokens(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleDissociateTokens(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleUpdateTokenFeeSchedule(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandlePauseToken(TransactionBody txn) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    /**
+     * {@inheritDoc}
+     */
+    public TransactionMetadata preHandleUnpauseToken(TransactionBody txn) {
+        throw new NotImplementedException();
     }
 
     private TransactionMetadata createAccountSigningMetadata(

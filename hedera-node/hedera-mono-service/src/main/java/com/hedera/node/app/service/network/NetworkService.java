@@ -19,7 +19,18 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
 
+
+/**
+ * Implements the HAPI
+ * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/network_service.proto">Network Service</a>.
+ */
 public interface NetworkService extends Service {
+    /**
+     * Creates the network service pre-handler given a particular Hedera world state.
+     *
+     * @param states the state of the world
+     * @return the corresponding network service pre-handler
+     */
     @NotNull
     @Override
     NetworkPreTransactionHandler createPreTransactionHandler(@NotNull States states);

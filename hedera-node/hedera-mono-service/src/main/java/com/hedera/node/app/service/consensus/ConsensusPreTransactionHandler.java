@@ -19,40 +19,48 @@ import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ * The pre-handler for the HAPI
+ * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/consensus_service.proto">Consensus Service</a>.
+ */
 public interface ConsensusPreTransactionHandler extends PreTransactionHandler {
     /**
-     * Create a topic to be used for consensus. If an autoRenewAccount is specified, that account
-     * must also sign this transaction. If an adminKey is specified, the adminKey must sign the
-     * transaction. On success, the resulting TransactionReceipt contains the newly created TopicId.
-     * Request is [ConsensusCreateTopicTransactionBody](#proto.ConsensusCreateTopicTransactionBody)
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusCreateTopic}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody}
+     * @return the metadata for the topic creation
      */
     TransactionMetadata preHandleCreateTopic(TransactionBody txn);
 
     /**
-     * Update a topic. If there is no adminKey, the only authorized update (available to anyone) is
-     * to extend the expirationTime. Otherwise transaction must be signed by the adminKey. If an
-     * adminKey is updated, the transaction must be signed by the pre-update adminKey and
-     * post-update adminKey. If a new autoRenewAccount is specified (not just being removed), that
-     * account must also sign the transaction. Request is
-     * [ConsensusUpdateTopicTransactionBody](#proto.ConsensusUpdateTopicTransactionBody)
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusUpdateTopic}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody}
+     * @return the metadata for the topic update
      */
     TransactionMetadata preHandleUpdateTopic(TransactionBody txn);
 
     /**
-     * Delete a topic. No more transactions or queries on the topic (via HAPI) will succeed. If an
-     * adminKey is set, this transaction must be signed by that key. If there is no adminKey, this
-     * transaction will fail UNAUTHORIZED. Request is
-     * [ConsensusDeleteTopicTransactionBody](#proto.ConsensusDeleteTopicTransactionBody)
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusDeleteTopic}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody}
+     * @return the metadata for the topic delete
      */
     TransactionMetadata preHandleDeleteTopic(TransactionBody txn);
 
     /**
-     * Submit a message for consensus. Valid and authorized messages on valid topics will be ordered
-     * by the consensus service, gossipped to the mirror net, and published (in order) to all
-     * subscribers (from the mirror net) on this topic. The submitKey (if any) must sign this
-     * transaction. On success, the resulting TransactionReceipt contains the topic's updated
-     * topicSequenceNumber and topicRunningHash. Request is
-     * [ConsensusSubmitMessageTransactionBody](#proto.ConsensusSubmitMessageTransactionBody)
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusSubmitMessage}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody}
+     * @return the metadata for the topic message submission
      */
     TransactionMetadata preHandleSubmitMessage(TransactionBody txn);
 }

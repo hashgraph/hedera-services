@@ -19,7 +19,17 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Implements the HAPI
+ * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/smart_contract_service.proto">Smart Contract Service</a>.
+ */
 public interface ContractService extends Service {
+    /**
+     * Creates the contract service pre-handler given a particular Hedera world state.
+     *
+     * @param states the state of the world
+     * @return the corresponding contract service pre-handler
+     */
     @NotNull
     @Override
     ContractPreTransactionHandler createPreTransactionHandler(@NotNull States states);

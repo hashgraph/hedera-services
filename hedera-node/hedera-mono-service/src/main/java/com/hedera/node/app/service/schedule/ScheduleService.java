@@ -19,7 +19,18 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
 
+
+/**
+ * Implements the HAPI
+ * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/schedule_service.proto">Schedule Service</a>.
+ */
 public interface ScheduleService extends Service {
+    /**
+     * Creates the schedule service pre-handler given a particular Hedera world state.
+     *
+     * @param states the state of the world
+     * @return the corresponding schedule service pre-handler
+     */
     @NotNull
     @Override
     SchedulePreTransactionHandler createPreTransactionHandler(@NotNull States states);

@@ -19,10 +19,18 @@ import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ * The pre-handler for the HAPI
+ * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/freeze_service.proto">Freeze Service</a>.
+ */
 public interface FreezePreTransactionHandler extends PreTransactionHandler {
     /**
-     * Freezes the nodes by submitting the transaction. The grpc server returns the
-     * TransactionResponse
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#Freeze}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.FreezeTransactionBody}
+     * @return the metadata for the freeze
      */
     TransactionMetadata preHandleFreeze(TransactionBody txn);
 }

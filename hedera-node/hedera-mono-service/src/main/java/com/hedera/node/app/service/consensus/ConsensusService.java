@@ -19,7 +19,17 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
 import javax.annotation.Nonnull;
 
+/**
+ * Implements the HAPI
+ * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/consensus_service.proto">Consensus Service</a>.
+ */
 public interface ConsensusService extends Service {
+    /**
+     * Creates the consensus service pre-handler given a particular Hedera world state.
+     *
+     * @param states the state of the world
+     * @return the corresponding consensus service pre-handler
+     */
     @Override
     @Nonnull
     ConsensusPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
