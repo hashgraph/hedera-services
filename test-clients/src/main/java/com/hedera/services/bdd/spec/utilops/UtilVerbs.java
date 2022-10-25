@@ -1259,6 +1259,65 @@ public class UtilVerbs {
                                 Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
     }
 
+    public static AtomicCryptoTransferBuilder atomicCryptoTransfer(
+            TransferListBuilder transferListBuilder,
+            TokenTransferListBuilder tokenTransferListBuilder) {
+        return new AtomicCryptoTransferBuilder(transferListBuilder)
+                .withTokenTransferListBuilder(tokenTransferListBuilder);
+    }
+
+    public static AtomicCryptoTransferBuilder atomicCryptoTransfer(
+            TransferListBuilder transferListBuilder,
+            TokenTransferListsBuilder tokenTransferListsBuilder) {
+        return new AtomicCryptoTransferBuilder(transferListBuilder)
+                .withTokenTransferListsBuilder(tokenTransferListsBuilder);
+    }
+
+    public static class AtomicCryptoTransferBuilder {
+        private final TransferListBuilder transferListBuilder;
+        private Tuple atomicCryptoTransfer;
+
+        public AtomicCryptoTransferBuilder(TransferListBuilder transferListBuilder) {
+            this.transferListBuilder = transferListBuilder;
+        }
+
+        public AtomicCryptoTransferBuilder withTokenTransferListBuilder(
+                TokenTransferListBuilder tokenTransferListBuilder) {
+            tokenTransferListBuilder.isSingleList(true);
+            atomicCryptoTransfer =
+                    Tuple.of(transferListBuilder.build(), tokenTransferListBuilder.build().get(0));
+            return this;
+        }
+
+        public AtomicCryptoTransferBuilder withTokenTransferListsBuilder(
+                TokenTransferListsBuilder tokenTransferListsBuilder) {
+            atomicCryptoTransfer =
+                    Tuple.of(transferListBuilder.build(), tokenTransferListsBuilder.build().get(0));
+            return this;
+        }
+
+        public Tuple build() {
+            return atomicCryptoTransfer;
+        }
+    }
+
+    public static TransferListBuilder transferList() {
+        return new TransferListBuilder();
+    }
+
+    public static class TransferListBuilder {
+        private Tuple transferList;
+
+        public TransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
+            this.transferList = Tuple.singleton(accountAmounts);
+            return this;
+        }
+
+        public Tuple build() {
+            return transferList;
+        }
+    }
+
     public static TokenTransferListBuilder tokenTransferList() {
         return new TokenTransferListBuilder();
     }
@@ -1304,6 +1363,11 @@ public class UtilVerbs {
             return this;
         }
 
+        public TokenTransferListBuilder emptyTransfers() {
+            this.tokenTransferList = Tuple.singleton(new Tuple[] {});
+            return this;
+        }
+
         public Tuple build() {
             return tokenTransferList;
         }
@@ -1328,12 +1392,30 @@ public class UtilVerbs {
         return Tuple.of(account32, amount);
     }
 
+    public static Tuple accountAmount(
+            final AccountID account, final Long amount, final boolean isApproval) {
+        final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(account));
+
+        return Tuple.of(account32, amount, isApproval);
+    }
+
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
         final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(sender));
         final byte[] receiver32 = getAddressWithFilledEmptyBytes(asAddress(receiver));
 
         return Tuple.of(account32, receiver32, serialNumber);
+    }
+
+    public static Tuple nftTransfer(
+            final AccountID sender,
+            final AccountID receiver,
+            final Long serialNumber,
+            final boolean isApproval) {
+        final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(sender));
+        final byte[] receiver32 = getAddressWithFilledEmptyBytes(asAddress(receiver));
+
+        return Tuple.of(account32, receiver32, serialNumber, isApproval);
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
