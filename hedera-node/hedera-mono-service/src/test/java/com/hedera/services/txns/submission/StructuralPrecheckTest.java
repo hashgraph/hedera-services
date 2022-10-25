@@ -55,6 +55,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
 import java.util.List;
 import java.util.Optional;
@@ -81,6 +82,7 @@ class StructuralPrecheckTest {
 
     @Mock private Counter counter;
     @Mock private Platform platform;
+    @Mock private Metrics metrics;
     private SignedStateViewFactory viewFactory = mock(SignedStateViewFactory.class);
     private AccessorFactory accessorFactory = mock(AccessorFactory.class);
 
@@ -325,7 +327,8 @@ class StructuralPrecheckTest {
     }
 
     private void withVerifiableCounters() {
-        given(platform.getOrCreateMetric(any())).willReturn(counter);
+        given(platform.getMetrics()).willReturn(metrics);
+        given(metrics.getOrCreate(any())).willReturn(counter);
         counters.registerWith(platform);
     }
 }
