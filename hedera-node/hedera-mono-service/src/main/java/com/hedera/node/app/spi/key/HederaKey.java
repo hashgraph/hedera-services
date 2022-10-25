@@ -18,14 +18,24 @@ package com.hedera.node.app.spi.key;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 import com.hederahashgraph.api.proto.java.Key;
+
+import java.io.IOException;
 import java.util.Optional;
+
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.commons.codec.DecoderException;
 
 /** Placeholder implementation for moving JKey */
 public interface HederaKey {
+    boolean isPrimitive();
+    boolean isEmpty();
+    boolean isValid();
+    void serialize(final SerializableDataOutputStream outputStream) throws IOException;
+    void deserialize(final SerializableDataInputStream inputStream) throws IOException;
+    HederaKey copy();
     static Optional<HederaKey> asHederaKey(final Key key) {
         try {
-            // TODO: Need to move JKey after refactoring, adding equals & hashcode into this package
             final var fcKey = mapKey(key);
             if (!fcKey.isValid()) {
                 return Optional.empty();
