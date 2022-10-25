@@ -15,22 +15,17 @@
  */
 package com.hedera.node.app.spi.key;
 
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
-
 import com.hederahashgraph.api.proto.java.Key;
+import com.swirlds.virtualmap.VirtualValue;
 
-import java.util.Optional;
 import java.util.function.Consumer;
-
-import org.apache.commons.codec.DecoderException;
 
 /** A replacement class for legacy {@link com.hedera.services.legacy.core.jproto.JKey}.
  * It represents different types of {@link Key}s supported in the codebase.*/
-public interface HederaKey {
+public interface HederaKey extends VirtualValue {
     boolean isPrimitive();
     boolean isEmpty();
     boolean isValid();
-
     default void visitPrimitiveKeys(final Consumer<HederaKey> actionOnSimpleKey) {
         actionOnSimpleKey.accept(this);
     }
