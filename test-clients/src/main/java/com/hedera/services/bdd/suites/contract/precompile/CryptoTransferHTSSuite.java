@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -112,7 +113,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String OWNER = "Owner";
 
     public static void main(String... args) {
-        new CryptoTransferHTSSuite().runSuiteAsync();
+        new CryptoTransferHTSSuite().runSuiteSync();
     }
 
     @Override
@@ -124,16 +125,16 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    nonNestedCryptoTransferForFungibleToken(),
-                    nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-                    nonNestedCryptoTransferForNonFungibleToken(),
-                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-                    nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-                    repeatedTokenIdsAreAutomaticallyConsolidated(),
-                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
-                    hapiTransferFromForFungibleToken(),
-                    hapiTransferFromForNFT(),
+//                    nonNestedCryptoTransferForFungibleToken(),
+//                    nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+//                    nonNestedCryptoTransferForNonFungibleToken(),
+//                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+//                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+//                    nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+//                    repeatedTokenIdsAreAutomaticallyConsolidated(),
+//                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
+//                    hapiTransferFromForFungibleToken(),
+//                    hapiTransferFromForNFT(),
                     transferFungibleToEVMAddress(),
                     transferNFTToEVMAddress(),
                     transferFromForFungibleTokenToEVMAddressAlias(),
@@ -148,7 +149,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         return defaultHapiSpec("transferFungibleToEVMAddress")
                 .given(
                         overriding("contracts.allowAutoAssociations", "true"),
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
                         UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -275,7 +276,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .hasTokenBalance(FUNGIBLE_TOKEN_2, 50)
                                                         .logged());
                                 }))
-                .then();
+                .then(
+                    resetToDefault(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                );
     }
 
     private HapiApiSpec transferNFTToEVMAddress() {
@@ -284,7 +287,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         return defaultHapiSpec("TransferFungibleToEVMAddress")
                 .given(
                         overriding("contracts.allowAutoAssociations", "true"),
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
                         UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER)
@@ -397,7 +400,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)));
                                 }))
-                .then();
+                .then(resetToDefault(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec hapiTransferFromForFungibleToken() {
@@ -1799,6 +1802,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var htsTransferFrom = "htsTransferFrom";
         return defaultHapiSpec("transferFromForFungibleTokenToEVMAddressAlias")
                 .given(
+                    UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                    UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)
@@ -1885,6 +1890,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var htsTransferFromNFT = "htsTransferFromNFT";
         return defaultHapiSpec("transferFromForNFTToEVMAddressAlias")
                 .given(
+                    UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                    UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)
