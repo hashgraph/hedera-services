@@ -42,6 +42,8 @@ class HederaEvmContractAliasesTest {
     @Test
     void with20Byte() {
         assertTrue(hederaEvmContractAliases.isMirror(byteArray));
-        assertTrue(hederaEvmContractAliases.isMirror(Address.fromHexString("0x000000000000000000000000000000000000071e")));
+        assertTrue(
+                hederaEvmContractAliases.isMirror(
+                        Address.fromHexString("0x000000000000000000000000000000000000071e")));
     }
 }
