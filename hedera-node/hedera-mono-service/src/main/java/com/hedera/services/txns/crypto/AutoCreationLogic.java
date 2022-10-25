@@ -204,7 +204,8 @@ public class AutoCreationLogic {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             memo = LAZY_MEMO;
         } else {
-            // checks tokenAliasMap if the change consists an alias that is already used in previous
+            // checks tokenAliasMap if the change consists of an alias that is already used in
+            // previous
             // iteration of the token transfer list. This map is used to count number of
             // maxAutoAssociations needed on auto created account
             analyzeTokenTransferCreations(changes);
