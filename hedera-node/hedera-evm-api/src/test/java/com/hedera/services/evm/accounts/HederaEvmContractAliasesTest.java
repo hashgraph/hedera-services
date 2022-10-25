@@ -19,12 +19,13 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class HederaEvmContractAliasesTest {
+class HederaEvmContractAliasesTest {
 
     private final MockedHederaEvmContractAliases hederaEvmContractAliases =
             new MockedHederaEvmContractAliases();
@@ -41,5 +42,6 @@ public class HederaEvmContractAliasesTest {
     @Test
     void with20Byte() {
         assertTrue(hederaEvmContractAliases.isMirror(byteArray));
+        assertTrue(hederaEvmContractAliases.isMirror(Address.fromHexString("0x000000000000000000000000000000000000071e")));
     }
 }
