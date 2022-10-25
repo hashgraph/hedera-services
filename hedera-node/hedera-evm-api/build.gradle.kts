@@ -16,7 +16,6 @@
 plugins {
     id("com.hedera.hashgraph.conventions")
     id("com.hedera.hashgraph.maven-publish")
-    id("org.gradlex.extra-java-module-info").version("1.0")
 }
 
 group = "com.hedera.evm"
@@ -26,14 +25,12 @@ dependencies {
     api(libs.protobuf.java)
     api(libs.commons.lang3)
     api(libs.besu.evm)
-    api(libs.besu.datatypes)
+    api(libs.besu.datatypes) {
+        exclude("com.google.code.findbugs", "jsr305")
+    }
     api(libs.swirlds.common)
-    implementation(libs.hapi)
+    implementation(libs.hapi) {
+        exclude("com.google.code.findbugs", "jsr305")
+    }
     implementation(libs.javax.inject)
-    implementation(libs.javax.inject)
-}
-
-extraJavaModuleInfo {
-    failOnMissingModuleInfo.set(false)
-    automaticModule("javax.inject-1.jar", "javax.inject")
 }

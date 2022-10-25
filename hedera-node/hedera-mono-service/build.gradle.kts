@@ -66,16 +66,19 @@ tasks.withType<JavaCompile> {
 val jmhDaggerSources = file("build/generated/sources/annotationProcessor/java/jmh")
 java.sourceSets["jmh"].java.srcDir(jmhDaggerSources)
 
-val nodeWorkingDir = "" + rootProject.file("hedera-node")
 // Add all the libs dependencies into the jar manifest!
 tasks.jar {
-    manifest {
-        attributes(
-            "Main-Class" to "com.hedera.services.ServicesMain",
-            "Class-Path" to configurations.getByName("runtimeClasspath")
-                .joinToString(separator = " ") { "$nodeWorkingDir/data/lib/" + it.name }
+    doFirst {
+        tasks.jar.configure {
+            manifest {
+                attributes(
+                    "Main-Class" to "com.hedera.services.ServicesMain",
+                    "Class-Path" to configurations.getByName("runtimeClasspath")
+                        .joinToString(separator = " ") { "../../data/lib/" + it.name }
 
-        )
+                )
+            }
+        }
     }
 }
 
@@ -97,13 +100,13 @@ tasks.processResources {
 // Copy dependencies into `data/lib`
 val copyLib = tasks.register<Copy>("copyLib") {
     from(project.configurations.getByName("runtimeClasspath"))
-    into("$nodeWorkingDir/data/lib")
+    into(project(":hedera-node").file("data/lib"))
 }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
 val copyApp = tasks.register<Copy>("copyApp") {
     from(tasks.jar)
-    into("$nodeWorkingDir/data/apps")
+    into(project(":hedera-node").file("data/apps"))
     rename { "HederaNode.jar" }
     shouldRunAfter(tasks.getByName("copyLib"))
 }
@@ -115,27 +118,30 @@ tasks.assemble {
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
+    group = "application"
     dependsOn(tasks.assemble)
-    workingDir(nodeWorkingDir)
-    classpath("$nodeWorkingDir/data/apps/HederaNode.jar")
+    workingDir = project(":hedera-node").projectDir
+    jvmArgs = listOf("-cp", "data/lib/*")
+    mainClass.set("com.swirlds.platform.Browser")
 }
 
 val cleanRun = tasks.register("cleanRun") {
-    project.delete(File(project.projectDir, "$nodeWorkingDir/database"))
-    project.delete(File(project.projectDir, "$nodeWorkingDir/output"))
-    project.delete(File(project.projectDir, "$nodeWorkingDir/settingsUsed.txt"))
-    project.delete(File(project.projectDir, "$nodeWorkingDir/swirlds.jar"))
-    project.projectDir.list { _, fileName -> fileName.startsWith(nodeWorkingDir + "MainNetStats") }
+    val prj = project(":hedera-node")
+    prj.delete(File(prj.projectDir, "database"))
+    prj.delete(File(prj.projectDir, "output"))
+    prj.delete(File(prj.projectDir, "settingsUsed.txt"))
+    prj.delete(File(prj.projectDir, "swirlds.jar"))
+    prj.projectDir.list { _, fileName -> fileName.startsWith("MainNetStats") }
         ?.forEach { file ->
-            project.delete(file)
+            prj.delete(file)
         }
 
-    val dataDir = File(project.projectDir, "$nodeWorkingDir/data")
-    project.delete(File(dataDir, "accountBalances"))
-    project.delete(File(dataDir, "apps"))
-    project.delete(File(dataDir, "lib"))
-    project.delete(File(dataDir, "recordstreams"))
-    project.delete(File(dataDir, "saved"))
+    val dataDir = File(prj.projectDir, "data")
+    prj.delete(File(dataDir, "accountBalances"))
+    prj.delete(File(dataDir, "apps"))
+    prj.delete(File(dataDir, "lib"))
+    prj.delete(File(dataDir, "recordstreams"))
+    prj.delete(File(dataDir, "saved"))
 }
 
 tasks.clean {

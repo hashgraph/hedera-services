@@ -48,7 +48,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
@@ -276,7 +276,7 @@ public class HederaStackedWorldStateUpdater
     interface CustomizerFactory {
         ContractCustomizer apply(
                 AccountID id,
-                TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
+                TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger);
     }
 
     // --- Only used by unit tests

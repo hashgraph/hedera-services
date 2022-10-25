@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.services.state.validation.UsageLimits;
 import com.swirlds.common.metrics.DoubleGauge;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,7 @@ class EntityUtilGaugesTest {
     @Mock private UsageLimits usageLimits;
     @Mock private Platform platform;
     @Mock private DoubleGauge pretendGauge;
+    @Mock private Metrics metrics;
 
     private EntityUtilGauges subject;
 
@@ -45,7 +47,8 @@ class EntityUtilGaugesTest {
 
     @Test
     void registersAndUpdatesExpectedGauges() {
-        given(platform.getOrCreateMetric(any())).willReturn(pretendGauge);
+        given(platform.getMetrics()).willReturn(metrics);
+        given(metrics.getOrCreate(any())).willReturn(pretendGauge);
         given(usageLimits.percentAccountsUsed()).willReturn(2.0);
         given(usageLimits.percentContractsUsed()).willReturn(3.0);
         given(usageLimits.percentFilesUsed()).willReturn(4.0);
@@ -59,6 +62,6 @@ class EntityUtilGaugesTest {
         subject.registerWith(platform);
         subject.updateAll();
 
-        verify(platform, times(9)).getOrCreateMetric(any(DoubleGauge.Config.class));
+        verify(metrics, times(9)).getOrCreate(any(DoubleGauge.Config.class));
     }
 }

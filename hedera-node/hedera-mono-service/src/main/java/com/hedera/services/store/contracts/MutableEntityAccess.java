@@ -29,8 +29,8 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityIdUtils;
@@ -137,7 +137,7 @@ public class MutableEntityAccess implements EntityAccess {
 
     @Override
     public void flushStorage(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         sizeLimitedStorage.validateAndCommit(accountsLedger);
     }
 
@@ -156,7 +156,7 @@ public class MutableEntityAccess implements EntityAccess {
 
     @Override
     public void recordNewKvUsageTo(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         sizeLimitedStorage.recordNewKvUsageTo(accountsLedger);
     }
 

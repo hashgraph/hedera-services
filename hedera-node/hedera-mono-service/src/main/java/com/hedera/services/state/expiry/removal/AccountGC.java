@@ -21,7 +21,7 @@ import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_REMOVE;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
@@ -51,7 +51,7 @@ public class AccountGC {
     private final ExpiryThrottle expiryThrottle;
     private final TreasuryReturns treasuryReturns;
     private final SigImpactHistorian sigImpactHistorian;
-    private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+    private final BackingStore<AccountID, HederaAccount> backingAccounts;
 
     @Inject
     public AccountGC(
@@ -59,7 +59,7 @@ public class AccountGC {
             final ExpiryThrottle expiryThrottle,
             final SigImpactHistorian sigImpactHistorian,
             final TreasuryReturns treasuryReturns,
-            final BackingStore<AccountID, MerkleAccount> backingAccounts) {
+            final BackingStore<AccountID, HederaAccount> backingAccounts) {
         this.aliasManager = aliasManager;
         this.expiryThrottle = expiryThrottle;
         this.backingAccounts = backingAccounts;
@@ -68,7 +68,7 @@ public class AccountGC {
     }
 
     public CryptoGcOutcome expireBestEffort(
-            final EntityNum num, final MerkleAccount expiredAccount) {
+            final EntityNum num, final HederaAccount expiredAccount) {
         final var nftReturns = treasuryReturns.returnNftsFrom(expiredAccount);
         if (nftReturns.finished()) {
             final var unitReturns = treasuryReturns.returnFungibleUnitsFrom(expiredAccount);
@@ -83,7 +83,7 @@ public class AccountGC {
         }
     }
 
-    private void completeRemoval(final EntityNum num, final MerkleAccount expiredAccount) {
+    private void completeRemoval(final EntityNum num, final HederaAccount expiredAccount) {
         backingAccounts.remove(num.toGrpcAccountId());
         sigImpactHistorian.markEntityChanged(num.longValue());
         if (aliasManager.forgetAlias(expiredAccount.getAlias())) {

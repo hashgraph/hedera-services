@@ -21,7 +21,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
  * allowances and new aliases.
  */
 public class AccountsCommitInterceptor
-        implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
+        implements CommitInterceptor<AccountID, HederaAccount, AccountProperty> {
     private int numNewAccounts;
     private int numNewContracts;
     @Nullable private final AccountUsageTracking usageTracking;
@@ -61,7 +61,7 @@ public class AccountsCommitInterceptor
      */
     @Override
     public void preview(
-            final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+            final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         numNewAccounts = 0;
         numNewContracts = 0;
         if (pendingChanges.size() == 0) {
@@ -99,7 +99,7 @@ public class AccountsCommitInterceptor
 
     private void trackBalanceChangeIfAny(
             final long accountNum,
-            @Nullable final MerkleAccount merkleAccount,
+            @Nullable final HederaAccount merkleAccount,
             @NotNull final Map<AccountProperty, Object> accountChanges) {
         if (accountChanges.containsKey(AccountProperty.BALANCE)) {
             final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);

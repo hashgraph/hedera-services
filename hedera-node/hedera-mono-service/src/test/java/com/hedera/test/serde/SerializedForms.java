@@ -15,6 +15,7 @@
  */
 package com.hedera.test.serde;
 
+import static com.hedera.services.state.virtual.entities.OnDiskAccountSerdeTest.NUM_ON_DISK_ACCOUNT_TEST_CASES;
 import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -22,51 +23,20 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
-import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
-import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleScheduleSerdeTest;
-import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
-import com.hedera.services.state.merkle.MerkleScheduledTransactionsStateSerdeTest;
-import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.merkle.MerkleStakingInfoSerdeTest;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTokenSerdeTest;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleTopicSerdeTest;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.*;
 import com.hedera.services.state.merkle.internals.BytesElement;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.state.submerkle.EvmFnResultSerdeTest;
-import com.hedera.services.state.submerkle.EvmLog;
-import com.hedera.services.state.submerkle.EvmLogSerdeTest;
-import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
-import com.hedera.services.state.submerkle.NftAdjustments;
-import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.state.submerkle.TxnIdSerdeTest;
+import com.hedera.services.state.submerkle.*;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -81,10 +51,11 @@ import java.util.function.Function;
  * classes from being serialized unless you are absolutely sure they are no longer in saved signed
  * state data.
  *
- * <p>When running this file, be sure to set the hedera-services/hedera-node directory as the
- * working directory before running.
+ * <p>When running this class, be sure to set <i>hedera-services/hedera-node/hedera-mono-service</i>
+ * as the working directory before running.
  */
 public class SerializedForms {
+    private static final int MAX_SERIALIAZED_LEN = 4096;
     private static final String SERIALIZED_FORMS_LOC = "src/test/resources/serdes";
     private static final String FORM_TPL = "%s-v%d-sn%d.hex";
 
@@ -114,8 +85,20 @@ public class SerializedForms {
         assertArrayEquals(expected, actual, "Regression in serializing test case #" + testCaseNo);
     }
 
+    public static <T extends VirtualValue> void assertSameBufferSerialization(
+            final Class<T> type,
+            final Function<SeededPropertySource, T> factory,
+            final int version,
+            final int testCaseNo) {
+        final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
+        final var example = factory.apply(propertySource);
+        final var actual = SerdeUtils.serializeToBuffer(example, MAX_SERIALIAZED_LEN);
+        final var expected = loadForm(type, version, testCaseNo);
+        assertArrayEquals(expected, actual, "Regression in serializing test case #" + testCaseNo);
+    }
+
     private static void generateSerializedData() {
-        GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
+        GENERATOR_MAPPING.get(OnDiskAccount.class).run();
         //        for (var entry : GENERATOR_MAPPING.entrySet()) {
         //            entry.getValue().run();
         //        }
@@ -135,6 +118,14 @@ public class SerializedForms {
      */
     private static final Map<Class<? extends SelfSerializable>, Runnable> GENERATOR_MAPPING =
             Map.ofEntries(
+                    entry(
+                            MerklePayerRecords.class,
+                            SeededPropertySource::nextPayerRecords,
+                            MIN_TEST_CASES_PER_VERSION),
+                    entry(
+                            OnDiskAccount.class,
+                            SeededPropertySource::nextOnDiskAccount,
+                            NUM_ON_DISK_ACCOUNT_TEST_CASES),
                     entry(
                             CurrencyAdjustments.class,
                             SeededPropertySource::nextCurrencyAdjustments,

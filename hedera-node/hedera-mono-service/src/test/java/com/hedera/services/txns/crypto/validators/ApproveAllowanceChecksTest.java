@@ -53,10 +53,10 @@ import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -195,7 +195,7 @@ class ApproveAllowanceChecksTest {
         given(merkleTokenFungible.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(merkleTokenNFT.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
-        final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+        final BackingStore<AccountID, HederaAccount> store = mock(BackingAccounts.class);
         final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
         final BackingStore<NftId, UniqueTokenAdapter> nfts = mock(BackingNfts.class);
         uniqueTokenAdapter =
@@ -225,7 +225,6 @@ class ApproveAllowanceChecksTest {
 
         given(merkleTokenFungible.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
         given(merkleTokenNFT.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
-        given(ownerAccount.state()).willReturn(new MerkleAccountState());
     }
 
     @Test
@@ -481,7 +480,7 @@ class ApproveAllowanceChecksTest {
     void returnsInvalidOwnerId() {
         given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(120);
 
-        final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+        final BackingStore<AccountID, HederaAccount> store = mock(BackingAccounts.class);
         final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
         final BackingStore<NftId, UniqueTokenAdapter> nfts = mock(BackingNfts.class);
         given(view.asReadOnlyAccountStore()).willReturn(store);
@@ -494,7 +493,6 @@ class ApproveAllowanceChecksTest {
         given(merkleTokenFungible.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
         given(merkleTokenNFT.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
         given(store.getImmutableRef(payer)).willReturn(ownerAccount);
-        given(ownerAccount.state()).willReturn(new MerkleAccountState());
 
         cryptoApproveAllowanceTxn =
                 TransactionBody.newBuilder()

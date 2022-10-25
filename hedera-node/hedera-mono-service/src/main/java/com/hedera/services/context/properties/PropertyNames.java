@@ -51,6 +51,7 @@ public class PropertyNames {
     public static final String ACCOUNTS_SYSTEM_DELETE_ADMIN = "accounts.systemDeleteAdmin";
     public static final String ACCOUNTS_SYSTEM_UNDELETE_ADMIN = "accounts.systemUndeleteAdmin";
     public static final String ACCOUNTS_TREASURY = "accounts.treasury";
+    public static final String ACCOUNTS_STORE_ON_DISK = "accounts.storeOnDisk";
     public static final String ENTITIES_MAX_LIFETIME = "entities.maxLifetime";
     public static final String ENTITIES_SYSTEM_DELETABLE = "entities.systemDeletable";
     public static final String FILES_ADDRESS_BOOK = "files.addressBook";
@@ -119,6 +120,8 @@ public class PropertyNames {
             "contracts.precompile.exportRecordResults";
     public static final String CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE =
             "contracts.precompile.htsEnableTokenCreate";
+    public static final String CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED =
+            "contracts.precompile.atomicCryptoTransfer.enabled";
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
     public static final String FILES_MAX_NUM = "files.maxNumber";

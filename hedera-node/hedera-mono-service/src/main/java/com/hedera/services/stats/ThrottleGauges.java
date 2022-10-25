@@ -156,7 +156,7 @@ public class ThrottleGauges {
                 new DoubleGauge.Config(STAT_CATEGORY, name)
                         .withDescription(desc)
                         .withFormat(GAUGE_FORMAT);
-        final var gauge = platform.getOrCreateMetric(config);
+        final var gauge = platform.getMetrics().getOrCreate(config);
         log.info("Registered {} gauge for '{}' under name '{}'", status, desc, name);
         return gauge;
     }

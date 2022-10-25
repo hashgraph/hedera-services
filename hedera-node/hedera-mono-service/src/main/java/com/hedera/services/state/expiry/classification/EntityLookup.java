@@ -15,27 +15,27 @@
  */
 package com.hedera.services.state.expiry.classification;
 
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class EntityLookup {
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
-    public EntityLookup(final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+    public EntityLookup(final Supplier<AccountStorageAdapter> accounts) {
         this.accounts = accounts;
     }
 
-    public MerkleAccount getImmutableAccount(final EntityNum account) {
+    public HederaAccount getImmutableAccount(final EntityNum account) {
         return accounts.get().get(account);
     }
 
-    public MerkleAccount getMutableAccount(final EntityNum account) {
+    public HederaAccount getMutableAccount(final EntityNum account) {
         return accounts.get().getForModify(account);
     }
 }

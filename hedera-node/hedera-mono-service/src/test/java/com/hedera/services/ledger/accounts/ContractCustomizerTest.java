@@ -42,7 +42,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -59,7 +59,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ContractCustomizerTest {
     @Mock private HederaAccountCustomizer accountCustomizer;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger;
 
     private ContractCustomizer subject;
 

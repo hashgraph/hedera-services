@@ -37,20 +37,29 @@ public class ExpiryStats {
 
     public void registerWith(final Platform platform) {
         contractsRemoved =
-                platform.getOrCreateMetric(
-                        new Counter.Config(STAT_CATEGORY, Names.CONTRACTS_REMOVED_SINCE_RESTART)
-                                .withDescription(Descriptions.CONTRACTS_REMOVED_SINCE_RESTART));
+                platform.getMetrics()
+                        .getOrCreate(
+                                new Counter.Config(
+                                                STAT_CATEGORY,
+                                                Names.CONTRACTS_REMOVED_SINCE_RESTART)
+                                        .withDescription(
+                                                Descriptions.CONTRACTS_REMOVED_SINCE_RESTART));
         contractsRenewed =
-                platform.getOrCreateMetric(
-                        new Counter.Config(STAT_CATEGORY, Names.CONTRACTS_RENEWED_SINCE_RESTART)
-                                .withDescription(Descriptions.CONTRACTS_RENEWED_SINCE_RESTART));
+                platform.getMetrics()
+                        .getOrCreate(
+                                new Counter.Config(
+                                                STAT_CATEGORY,
+                                                Names.CONTRACTS_RENEWED_SINCE_RESTART)
+                                        .withDescription(
+                                                Descriptions.CONTRACTS_RENEWED_SINCE_RESTART));
         idsScannedPerConsSec =
-                platform.getOrCreateMetric(
-                        new RunningAverageMetric.Config(
-                                        STAT_CATEGORY, Names.IDS_SCANNED_PER_CONSENSUS_SEC)
-                                .withDescription(Descriptions.IDS_SCANNED_PER_CONSENSUS_SEC)
-                                .withFormat(RUNNING_AVG_FORMAT)
-                                .withHalfLife(halfLife));
+                platform.getMetrics()
+                        .getOrCreate(
+                                new RunningAverageMetric.Config(
+                                                STAT_CATEGORY, Names.IDS_SCANNED_PER_CONSENSUS_SEC)
+                                        .withDescription(Descriptions.IDS_SCANNED_PER_CONSENSUS_SEC)
+                                        .withFormat(RUNNING_AVG_FORMAT)
+                                        .withHalfLife(halfLife));
     }
 
     public void countRemovedContract() {

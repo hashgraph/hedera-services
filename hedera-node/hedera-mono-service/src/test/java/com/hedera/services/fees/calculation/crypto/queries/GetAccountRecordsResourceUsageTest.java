@@ -32,6 +32,9 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.QueryableRecords;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -42,7 +45,6 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +65,8 @@ class GetAccountRecordsResourceUsageTest {
 
     @Mock private CryptoFeeBuilder usageEstimator;
     @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
+    @Mock private RecordsStorageAdapter payerRecords;
 
     private GetAccountRecordsResourceUsage subject;
 
@@ -74,6 +77,7 @@ class GetAccountRecordsResourceUsageTest {
         aValue.records().offer(recordTwo());
         final MutableStateChildren children = new MutableStateChildren();
         children.setAccounts(accounts);
+        children.setPayerRecords(payerRecords);
         view = new StateView(null, children, null);
 
         subject =
@@ -89,7 +93,30 @@ class GetAccountRecordsResourceUsageTest {
     }
 
     @Test
-    void invokesEstimatorAsExpectedForType() {
+    void invokesEstimatorAsExpectedForCostAnswer() {
+        // setup:
+        final var costAnswerUsage = mock(FeeData.class);
+        final var answerOnlyUsage = mock(FeeData.class);
+        final var key = EntityNum.fromAccountId(asAccount(a));
+        final Map<String, Object> queryCtx = new HashMap<>();
+        given(dynamicProperties.maxNumQueryableRecords()).willReturn(180);
+
+        // given:
+        final var costAnswerQuery = accountRecordsQuery(a, COST_ANSWER);
+        given(payerRecords.getReadOnlyPayerRecords(key))
+                .willReturn(new QueryableRecords(aValue.numRecords(), aValue.recordIterator()));
+        given(accounts.containsKey(key)).willReturn(true);
+        given(usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(someRecords, COST_ANSWER))
+                .willReturn(costAnswerUsage);
+
+        final var costAnswerEstimate = subject.usageGiven(costAnswerQuery, view, queryCtx);
+
+        assertSame(costAnswerUsage, costAnswerEstimate);
+        assertTrue(queryCtx.containsKey(PAYER_RECORDS_CTX_KEY));
+    }
+
+    @Test
+    void invokesEstimatorAsExpectedForAnswerOnly() {
         // setup:
         final var costAnswerUsage = mock(FeeData.class);
         final var answerOnlyUsage = mock(FeeData.class);
@@ -99,18 +126,14 @@ class GetAccountRecordsResourceUsageTest {
 
         // given:
         final var answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);
-        final var costAnswerQuery = accountRecordsQuery(a, COST_ANSWER);
-        given(accounts.get(key)).willReturn(aValue);
+        given(payerRecords.getReadOnlyPayerRecords(key))
+                .willReturn(new QueryableRecords(aValue.numRecords(), aValue.recordIterator()));
         given(accounts.containsKey(key)).willReturn(true);
-        given(usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(someRecords, COST_ANSWER))
-                .willReturn(costAnswerUsage);
         given(usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(someRecords, ANSWER_ONLY))
                 .willReturn(answerOnlyUsage);
 
-        final var costAnswerEstimate = subject.usageGiven(costAnswerQuery, view, queryCtx);
         final var answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view, queryCtx);
 
-        assertSame(costAnswerUsage, costAnswerEstimate);
         assertSame(answerOnlyUsage, answerOnlyEstimate);
         assertTrue(queryCtx.containsKey(PAYER_RECORDS_CTX_KEY));
     }

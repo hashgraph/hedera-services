@@ -124,6 +124,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enableAllowances;
     private boolean limitTokenAssociations;
     private boolean enableHTSPrecompileCreate;
+    private boolean atomicCryptoTransferEnabled;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
     private long stakingRewardRate;
@@ -271,6 +272,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         limitTokenAssociations = properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS);
         enableHTSPrecompileCreate =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE);
+        atomicCryptoTransferEnabled =
+                properties.getBooleanProperty(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
         exchangeRateGasReq =
                 properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
@@ -636,6 +639,10 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isHTSPrecompileCreateEnabled() {
         return enableHTSPrecompileCreate;
+    }
+
+    public boolean isAtomicCryptoTransferEnabled() {
+        return atomicCryptoTransferEnabled;
     }
 
     public KnownBlockValues knownBlockValues() {
