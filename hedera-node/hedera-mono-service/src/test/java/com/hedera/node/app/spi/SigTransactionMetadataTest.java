@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi;
 
-import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
+import static com.hedera.node.app.spi.key.HederaKeys.asHederaKey;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
@@ -104,7 +104,7 @@ class SigTransactionMetadataTest {
     @Test
     void failsWhenPayerKeyDoesntExist() {
         final var txn = createAccountTransaction();
-        final var payerKey = (JKey) asHederaKey(key).get();
+        final var payerKey = asHederaKey(key).get();
 
         given(accounts.get(payerNum)).willReturn(Optional.empty());
 

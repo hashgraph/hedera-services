@@ -19,30 +19,19 @@ import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 import com.hederahashgraph.api.proto.java.Key;
 
-import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Consumer;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.commons.codec.DecoderException;
 
-/** Placeholder implementation for moving JKey */
+/** A replacement class for legacy {@link com.hedera.services.legacy.core.jproto.JKey}.
+ * It represents different types of {@link Key}s supported in the codebase.*/
 public interface HederaKey {
     boolean isPrimitive();
     boolean isEmpty();
     boolean isValid();
-    void serialize(final SerializableDataOutputStream outputStream) throws IOException;
-    void deserialize(final SerializableDataInputStream inputStream) throws IOException;
-    HederaKey copy();
-    static Optional<HederaKey> asHederaKey(final Key key) {
-        try {
-            final var fcKey = mapKey(key);
-            if (!fcKey.isValid()) {
-                return Optional.empty();
-            }
-            return Optional.of(fcKey);
-        } catch (DecoderException ignore) {
-            return Optional.empty();
-        }
+
+    default void visitPrimitiveKeys(final Consumer<HederaKey> actionOnSimpleKey) {
+        actionOnSimpleKey.accept(this);
     }
 }

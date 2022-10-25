@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.spi.key;
 
+import static com.hedera.node.app.spi.key.HederaKeys.asHederaKey;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -32,7 +33,7 @@ class HederaKeyTest {
         final var id = IdUtils.asContract("1.2.3");
         final var input = Key.newBuilder().setDelegatableContractId(id).build();
 
-        final var subject = HederaKey.asHederaKey(input);
+        final var subject = asHederaKey(input);
 
         assertTrue(subject.isPresent());
 
