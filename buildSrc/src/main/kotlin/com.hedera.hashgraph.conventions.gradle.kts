@@ -23,6 +23,7 @@ plugins {
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-java-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
+    id("com.hedera.hashgraph.jpms-modules")
 }
 
 group = "com.hedera.hashgraph"
@@ -34,6 +35,8 @@ java {
         @Suppress("UnstableApiUsage")
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
+
+    modularity.inferModulePath.set(true)
 }
 
 // Define the repositories from which we will pull dependencies

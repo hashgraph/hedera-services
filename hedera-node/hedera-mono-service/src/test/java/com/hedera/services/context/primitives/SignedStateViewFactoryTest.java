@@ -113,7 +113,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void canUpdateSuccessfully() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         var childrenToUpdate = new MutableStateChildren();
         givenStateWithMockChildren();
@@ -127,7 +127,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void throwsIfUpdatedWithInvalidState() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
         assertFalse(factory.isUsable(state));
@@ -138,7 +138,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void returnsEmptyWhenGettingFromInvalidState() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
         assertFalse(factory.isUsable(state));
@@ -148,7 +148,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void getsLatestImmutableChildren() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(12345));
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
@@ -160,7 +160,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void getsNewStateEachTime() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}))
                 .willReturn(new AutoCloseableWrapper<>(secondState, () -> {}));
         final var firstHandleTime = Instant.ofEpochSecond(12345);
@@ -182,7 +182,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void updatesUsingNewStateEachTime() throws NoValidSignedStateException {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}))
                 .willReturn(new AutoCloseableWrapper<>(secondState, () -> {}));
         final var firstHandleTime = Instant.ofEpochSecond(12345);
@@ -210,7 +210,7 @@ class SignedStateViewFactoryTest {
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
         given(state.isInitialized()).willReturn(true);
         assertTrue(factory.isUsable(state));
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();
         assertFalse(stateView.isEmpty());
@@ -219,8 +219,8 @@ class SignedStateViewFactoryTest {
     @Test
     void failsToConstructStateViewIfChildrenEmpty() {
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
-        assertFalse(SignedStateViewFactory.isUsable(state));
-        given(platform.getLastCompleteSwirldState())
+        assertFalse(factory.isUsable(state));
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();
         assertTrue(stateView.isEmpty());

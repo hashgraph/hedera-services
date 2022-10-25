@@ -36,6 +36,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -439,7 +440,7 @@ class SigOpsRegressionTest {
 
     private Rationalization invokeRationalizationScenario() {
         // setup:
-        SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
+        SyncVerifier syncVerifier = new CryptoEngine(getStaticThreadManager())::verifySync;
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
         SigMetadataLookup sigMetaLookups =
                 defaultLookupsFor(

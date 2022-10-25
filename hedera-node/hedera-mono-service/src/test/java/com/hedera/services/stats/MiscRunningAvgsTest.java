@@ -16,9 +16,11 @@
 package com.hedera.services.stats;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,7 @@ class MiscRunningAvgsTest {
     @Mock private RunningAverageMetric submitSizes;
     @Mock private RunningAverageMetric queueSize;
     @Mock private RunningAverageMetric hashS;
+    @Mock private Metrics metrics;
     private MiscRunningAvgs subject;
 
     @BeforeEach
@@ -47,10 +50,11 @@ class MiscRunningAvgsTest {
     @Test
     void registersExpectedStatEntries() {
         setMocks();
+        given(platform.getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 
-        verify(platform, times(4)).getOrCreateMetric(any());
+        verify(metrics, times(4)).getOrCreate(any());
     }
 
     @Test
