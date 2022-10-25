@@ -54,7 +54,7 @@ class RecordsRunningHashLeafTest {
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry.registerConstructables("com.swirlds.common");
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
     }
 
     @Test

@@ -147,25 +147,30 @@ class ReleaseThirtyMigrationTest {
 
     static void registerForAccountsMerkleMap() throws ConstructableRegistryException {
         registerForMM();
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
     }
 
     static void registerForTokenRelsMerkleMap() throws ConstructableRegistryException {
         registerForMM();
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleTokenRelStatus.class, MerkleTokenRelStatus::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(
+                                MerkleTokenRelStatus.class, MerkleTokenRelStatus::new));
     }
 
     private static void registerForMM() throws ConstructableRegistryException {
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(
-                        MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(
+                                MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
     }
 }
