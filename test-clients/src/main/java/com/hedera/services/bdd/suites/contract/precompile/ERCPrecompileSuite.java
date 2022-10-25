@@ -60,9 +60,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2M
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexedAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.BoolResult.flag;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -204,7 +206,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                 transferErc20TokenAliasedSender(),
                 directCallsWorkForERC20(),
                 erc20TransferFrom(),
-                erc20TransferFromSelf());
+                erc20TransferFromSelf(),
+                transferErc20TokenToEVMAddressAlias());
     }
 
     List<HapiApiSpec> ERC_721() {
@@ -227,7 +230,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                 someERC721OwnerOfScenariosPass(),
                 someERC721IsApprovedForAllScenariosPass(),
                 getErc721IsApprovedForAll(),
-                someERC721SetApprovedForAllScenariosPass());
+                someERC721SetApprovedForAllScenariosPass(),
+                erc721TransferFromWithApprovalToEVMAddressAlias());
     }
 
     private HapiApiSpec getErc20TokenName() {
@@ -686,6 +690,71 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         accountAddr.get(),
                                                         1)
                                                 .hasAnswerOnlyPrecheck(CONTRACT_REVERT_EXECUTED)));
+    }
+
+    private HapiApiSpec transferErc20TokenToEVMAddressAlias() {
+        final AtomicReference<String> tokenAddr = new AtomicReference<>();
+
+        return defaultHapiSpec("transferErc20TokenToEVMAddressAlias")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(5)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .exposingCreatedIdTo(
+                                        id ->
+                                                tokenAddr.set(
+                                                        HapiPropertySource.asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(id)))),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT),
+                        tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(
+                                moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    assert addressBytes != null;
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            ERC_20_CONTRACT,
+                                                            TRANSFER,
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(
+                                                                                    FUNGIBLE_TOKEN)),
+                                                            addressBytes,
+                                                            2)
+                                                    .via(TRANSFER_TXN)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(SUCCESS));
+                                }))
+                .then(
+                        childRecordsCheck(
+                                TRANSFER_TXN,
+                                SUCCESS,
+                                recordWith().status(SUCCESS).memo(LAZY_MEMO),
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .ERC_TRANSFER)
+                                                                        .withErcFungibleTransferStatus(
+                                                                                true)))));
     }
 
     private HapiApiSpec transferErc20TokenReceiverContract() {
@@ -5074,6 +5143,77 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                     .logged();
                                     allRunFor(spec, txnRecord);
                                 }));
+    }
+
+    private HapiApiSpec erc721TransferFromWithApprovalToEVMAddressAlias() {
+        return defaultHapiSpec("erc721TransferFromWithApprovalToEVMAddressAlias")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(SPENDER),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(ERC_721_CONTRACT),
+                        contractCreate(ERC_721_CONTRACT),
+                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                        tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
+                        tokenAssociate(ERC_721_CONTRACT, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)),
+                        cryptoTransfer(
+                                movingUnique(NON_FUNGIBLE_TOKEN, 1L)
+                                        .between(TOKEN_TREASURY, OWNER)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    assert addressBytes != null;
+                                    allRunFor(
+                                            spec,
+                                            cryptoApproveAllowance()
+                                                    .payingWith(DEFAULT_PAYER)
+                                                    .addNftAllowance(
+                                                            OWNER,
+                                                            NON_FUNGIBLE_TOKEN,
+                                                            ERC_721_CONTRACT,
+                                                            false,
+                                                            List.of(1L))
+                                                    .via(BASE_APPROVE_TXN)
+                                                    .logged()
+                                                    .signedBy(DEFAULT_PAYER, OWNER)
+                                                    .fee(ONE_HBAR),
+                                            getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
+                                                    .hasSpenderID(ERC_721_CONTRACT),
+                                            contractCall(
+                                                            ERC_721_CONTRACT,
+                                                            TRANSFER_FROM,
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(
+                                                                                    NON_FUNGIBLE_TOKEN)),
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getAccountID(OWNER)),
+                                                            addressBytes,
+                                                            1)
+                                                    .via(TRANSFER_FROM_ACCOUNT_TXN)
+                                                    .hasKnownStatus(SUCCESS));
+                                }))
+                .then(
+                        getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).andAllChildRecords().logged(),
+                        childRecordsCheck(
+                                TRANSFER_FROM_ACCOUNT_TXN,
+                                SUCCESS,
+                                recordWith().status(SUCCESS).memo(LAZY_MEMO),
+                                recordWith().status(SUCCESS)));
     }
 
     private HapiApiSpec erc721TransferFromWithApproveForAll() {

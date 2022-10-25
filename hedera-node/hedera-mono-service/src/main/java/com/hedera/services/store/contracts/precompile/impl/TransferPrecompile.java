@@ -227,6 +227,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var units = change.getAggregatedUnits();
             if (change.isForNft() || units < 0) {
                 if (change.isApprovedAllowance()) {
+                    if (change.isForNft()
+                            && frame.getWorldUpdater()
+                                            .get(asTypedEvmAddress(change.counterPartyAccountId()))
+                                    == null) {
+                        validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
+                        change.changeCounterPartyToAlias();
+                    }
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
                     continue;
