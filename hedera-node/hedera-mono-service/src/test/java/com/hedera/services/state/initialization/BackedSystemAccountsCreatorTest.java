@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,6 +132,25 @@ class BackedSystemAccountsCreatorTest {
     }
 
     @Test
+    void gettersWorkAsExpected() throws NegativeAccountBalanceException {
+        final var treasuryClones = List.of(withExpectedBalance(0), withExpectedBalance(0));
+        final var missingSystemAccount = List.of(withExpectedBalance(0));
+        given(treasuryCloner.getClonesCreated()).willReturn(treasuryClones);
+        givenMissingSystemAccount();
+
+        // when:
+        subject.ensureSystemAccounts(backingAccounts, book);
+
+        assertEquals(missingSystemAccount, subject.getSystemAccountsCreated());
+        assertEquals(treasuryClones, subject.getTreasuryClonesCreated());
+
+        subject.forgetCreations();
+
+        verify(treasuryCloner).forgetCreatedClones();
+        assertEquals(0, subject.getSystemAccountsCreated().size());
+    }
+
+    @Test
     void throwsOnNegativeBalance() {
         givenMissingTreasury();
         given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(-100L);
@@ -161,6 +181,7 @@ class BackedSystemAccountsCreatorTest {
 
         // then:
         verify(backingAccounts).put(accountWith(4), withExpectedBalance(0));
+        assertEquals(1, subject.getSystemAccountsCreated().size());
     }
 
     @Test
@@ -172,6 +193,7 @@ class BackedSystemAccountsCreatorTest {
 
         // then:
         verify(backingAccounts).put(accountWith(2), withExpectedBalance(totalBalance));
+        assertEquals(1, subject.getSystemAccountsCreated().size());
     }
 
     @Test
@@ -182,6 +204,7 @@ class BackedSystemAccountsCreatorTest {
 
         verify(backingAccounts).put(accountWith(900), withExpectedBalance(0));
         verify(backingAccounts).put(accountWith(1000), withExpectedBalance(0));
+        assertEquals(2, subject.getSystemAccountsCreated().size());
     }
 
     @Test
@@ -270,7 +293,7 @@ class BackedSystemAccountsCreatorTest {
         return IdUtils.asAccount(String.format("%d.%d.%d", shard, realm, num));
     }
 
-    private MerkleAccount withExpectedBalance(long balance) throws NegativeAccountBalanceException {
+    private HederaAccount withExpectedBalance(long balance) throws NegativeAccountBalanceException {
         MerkleAccount hAccount =
                 (MerkleAccount)
                         new HederaAccountCustomizer()

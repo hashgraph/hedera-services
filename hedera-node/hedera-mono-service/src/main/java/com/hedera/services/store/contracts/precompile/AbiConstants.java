@@ -26,6 +26,8 @@ public final class AbiConstants {
     // **** HIP-206 function selectors ****
     // cryptoTransfer(TokenTransferList[] memory tokenTransfers)
     public static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
+    // cryptoTransfer(TransferList memory transferList, TokenTransferList[] memory tokenTransfers)
+    public static final int ABI_ID_CRYPTO_TRANSFER_V2 = 0x0e71804f;
     // transferTokens(address token, address[] memory accountId, int64[] memory amount)
     public static final int ABI_ID_TRANSFER_TOKENS = 0x82bba493;
     // transferToken(address token, address sender, address recipient, int64 amount)

@@ -89,7 +89,7 @@ public class TreasuryCloner {
         return clonesCreated;
     }
 
-    public void forgetScannedSystemAccounts() {
+    public void forgetCreatedClones() {
         clonesCreated.clear();
     }
 

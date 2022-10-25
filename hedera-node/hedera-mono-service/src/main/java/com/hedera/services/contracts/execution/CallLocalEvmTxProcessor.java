@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
@@ -56,16 +55,6 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
         super(livePricesSource, dynamicProperties, gasCalculator, mcps, ccps);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
-    }
-
-    @Override
-    public void setWorldState(final HederaMutableWorldState worldState) {
-        super.setWorldState(worldState);
-    }
-
-    @Override
-    public void setBlockMetaSource(BlockMetaSource blockMetaSource) {
-        super.setBlockMetaSource(blockMetaSource);
     }
 
     @Override
