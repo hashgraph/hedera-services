@@ -145,16 +145,19 @@ class ReleaseThirtyMigrationTest {
     }
 
     static void registerForMerkleMap() throws ConstructableRegistryException {
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(
-                        MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(
+                                MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
     }
 }

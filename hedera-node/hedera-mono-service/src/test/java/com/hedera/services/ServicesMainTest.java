@@ -137,7 +137,6 @@ class ServicesMainTest {
         verify(ledgerValidator).validate(accounts);
         verify(nodeInfo).validateSelfAccountIfStaked();
         // and:
-        verify(platform).setSleepAfterSync(0L);
         verify(notificationEngine).register(IssListener.class, issListener);
         verify(notificationEngine).register(NewSignedStateListener.class, newSignedStateListener);
         verify(statsManager).initializeFor(platform);

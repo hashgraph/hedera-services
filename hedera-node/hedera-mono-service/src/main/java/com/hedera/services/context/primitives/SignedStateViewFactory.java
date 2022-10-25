@@ -115,9 +115,9 @@ public class SignedStateViewFactory {
     }
 
     /**
-     * Uses the last completed signed state from platform to perform a given action.
-     * <b>IMPORTANT:</b> should be called everytime we try to get or update state children, to
-     * ensure they reflect the latest state.
+     * Uses the last immutable state from platform to perform a given action. <b>IMPORTANT:</b>
+     * should be called everytime we try to get or update state children, to ensure they reflect the
+     * latest state.
      *
      * @param action what to do with the latest state
      * @throws NoValidSignedStateException
@@ -125,7 +125,7 @@ public class SignedStateViewFactory {
     private void doWithLatest(final Consumer<ServicesState> action)
             throws NoValidSignedStateException {
         try (final AutoCloseableWrapper<ServicesState> wrapper =
-                platform.getLastCompleteSwirldState()) {
+                platform.getLatestImmutableState()) {
             final var signedState = wrapper.get();
             if (!isUsable(signedState)) {
                 throw new NoValidSignedStateException();

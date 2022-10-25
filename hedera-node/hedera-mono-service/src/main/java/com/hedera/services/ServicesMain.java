@@ -140,7 +140,6 @@ public class ServicesMain implements SwirldMain {
 
     private void configurePlatform() {
         final var platform = app.platform();
-        platform.setSleepAfterSync(0L);
         app.statsManager().initializeFor(platform);
     }
 
