@@ -58,8 +58,17 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
     private final Map<Address, PrecompiledContract> hederaPrecompiles;
-    private final AutoCreationLogic autoCreationLogic;
-    private final RecordsHistorian recordsHistorian;
+    private AutoCreationLogic autoCreationLogic;
+    private RecordsHistorian recordsHistorian;
+
+    public HederaMessageCallProcessor(
+            final EVM evm,
+            final PrecompileContractRegistry precompiles,
+            final Map<String, PrecompiledContract> hederaPrecompileList) {
+        super(evm, precompiles);
+        hederaPrecompiles = new HashMap<>();
+        hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
+    }
 
     public HederaMessageCallProcessor(
             final EVM evm,
@@ -87,6 +96,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
                 } else if (updater.get(frame.getRecipientAddress()) == null) {
+                    // can be reached only when EVM_VERSION >= 0.32
                     executeLazyCreate(frame, updater, operationTracer);
                 }
             }

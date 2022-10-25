@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.contract;
 
+import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -113,8 +114,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         final var target = targetOf(op);
         final var targetId = target.toId();
         Account receiver;
-        if (relayerId != null
-                && target.equals(EntityNum.MISSING_NUM)
+        if (target.equals(EntityNum.MISSING_NUM)
+                && relayerId != null
+                && !properties.evmVersion().equals(EVM_VERSION_0_30)
                 && properties.isAutoCreationEnabled()
                 && properties.isLazyCreationEnabled()) {
             // allow Ethereum transactions to lazy create a hollow account

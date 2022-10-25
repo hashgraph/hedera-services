@@ -15,6 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -128,11 +129,16 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final Address to,
             final Bytes payload,
             final long value) {
-        final var resolvedForEvm = aliasManager.resolveForEvm(to);
-        final var code =
-                aliasManager.isMirror(resolvedForEvm)
-                        ? codeCache.getIfPresent(resolvedForEvm)
-                        : null;
+        Code code;
+        if (dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)) {
+            code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+        } else {
+            final var resolvedForEvm = aliasManager.resolveForEvm(to);
+            code =
+                    aliasManager.isMirror(resolvedForEvm)
+                            ? codeCache.getIfPresent(resolvedForEvm)
+                            : null;
+        }
         /* The ContractCallTransitionLogic would have rejected a missing or deleted
          * contract, so at this point we should have non-null bytecode available.
          * If there is no bytecode, it means we have a non-token and non-contract account,

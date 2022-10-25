@@ -163,11 +163,8 @@ public interface ContractsModule {
     static MessageCallProcessor provideV_0_30MessageCallProcessor(
             final @V_0_30 EVM evm,
             final @V_0_30 PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList,
-            final AutoCreationLogic autoCreationLogic,
-            final RecordsHistorian recordsHistorian) {
-        return new HederaMessageCallProcessor(
-                evm, precompiles, hederaPrecompileList, autoCreationLogic, recordsHistorian);
+            final Map<String, PrecompiledContract> hederaPrecompileList) {
+        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
     }
 
     @Provides
