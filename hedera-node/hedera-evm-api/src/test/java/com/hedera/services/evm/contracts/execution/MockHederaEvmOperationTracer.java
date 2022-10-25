@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.maven-publish")
-}
+package com.hedera.services.evm.contracts.execution;
 
-group = "com.hedera.evm"
-description = "Hedera EVM - API"
+import com.hedera.services.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 
-dependencies {
-    api(libs.besu.evm)
-    api(libs.besu.datatypes) {
-        exclude("com.google.code.findbugs", "jsr305")
-    }
-    api(libs.swirlds.common)
-    implementation(libs.hapi) {
-        exclude("com.google.code.findbugs", "jsr305")
-    }
-    implementation(libs.javax.inject)
-
-    testImplementation(testLibs.mockito.jupiter)
-}
+public class MockHederaEvmOperationTracer implements HederaEvmOperationTracer {}
