@@ -106,7 +106,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
-            final ImpliedTransfersMarshal impliedTransfersMarshal) {
+            final ImpliedTransfersMarshal impliedTransfersMarshal,
+            final boolean isLazyCreationEnabled) {
         super(
                 ledgers,
                 updater,
@@ -117,7 +118,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 pricingUtils,
                 functionId,
                 callerAccount,
-                impliedTransfersMarshal);
+                impliedTransfersMarshal,
+                isLazyCreationEnabled);
         this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
         this.tokenID = tokenID;
         this.isFungible = isFungible;
@@ -136,7 +138,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
-            final ImpliedTransfersMarshal impliedTransfersMarshal) {
+            final ImpliedTransfersMarshal impliedTransfersMarshal,
+            final boolean isLazyCreationEnabled) {
         this(
                 null,
                 callerAccount,
@@ -150,7 +153,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 infrastructureFactory,
                 pricingUtils,
                 functionId,
-                impliedTransfersMarshal);
+                impliedTransfersMarshal,
+                isLazyCreationEnabled);
     }
 
     @Override

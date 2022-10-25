@@ -124,7 +124,7 @@ class InfrastructureFactoryTest {
                         txnCtx,
                         aliasManager,
                         feeDistribution,
-                    autoCreationLogic);
+                        autoCreationLogic);
     }
 
     @Test

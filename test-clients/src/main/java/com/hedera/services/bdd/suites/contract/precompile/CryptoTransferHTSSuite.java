@@ -110,185 +110,227 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String OWNER = "Owner";
 
     public static void main(String... args) {
-        new CryptoTransferHTSSuite().runSuiteAsync();
+        new CryptoTransferHTSSuite().runSuiteSync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-//                    nonNestedCryptoTransferForFungibleToken(),
-//                    nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-//                    nonNestedCryptoTransferForNonFungibleToken(),
-//                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-//                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-//                    nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-//                    repeatedTokenIdsAreAutomaticallyConsolidated(),
-//                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
-//                    hapiTransferFromForFungibleToken(),
-//                    hapiTransferFromForNFT(),
-                    transferFungibleToEVMAddress(),
-                    transferNFTToEVMAddress()
+                    //                    nonNestedCryptoTransferForFungibleToken(),
+                    //
+                    // nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+                    //                    nonNestedCryptoTransferForNonFungibleToken(),
+                    //                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+                    //                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+                    //
+                    // nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+                    //                    repeatedTokenIdsAreAutomaticallyConsolidated(),
+                    //                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
+                    //                    hapiTransferFromForFungibleToken(),
+                    //                    hapiTransferFromForNFT(),
+                    transferFungibleToEVMAddress(), transferNFTToEVMAddress()
                 });
     }
 
     private HapiApiSpec transferFungibleToEVMAddress() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 
-        return defaultHapiSpec("TransferFungibleToEVMAddress")
-            .given(
-                overriding("contracts.allowAutoAssociations", "true"),
-                UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
-                UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
-                cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
-                cryptoCreate(RECEIVER)
-                    .balance(2 * ONE_HUNDRED_HBARS)
-                    .receiverSigRequired(true),
-                cryptoCreate(TOKEN_TREASURY),
-                tokenCreate(FUNGIBLE_TOKEN)
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .initialSupply(TOTAL_SUPPLY)
-                    .treasury(TOKEN_TREASURY),
-                tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
-                tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
-                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
-                uploadInitCode(CONTRACT),
-                contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
-                getContractInfo(CONTRACT)
-                    .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                    .logged())
-            .when(
-                withOpContext(
-                    (spec, opLog) -> {
-                        final var ecdsaKey =
-                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                        final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                        final var addressBytes = recoverAddressFromPubKey(tmp);
-                        assert addressBytes != null;
-                        final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                        final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
-                        final var sender = spec.registry().getAccountID(SENDER);
-                        final var receiver = spec.registry().getAccountID(RECEIVER);
-                        final var amountToBeSent = 50L;
+        return defaultHapiSpec("transferFungibleToEVMAddress")
+                .given(
+                        overriding("contracts.allowAutoAssociations", "true"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER)
+                                .balance(2 * ONE_HUNDRED_HBARS)
+                                .receiverSigRequired(true),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(TOTAL_SUPPLY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
+                        getContractInfo(CONTRACT)
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                                .logged())
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    assert addressBytes != null;
+                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                                    final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+                                    final var sender = spec.registry().getAccountID(SENDER);
+                                    final var receiver = spec.registry().getAccountID(RECEIVER);
+                                    final var amountToBeSent = 50L;
 
-                        allRunFor(
-                            spec,
-                            newKeyNamed(DELEGATE_KEY)
-                                .shape(
-                                    DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
-                                        sigs(ON, CONTRACT))),
-                            cryptoUpdate(SENDER).key(DELEGATE_KEY),
-                            cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
-                            contractCall(
-                                CONTRACT,
-                                "transferMultipleTokens",
-                                tokenTransferList()
-                                    .forToken(token)
-                                    .withAccountAmounts(
-                                        accountAmount(
-                                            sender,
-                                            -amountToBeSent),
-                                        accountAmount(
-                                            accountId(
-                                                evmAddressBytes),
-                                            amountToBeSent))
-                                    .build())
-                                .payingWith(GENESIS)
-                                .via(cryptoTransferTxn)
-                                .gas(GAS_TO_OFFER),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(
-                                    AccountInfoAsserts.accountWith()
-                                        .hasDefaultKey()
-                                        .evmAddressAlias(evmAddressBytes)
-                                        .autoRenew(
-                                            THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(false)
-                                        .memo(LAZY_MEMO)));
-                    }))
-        .then(                                            );
+                                    allRunFor(
+                                            spec,
+                                            newKeyNamed(DELEGATE_KEY)
+                                                    .shape(
+                                                            DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
+                                                                    sigs(ON, CONTRACT))),
+                                            cryptoUpdate(SENDER).key(DELEGATE_KEY),
+                                            cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            tokenTransferList()
+                                                                    .forToken(token)
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    sender,
+                                                                                    -amountToBeSent),
+                                                                            accountAmount(
+                                                                                    accountId(
+                                                                                            evmAddressBytes),
+                                                                                    amountToBeSent))
+                                                                    .build())
+                                                    .payingWith(GENESIS)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .via("notsupportedtxn")
+                                                    .gas(GAS_TO_OFFER),
+                                            UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            tokenTransferList()
+                                                                    .forToken(token)
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    sender,
+                                                                                    -amountToBeSent),
+                                                                            accountAmount(
+                                                                                    accountId(
+                                                                                            evmAddressBytes),
+                                                                                    amountToBeSent))
+                                                                    .build())
+                                                    .payingWith(GENESIS)
+                                                    .via(cryptoTransferTxn)
+                                                    .gas(GAS_TO_OFFER),
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .has(
+                                                            AccountInfoAsserts.accountWith()
+                                                                    .hasDefaultKey()
+                                                                    .evmAddressAlias(
+                                                                            evmAddressBytes)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(LAZY_MEMO)));
+                                }))
+                .then();
     }
 
-private HapiApiSpec transferNFTToEVMAddress() {
+    private HapiApiSpec transferNFTToEVMAddress() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 
-        return defaultHapiSpec("TransferFungibleToEVMAddress")
-            .given(
-                overriding("contracts.allowAutoAssociations", "true"),
-                UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
-                UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
-                newKeyNamed(MULTI_KEY),
-                cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5).key(MULTI_KEY),
-                cryptoCreate(RECEIVER)
-                    .balance(2 * ONE_HUNDRED_HBARS)
-                    .receiverSigRequired(true).maxAutomaticTokenAssociations(5),
-                cryptoCreate(TOKEN_TREASURY),
-                tokenCreate(NFT_TOKEN)
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasury(SENDER)
-                    .initialSupply(0L)
-                    .supplyKey(MULTI_KEY),
-                mintToken(
-                    NFT_TOKEN,
-                    List.of(
-                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                uploadInitCode(CONTRACT),
-                contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
-                getContractInfo(CONTRACT)
-                    .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                    .logged())
-            .when(
-                withOpContext(
-                    (spec, opLog) -> {
-                        final var ecdsaKey =
-                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                        final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                        final var addressBytes = recoverAddressFromPubKey(tmp);
-                        final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                        final var token = spec.registry().getTokenID(NFT_TOKEN);
-                        final var sender = spec.registry().getAccountID(SENDER);
+        return defaultHapiSpec("transferNFTToEVMAddress")
+                .given(
+                        overriding("contracts.allowAutoAssociations", "true"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(SENDER)
+                                .balance(10 * ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(5)
+                                .key(MULTI_KEY),
+                        cryptoCreate(RECEIVER)
+                                .balance(2 * ONE_HUNDRED_HBARS)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(5),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(NFT_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .treasury(SENDER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY),
+                        mintToken(
+                                NFT_TOKEN,
+                                List.of(
+                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
+                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
+                        getContractInfo(CONTRACT)
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                                .logged())
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                                    final var token = spec.registry().getTokenID(NFT_TOKEN);
+                                    final var sender = spec.registry().getAccountID(SENDER);
 
-                        allRunFor(
-                            spec,
-                            newKeyNamed(DELEGATE_KEY)
-                                .shape(
-                                    DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
-                                        sigs(ON, CONTRACT))),
-                            cryptoUpdate(SENDER).key(DELEGATE_KEY),
-                            contractCall(
-                                CONTRACT,
-                                "transferMultipleTokens",
-                                tokenTransferList()
-                                    .forToken(token)
-                                    .withNftTransfers(
-                                        nftTransfer(
-                                            sender,
-                                            accountId(
-                                                evmAddressBytes),
-                                            1L))
-                                    .build())
-                                .payingWith(GENESIS)
-                                .via(cryptoTransferTxn)
-                                .gas(GAS_TO_OFFER),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(
-                                    AccountInfoAsserts.accountWith()
-                                        .hasDefaultKey()
-                                        .evmAddressAlias(evmAddressBytes)
-                                        .autoRenew(
-                                            THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(false)
-                                        .memo(LAZY_MEMO)));
-                    }))
-        .then(                                            );
+                                    allRunFor(
+                                            spec,
+                                            newKeyNamed(DELEGATE_KEY)
+                                                    .shape(
+                                                            DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
+                                                                    sigs(ON, CONTRACT))),
+                                            cryptoUpdate(SENDER).key(DELEGATE_KEY),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            tokenTransferList()
+                                                                    .forToken(token)
+                                                                    .withNftTransfers(
+                                                                            nftTransfer(
+                                                                                    sender,
+                                                                                    accountId(
+                                                                                            evmAddressBytes),
+                                                                                    1L))
+                                                                    .build())
+                                                    .payingWith(GENESIS)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .gas(GAS_TO_OFFER),
+                                            UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            tokenTransferList()
+                                                                    .forToken(token)
+                                                                    .withNftTransfers(
+                                                                            nftTransfer(
+                                                                                    sender,
+                                                                                    accountId(
+                                                                                            evmAddressBytes),
+                                                                                    1L))
+                                                                    .build())
+                                                    .payingWith(GENESIS)
+                                                    .via(cryptoTransferTxn)
+                                                    .gas(GAS_TO_OFFER),
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .has(
+                                                            AccountInfoAsserts.accountWith()
+                                                                    .hasDefaultKey()
+                                                                    .evmAddressAlias(
+                                                                            evmAddressBytes)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(LAZY_MEMO)));
+                                }))
+                .then();
     }
 
     private HapiApiSpec hapiTransferFromForFungibleToken() {

@@ -391,7 +391,9 @@ public class BalanceChange {
     }
 
     public void changeCounterPartyToAlias() {
-        this.counterPartyAlias = ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(counterPartyAccountId));
-        this.counterPartyAccountId = AccountID.newBuilder().setAlias(this.counterPartyAlias).build();
+        this.counterPartyAlias =
+                ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(counterPartyAccountId));
+        this.counterPartyAccountId =
+                AccountID.newBuilder().setAlias(this.counterPartyAlias).build();
     }
 }

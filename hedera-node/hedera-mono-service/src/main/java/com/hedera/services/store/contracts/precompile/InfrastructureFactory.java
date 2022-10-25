@@ -102,7 +102,8 @@ public class InfrastructureFactory {
             final GlobalDynamicProperties dynamicProperties,
             final TransactionContext txnCtx,
             final AliasManager aliasManager,
-            final FeeDistribution feeDistribution, AutoCreationLogic autoCreationLogic) {
+            final FeeDistribution feeDistribution,
+            final AutoCreationLogic autoCreationLogic) {
         this.ids = ids;
         this.encoder = encoder;
         this.validator = validator;

@@ -278,7 +278,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             functionId,
                             senderAddress,
-                            impliedTransfersMarshal);
+                            impliedTransfersMarshal,
+                            dynamicProperties.isAutoCreationEnabled()
+                                    && dynamicProperties.isLazyCreationEnabled());
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
                             dynamicProperties.isAtomicCryptoTransferEnabled(),
                             () ->
@@ -292,7 +294,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             precompilePricingUtils,
                                             functionId,
                                             senderAddress,
-                                            impliedTransfersMarshal));
+                                            impliedTransfersMarshal,
+                                            dynamicProperties.isAutoCreationEnabled()
+                                                    && dynamicProperties.isLazyCreationEnabled()));
                     case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
                             ledgers,
                             encoder,
@@ -593,7 +597,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     infrastructureFactory,
                                                     precompilePricingUtils,
                                                     functionId,
-                                                    impliedTransfersMarshal));
+                                                    impliedTransfersMarshal,
+                                                    dynamicProperties.isAutoCreationEnabled()
+                                                            && dynamicProperties
+                                                                    .isLazyCreationEnabled()));
 
                             case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
@@ -611,7 +618,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     infrastructureFactory,
                                                     precompilePricingUtils,
                                                     functionId,
-                                                    impliedTransfersMarshal));
+                                                    impliedTransfersMarshal,
+                                                    dynamicProperties.isAutoCreationEnabled()
+                                                            && dynamicProperties
+                                                                    .isLazyCreationEnabled()));
                             case AbiConstants.ABI_ID_ERC_ALLOWANCE -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
                                     () ->
@@ -770,7 +780,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
-                                            impliedTransfersMarshal));
+                                            impliedTransfersMarshal,
+                                            dynamicProperties.isAutoCreationEnabled()
+                                                    && dynamicProperties.isLazyCreationEnabled()));
                     case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
                             dynamicProperties.areAllowancesEnabled(),
                             () ->
@@ -786,7 +798,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
-                                            impliedTransfersMarshal));
+                                            impliedTransfersMarshal,
+                                            dynamicProperties.isAutoCreationEnabled()
+                                                    && dynamicProperties.isLazyCreationEnabled()));
                     default -> null;
                 };
         if (precompile != null) {

@@ -205,7 +205,7 @@ public class AutoCreationLogic {
         // maxAutoAssociations needed on auto created account
         analyzeTokenTransferCreations(changes);
         final var maxAutoAssociations =
-            tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         customizer.maxAutomaticAssociations(maxAutoAssociations);
         if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);

@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
@@ -31,6 +32,7 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -119,6 +121,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private List<BalanceChange> explicitChanges;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
+    private final boolean isLazyCreationEnabled;
 
     public TransferPrecompile(
             final WorldLedgers ledgers,
@@ -130,13 +133,15 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final Address senderAddress,
-            final ImpliedTransfersMarshal impliedTransfersMarshal) {
+            final ImpliedTransfersMarshal impliedTransfersMarshal,
+            final boolean isLazyCreationEnabled) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.updater = updater;
         this.sigsVerifier = sigsVerifier;
         this.functionId = functionId;
         this.senderAddress = senderAddress;
         this.impliedTransfersMarshal = impliedTransfersMarshal;
+        this.isLazyCreationEnabled = isLazyCreationEnabled;
     }
 
     protected void initializeHederaTokenStore() {
@@ -249,6 +254,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     ledgers,
                                     updater.aliases());
                     if (frame.getWorldUpdater().get(counterPartyAddress) == null) {
+                        validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
                         change.changeCounterPartyToAlias();
                     }
                 } else if (units > 0) {
@@ -260,6 +266,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     ledgers,
                                     updater.aliases());
                     if (frame.getWorldUpdater().get(change.getAccount().asEvmAddress()) == null) {
+                        validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
                         change.changeAccountToAlias();
                     }
                 }
