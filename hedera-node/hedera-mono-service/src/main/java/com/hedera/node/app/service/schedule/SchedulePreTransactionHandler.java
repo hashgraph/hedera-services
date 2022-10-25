@@ -19,10 +19,10 @@ import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-
 /**
- * The pre-handler for the HAPI
- * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/schedule_service.proto">Schedule Service</a>.
+ * The pre-handler for the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/schedule_service.proto">Schedule
+ * Service</a>.
  */
 public interface SchedulePreTransactionHandler extends PreTransactionHandler {
     /**
@@ -30,7 +30,8 @@ public interface SchedulePreTransactionHandler extends PreTransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody}
+     * @param txn a transaction with a {@link
+     *     com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody}
      * @return the metadata for the schedule creation
      */
     TransactionMetadata preHandleCreateSchedule(TransactionBody txn);
@@ -40,7 +41,8 @@ public interface SchedulePreTransactionHandler extends PreTransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody}
+     * @param txn a transaction with a {@link
+     *     com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody}
      * @return the metadata for the schedule signing
      */
     TransactionMetadata preHandleSignSchedule(TransactionBody txn);
@@ -50,7 +52,8 @@ public interface SchedulePreTransactionHandler extends PreTransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody}
+     * @param txn a transaction with a {@link
+     *     com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody}
      * @return the metadata for the schedule deletion
      */
     TransactionMetadata preHandleDeleteSchedule(TransactionBody txn);

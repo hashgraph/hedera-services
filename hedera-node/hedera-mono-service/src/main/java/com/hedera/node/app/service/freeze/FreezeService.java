@@ -20,8 +20,9 @@ import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Implements the HAPI
- * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/freeze_service.proto">Freeze Service</a>.
+ * Implements the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/freeze_service.proto">Freeze
+ * Service</a>.
  */
 public interface FreezeService extends Service {
     /**

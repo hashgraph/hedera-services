@@ -20,8 +20,9 @@ import com.hedera.node.app.spi.state.States;
 import javax.annotation.Nonnull;
 
 /**
- * Implements the HAPI
- * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/consensus_service.proto">Consensus Service</a>.
+ * Implements the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/consensus_service.proto">Consensus
+ * Service</a>.
  */
 public interface ConsensusService extends Service {
     /**

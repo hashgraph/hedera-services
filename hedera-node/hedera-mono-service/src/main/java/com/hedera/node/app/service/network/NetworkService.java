@@ -19,10 +19,10 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
 
-
 /**
- * Implements the HAPI
- * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/network_service.proto">Network Service</a>.
+ * Implements the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/network_service.proto">Network
+ * Service</a>.
  */
 public interface NetworkService extends Service {
     /**

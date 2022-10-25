@@ -19,10 +19,10 @@ import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-
 /**
- * The pre-handler for the HAPI
- * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/network_service.proto">Network Service</a>.
+ * The pre-handler for the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/network_service.proto">Network
+ * Service</a>.
  */
 public interface NetworkPreTransactionHandler extends PreTransactionHandler {
     /**
@@ -30,7 +30,8 @@ public interface NetworkPreTransactionHandler extends PreTransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param txn a transaction with a {@link com.hederahashgraph.api.proto.java.UncheckedSubmitBody}
+     * @param txn a transaction with a {@link
+     *     com.hederahashgraph.api.proto.java.UncheckedSubmitBody}
      * @return the metadata for the unchecked submit
      */
     TransactionMetadata preHandleUncheckedSubmit(TransactionBody txn);

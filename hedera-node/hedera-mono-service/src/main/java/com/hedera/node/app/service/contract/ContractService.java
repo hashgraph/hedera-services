@@ -20,8 +20,9 @@ import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Implements the HAPI
- * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/smart_contract_service.proto">Smart Contract Service</a>.
+ * Implements the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/smart_contract_service.proto">Smart
+ * Contract Service</a>.
  */
 public interface ContractService extends Service {
     /**

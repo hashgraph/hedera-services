@@ -20,8 +20,9 @@ import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Implements the HAPI
- * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/file_service.proto">File Service</a>.
+ * Implements the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/file_service.proto">File
+ * Service</a>.
  */
 public interface FileService extends Service {
     /**

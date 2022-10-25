@@ -19,10 +19,10 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
 
-
 /**
- * Implements the HAPI
- * <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/schedule_service.proto">Schedule Service</a>.
+ * Implements the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/schedule_service.proto">Schedule
+ * Service</a>.
  */
 public interface ScheduleService extends Service {
     /**
