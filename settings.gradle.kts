@@ -68,7 +68,7 @@ dependencyResolutionManagement {
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
-            version("swirlds-version", "0.31.0-alpha.1")
+            version("swirlds-version", "0.32.0-alpha.2")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
 

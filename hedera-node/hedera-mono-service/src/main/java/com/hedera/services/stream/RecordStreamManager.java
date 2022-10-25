@@ -15,6 +15,7 @@
  */
 package com.hedera.services.stream;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
 import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
@@ -144,7 +145,8 @@ public class RecordStreamManager {
                                 streamType);
             }
             writeQueueThread =
-                    new QueueThreadObjectStreamConfiguration<RecordStreamObject>()
+                    new QueueThreadObjectStreamConfiguration<RecordStreamObject>(
+                                    getStaticThreadManager())
                             .setNodeId(platform.getSelfId().getId())
                             .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
                             .setForwardTo(
@@ -165,7 +167,8 @@ public class RecordStreamManager {
 
         hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
         hashQueueThread =
-                new QueueThreadObjectStreamConfiguration<RecordStreamObject>()
+                new QueueThreadObjectStreamConfiguration<RecordStreamObject>(
+                                getStaticThreadManager())
                         .setNodeId(platform.getSelfId().getId())
                         .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
                         .setForwardTo(hashCalculator)
