@@ -29,6 +29,7 @@ import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -119,7 +120,11 @@ public class SolvencyPrecheck {
             final var now = accessor.getTxnId().getTransactionValidStart();
             final var payerKey = payerAccount.getAccountKey();
             final var estimatedFees =
-                    feeCalculator.estimateFee(accessor, payerKey, stateView.get(), now);
+                    feeCalculator.estimateFee(
+                            accessor,
+                            payerKey != null ? payerKey : new JECDSASecp256k1Key(null),
+                            stateView.get(),
+                            now);
             final var estimatedReqFee = totalOf(estimatedFees, includeSvcFee);
 
             if (accessor.getTxn().getTransactionFee() < estimatedReqFee) {

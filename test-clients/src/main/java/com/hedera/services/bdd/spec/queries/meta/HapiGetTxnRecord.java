@@ -88,6 +88,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private static final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
     public static final int MAX_PSEUDORANDOM_BYTES_LENGTH = 48;
 
+    private static final int EVM_ADDRESS_SIZE = 20;
+
     private String txn;
     private boolean scheduled = false;
     private boolean assertNothing = false;
@@ -860,8 +862,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 spec.registry()
                         .saveAccountId(
                                 rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
-                spec.registry()
-                        .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                if (rec.getAlias().size() != EVM_ADDRESS_SIZE) {
+                    spec.registry()
+                            .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                }
                 LOG.info(
                         "{}  Saving alias {} to registry for Account ID {}",
                         spec::logPrefix,
