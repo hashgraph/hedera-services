@@ -30,8 +30,6 @@ import javax.annotation.Nonnull;
  *
  * <p>Implements the HAPI <a
  * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/crypto_service.proto">Crypto
- * Service</a> and the <a
- * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/token_service.proto">Token
  * Service</a>.
  */
 public interface CryptoService extends Service {

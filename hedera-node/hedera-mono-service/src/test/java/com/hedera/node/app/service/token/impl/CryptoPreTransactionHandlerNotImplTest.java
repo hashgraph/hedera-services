@@ -44,24 +44,5 @@ class CryptoPreTransactionHandlerNotImplTest {
         assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteAllowances(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleAddLiveHash(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteLiveHash(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleCreateToken(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleUpdateToken(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleMintToken(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleBurnToken(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteToken(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleWipeTokenAccount(null));
-        assertThrows(
-                NotImplementedException.class, () -> subject.preHandleFreezeTokenAccount(null));
-        assertThrows(
-                NotImplementedException.class, () -> subject.preHandleUnfreezeTokenAccount(null));
-        assertThrows(
-                NotImplementedException.class,
-                () -> subject.preHandleRevokeKycFromTokenAccount(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleAssociateTokens(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleDissociateTokens(null));
-        assertThrows(
-                NotImplementedException.class, () -> subject.preHandleUpdateTokenFeeSchedule(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandlePauseToken(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleUnpauseToken(null));
     }
 }
