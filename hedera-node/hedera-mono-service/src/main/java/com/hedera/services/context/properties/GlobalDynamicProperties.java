@@ -22,11 +22,13 @@ import static com.hedera.services.context.properties.PropertyNames.*;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.charging.ContractStoragePriceTiers;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -36,9 +38,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Address;
 
 @Singleton
-public class GlobalDynamicProperties {
+public class GlobalDynamicProperties implements EvmProperties {
     private final HederaNumbers hederaNums;
     private final PropertySource properties;
 
@@ -63,6 +66,7 @@ public class GlobalDynamicProperties {
     private boolean shouldExportBalances;
     private boolean shouldExportTokenBalances;
     private AccountID fundingAccount;
+    private Address fundingAccountAddress;
     private int maxTransfersLen;
     private int maxTokenTransfersLen;
     private int maxMemoUtf8Bytes;
@@ -182,6 +186,7 @@ public class GlobalDynamicProperties {
                         .setRealmNum(hederaNums.realm())
                         .setAccountNum(properties.getLongProperty(LEDGER_FUNDING_ACCOUNT))
                         .build();
+        fundingAccountAddress = EntityIdUtils.asTypedEvmAddress(fundingAccount);
         cacheRecordsTtl = properties.getIntProperty(CACHE_RECORDS_TTL);
         ratesIntradayChangeLimitPercent =
                 properties.getIntProperty(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT);
@@ -374,6 +379,10 @@ public class GlobalDynamicProperties {
 
     public AccountID fundingAccount() {
         return fundingAccount;
+    }
+
+    public Address fundingAccountAddress() {
+        return fundingAccountAddress;
     }
 
     public int cacheRecordsTtl() {

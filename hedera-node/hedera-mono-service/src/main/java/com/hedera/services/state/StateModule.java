@@ -84,6 +84,7 @@ import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
@@ -197,7 +198,7 @@ public interface StateModule {
     @Provides
     @Singleton
     static Optional<PrintStream> providePrintStream(Platform platform) {
-        final var console = platform.createConsole(true);
+        final var console = SwirldsGui.createConsole(platform, true);
         return Optional.ofNullable(console).map(c -> c.out);
     }
 

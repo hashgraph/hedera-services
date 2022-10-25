@@ -73,7 +73,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ImpliedTransfersMarshalTest {
-    private final List<CustomFeeMeta> mockFinalMeta = List.of(CustomFeeMeta.MISSING_META);
     private final Map<ByteString, EntityNum> mockAliases =
             Map.of(ByteString.copyFromUtf8("A"), EntityNum.fromLong(1L));
 
@@ -620,4 +619,7 @@ class ImpliedTransfersMarshalTest {
             BalanceChange.tokenAdjust(aAccount, Id.fromGrpcToken(anId), -1);
     private final BalanceChange bTrigger =
             BalanceChange.tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
+
+    private final List<CustomFeeMeta> mockFinalMeta =
+            List.of(new CustomFeeMeta(aAccount, aAccount, Collections.emptyList()));
 }
