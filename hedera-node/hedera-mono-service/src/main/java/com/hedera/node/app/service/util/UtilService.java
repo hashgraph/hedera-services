@@ -19,7 +19,18 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Implements the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/util_service.proto">Util
+ * Service</a>.
+ */
 public interface UtilService extends Service {
+    /**
+     * Creates the util service pre-handler given a particular Hedera world state.
+     *
+     * @param states the state of the world
+     * @return the corresponding util service pre-handler
+     */
     @NotNull
     @Override
     UtilPreTransactionHandler createPreTransactionHandler(@NotNull States states);

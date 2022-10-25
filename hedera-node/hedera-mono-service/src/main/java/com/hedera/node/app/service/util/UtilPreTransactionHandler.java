@@ -19,7 +19,20 @@ import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ * The pre-handler for the HAPI <a
+ * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/util_service.proto">Util
+ * Service</a>.
+ */
 public interface UtilPreTransactionHandler extends PreTransactionHandler {
-    /** Generates a pseudorandom number. */
+    /**
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#UtilPrng}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
+     *
+     * @param txn a transaction with a {@link
+     *     com.hederahashgraph.api.proto.java.UtilPrngTransactionBody}
+     * @return the metadata for the pseudo-random number generation
+     */
     TransactionMetadata preHandlePrng(TransactionBody txn);
 }
