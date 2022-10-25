@@ -15,6 +15,16 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.state.impl.InMemoryStateImpl;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -26,24 +36,13 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class TokenStoreTest {
@@ -66,8 +65,16 @@ class TokenStoreTest {
     private final JKey supplyKey = new JEd25519Key("not-a-real-supplyKey".getBytes());
     private final JKey feeScheduleKey = new JEd25519Key("not-a-real-feeScheduleKey".getBytes());
     private final JKey pauseKey = new JEd25519Key("not-a-real-pauseKey".getBytes());
-    private MerkleToken token = new MerkleToken(expiry, otherTotalSupply, decimals, symbol,
-            name, freezeDefault, accountsKycGrantedByDefault, treasury);
+    private MerkleToken token =
+            new MerkleToken(
+                    expiry,
+                    otherTotalSupply,
+                    decimals,
+                    symbol,
+                    name,
+                    freezeDefault,
+                    accountsKycGrantedByDefault,
+                    treasury);
 
     private TokenStore subject;
 
@@ -92,6 +99,10 @@ class TokenStoreTest {
         token.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
         token.setSupplyType(TokenSupplyType.INFINITE);
         token.setAccountsFrozenByDefault(true);
+        token.setFeeSchedule(
+                List.of(
+                        FcCustomFee.fixedFee(
+                                1, new EntityId(1, 2, 5), new EntityId(1, 2, 5), false)));
     }
 
     @Test
@@ -129,9 +140,10 @@ class TokenStoreTest {
     @Test
     void classifiesRoyaltyWithFallback() {
         token.setTokenType(NON_FUNGIBLE_UNIQUE);
-        token.setFeeSchedule(List.of(FcCustomFee.royaltyFee(
-                                1, 2, new FixedFeeSpec(1, null),
-                new EntityId(1, 2, 5), false)));
+        token.setFeeSchedule(
+                List.of(
+                        FcCustomFee.royaltyFee(
+                                1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
         given(tokens.get(tokenId.getTokenNum())).willReturn(Optional.of(token));
 
         final var result = subject.getTokenMeta(tokenId);
@@ -145,7 +157,8 @@ class TokenStoreTest {
     @Test
     void classifiesRoyaltyWithNoFallback() {
         token.setTokenType(NON_FUNGIBLE_UNIQUE);
-        token.setFeeSchedule(List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
+        token.setFeeSchedule(
+                List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
         given(tokens.get(tokenId.getTokenNum())).willReturn(Optional.of(token));
 
         final var result = subject.getTokenMeta(tokenId);

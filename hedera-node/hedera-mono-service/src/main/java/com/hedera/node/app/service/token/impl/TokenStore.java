@@ -23,9 +23,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-
-import javax.annotation.Nonnull;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 /**
  * Provides methods for interacting with the underlying data storage mechanisms for working with
@@ -34,89 +33,91 @@ import java.util.Optional;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public class TokenStore {
-	/** The underlying data storage class that holds the token data. */
-	private final State<Long, MerkleToken> tokenState;
+    /** The underlying data storage class that holds the token data. */
+    private final State<Long, MerkleToken> tokenState;
 
-	/**
-	 * Create a new {@link TokenStore} instance.
-	 *
-	 * @param states The state to use.
-	 */
-	public TokenStore(@Nonnull final States states) {
-		this.tokenState = states.get("TOKENS");
-	}
+    /**
+     * Create a new {@link TokenStore} instance.
+     *
+     * @param states The state to use.
+     */
+    public TokenStore(@Nonnull final States states) {
+        this.tokenState = states.get("TOKENS");
+    }
 
+    public record TokenMetadata(
+            Optional<JKey> adminKey,
+            Optional<JKey> kycKey,
+            Optional<JKey> wipeKey,
+            Optional<JKey> freezeKey,
+            Optional<JKey> supplyKey,
+            Optional<JKey> feeScheduleKey,
+            Optional<JKey> pauseKey,
+            boolean hasRoyaltyWithFallback,
+            EntityId treasury) {}
 
-	public record TokenMetadata(Optional<JKey> adminKey,
-								Optional<JKey> kycKey,
-								Optional<JKey> wipeKey,
-								Optional<JKey> freezeKey,
-								Optional<JKey> supplyKey,
-								Optional<JKey> feeScheduleKey,
-								Optional<JKey> pauseKey,
-								boolean hasRoyaltyWithFallback,
-								EntityId treasury) {}
+    public record TokenMetaOrReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
+        public boolean failed() {
+            return failureReason != null;
+        }
+    }
 
-	public record TokenMetaOrReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
-		public boolean failed(){
-			return failureReason != null;
-		}
-	}
+    /**
+     * Returns the token metadata needed for signing requirements. If the token doesn't exist
+     * returns failureReason. If the token exists , the failure reason will be null.
+     *
+     * @param id token id being looked up
+     * @return token's metadata
+     */
+    public TokenMetaOrReason getTokenMeta(final TokenID id) {
+        final var token = getTokenLeaf(id);
 
-	/**
-	 * Returns the token metadata needed for signing requirements. If the token doesn't exist returns failureReason.
-	 * If the token exists , the failure reason will be null.
-	 * @param id token id being looked up
-	 * @return token's metadata
-	 */
-	public TokenMetaOrReason getTokenMeta(final TokenID id){
-		final var token = getTokenLeaf(id);
+        if (token.isEmpty()) {
+            return new TokenMetaOrReason(null, ResponseCodeEnum.INVALID_TOKEN_ID);
+        }
+        return new TokenMetaOrReason(tokenMetaFrom(token.get()), null);
+    }
 
-		if (token.isEmpty()) {
-			return new TokenMetaOrReason(null, ResponseCodeEnum.INVALID_TOKEN_ID);
-		}
-		return new TokenMetaOrReason(tokenMetaFrom(token.get()), null);
-	}
-	private TokenMetadata tokenMetaFrom(final MerkleToken token) {
-		boolean hasRoyaltyWithFallback = false;
-		final var customFees = token.customFeeSchedule();
-		if (!customFees.isEmpty()) {
-			for (final var customFee : customFees) {
-				if (isRoyaltyWithFallback(customFee)) {
-					hasRoyaltyWithFallback = true;
-					break;
-				}
-			}
-		}
-		return new TokenMetadata(
-				token.adminKey(),
-				token.kycKey(),
-				token.wipeKey(),
-				token.freezeKey(),
-				token.supplyKey(),
-				token.feeScheduleKey(),
-				token.pauseKey(),
-				hasRoyaltyWithFallback,
-				token.treasury());
-	}
+    private TokenMetadata tokenMetaFrom(final MerkleToken token) {
+        boolean hasRoyaltyWithFallback = false;
+        final var customFees = token.customFeeSchedule();
+        if (!customFees.isEmpty()) {
+            for (final var customFee : customFees) {
+                if (isRoyaltyWithFallback(customFee)) {
+                    hasRoyaltyWithFallback = true;
+                    break;
+                }
+            }
+        }
+        return new TokenMetadata(
+                token.adminKey(),
+                token.kycKey(),
+                token.wipeKey(),
+                token.freezeKey(),
+                token.supplyKey(),
+                token.feeScheduleKey(),
+                token.pauseKey(),
+                hasRoyaltyWithFallback,
+                token.treasury());
+    }
 
-	private boolean isRoyaltyWithFallback(final FcCustomFee fee) {
-		return fee.getFeeType() == FcCustomFee.FeeType.ROYALTY_FEE
-				&& fee.getRoyaltyFeeSpec().fallbackFee() != null;
-	}
+    private boolean isRoyaltyWithFallback(final FcCustomFee fee) {
+        return fee.getFeeType() == FcCustomFee.FeeType.ROYALTY_FEE
+                && fee.getRoyaltyFeeSpec().fallbackFee() != null;
+    }
 
-	/**
-	 * Returns the merkleToken leaf for the given tokenId. If the token doesn't exist returns
-	 * {@code Optional.empty()}
-	 *
-	 * @param id given tokenId
-	 * @return merkleToken leaf for the given tokenId
-	 */
-	private Optional<MerkleToken> getTokenLeaf(final TokenID id) {
-		final var token = tokenState.get(id.getTokenNum());
-		if (token.isEmpty()) {
-			return Optional.empty();
-		}
-		return token;
-	}
+    /**
+     * Returns the merkleToken leaf for the given tokenId. If the token doesn't exist returns {@code
+     * Optional.empty()}
+     *
+     * @param id given tokenId
+     * @return merkleToken leaf for the given tokenId
+     */
+    private Optional<MerkleToken> getTokenLeaf(final TokenID id) {
+        final var token = tokenState.get(id.getTokenNum());
+        if (token.isEmpty()) {
+            return Optional.empty();
+        }
+        return token;
+    }
 }
