@@ -409,16 +409,12 @@ class ContractCallTransitionLogicTest {
                 .willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
 
+        final var txn = accessor.getTxn();
+        final var id = senderAccount.getId();
         // when:
         assertThrows(
                 InvalidTransactionException.class,
-                () ->
-                        subject.doStateTransitionOperation(
-                                accessor.getTxn(),
-                                senderAccount.getId(),
-                                null,
-                                maxGas,
-                                biOfferedGasPrice));
+                () -> subject.doStateTransitionOperation(txn, id, null, maxGas, biOfferedGasPrice));
     }
 
     @Test
@@ -445,16 +441,15 @@ class ContractCallTransitionLogicTest {
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_30);
 
+        final var txn = accessor.getTxn();
+        final var senderAccountId = senderAccount.getId();
+        final var relayerAccountId = relayerAccount.getId();
         // when:
         assertThrows(
                 InvalidTransactionException.class,
                 () ->
                         subject.doStateTransitionOperation(
-                                accessor.getTxn(),
-                                senderAccount.getId(),
-                                relayerAccount.getId(),
-                                maxGas,
-                                biOfferedGasPrice));
+                                txn, senderAccountId, relayerAccountId, maxGas, biOfferedGasPrice));
     }
 
     @Test
@@ -482,16 +477,15 @@ class ContractCallTransitionLogicTest {
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
         given(properties.isAutoCreationEnabled()).willReturn(false);
 
+        final var txn = accessor.getTxn();
+        final var senderAccountId = senderAccount.getId();
+        final var relayerAccountId = relayerAccount.getId();
         // when:
         assertThrows(
                 InvalidTransactionException.class,
                 () ->
                         subject.doStateTransitionOperation(
-                                accessor.getTxn(),
-                                senderAccount.getId(),
-                                relayerAccount.getId(),
-                                maxGas,
-                                biOfferedGasPrice));
+                                txn, senderAccountId, relayerAccountId, maxGas, biOfferedGasPrice));
     }
 
     @Test
@@ -520,16 +514,14 @@ class ContractCallTransitionLogicTest {
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(false);
 
-        // when:
+        final var txn = accessor.getTxn();
+        final var senderAccountId = senderAccount.getId();
+        final var relayerAccountId = relayerAccount.getId(); // when:
         assertThrows(
                 InvalidTransactionException.class,
                 () ->
                         subject.doStateTransitionOperation(
-                                accessor.getTxn(),
-                                senderAccount.getId(),
-                                relayerAccount.getId(),
-                                maxGas,
-                                biOfferedGasPrice));
+                                txn, senderAccountId, relayerAccountId, maxGas, biOfferedGasPrice));
     }
 
     @Test
