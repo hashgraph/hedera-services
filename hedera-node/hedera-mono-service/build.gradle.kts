@@ -74,7 +74,7 @@ tasks.jar {
                 attributes(
                     "Main-Class" to "com.hedera.services.ServicesMain",
                     "Class-Path" to configurations.getByName("runtimeClasspath")
-                        .joinToString(separator = " ") { "data/lib/" + it.name }
+                        .joinToString(separator = " ") { "../../data/lib/" + it.name }
 
                 )
             }
@@ -118,9 +118,11 @@ tasks.assemble {
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
+    group = "application"
     dependsOn(tasks.assemble)
-    workingDir(project(":hedera-node").projectDir)
-    classpath(project(":hedera-node").file("data/apps/HederaNode.jar"))
+    workingDir = project(":hedera-node").projectDir
+    jvmArgs = listOf("-cp", "data/lib/*")
+    mainClass.set("com.swirlds.platform.Browser")
 }
 
 val cleanRun = tasks.register("cleanRun") {
@@ -131,7 +133,7 @@ val cleanRun = tasks.register("cleanRun") {
     prj.delete(File(prj.projectDir, "swirlds.jar"))
     prj.projectDir.list { _, fileName -> fileName.startsWith("MainNetStats") }
         ?.forEach { file ->
-            project.delete(file)
+            prj.delete(file)
         }
 
     val dataDir = File(prj.projectDir, "data")

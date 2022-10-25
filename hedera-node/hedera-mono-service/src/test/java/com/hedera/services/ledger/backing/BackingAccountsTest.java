@@ -70,8 +70,9 @@ class BackingAccountsTest {
 
     @Test
     void auxiliarySetIsRebuiltFromScratch() throws ConstructableRegistryException {
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
         final var idSet = subject.getExistingAccounts();
 
         subject.rebuildFromSources();
@@ -164,8 +165,9 @@ class BackingAccountsTest {
     @Test
     void twoPutsChangesG4M() throws ConstructableRegistryException {
         // setup:
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(KeyedMerkleLong.class, KeyedMerkleLong::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(KeyedMerkleLong.class, KeyedMerkleLong::new));
         final var oneGrandKey = new FcLong(1000L);
         final var twoGrandKey = new FcLong(2000L);
         final var evilKey = new FcLong(666L);
