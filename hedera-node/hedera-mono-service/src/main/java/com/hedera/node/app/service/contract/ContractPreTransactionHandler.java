@@ -56,7 +56,7 @@ public interface ContractPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ContractCallTransactionBody}
      * @return the metadata for the contract call
      */
-    TransactionMetadata preHandleContractCallMethod(TransactionBody txn);
+    TransactionMetadata preHandleContractCall(TransactionBody txn);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ContractDelete}
