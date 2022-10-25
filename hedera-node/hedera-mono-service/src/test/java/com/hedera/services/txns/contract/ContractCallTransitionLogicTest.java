@@ -15,6 +15,8 @@
  */
 package com.hedera.services.txns.contract;
 
+import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.services.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -25,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -37,6 +40,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -270,7 +274,7 @@ class ContractCallTransitionLogicTest {
                 .willReturn(EntityNum.fromLong(666L));
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(true);
-
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
         // when:
         subject.doStateTransitionOperation(
                 accessor.getTxn(),
@@ -330,6 +334,7 @@ class ContractCallTransitionLogicTest {
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(true);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
 
         // when:
         subject.doStateTransitionOperation(
@@ -367,6 +372,8 @@ class ContractCallTransitionLogicTest {
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(true);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+
         // when:
         assertFailsWith(
                 () ->
@@ -377,6 +384,152 @@ class ContractCallTransitionLogicTest {
                                 maxGas,
                                 biOfferedGasPrice),
                 INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void verifyEthLazyCreateThrowsWhenRelayerNull() {
+        // setup:
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
+                .willThrow(InvalidTransactionException.class);
+        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+
+        // when:
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                null,
+                                maxGas,
+                                biOfferedGasPrice));
+    }
+
+    @Test
+    void verifyEthLazyCreateThrowsWhenEvmVersion030() {
+        // setup:
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
+                .willThrow(InvalidTransactionException.class);
+        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_30);
+
+        // when:
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
+    }
+
+    @Test
+    void verifyEthLazyCreateThrowsWhenAutoCreationNotEnabled() {
+        // setup:
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
+                .willThrow(InvalidTransactionException.class);
+        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(properties.isAutoCreationEnabled()).willReturn(false);
+
+        // when:
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
+    }
+
+    @Test
+    void verifyEthLazyCreateThrowsWhenLazyCreationNotEnabled() {
+        // setup:
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
+                .willThrow(InvalidTransactionException.class);
+        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(properties.isAutoCreationEnabled()).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(false);
+
+        // when:
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
     }
 
     @Test

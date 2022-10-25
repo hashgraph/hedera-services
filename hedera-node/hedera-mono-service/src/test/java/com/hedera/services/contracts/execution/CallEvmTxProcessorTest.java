@@ -226,8 +226,9 @@ class CallEvmTxProcessorTest {
     }
 
     @Test
-    void assertSuccessExecutionEthLazyCreate() {
+    void assertSuccessExecutionV032EthLazyCreate() {
         givenValidMockEth();
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_32);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(aliasManager.isMirror(receiverAddress)).willReturn(false);
         var evmAccount = mock(EvmAccount.class);
@@ -249,12 +250,39 @@ class CallEvmTxProcessorTest {
                         55_555L);
         assertTrue(result.isSuccessful());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+        verify(codeCache, never()).getIfPresent(receiverAddress);
+    }
+
+    @Test
+    void assertSuccessExecutionV032() {
+        givenValidMockEth();
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
+        var evmAccount = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+
+        givenSenderWithBalance(350_000L);
+        var result =
+                callEvmTxProcessor.executeEth(
+                        sender,
+                        receiverAddress,
+                        33_333L,
+                        1234L,
+                        Bytes.EMPTY,
+                        consensusTime,
+                        BigInteger.valueOf(10_000L),
+                        relayer,
+                        55_555L);
+        assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+        verify(codeCache).getIfPresent(receiverAddress);
     }
 
     @Test
     void nonCodeTxRequiresValue() {
-        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         assertFailsWith(
                 () ->
                         callEvmTxProcessor.buildInitialFrame(
@@ -460,8 +488,6 @@ class CallEvmTxProcessorTest {
         var evmAccount = mock(EvmAccount.class);
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
                 .willReturn(evmAccount);
-        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -547,8 +573,6 @@ class CallEvmTxProcessorTest {
                         .completer(__ -> {})
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(h -> null);
-        given(aliasManager.resolveForEvm(any())).willReturn(Address.ALTBN128_MUL);
-        given(aliasManager.isMirror(Address.ALTBN128_MUL)).willReturn(true);
         // when:
         MessageFrame buildMessageFrame =
                 callEvmTxProcessor.buildInitialFrame(
@@ -790,8 +814,6 @@ class CallEvmTxProcessorTest {
         given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
 
         given(updater.getOrCreateSenderAccount(any())).willReturn(wrappedSenderAccount);
-        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1033,8 +1055,6 @@ class CallEvmTxProcessorTest {
         given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
 
         given(updater.getOrCreateSenderAccount(any())).willReturn(wrappedSenderAccount);
-        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1218,8 +1238,6 @@ class CallEvmTxProcessorTest {
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
                 .willReturn(evmAccount);
-        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1255,9 +1273,6 @@ class CallEvmTxProcessorTest {
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
-        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
-
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
@@ -1287,7 +1302,13 @@ class CallEvmTxProcessorTest {
 
     @Test
     void testEvmVersionLoading() {
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_32, "vDoesn'tExist");
+        given(globalDynamicProperties.evmVersion())
+                .willReturn(
+                        EVM_VERSION_0_30,
+                        EVM_VERSION_0_30,
+                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_32,
+                        "vDoesn'tExist");
         given(globalDynamicProperties.dynamicEvmVersion()).willReturn(false, false, true, true);
 
         givenValidMock();
