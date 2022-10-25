@@ -44,7 +44,6 @@ public class UpdateTrackingLedgerAccount<A extends Account>
         extends com.hedera.services.evm.store.models.EvmAccount
         implements MutableAccount, EvmAccount {
     private final Hash addressHash;
-    private final Address address;
     private final AccountID accountId;
     private final NavigableMap<UInt256, UInt256> updatedStorage;
 
@@ -60,11 +59,10 @@ public class UpdateTrackingLedgerAccount<A extends Account>
             @Nullable
                     final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
                             trackingAccounts) {
-        super(0L, Wei.ZERO);
+        super(address, 0L, Wei.ZERO);
         Preconditions.checkNotNull(address);
-        this.address = address;
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
-        this.addressHash = Hash.hash(this.address);
+        this.addressHash = Hash.hash(super.getAddress());
         this.account = null;
         this.updatedCode = Bytes.EMPTY;
         this.updatedStorage = new TreeMap<>();
@@ -77,14 +75,13 @@ public class UpdateTrackingLedgerAccount<A extends Account>
             @Nullable
                     final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
                             trackingAccounts) {
-        super(account.getNonce(), account.getBalance());
+        super(account.getAddress(), account.getNonce(), account.getBalance());
         Preconditions.checkNotNull(account);
-        this.address = account.getAddress();
-        this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
+        this.accountId = EntityIdUtils.accountIdFromEvmAddress(account.getAddress());
         this.addressHash =
                 account instanceof UpdateTrackingLedgerAccount
                         ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
-                        : Hash.hash(this.address);
+                        : Hash.hash(account.getAddress());
         this.account = account;
         this.updatedStorage = new TreeMap<>();
         this.trackingAccounts = trackingAccounts;
@@ -118,11 +115,6 @@ public class UpdateTrackingLedgerAccount<A extends Account>
     @Override
     public Map<UInt256, UInt256> getUpdatedStorage() {
         return updatedStorage;
-    }
-
-    @Override
-    public Address getAddress() {
-        return address;
     }
 
     @Override
@@ -229,7 +221,7 @@ public class UpdateTrackingLedgerAccount<A extends Account>
         }
         return String.format(
                 "%s -> {nonce:%s, balance:%s, code:%s, storage:%s }",
-                address,
+                super.getAddress(),
                 super.getNonce(),
                 super.getBalance(),
                 updatedCode == null ? "[not updated]" : updatedCode,

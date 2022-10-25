@@ -35,7 +35,8 @@ public class EvmAccount implements Account {
         this.address = address;
     }
 
-    public EvmAccount(long nonce, Wei balance) {
+    public EvmAccount(Address address, long nonce, Wei balance) {
+        this.address = address;
         this.nonce = nonce;
         this.balance = balance;
     }
