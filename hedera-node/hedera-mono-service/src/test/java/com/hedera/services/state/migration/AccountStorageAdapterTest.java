@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.migration;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -202,7 +203,8 @@ class AccountStorageAdapterTest {
         withOnDiskSubject();
         subject.forEach(visitor);
         verify(virtualMapDataAccess)
-                .extractVirtualMapData(eq(onDiskAccounts), captor.capture(), eq(32));
+                .extractVirtualMapData(
+                        eq(getStaticThreadManager()), eq(onDiskAccounts), captor.capture(), eq(32));
         captor.getValue().accept(Pair.of(SOME_KEY, onDiskStandIn));
         verify(visitor).accept(SOME_NUM, onDiskStandIn);
     }
@@ -214,7 +216,10 @@ class AccountStorageAdapterTest {
         willThrow(InterruptedException.class)
                 .given(virtualMapDataAccess)
                 .extractVirtualMapData(
-                        eq(onDiskAccounts), any(InterruptableConsumer.class), eq(32));
+                        eq(getStaticThreadManager()),
+                        eq(onDiskAccounts),
+                        any(InterruptableConsumer.class),
+                        eq(32));
         assertThrows(IllegalStateException.class, () -> subject.forEach(visitor));
     }
 
