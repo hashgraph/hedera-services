@@ -18,6 +18,5 @@ package com.hedera.services.bdd.spec.queries.crypto;
 public enum ReferenceType {
     REGISTRY_NAME,
     ALIAS_KEY_NAME,
-    HEXED_CONTRACT_ALIAS,
-    RAW_ALIAS
+    HEXED_CONTRACT_ALIAS
 }

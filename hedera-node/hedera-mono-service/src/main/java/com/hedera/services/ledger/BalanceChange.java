@@ -22,10 +22,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -383,17 +381,5 @@ public class BalanceChange {
         if (isAlias(accountId)) return alias;
         else if (hasNonEmptyCounterPartyAlias()) return counterPartyAlias;
         else return null;
-    }
-
-    public void changeAccountToAlias() {
-        this.alias = ByteStringUtils.wrapUnsafely(account.asEvmAddress().toArrayUnsafe());
-        this.accountId = AccountID.newBuilder().setAlias(this.alias).build();
-    }
-
-    public void changeCounterPartyToAlias() {
-        this.counterPartyAlias =
-                ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(counterPartyAccountId));
-        this.counterPartyAccountId =
-                AccountID.newBuilder().setAlias(this.counterPartyAlias).build();
     }
 }

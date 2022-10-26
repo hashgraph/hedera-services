@@ -1323,10 +1323,7 @@ public class UtilVerbs {
     }
 
     public static Tuple accountAmount(final AccountID account, final Long amount) {
-        final byte[] account32 =
-                account.getAlias().isEmpty()
-                        ? getAddressWithFilledEmptyBytes(asAddress(account))
-                        : getAddressWithFilledEmptyBytes(account.getAlias().toByteArray());
+        final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(account));
 
         return Tuple.of(account32, amount);
     }
@@ -1334,10 +1331,7 @@ public class UtilVerbs {
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
         final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(sender));
-        final byte[] receiver32 =
-                receiver.getAlias().isEmpty()
-                        ? getAddressWithFilledEmptyBytes(asAddress(receiver))
-                        : getAddressWithFilledEmptyBytes(receiver.getAlias().toByteArray());
+        final byte[] receiver32 = getAddressWithFilledEmptyBytes(asAddress(receiver));
 
         return Tuple.of(account32, receiver32, serialNumber);
     }
