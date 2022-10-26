@@ -17,9 +17,15 @@ package com.hedera.services.config;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.test.utils.TestFileUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Assertions;
 
 public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private final CongestionMultipliers defaultMultipliers =
@@ -37,9 +43,16 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private CongestionMultipliers currentMultipliers = defaultMultipliers;
     private boolean throttleByGas;
     private boolean shouldCompressAccountFiles;
+    private Path tempDir;
 
     public MockGlobalDynamicProps() {
         super(null, null);
+        try {
+            // We can't use junit's @TempDir because this isn't a unit test class
+            this.tempDir = Files.createTempDirectory(StringUtils.EMPTY);
+        } catch (IOException e) {
+            Assertions.fail(e.getMessage());
+        }
     }
 
     @Override
@@ -101,7 +114,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     @Override
     public String pathToBalancesExportDir() {
-        return "src/test/resources";
+        return TestFileUtils.toPath(tempDir, "resources");
     }
 
     @Override
