@@ -150,6 +150,9 @@ class CreateEvmTxProcessorTest {
     void assertSuccessfulExecutionEth() {
         givenValidMockEth();
 
+        given(aliasManager.resolveForEvm(receiver.getId().asEvmAddress()))
+                .willReturn(receiver.getId().asEvmAddress());
+
         var result =
                 createEvmTxProcessor.executeEth(
                         sender,
