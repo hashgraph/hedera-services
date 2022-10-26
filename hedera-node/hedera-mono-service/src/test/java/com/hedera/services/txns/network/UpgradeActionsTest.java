@@ -136,6 +136,7 @@ class UpgradeActionsTest {
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
         given(dualState.getFreezeTime()).willReturn(then);
         given(dualState.getLastFrozenTime()).willReturn(then);
+        assertTrue(new File(markerFilesLoc).mkdirs());
 
         subject.catchUpOnMissedSideEffects();
 
@@ -222,6 +223,7 @@ class UpgradeActionsTest {
     @Test
     void complainsLoudlyWhenUnableToUnzipArchive() throws IOException {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
+        assertTrue(new File(markerFilesLoc).mkdirs());
 
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
         willThrow(IOException.class).given(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
@@ -256,23 +258,9 @@ class UpgradeActionsTest {
     }
 
     @Test
-    void upgradeCreatesMissingWriteDirectory() {
-        final var d = Paths.get(markerFilesLoc).toFile();
-        if (d.exists()) {
-            assertTrue(d.delete());
-        }
-
-        given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
-
-        subject.extractSoftwareUpgrade(PRETEND_ARCHIVE).join();
-
-        assertTrue(d.exists());
-        rmIfPresent(EXEC_IMMEDIATE_MARKER);
-    }
-
-    @Test
     void upgradesTelemetry() throws IOException {
         rmIfPresent(EXEC_TELEMETRY_MARKER);
+        assertTrue(new File(markerFilesLoc).mkdirs());
 
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
