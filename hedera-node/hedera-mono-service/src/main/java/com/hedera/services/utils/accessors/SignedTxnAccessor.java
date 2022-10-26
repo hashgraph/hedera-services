@@ -164,7 +164,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     public void countAutoCreationsWith(final AliasManager aliasManager) {
         final var resolver = new AliasResolver();
         resolver.resolve(txn.getCryptoTransfer(), aliasManager);
-        numAutoCreations = resolver.perceivedAutoCreations();
+        numAutoCreations = resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
     }
 
     @Override

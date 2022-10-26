@@ -17,6 +17,7 @@ package com.hedera.services.txns.crypto;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -91,6 +92,7 @@ public class AutoCreationLogic {
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     public static final String AUTO_MEMO = "auto-created account";
+    public static final String LAZY_MEMO = "lazy-created account";
 
     @Inject
     public AutoCreationLogic(
@@ -136,6 +138,9 @@ public class AutoCreationLogic {
             for (final var pendingCreation : pendingCreations) {
                 final var alias = pendingCreation.recordBuilder().getAlias();
                 aliasManager.unlink(alias);
+                if (alias.size() != EVM_ADDRESS_SIZE) {
+                    aliasManager.forgetEvmAddress(alias);
+                }
             }
             return true;
         } else {
@@ -195,41 +200,48 @@ public class AutoCreationLogic {
                     "Cannot auto-create an account from unaliased change " + change);
         }
 
+        TransactionBody.Builder syntheticCreation;
+        String memo;
+        HederaAccountCustomizer customizer = new HederaAccountCustomizer();
         // checks tokenAliasMap if the change consists an alias that is already used in previous
         // iteration of the token transfer list. This map is used to count number of
         // maxAutoAssociations needed on auto created account
         analyzeTokenTransferCreations(changes);
-
         final var maxAutoAssociations =
                 tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+        customizer.maxAutomaticAssociations(maxAutoAssociations);
+        if (alias.size() == EVM_ADDRESS_SIZE) {
+            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
+            memo = LAZY_MEMO;
+        } else {
+            final var key = asPrimitiveKeyUnchecked(alias);
+            syntheticCreation = syntheticTxnFactory.createAccount(key, 0L, maxAutoAssociations);
+            JKey jKey = asFcKeyUnchecked(key);
+            customizer.key(jKey);
+            memo = AUTO_MEMO;
+        }
 
-        final var key = asPrimitiveKeyUnchecked(alias);
-        final var syntheticCreation =
-                syntheticTxnFactory.createAccount(key, 0L, maxAutoAssociations);
+        customizer
+                .memo(memo)
+                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                .isReceiverSigRequired(false)
+                .isSmartContract(false)
+                .alias(alias);
+
         final var fee = autoCreationFeeFor(syntheticCreation);
 
         final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
         accountsLedger.create(newId);
         replaceAliasAndSetBalanceOnChange(change, newId);
 
-        JKey jKey = asFcKeyUnchecked(key);
-        final var customizer =
-                new HederaAccountCustomizer()
-                        .key(jKey)
-                        .memo(AUTO_MEMO)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                        .isReceiverSigRequired(false)
-                        .isSmartContract(false)
-                        .alias(alias)
-                        .maxAutomaticAssociations(maxAutoAssociations);
         customizer.customize(newId, accountsLedger);
 
         final var sideEffects = new SideEffectsTracker();
         sideEffects.trackAutoCreation(newId, alias);
 
         final var childRecord =
-                creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
+                creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, memo);
         childRecord.setFee(fee);
 
         final var inProgress =
@@ -239,7 +251,11 @@ public class AutoCreationLogic {
         // If the transaction fails, we will get an opportunity to unlink this alias in
         // reclaimPendingAliases()
         aliasManager.link(alias, EntityNum.fromAccountId(newId));
-        aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
+        if (alias.size() > EVM_ADDRESS_SIZE) {
+            final var key = asPrimitiveKeyUnchecked(alias);
+            JKey jKey = asFcKeyUnchecked(key);
+            aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
+        }
 
         return Pair.of(OK, fee);
     }

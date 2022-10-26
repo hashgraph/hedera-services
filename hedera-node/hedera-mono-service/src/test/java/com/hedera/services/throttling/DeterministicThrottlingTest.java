@@ -298,9 +298,10 @@ class DeterministicThrottlingTest {
 
     @ParameterizedTest
     @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
-    void doesntUseCryptoCreateThrottleForCryptoTransferWithAutoCreationIfAutoCreationDisabled(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled)
-            throws IOException {
+    void
+            doesntUseCryptoCreateThrottleForCryptoTransferWithAutoCreationIfAutoAndLazyCreationDisabled(
+                    final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+                    throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
         final var alias = aPrimitiveKey.toByteString();
@@ -343,13 +344,25 @@ class DeterministicThrottlingTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CsvSource({
+        "HAPI,true,true",
+        "HAPI,false,true",
+        "CONSENSUS,true,true",
+        "CONSENSUS,false,true",
+        "HAPI,true,false",
+        "HAPI,false,false",
+        "CONSENSUS,true,false",
+        "CONSENSUS,false,false"
+    })
     void doesntUseCryptoCreateThrottleForCryptoTransferWithNoAliases(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+            final DeterministicThrottlingMode mode,
+            final boolean longTermEnabled,
+            final boolean autoOrLazyCreationEnabled)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
-        given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
+        given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoOrLazyCreationEnabled);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(!autoOrLazyCreationEnabled);
         final var scheduledXferWithAutoCreation =
                 SchedulableTransactionBody.newBuilder()
                         .setCryptoTransfer(
@@ -890,6 +903,21 @@ class DeterministicThrottlingTest {
 
         givenFunction(CryptoTransfer);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
+        given(accessor.getNumAutoCreations()).willReturn(0);
+        subject.rebuildFor(defs);
+
+        var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+        verify(accessor).countAutoCreationsWith(aliasManager);
+        assertFalse(ans);
+    }
+
+    @Test
+    void ifLazyCreationEnabledComputesNumAutoCreationsIfNotAlreadyKnown() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        givenFunction(CryptoTransfer);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         given(accessor.getNumAutoCreations()).willReturn(0);
         subject.rebuildFor(defs);
 

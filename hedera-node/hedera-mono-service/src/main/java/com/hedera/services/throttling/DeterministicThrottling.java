@@ -302,7 +302,8 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
             case TokenMint:
                 return shouldThrottleMint(manager, txn.getTokenMint(), now);
             case CryptoTransfer:
-                if (dynamicProperties.isAutoCreationEnabled()) {
+                if (dynamicProperties.isAutoCreationEnabled()
+                        || dynamicProperties.isLazyCreationEnabled()) {
                     return shouldThrottleTransfer(manager, details.getNumAutoCreations(), now);
                 } else {
                     /* Since auto-creation is disabled, if this transfer does attempt one, it will
@@ -335,12 +336,15 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
         // maintain legacy behaviour
         if (!dynamicProperties.schedulingLongTermEnabled()) {
-            if (dynamicProperties.isAutoCreationEnabled() && scheduledFunction == CryptoTransfer) {
+            if ((dynamicProperties.isAutoCreationEnabled()
+                            || dynamicProperties.isLazyCreationEnabled())
+                    && scheduledFunction == CryptoTransfer) {
                 final var xfer = scheduled.getCryptoTransfer();
                 if (usesAliases(xfer)) {
                     final var resolver = new AliasResolver();
                     resolver.resolve(xfer, aliasManager);
-                    final var numAutoCreations = resolver.perceivedAutoCreations();
+                    final var numAutoCreations =
+                            resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
                     if (numAutoCreations > 0) {
                         return shouldThrottleAutoCreations(numAutoCreations, now);
                     }
@@ -708,7 +712,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
         public int getNumAutoCreations() {
             final var resolver = new AliasResolver();
             resolver.resolve(txn.getCryptoTransfer(), aliasManager);
-            return resolver.perceivedAutoCreations();
+            return resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
         }
 
         @Override
