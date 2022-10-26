@@ -17,6 +17,6 @@ package com.hedera.services.evm.contracts.execution;
 
 public abstract class StaticProperties {
 
-    public static long shard;
-    public static long realm;
+    public static long shard = 0;
+    public static long realm = 0;
 }
