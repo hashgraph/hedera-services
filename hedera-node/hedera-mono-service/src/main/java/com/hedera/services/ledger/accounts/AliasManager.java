@@ -265,8 +265,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
         try {
             final Key key = Key.parseFrom(alias);
             final JKey jKey = JKey.mapKey(key);
-            final var evmAddress = tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
-            return evmAddress;
+            return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
         } catch (InvalidProtocolBufferException
                 | DecoderException
                 | IllegalArgumentException ignore) {
