@@ -168,6 +168,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                           """;
     public static final String HODL_XFER = "hodlXfer";
     public static final String PAYEE_NO_SIG_REQ = "payeeNoSigReq";
+    public static final String HBAR_XFER = "hbarXfer";
+    public static final String NFT_XFER = "nftXfer";
+    public static final String FT_XFER = "ftXfer";
 
     public static void main(String... args) {
         new CryptoTransferSuite().runSuiteAsync();
@@ -176,28 +179,28 @@ public class CryptoTransferSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                                transferWithMissingAccountGetsInvalidAccountId(),
-                                complexKeyAcctPaysForOwnTransfer(),
-                                twoComplexKeysRequired(),
-                                specialAccountsBalanceCheck(),
-                                tokenTransferFeesScaleAsExpected(),
-                                okToSetInvalidPaymentHeaderForCostAnswer(),
-                                baseCryptoTransferFeeChargedAsExpected(),
-                                autoAssociationRequiresOpenSlots(),
-                                royaltyCollectorsCanUseAutoAssociation(),
-                                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-                                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-                                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-                                transferToNonAccountEntitiesReturnsInvalidAccountId(),
-                                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-                                checksExpectedDecimalsForFungibleTokenTransferList(),
-                                allowanceTransfersWorkAsExpected(),
-                                allowanceTransfersWithComplexTransfersWork(),
-                                canUseMirrorAliasesForNonContractXfers(),
-                                canUseEip1014AliasesForXfers(),
-                                cannotTransferFromImmutableAccounts(),
-                                nftTransfersCannotRepeatSerialNos(),
-                                vanillaTransferSucceeds(),
+                transferWithMissingAccountGetsInvalidAccountId(),
+                complexKeyAcctPaysForOwnTransfer(),
+                twoComplexKeysRequired(),
+                specialAccountsBalanceCheck(),
+                tokenTransferFeesScaleAsExpected(),
+                okToSetInvalidPaymentHeaderForCostAnswer(),
+                baseCryptoTransferFeeChargedAsExpected(),
+                autoAssociationRequiresOpenSlots(),
+                royaltyCollectorsCanUseAutoAssociation(),
+                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+                transferToNonAccountEntitiesReturnsInvalidAccountId(),
+                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+                checksExpectedDecimalsForFungibleTokenTransferList(),
+                allowanceTransfersWorkAsExpected(),
+                allowanceTransfersWithComplexTransfersWork(),
+                canUseMirrorAliasesForNonContractXfers(),
+                canUseEip1014AliasesForXfers(),
+                cannotTransferFromImmutableAccounts(),
+                nftTransfersCannotRepeatSerialNos(),
+                vanillaTransferSucceeds(),
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias());
@@ -210,35 +213,31 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2875
     private HapiApiSpec canUseMirrorAliasesForNonContractXfers() {
-        final var fungibleToken = "fungibleToken";
-        final var nonFungibleToken = "nonFungibleToken";
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<AccountID> counterId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-        final var hbarXfer = "hbarXfer";
-        final var nftXfer = "nftXfer";
-        final var ftXfer = "ftXfer";
 
         return defaultHapiSpec("CanUseMirrorAliasesForNonContractXfers")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         cryptoCreate(COUNTERPARTY).maxAutomaticTokenAssociations(2),
-                        tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
-                        tokenCreate(nonFungibleToken)
+                        tokenCreate(FUNGIBLE_TOKEN).treasury(PARTY).initialSupply(1_000_000),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .initialSupply(0)
                                 .treasury(PARTY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(MULTI_KEY),
-                        mintToken(nonFungibleToken, List.of(copyFromUtf8("Please mind the vase."))),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("Please mind the vase."))),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var registry = spec.registry();
-                                    ftId.set(registry.getTokenID(fungibleToken));
-                                    nftId.set(registry.getTokenID(nonFungibleToken));
+                                    ftId.set(registry.getTokenID(FUNGIBLE_TOKEN));
+                                    nftId.set(registry.getTokenID(NON_FUNGIBLE_TOKEN));
                                     partyId.set(registry.getAccountID(PARTY));
                                     counterId.set(registry.getAccountID(COUNTERPARTY));
                                     partyAlias.set(
@@ -322,7 +321,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                 counterAlias.get(),
                                                                                 +2))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(hbarXfer),
+                                .via(HBAR_XFER),
                         cryptoTransfer(
                                         (spec, b) ->
                                                 b.addTokenTransfers(
@@ -338,7 +337,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                                 .get()),
                                                                                 1L))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(nftXfer),
+                                .via(NFT_XFER),
                         cryptoTransfer(
                                         (spec, b) ->
                                                 b.addTokenTransfers(
@@ -353,11 +352,11 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                 counterAlias.get(),
                                                                                 +500))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(ftXfer))
+                                .via(FT_XFER))
                 .then(
-                        getTxnRecord(hbarXfer).logged(),
-                        getTxnRecord(nftXfer).logged(),
-                        getTxnRecord(ftXfer).logged());
+                        getTxnRecord(HBAR_XFER).logged(),
+                        getTxnRecord(NFT_XFER).logged(),
+                        getTxnRecord(FT_XFER).logged());
     }
 
     @SuppressWarnings("java:S5669")
@@ -376,9 +375,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<String> counterLiteral = new AtomicReference<>();
         final AtomicReference<AccountID> counterId = new AtomicReference<>();
-        final var hbarXfer = "hbarXfer";
-        final var nftXfer = "nftXfer";
-        final var ftXfer = "ftXfer";
 
         final byte[] salt =
                 unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
@@ -538,7 +534,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                         .get(),
                                                                                 +2))))
                                 .signedBy(DEFAULT_PAYER, MULTI_KEY)
-                                .via(hbarXfer),
+                                .via(HBAR_XFER),
                         cryptoTransfer(
                                         (spec, b) ->
                                                 b.addTokenTransfers(
@@ -554,7 +550,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                                 .get()),
                                                                                 1L))))
                                 .signedBy(DEFAULT_PAYER, MULTI_KEY)
-                                .via(nftXfer),
+                                .via(NFT_XFER),
                         cryptoTransfer(
                                         (spec, b) ->
                                                 b.addTokenTransfers(
@@ -571,11 +567,11 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                         .get(),
                                                                                 +500))))
                                 .signedBy(DEFAULT_PAYER, MULTI_KEY)
-                                .via(ftXfer))
+                                .via(FT_XFER))
                 .then(
                         sourcing(
                                 () ->
-                                        getTxnRecord(hbarXfer)
+                                        getTxnRecord(HBAR_XFER)
                                                 .hasPriority(
                                                         recordWith()
                                                                 .transfers(
@@ -588,7 +584,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                         2))))),
                         sourcing(
                                 () ->
-                                        getTxnRecord(nftXfer)
+                                        getTxnRecord(NFT_XFER)
                                                 .hasPriority(
                                                         recordWith()
                                                                 .tokenTransfers(
@@ -603,7 +599,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                                         .get()))))),
                         sourcing(
                                 () ->
-                                        getTxnRecord(ftXfer)
+                                        getTxnRecord(FT_XFER)
                                                 .hasPriority(
                                                         recordWith()
                                                                 .tokenTransfers(
@@ -2107,7 +2103,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-        final var hbarXfer = "hbarXfer";
 
         return defaultHapiSpec("TransferHbarsToEVMAddressAlias")
                 .given(
@@ -2142,9 +2137,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                 counterAlias.get(),
                                                                                 +2))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(hbarXfer))
+                                .via(HBAR_XFER))
                 .then(
-                        getTxnRecord(hbarXfer)
+                        getTxnRecord(HBAR_XFER)
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
@@ -2156,7 +2151,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-        final var ftXfer = "ftXfer";
 
         return defaultHapiSpec("TransferFungibleToEVMAddressAlias")
                 .given(
@@ -2194,9 +2188,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                 counterAlias.get(),
                                                                                 +500))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(ftXfer))
+                                .via(FT_XFER))
                 .then(
-                        getTxnRecord(ftXfer)
+                        getTxnRecord(FT_XFER)
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
@@ -2208,7 +2202,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-        final var nftXfer = "nftXfer";
 
         return defaultHapiSpec("TransferNonFungibleToEVMAddressAlias")
                 .given(
@@ -2255,9 +2248,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                                 .get()),
                                                                                 1L))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(nftXfer))
+                                .via(NFT_XFER))
                 .then(
-                        getTxnRecord(nftXfer)
+                        getTxnRecord(NFT_XFER)
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
