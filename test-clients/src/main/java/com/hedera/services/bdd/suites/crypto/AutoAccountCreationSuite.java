@@ -1364,8 +1364,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         resetToDefault(
                                 CONTRACTS_CHAIN_ID_PROPERTY_NAME,
                                 LAZY_CREATE_PROPERTY_NAME,
-                                "contracts.evm.version",
-                                "contracts.evm.version.dynamic"));
+                                "contracts.evm.version"));
     }
 
     @SuppressWarnings("java:S5960")

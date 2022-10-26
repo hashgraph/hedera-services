@@ -6846,10 +6846,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                     .build())));
                                 }),
                         resetToDefault(
-                                CHAIN_ID_PROPERTY,
-                                LAZY_CREATE_PROPERTY,
-                                "contracts.evm.version",
-                                "contracts.evm.version.dynamic"));
+                                CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version"));
     }
 
     @SuppressWarnings("java:S5960")
