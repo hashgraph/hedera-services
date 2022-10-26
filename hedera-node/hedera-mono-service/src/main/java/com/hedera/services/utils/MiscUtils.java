@@ -1001,4 +1001,12 @@ public final class MiscUtils {
         inProgress.setTxnHash(synthHash);
         return synthTxn;
     }
+
+    public static Key asPrimitiveKeyUnchecked(final ByteString alias) {
+        try {
+            return Key.parseFrom(alias);
+        } catch (InvalidProtocolBufferException internal) {
+            throw new IllegalStateException(internal);
+        }
+    }
 }

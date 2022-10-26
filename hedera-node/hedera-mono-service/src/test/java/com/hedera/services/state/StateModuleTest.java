@@ -40,6 +40,7 @@ class StateModuleTest {
     @Mock private MutableStateChildren workingState;
     @Mock private PropertySource properties;
     @Mock private NetworkInfo networkInfo;
+    @Mock private StateModule.ConsoleCreator consoleCreator;
 
     @Test
     void providesDefaultCharset() {

@@ -27,6 +27,7 @@ import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -163,7 +164,7 @@ class HederaKeyActivationTest {
                 createCryptoSigsFrom(
                                 explicitList, mockSigs, new ReusableBodySigningFactory(accessor))
                         .getPlatformSigs();
-        new CryptoEngine().verifySync(cryptoSigs);
+        new CryptoEngine(getStaticThreadManager()).verifySync(cryptoSigs);
         final var subject = pkToSigMapFrom(cryptoSigs);
 
         final var ed25519Sig = subject.apply(ed25519Key.getEd25519());
