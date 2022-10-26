@@ -6727,6 +6727,11 @@ public class TraceabilitySuite extends HapiApiSuite {
         return defaultHapiSpec("ethereumLazyCreateExportsExpectedSidecars")
                 .given(
                         overridingTwo(CHAIN_ID_PROPERTY, "298", LAZY_CREATE_PROPERTY, "true"),
+                        overridingTwo(
+                                "contracts.evm.version",
+                                "v0.32",
+                                "contracts.evm.version.dynamic",
+                                "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),
@@ -6840,7 +6845,11 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                     .setOutput(EMPTY)
                                                                     .build())));
                                 }),
-                        resetToDefault(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY));
+                        resetToDefault(
+                                CHAIN_ID_PROPERTY,
+                                LAZY_CREATE_PROPERTY,
+                                "contracts.evm.version",
+                                "contracts.evm.version.dynamic"));
     }
 
     @SuppressWarnings("java:S5960")

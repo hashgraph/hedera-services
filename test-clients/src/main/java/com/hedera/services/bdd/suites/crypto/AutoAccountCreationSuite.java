@@ -57,6 +57,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -1243,6 +1244,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .given(
                         overriding(CONTRACTS_CHAIN_ID_PROPERTY_NAME, "298"),
                         overriding(LAZY_CREATE_PROPERTY_NAME, "true"),
+                        overridingTwo(
+                                "contracts.evm.version",
+                                "v0.32",
+                                "contracts.evm.version.dynamic",
+                                "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -1356,7 +1362,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     allRunFor(spec, payTxn, childRecordsCheck);
                                 }),
                         resetToDefault(
-                                CONTRACTS_CHAIN_ID_PROPERTY_NAME, LAZY_CREATE_PROPERTY_NAME));
+                                CONTRACTS_CHAIN_ID_PROPERTY_NAME,
+                                LAZY_CREATE_PROPERTY_NAME,
+                                "contracts.evm.version",
+                                "contracts.evm.version.dynamic"));
     }
 
     @SuppressWarnings("java:S5960")
