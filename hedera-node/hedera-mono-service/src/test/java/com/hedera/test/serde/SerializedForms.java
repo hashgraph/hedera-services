@@ -21,6 +21,7 @@ import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import com.hedera.node.app.keys.Ed25519Key;
+import com.hedera.node.app.keys.Ed25519KeySerdeTest;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
@@ -254,7 +255,11 @@ public class SerializedForms {
                     entry(
                             SerializableSemVers.class,
                             SeededPropertySource::nextSerializableSemVers,
-                            2 * MIN_TEST_CASES_PER_VERSION));
+                            2 * MIN_TEST_CASES_PER_VERSION),
+                    entry(
+                            Ed25519Key.class,
+                            SeededPropertySource::nextEd25519HederaKey,
+                            Ed25519KeySerdeTest.NUM_TEST_CASES));
 
     private static <T extends SelfSerializable> void saveForCurrentVersion(
             final Class<T> type,
