@@ -96,7 +96,13 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
                 } else if (updater.get(frame.getRecipientAddress()) == null) {
-                    // can be reached only when EVM_VERSION >= 0.32
+                    // can be reached only for a top level call with EVM_VERSION >= 0.32;
+                    // a top-level call to a non-existing recipient would have been rejected
+                    // immediately
+                    // in {@code ContractCallTransitionLogic.doStateTransitionOperation()} if
+                    // EVM_VERSION < 0.32
+                    // and nested calls to non-existing recipients are currently rejected in all
+                    // versions (see {@code HederaOperationUtil})
                     executeLazyCreate(frame, updater, operationTracer);
                 }
             }
