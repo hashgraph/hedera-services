@@ -107,6 +107,12 @@ public class HapiApiSpec implements Runnable {
     }
 
     private final Map<String, Long> privateKeyToNonce = new HashMap<>();
+
+    public boolean isOnlySpecToRunInSuite() {
+        return onlySpecToRunInSuite;
+    }
+
+    private final boolean onlySpecToRunInSuite;
     List<Payment> costs = new ArrayList<>();
     List<Payment> costSnapshot = Collections.emptyList();
     String name;
@@ -538,9 +544,17 @@ public class HapiApiSpec implements Runnable {
     }
 
     public static Def.Given defaultHapiSpec(String name) {
+        return internalDefaultHapiSpec(name, false);
+    }
+
+    public static Def.Given onlyDefaultHapiSpec(String name) {
+        return internalDefaultHapiSpec(name, true);
+    }
+
+    private static Def.Given internalDefaultHapiSpec(final String name, final boolean isOnly) {
         final Stream<Map<String, String>> prioritySource =
                 runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
-        return customizedHapiSpec(name, prioritySource).withProperties();
+        return customizedHapiSpec(isOnly, name, prioritySource).withProperties();
     }
 
     public static Map<String, String> ciPropOverrides() {
@@ -577,13 +591,13 @@ public class HapiApiSpec implements Runnable {
                 Stream.of(
                         runningInCi ? ciPropOverrides() : Collections.emptyMap(),
                         Map.of("expected.final.status", "FAILED"));
-        return customizedHapiSpec(name, prioritySource).withProperties();
+        return customizedHapiSpec(false, name, prioritySource).withProperties();
     }
 
     public static Def.Sourced customHapiSpec(String name) {
         final Stream<Map<String, String>> prioritySource =
                 runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
-        return customizedHapiSpec(name, prioritySource);
+        return customizedHapiSpec(false, name, prioritySource);
     }
 
     public static Def.Sourced customFailingHapiSpec(String name) {
@@ -591,10 +605,11 @@ public class HapiApiSpec implements Runnable {
                 runningInCi
                         ? Stream.of(ciPropOverrides(), Map.of("expected.final.status", "FAILED"))
                         : Stream.empty();
-        return customizedHapiSpec(name, prioritySource);
+        return customizedHapiSpec(false, name, prioritySource);
     }
 
-    private static <T> Def.Sourced customizedHapiSpec(String name, Stream<T> prioritySource) {
+    private static <T> Def.Sourced customizedHapiSpec(
+            final boolean isOnly, final String name, final Stream<T> prioritySource) {
         return (Object... sources) -> {
             Object[] allSources =
                     Stream.of(
@@ -603,7 +618,7 @@ public class HapiApiSpec implements Runnable {
                                     Stream.of(HapiSpecSetup.getDefaultPropertySource()))
                             .flatMap(Function.identity())
                             .toArray();
-            return hapiSpec(name).withSetup(setupFrom(allSources));
+            return (isOnly ? onlyHapiSpec(name) : hapiSpec(name)).withSetup(setupFrom(allSources));
         };
     }
 
@@ -612,11 +627,18 @@ public class HapiApiSpec implements Runnable {
     }
 
     public static Def.Setup hapiSpec(String name) {
-        return setup -> given -> when -> then -> new HapiApiSpec(name, setup, given, when, then);
+        return setup ->
+                given -> when -> then -> new HapiApiSpec(name, false, setup, given, when, then);
+    }
+
+    public static Def.Setup onlyHapiSpec(String name) {
+        return setup ->
+                given -> when -> then -> new HapiApiSpec(name, true, setup, given, when, then);
     }
 
     private HapiApiSpec(
             String name,
+            boolean onlySpecToRunInSuite,
             HapiSpecSetup hapiSetup,
             HapiSpecOperation[] given,
             HapiSpecOperation[] when,
@@ -627,6 +649,7 @@ public class HapiApiSpec implements Runnable {
         this.given = given;
         this.when = when;
         this.then = then;
+        this.onlySpecToRunInSuite = onlySpecToRunInSuite;
         hapiClients = clientsFor(hapiSetup);
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);

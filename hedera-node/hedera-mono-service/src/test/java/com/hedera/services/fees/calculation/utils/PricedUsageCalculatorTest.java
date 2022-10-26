@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.calc.OverflowCheckingCalc;
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;

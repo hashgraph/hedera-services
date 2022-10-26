@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.fees;
+package com.hedera.services.fees.annotations;
 
-import com.hedera.services.utils.accessors.TxnAccessor;
-import java.time.Instant;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public interface FeeMultiplierSource {
-    void updateMultiplier(final TxnAccessor accessor, Instant consensusNow);
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-    long currentMultiplier(final TxnAccessor accessor);
-
-    void resetExpectations();
-
-    void resetCongestionLevelStarts(Instant[] savedStartTimes);
-
-    Instant[] congestionLevelStarts();
-}
+@Target({ElementType.METHOD, ElementType.PARAMETER})
+@Qualifier
+@Retention(RUNTIME)
+public @interface GenericPriceMultiplier {}
