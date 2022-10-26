@@ -30,8 +30,8 @@ public abstract class HederaEvmContractAliases {
      * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
     private static byte[] MIRROR_PREFIX = null;
 
-    private static final Supplier<Long> SHARD = Suppliers.memoize(() -> StaticProperties.shard);
-    private static final Supplier<Long> REALM = Suppliers.memoize(() -> StaticProperties.realm);
+    private static final Supplier<Long> SHARD = Suppliers.memoize(StaticProperties::getShard);
+    private static final Supplier<Long> REALM = Suppliers.memoize(StaticProperties::getRealm);
 
     public abstract Address resolveForEvm(Address addressOrAlias);
 

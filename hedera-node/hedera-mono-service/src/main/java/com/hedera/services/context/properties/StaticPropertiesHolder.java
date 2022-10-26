@@ -39,14 +39,6 @@ public class StaticPropertiesHolder extends StaticProperties {
         this.maxThrottleExemptNum = maxThrottleExemptNum;
     }
 
-    public long getShard() {
-        return shard;
-    }
-
-    public long getRealm() {
-        return realm;
-    }
-
     public boolean isThrottleExempt(final long num) {
         return 1L <= num && num <= maxThrottleExemptNum;
     }
