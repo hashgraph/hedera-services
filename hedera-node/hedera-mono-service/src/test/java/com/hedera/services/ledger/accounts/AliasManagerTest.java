@@ -200,8 +200,9 @@ class AliasManagerTest {
     @Test
     @SuppressWarnings("unchecked")
     void rebuildsFromMap() throws ConstructableRegistryException {
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
 
         final var withNum = EntityNum.fromLong(1L);
         final var withoutNum = EntityNum.fromLong(2L);

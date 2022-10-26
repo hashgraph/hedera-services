@@ -21,7 +21,6 @@ import static com.hedera.services.contracts.ParsingConstants.BOOL;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.addApprovedAdjustment;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.addSignedAdjustment;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
@@ -223,8 +222,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         final var amount = (BigInteger) decodedArguments.get(1);
 
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-        addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValueExact());
-        addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValueExact());
+        addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValueExact(), false);
+        addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValueExact(), false);
 
         final var tokenTransferWrappers =
                 Collections.singletonList(
@@ -273,13 +272,11 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                     new ArrayList<>();
             final var amount = (BigInteger) decodedArguments.get(offset + 2);
 
-            addSignedAdjustment(fungibleTransfers, token, to, amount.longValueExact());
+            addSignedAdjustment(fungibleTransfers, token, to, amount.longValueExact(), false);
 
-            if (from.equals(operatorId.toGrpcAccountId())) {
-                addSignedAdjustment(fungibleTransfers, token, from, -amount.longValueExact());
-            } else {
-                addApprovedAdjustment(fungibleTransfers, token, from, -amount.longValueExact());
-            }
+            boolean isApproval = !from.equals(operatorId.toGrpcAccountId());
+            addSignedAdjustment(
+                    fungibleTransfers, token, from, -amount.longValueExact(), isApproval);
 
             final var tokenTransferWrappers =
                     Collections.singletonList(
