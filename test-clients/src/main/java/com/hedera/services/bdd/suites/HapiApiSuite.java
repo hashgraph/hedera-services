@@ -180,6 +180,12 @@ public abstract class HapiApiSuite {
         }
 
         List<HapiApiSpec> specs = getSpecsInSuite();
+        for (final var spec : specs) {
+            if (spec.isOnlySpecToRunInSuite()) {
+                specs = List.of(spec);
+                break;
+            }
+        }
         final var name = name();
         specs.forEach(spec -> spec.setSuitePrefix(name));
         runner.accept(specs);

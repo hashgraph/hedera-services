@@ -133,7 +133,7 @@ public class SerializedForms {
     }
 
     private static void generateSerializedData() {
-        GENERATOR_MAPPING.get(OnDiskAccount.class).run();
+        GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
         //        for (var entry : GENERATOR_MAPPING.entrySet()) {
         //            entry.getValue().run();
         //        }
@@ -219,7 +219,7 @@ public class SerializedForms {
                             MIN_TEST_CASES_PER_VERSION),
                     entry(
                             MerkleNetworkContext.class,
-                            SeededPropertySource::next0310NetworkContext,
+                            SeededPropertySource::next0320NetworkContext,
                             MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
                     entry(
                             MerkleScheduledTransactionsState.class,
