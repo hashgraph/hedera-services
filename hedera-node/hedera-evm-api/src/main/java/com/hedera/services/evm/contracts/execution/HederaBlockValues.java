@@ -18,7 +18,6 @@ package com.hedera.services.evm.contracts.execution;
 import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
@@ -51,7 +50,7 @@ public class HederaBlockValues implements BlockValues {
 
     @Override
     public Bytes getDifficultyBytes() {
-        return UInt256.ZERO;
+        return Bytes.EMPTY;
     }
 
     @Override

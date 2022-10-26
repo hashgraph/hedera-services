@@ -17,7 +17,7 @@ package com.hedera.services.evm.contracts.execution;
 
 import java.time.Instant;
 import java.util.Optional;
-import org.apache.tuweni.units.bigints.UInt256;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class HederaBlockValuesTest {
         Assertions.assertEquals(gasLimit, subject.getGasLimit());
         Assertions.assertEquals(consTime.getEpochSecond(), subject.getTimestamp());
         Assertions.assertEquals(Optional.of(Wei.ZERO), subject.getBaseFee());
-        Assertions.assertEquals(UInt256.ZERO, subject.getDifficultyBytes());
+        Assertions.assertEquals(Bytes.EMPTY, subject.getDifficultyBytes());
         Assertions.assertEquals(blockNo, subject.getNumber());
     }
 }

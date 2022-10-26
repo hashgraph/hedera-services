@@ -4,7 +4,6 @@ module com.hedera.services.evm {
     requires org.hyperledger.besu.datatypes;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires tuweni.bytes;
-    requires tuweni.units;
     requires javax.inject;
     requires com.swirlds.common;
 
