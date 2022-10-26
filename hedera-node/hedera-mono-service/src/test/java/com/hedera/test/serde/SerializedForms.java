@@ -20,6 +20,7 @@ import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
+import com.hedera.node.app.keys.Ed25519Key;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
@@ -98,7 +99,7 @@ public class SerializedForms {
     }
 
     private static void generateSerializedData() {
-        GENERATOR_MAPPING.get(OnDiskAccount.class).run();
+        GENERATOR_MAPPING.get(Ed25519Key.class).run();
         //        for (var entry : GENERATOR_MAPPING.entrySet()) {
         //            entry.getValue().run();
         //        }

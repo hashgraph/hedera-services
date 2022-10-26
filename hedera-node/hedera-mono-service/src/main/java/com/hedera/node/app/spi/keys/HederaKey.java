@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.spi.key;
+package com.hedera.node.app.spi.keys;
 
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.virtualmap.VirtualValue;

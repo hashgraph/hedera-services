@@ -1,6 +1,7 @@
-package com.hedera.node.app.spi.key;
+package com.hedera.node.app.keys;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.spi.keys.HederaKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public class KeyList implements HederaKey  {
+public class KeyList implements HederaKey {
 	private static final long CLASS_ID = 15512048L;
 	private static final int VERSION = 1;
 	private List<HederaKey> keys;
@@ -74,17 +75,27 @@ public class KeyList implements HederaKey  {
 	}
 
 	@Override
-	public void deserialize(final ByteBuffer byteBuffer, final int version) throws IOException {
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
+		final var len = keys.size();
+		out.writeInt(len);
+		for (final var key : keys){
+			key.serialize(out);
+		}
+	}
 
+	@Override
+	public void deserialize(final ByteBuffer buf, final int version) throws IOException {
+		final var len = buf.getInt();
+		final List<HederaKey> keys = new LinkedList<>();
+		for(int i = 0; i < len ; i++){
+//			final HederaKey key = deserialize(buf, version);
+//			keys.add(key);
+		}
+		this.keys = keys;
 	}
 
 	@Override
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-
-	}
-
-	@Override
-	public void serialize(final SerializableDataOutputStream out) throws IOException {
 
 	}
 

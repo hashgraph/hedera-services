@@ -23,7 +23,7 @@ import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.keys.HederaKey;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.services.state.merkle.MerkleAccount;

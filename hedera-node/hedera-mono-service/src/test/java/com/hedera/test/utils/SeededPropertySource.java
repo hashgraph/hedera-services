@@ -22,6 +22,7 @@ import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBy
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.keys.Ed25519Key;
 import com.hedera.services.context.properties.EntityType;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.*;
@@ -408,6 +409,10 @@ public class SeededPropertySource {
 
     public MerkleScheduledTransactionsState nextScheduledTransactionsState() {
         return new MerkleScheduledTransactionsState(nextLong());
+    }
+
+    public Ed25519Key nextEd25519HederaKey() {
+        return new Ed25519Key(nextBytes(32));
     }
 
     public ExpirableTxnRecord nextRecord() {

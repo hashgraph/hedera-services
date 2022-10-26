@@ -16,17 +16,22 @@
 package com.hedera.services.legacy.core.jproto;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.keys.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.virtualmap.VirtualValue;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.lang3.NotImplementedException;
 
 /** Maps to proto Key. */
 public abstract class JKey implements HederaKey {
@@ -356,5 +361,51 @@ public abstract class JKey implements HederaKey {
         } else {
             return MISSING_ECDSA_SECP256K1_KEY;
         }
+    }
+
+    @Override
+    public boolean isPrimitive() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public VirtualValue copy() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public VirtualValue asReadOnly() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void serialize(final ByteBuffer byteBuffer) throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void deserialize(final ByteBuffer byteBuffer, final int i) throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void deserialize(final SerializableDataInputStream serializableDataInputStream,
+            final int i) throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void serialize(final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public long getClassId() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public int getVersion() {
+        throw new NotImplementedException();
     }
 }

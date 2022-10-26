@@ -1,14 +1,18 @@
-package com.hedera.node.app.spi.key;
+package com.hedera.node.app.keys;
 
-import com.google.common.base.MoreObjects;
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.spi.keys.HederaKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Objects;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -19,6 +23,11 @@ public class Ed25519Key implements HederaKey {
 	private static final long CLASS_ID = 15528682L;
 	private static final int VERSION = 1;
 	private byte[] key;
+
+	@VisibleForTesting
+	public Ed25519Key(){
+		this.key = new byte[ED25519_BYTE_LENGTH];
+	}
 
 	public Ed25519Key(@Nonnull final byte[] key) {
 		Objects.requireNonNull(key);
@@ -37,7 +46,7 @@ public class Ed25519Key implements HederaKey {
 
 	@Override
 	public boolean isEmpty() {
-		return key == null || key.length == 0;
+		return key.length == 0;
 	}
 
 	@Override
@@ -94,25 +103,29 @@ public class Ed25519Key implements HederaKey {
 
 	@Override
 	public boolean equals(final Object o) {
-		if (o == this) {
+		if (this == o) {
 			return true;
 		}
-		if (o == null || Ed25519Key.class != o.getClass()) {
+
+		if (!(o instanceof Ed25519Key)) {
 			return false;
 		}
-		final var that = (Ed25519Key) o;
-		return Arrays.equals(this.key, that.key);
+
+		final Ed25519Key that = (Ed25519Key) o;
+		return new EqualsBuilder()
+				.append(key, that.key)
+				.isEquals();
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(key);
+		return new HashCodeBuilder().append(key).build();
 	}
 
 	@Override
 	public String toString(){
-		return MoreObjects.toStringHelper(Ed25519Key.class)
-				.add("key", (key != null) ? hex(key) : "<N/A>")
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("key", hex(key))
 				.toString();
 	}
 
