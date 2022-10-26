@@ -372,6 +372,7 @@ class ServicesStateTest {
         given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
         given(appBuilder.crypto(any())).willReturn(appBuilder);
         given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
+        given(appBuilder.consoleCreator(any())).willReturn(appBuilder);
         given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
         given(appBuilder.platform(platform)).willReturn(appBuilder);
         given(appBuilder.selfId(1L)).willReturn(appBuilder);
@@ -435,6 +436,7 @@ class ServicesStateTest {
         given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
         given(appBuilder.crypto(any())).willReturn(appBuilder);
         given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
+        given(appBuilder.consoleCreator(any())).willReturn(appBuilder);
         given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
         given(appBuilder.platform(platform)).willReturn(appBuilder);
         given(appBuilder.selfId(1L)).willReturn(appBuilder);
@@ -804,6 +806,7 @@ class ServicesStateTest {
                 .initialHash(new Hash())
                 .platform(platform)
                 .crypto(CryptoFactory.getInstance())
+                .consoleCreator((ignore, visible) -> null)
                 .selfId(platform.getSelfId().getId())
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
