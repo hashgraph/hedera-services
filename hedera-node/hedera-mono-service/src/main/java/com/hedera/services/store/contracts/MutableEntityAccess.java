@@ -127,13 +127,14 @@ public class MutableEntityAccess implements EntityAccess {
     }
 
     @Override
-    public void putStorage(final AccountID id, final UInt256 key, final UInt256 value) {
-        sizeLimitedStorage.putStorage(id, key, value);
+    public void putStorage(final AccountID id, final Bytes key, final Bytes value) {
+        sizeLimitedStorage.putStorage(id, UInt256.fromBytes(key), UInt256.fromBytes(value));
     }
 
     @Override
-    public UInt256 getStorage(final Address address, final UInt256 key) {
-        return sizeLimitedStorage.getStorage(accountIdFromEvmAddress(address), key);
+    public UInt256 getStorage(final Address address, final Bytes key) {
+        return sizeLimitedStorage.getStorage(
+                accountIdFromEvmAddress(address), UInt256.fromBytes(key));
     }
 
     @Override

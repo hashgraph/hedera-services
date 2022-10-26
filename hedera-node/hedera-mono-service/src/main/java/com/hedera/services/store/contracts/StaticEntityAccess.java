@@ -139,12 +139,12 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public void putStorage(AccountID id, UInt256 key, UInt256 value) {
+    public void putStorage(AccountID id, Bytes key, Bytes value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public UInt256 getStorage(Address address, UInt256 key) {
+    public UInt256 getStorage(Address address, Bytes key) {
         final var num = numFromEvmAddress(address.toArrayUnsafe());
         final var contractKey = new ContractKey(num, key.toArray());
         IterableContractValue value = storage.get(contractKey);

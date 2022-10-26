@@ -90,7 +90,7 @@ public class WorldStateAccount implements Account {
 
     @Override
     public UInt256 getStorageValue(final UInt256 key) {
-        return entityAccess.getStorage(asTypedEvmAddress(account), key);
+        return UInt256.fromBytes(entityAccess.getStorage(asTypedEvmAddress(account), key));
     }
 
     @Override

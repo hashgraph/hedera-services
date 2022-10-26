@@ -17,7 +17,6 @@ package com.hedera.services.evm.store.contracts;
 
 import com.google.protobuf.ByteString;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface HederaEvmEntityAccess {
@@ -29,7 +28,7 @@ public interface HederaEvmEntityAccess {
 
     boolean isExtant(Address address);
 
-    UInt256 getStorage(Address address, UInt256 key);
+    Bytes getStorage(Address address, Bytes key);
 
     /**
      * Returns the bytecode for the contract with the given account id; or null if there is no byte

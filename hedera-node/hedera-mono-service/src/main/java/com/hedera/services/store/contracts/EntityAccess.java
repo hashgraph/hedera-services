@@ -22,7 +22,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface EntityAccess extends HederaEvmEntityAccess {
@@ -49,7 +48,7 @@ public interface EntityAccess extends HederaEvmEntityAccess {
     void recordNewKvUsageTo(
             TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
 
-    void putStorage(AccountID id, UInt256 key, UInt256 value);
+    void putStorage(AccountID id, Bytes key, Bytes value);
 
     void flushStorage(
             TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
