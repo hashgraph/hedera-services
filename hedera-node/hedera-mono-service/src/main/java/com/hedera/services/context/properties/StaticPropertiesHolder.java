@@ -31,12 +31,13 @@ public class StaticPropertiesHolder extends StaticProperties {
 
     /* This will not be accessed concurrently, */
     public static final StaticPropertiesHolder STATIC_PROPERTIES = new StaticPropertiesHolder();
-    private long maxThrottleExemptNum = DEFAULT_LAST_THROTTLE_EXEMPT;
+    private static long maxThrottleExemptNum = DEFAULT_LAST_THROTTLE_EXEMPT;
 
-    public void configureNumbers(final HederaNumbers hederaNum, final long maxThrottleExemptNum) {
+    public static void configureNumbers(
+            final HederaNumbers hederaNum, final long maxThrottleExemptNum) {
         shard = hederaNum.shard();
         realm = hederaNum.realm();
-        this.maxThrottleExemptNum = maxThrottleExemptNum;
+        StaticPropertiesHolder.maxThrottleExemptNum = maxThrottleExemptNum;
     }
 
     public boolean isThrottleExempt(final long num) {
