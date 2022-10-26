@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 package com.hedera.services.evm.contracts.execution;
-@SuppressWarnings("java:S1118")//Add a private constructor to hide the implicit public one.
+
+@SuppressWarnings("java:S1118") // Add a private constructor to hide the implicit public one.
 public abstract class StaticProperties {
 
     protected static long shard = 0;
