@@ -13,35 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.fees;
+package com.hedera.services.fees.congestion;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
-import com.hedera.services.throttles.DeterministicThrottle;
-import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.services.throttles.CongestibleThrottle;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.Logger;
 
-@Singleton
-public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
-    private static final Logger log = LogManager.getLogger(TxnRateFeeMultiplierSource.class);
-
+public class ThrottleMultiplierSource implements FeeMultiplierSource {
     private static final long DEFAULT_MULTIPLIER = 1L;
     private static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
     private static final CongestionMultipliers NO_CONFIG = null;
-
-    private final GlobalDynamicProperties properties;
-    private final FunctionalityThrottling throttling;
 
     private long multiplier = DEFAULT_MULTIPLIER;
     private long previousMultiplier = DEFAULT_MULTIPLIER;
@@ -49,14 +38,53 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
     private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
     private CongestionMultipliers activeConfig = NO_CONFIG;
 
-    private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
+    private final String usageType;
+    private final String abbrevUsageType;
+    private final String congestionType;
+    private final Logger log;
+    private final LongSupplier minCongestionPeriodSupplier;
+    private final Supplier<CongestionMultipliers> multiplierSupplier;
+    private final Supplier<List<? extends CongestibleThrottle>> throttleSource;
+    private List<? extends CongestibleThrottle> activeThrottles = Collections.emptyList();
 
-    @Inject
-    public TxnRateFeeMultiplierSource(
-            GlobalDynamicProperties properties,
-            @HandleThrottle FunctionalityThrottling throttling) {
-        this.properties = properties;
-        this.throttling = throttling;
+    public ThrottleMultiplierSource(
+            final String usageType,
+            final String abbrevUsageType,
+            final String congestionType,
+            final Logger log,
+            final LongSupplier minCongestionPeriodSupplier,
+            final Supplier<CongestionMultipliers> multiplierSupplier,
+            final Supplier<List<? extends CongestibleThrottle>> throttleSource) {
+        this.abbrevUsageType = abbrevUsageType;
+        this.log = log;
+        this.minCongestionPeriodSupplier = minCongestionPeriodSupplier;
+        this.multiplierSupplier = multiplierSupplier;
+        this.throttleSource = throttleSource;
+        this.congestionType = congestionType;
+        this.usageType = usageType;
+    }
+
+    @Override
+    public void updateMultiplier(final TxnAccessor accessor, final Instant consensusNow) {
+        if (accessor.congestionExempt()) {
+            return;
+        }
+
+        if (ensureConfigUpToDate()) {
+            rebuildState();
+        }
+
+        long x = maxMultiplierOfActiveConfig(activeConfig.multipliers());
+        updateCongestionLevelStartsWith(activeConfig.multipliers(), x, consensusNow);
+        long minPeriod = minCongestionPeriodSupplier.getAsLong();
+        multiplier =
+                highestMultiplierNotShorterThan(
+                        activeConfig.multipliers(), minPeriod, consensusNow);
+
+        if (multiplier != previousMultiplier) {
+            logMultiplierChange(previousMultiplier, multiplier);
+        }
+        previousMultiplier = multiplier;
     }
 
     @Override
@@ -69,12 +97,29 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 
     @Override
     public void resetExpectations() {
-        activeThrottles = throttling.activeThrottlesFor(CryptoTransfer);
+        activeThrottles = throttleSource.get();
         if (activeThrottles.isEmpty()) {
-            log.warn("CryptoTransfer has no throttle buckets, fee multiplier will remain at one!");
+            log.warn(
+                    "Throttle multiplier for {} congestion has no throttle buckets, "
+                            + "fee multiplier will remain at one!",
+                    congestionType);
         }
         ensureConfigUpToDate();
         rebuildState();
+    }
+
+    @Override
+    public void resetCongestionLevelStarts(final Instant[] savedStartTimes) {
+        congestionLevelStarts = savedStartTimes.clone();
+    }
+
+    @Override
+    public Instant[] congestionLevelStarts() {
+        /* If the Platform is serializing a fast-copy of the MerkleNetworkContext,
+        and that copy references this object's congestionLevelStarts, we will get
+        a (transient) ISS if the congestion level changes mid-serialization on one
+        node but not others. */
+        return congestionLevelStarts.clone();
     }
 
     @Override
@@ -86,7 +131,11 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
         long[] multipliers = activeConfig.multipliers();
         for (int i = 0, n = activeThrottles.size(); i < n; i++) {
             var throttle = activeThrottles.get(i);
-            sb.append("\n  (").append(throttle.name()).append(") When logical TPS exceeds:\n");
+            sb.append("\n  (")
+                    .append(throttle.name())
+                    .append(") When ")
+                    .append(usageType)
+                    .append(" exceeds:\n");
             for (int j = 0; j < multipliers.length; j++) {
                 sb.append("    ")
                         .append(
@@ -94,7 +143,9 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
                                         activeTriggerValues[i][j],
                                         throttle.mtps(),
                                         throttle.capacity()))
-                        .append(" TPS, multiplier is ")
+                        .append(" ")
+                        .append(abbrevUsageType)
+                        .append(", multiplier is ")
                         .append(multipliers[j])
                         .append("x")
                         .append((j == multipliers.length - 1) ? "" : "\n");
@@ -107,37 +158,32 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
         return String.format("%.2f", (capacityCutoff * 1.0) / capacity * mtps / 1000.0);
     }
 
-    /**
-     * Called by {@code handleTransaction} when the multiplier should be recomputed.
-     *
-     * <p>It is <b>crucial</b> that every node in the network reach the same conclusion for the
-     * multiplier. Thus the {@link FunctionalityThrottling} implementation must provide a list of
-     * throttle state snapshots that reflect the consensus of the entire network.
-     *
-     * <p>That is, the throttle states must be a child of the {@link
-     * com.hedera.services.ServicesState}.
-     */
-    @Override
-    public void updateMultiplier(final TxnAccessor accessor, Instant consensusNow) {
-        if (accessor.congestionExempt()) {
-            return;
+    private boolean ensureConfigUpToDate() {
+        var currConfig = multiplierSupplier.get();
+        if (!currConfig.equals(activeConfig)) {
+            activeConfig = currConfig;
+            return true;
+        }
+        return false;
+    }
+
+    private void rebuildState() {
+        int n = activeThrottles.size();
+        int[] triggers = activeConfig.usagePercentTriggers();
+        long[] multipliers = activeConfig.multipliers();
+        activeTriggerValues = new long[n][multipliers.length];
+        for (int i = 0; i < n; i++) {
+            var throttle = activeThrottles.get(i);
+            long capacity = throttle.capacity();
+            for (int j = 0; j < triggers.length; j++) {
+                long cutoff = (capacity / 100L) * triggers[j];
+                activeTriggerValues[i][j] = cutoff;
+            }
         }
 
-        if (ensureConfigUpToDate()) {
-            rebuildState();
-        }
+        congestionLevelStarts = new Instant[multipliers.length];
 
-        long x = maxMultiplierOfActiveConfig(activeConfig.multipliers());
-        updateCongestionLevelStartsWith(activeConfig.multipliers(), x, consensusNow);
-        long minPeriod = properties.feesMinCongestionPeriod();
-        multiplier =
-                highestMultiplierNotShorterThan(
-                        activeConfig.multipliers(), minPeriod, consensusNow);
-
-        if (multiplier != previousMultiplier) {
-            logMultiplierChange(previousMultiplier, multiplier);
-        }
-        previousMultiplier = multiplier;
+        logReadableCutoffs();
     }
 
     private long maxMultiplierOfActiveConfig(final long[] multipliers) {
@@ -182,49 +228,13 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
         }
     }
 
-    @Override
-    public void resetCongestionLevelStarts(Instant[] savedStartTimes) {
-        congestionLevelStarts = savedStartTimes.clone();
+    @VisibleForTesting
+    public void logReadableCutoffs() {
+        log.info("The new cutoffs for {} congestion pricing are : {}", congestionType, this);
     }
 
-    @Override
-    public Instant[] congestionLevelStarts() {
-        /* If the Platform is serializing a fast-copy of the MerkleNetworkContext,
-        and that copy references this object's congestionLevelStarts, we will get
-        a (transient) ISS if the congestion level changes mid-serialization on one
-        node but not others. */
-        return congestionLevelStarts.clone();
-    }
-
-    private boolean ensureConfigUpToDate() {
-        var currConfig = properties.congestionMultipliers();
-        if (!currConfig.equals(activeConfig)) {
-            activeConfig = currConfig;
-            return true;
-        }
-        return false;
-    }
-
-    private void rebuildState() {
-        int n = activeThrottles.size();
-        int[] triggers = activeConfig.usagePercentTriggers();
-        long[] multipliers = activeConfig.multipliers();
-        activeTriggerValues = new long[n][multipliers.length];
-        for (int i = 0; i < n; i++) {
-            var throttle = activeThrottles.get(i);
-            long capacity = throttle.capacity();
-            for (int j = 0; j < triggers.length; j++) {
-                long cutoff = (capacity / 100L) * triggers[j];
-                activeTriggerValues[i][j] = cutoff;
-            }
-        }
-
-        congestionLevelStarts = new Instant[multipliers.length];
-
-        logReadableCutoffs();
-    }
-
-    void logMultiplierChange(long prev, long cur) {
+    @VisibleForTesting
+    public void logMultiplierChange(long prev, long cur) {
         if (prev == DEFAULT_MULTIPLIER) {
             log.info("Congestion pricing beginning w/ {}x multiplier", cur);
         } else {
@@ -234,9 +244,5 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
                 log.info("Congestion pricing ended");
             }
         }
-    }
-
-    void logReadableCutoffs() {
-        log.info("The new cutoffs for congestion pricing are : {}", this);
     }
 }

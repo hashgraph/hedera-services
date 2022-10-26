@@ -13,37 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.test.mocks;
+package com.hedera.services.fees.congestion;
 
-import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import java.time.Instant;
 
-public enum TestFeeMultiplierSource implements FeeMultiplierSource {
-    MULTIPLIER_SOURCE;
+public interface FeeMultiplierSource {
+    void updateMultiplier(final TxnAccessor accessor, Instant consensusNow);
 
-    @Override
-    public void updateMultiplier(final TxnAccessor accessor, Instant consensusNow) {
-        /* No-op */
-    }
+    long currentMultiplier(final TxnAccessor accessor);
 
-    @Override
-    public long currentMultiplier(final TxnAccessor accessor) {
-        return 1L;
-    }
+    void resetExpectations();
 
-    @Override
-    public void resetExpectations() {
-        /* No-op */
-    }
+    void resetCongestionLevelStarts(Instant[] savedStartTimes);
 
-    @Override
-    public void resetCongestionLevelStarts(Instant[] savedStartTimes) {
-        /* No-op */
-    }
-
-    @Override
-    public Instant[] congestionLevelStarts() {
-        return new Instant[0];
-    }
+    Instant[] congestionLevelStarts();
 }
