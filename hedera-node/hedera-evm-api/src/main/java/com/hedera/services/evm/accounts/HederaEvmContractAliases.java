@@ -15,8 +15,11 @@
  */
 package com.hedera.services.evm.accounts;
 
+import com.google.common.base.Suppliers;
 import com.google.common.primitives.Longs;
+import com.hedera.services.evm.contracts.execution.StaticProperties;
 import java.util.Arrays;
+import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
 
 public abstract class HederaEvmContractAliases {
@@ -25,7 +28,10 @@ public abstract class HederaEvmContractAliases {
 
     /* A placeholder to store the 12-byte prefix (4-byte shard and 8-byte realm) that marks an EVM
      * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
-    private static byte[] mirrorPrefix = null;
+    private static byte[] MIRROR_PREFIX = null;
+
+    private static final Supplier<Long> SHARD = Suppliers.memoize(() -> StaticProperties.shard);
+    private static final Supplier<Long> REALM = Suppliers.memoize(() -> StaticProperties.realm);
 
     public abstract Address resolveForEvm(Address addressOrAlias);
 
@@ -37,13 +43,11 @@ public abstract class HederaEvmContractAliases {
         if (address.length != EVM_ADDRESS_LEN) {
             return false;
         }
-        if (mirrorPrefix == null) {
-            mirrorPrefix = new byte[12];
-            long shard = 0;
-            long realm = 0;
-            System.arraycopy(Longs.toByteArray(shard), 4, mirrorPrefix, 0, 4);
-            System.arraycopy(Longs.toByteArray(realm), 0, mirrorPrefix, 4, 8);
+        if (MIRROR_PREFIX == null) {
+            MIRROR_PREFIX = new byte[12];
+            System.arraycopy(Longs.toByteArray(SHARD.get()), 4, MIRROR_PREFIX, 0, 4);
+            System.arraycopy(Longs.toByteArray(REALM.get()), 0, MIRROR_PREFIX, 4, 8);
         }
-        return Arrays.equals(mirrorPrefix, 0, 12, address, 0, 12);
+        return Arrays.equals(MIRROR_PREFIX, 0, 12, address, 0, 12);
     }
 }

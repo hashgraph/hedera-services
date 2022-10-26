@@ -16,6 +16,7 @@
 package com.hedera.services.context.properties;
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.evm.contracts.execution.StaticProperties;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
@@ -25,14 +26,11 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
-public class StaticPropertiesHolder {
+public class StaticPropertiesHolder extends StaticProperties {
     private static final long DEFAULT_LAST_THROTTLE_EXEMPT = 100L;
 
     /* This will not be accessed concurrently, */
     public static final StaticPropertiesHolder STATIC_PROPERTIES = new StaticPropertiesHolder();
-
-    private long shard = 0;
-    private long realm = 0;
     private long maxThrottleExemptNum = DEFAULT_LAST_THROTTLE_EXEMPT;
 
     public void configureNumbers(final HederaNumbers hederaNum, final long maxThrottleExemptNum) {
