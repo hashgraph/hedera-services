@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -84,6 +85,7 @@ class CreateEvmTxProcessorTest {
     @Mock private InHandleBlockMetaSource blockMetaSource;
     @Mock private HederaBlockValues hederaBlockValues;
     @Mock private HederaStackedWorldStateUpdater stackedUpdater;
+    @Mock private AliasManager aliasManager;
 
     private CreateEvmTxProcessor createEvmTxProcessor;
     private final Account sender = new Account(new Id(0, 0, 1002));
@@ -124,6 +126,7 @@ class CreateEvmTxProcessorTest {
                         gasCalculator,
                         mcps,
                         ccps,
+                        aliasManager,
                         blockMetaSource);
     }
 

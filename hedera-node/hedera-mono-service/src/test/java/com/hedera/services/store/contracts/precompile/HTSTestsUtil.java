@@ -95,6 +95,8 @@ public class HTSTestsUtil {
             Address.wrap(Bytes.fromHexString("0x4388985fc3efb7978b71b7fc59114aa64a42e285"));
     public static final ContractID create1ContractId =
             EntityIdUtils.contractIdFromEvmAddress(create1ContractAddress);
+    public static final Address create1ContractResolvedAddress =
+            EntityIdUtils.asTypedEvmAddress(create1ContractId);
     public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
     public static final EntityId treasuryEntityId =
             EntityId.fromAddress(

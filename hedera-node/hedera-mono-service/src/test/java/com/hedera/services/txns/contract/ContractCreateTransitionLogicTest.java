@@ -21,6 +21,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATI
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.create1ContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.create1ContractId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.create1ContractResolvedAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -60,6 +61,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.RecordsHistorian;
@@ -142,6 +144,7 @@ class ContractCreateTransitionLogicTest {
     @Mock private Account autoRenewModel;
     @Mock private AccountStorageAdapter accounts;
     @Mock private NodeInfo nodeInfo;
+    @Mock private AliasManager aliasManager;
     private ContractCreateTransitionLogic subject;
     private TransactionBody contractCreateTxn;
     private MockedStatic<SidecarUtils> sidecarUtilsMockedStatic;
@@ -164,7 +167,8 @@ class ContractCreateTransitionLogicTest {
                         sigImpactHistorian,
                         syntheticTxnFactory,
                         () -> accounts,
-                        nodeInfo);
+                        nodeInfo,
+                        aliasManager);
     }
 
     @AfterEach
@@ -398,6 +402,8 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
+        given(aliasManager.resolveForEvm(contractAccount.getId().asEvmAddress()))
+                .willReturn(contractAccount.getId().asEvmAddress());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -458,6 +464,8 @@ class ContractCreateTransitionLogicTest {
                         new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+                .willReturn(contractAccount.getId().asEvmAddress());
+        given(aliasManager.resolveForEvm(contractAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
         given(
                         evmTxProcessor.execute(
@@ -528,6 +536,8 @@ class ContractCreateTransitionLogicTest {
                         new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+                .willReturn(contractAccount.getId().asEvmAddress());
+        given(aliasManager.resolveForEvm(contractAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
         given(
                         evmTxProcessor.execute(
@@ -740,6 +750,7 @@ class ContractCreateTransitionLogicTest {
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(newEvmAddress);
+        given(aliasManager.resolveForEvm(newEvmAddress)).willReturn(newEvmAddress);
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -793,6 +804,7 @@ class ContractCreateTransitionLogicTest {
                                 Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
         given(autoRenewModel.isSmartContract()).willReturn(false);
+
         final var output = Bytes.of(123);
         final var result =
                 TransactionProcessingResult.successful(
@@ -809,6 +821,7 @@ class ContractCreateTransitionLogicTest {
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(newEvmAddress);
+        given(aliasManager.resolveForEvm(newEvmAddress)).willReturn(newEvmAddress);
         final Bytes initCode = Bytes.fromHexString(new String(bytecode));
         given(
                         evmTxProcessor.execute(
@@ -891,6 +904,7 @@ class ContractCreateTransitionLogicTest {
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(newEvmAddress);
+        given(aliasManager.resolveForEvm(newEvmAddress)).willReturn(newEvmAddress);
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -958,7 +972,8 @@ class ContractCreateTransitionLogicTest {
                                 Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
         given(autoRenewModel.isSmartContract()).willReturn(false);
-
+        given(aliasManager.resolveForEvm(create1ContractAddress))
+                .willReturn(create1ContractResolvedAddress);
         final var result =
                 TransactionProcessingResult.successful(
                         null,
@@ -1031,6 +1046,9 @@ class ContractCreateTransitionLogicTest {
                                 Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
         given(autoRenewModel.isSmartContract()).willReturn(false);
+        given(aliasManager.resolveForEvm(create1ContractAddress))
+                .willReturn(create1ContractResolvedAddress);
+
         final var output = Bytes.of(123);
         final var result =
                 TransactionProcessingResult.successful(

@@ -37,7 +37,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContrac
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -64,6 +63,8 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class HelloWorldEthereumSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
@@ -415,7 +416,21 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                                                                                         .aliasIdFor(
                                                                                                                                 SECP_256K1_SOURCE_KEY)
                                                                                                                         .getAlias()
-                                                                                                                        .toStringUtf8())))
+                                                                                                                        .toStringUtf8()))
+                                                                                        .evmAddress(
+                                                                                                ByteString
+                                                                                                        .copyFrom(
+                                                                                                                (Address
+                                                                                                                                .contractAddress(
+                                                                                                                                        Address
+                                                                                                                                                .wrap(
+                                                                                                                                                        Bytes
+                                                                                                                                                                .wrap(
+                                                                                                                                                                        spec.registry()
+                                                                                                                                                                                .getBytes(
+                                                                                                                                                                                        ETH_SENDER_ADDRESS))),
+                                                                                                                                        0L))
+                                                                                                                        .toArray())))
                                                                         .ethereumHash(
                                                                                 ByteString.copyFrom(
                                                                                         spec.registry()
@@ -467,7 +482,21 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                                                                                         .aliasIdFor(
                                                                                                                                 SECP_256K1_SOURCE_KEY)
                                                                                                                         .getAlias()
-                                                                                                                        .toStringUtf8())))
+                                                                                                                        .toStringUtf8()))
+                                                                                        .evmAddress(
+                                                                                                ByteString
+                                                                                                        .copyFrom(
+                                                                                                                (Address
+                                                                                                                                .contractAddress(
+                                                                                                                                        Address
+                                                                                                                                                .wrap(
+                                                                                                                                                        Bytes
+                                                                                                                                                                .wrap(
+                                                                                                                                                                        spec.registry()
+                                                                                                                                                                                .getBytes(
+                                                                                                                                                                                        ETH_SENDER_ADDRESS))),
+                                                                                                                                        0L))
+                                                                                                                        .toArray())))
                                                                         .ethereumHash(
                                                                                 ByteString.copyFrom(
                                                                                         spec.registry()
@@ -483,8 +512,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
-                                tinyBarsFromAccountToAlias(
-                                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
                         newKeyNamed(contractAdminKey),
                         uploadInitCodeWithConstructorArguments(
                                 OC_TOKEN_CONTRACT,
@@ -501,8 +532,49 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .gasPrice(10L)
                                 .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L)
+                                .via("payTxn")
                                 .hasKnownStatus(SUCCESS))
-                .then();
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                getTxnRecord("payTxn")
+                                                        .logged()
+                                                        .hasPriority(
+                                                                recordWith()
+                                                                        .contractCreateResult(
+                                                                                resultWith()
+                                                                                        .logs(
+                                                                                                inOrder())
+                                                                                        .senderId(
+                                                                                                spec.registry()
+                                                                                                        .getAccountID(
+                                                                                                                spec.registry()
+                                                                                                                        .aliasIdFor(
+                                                                                                                                SECP_256K1_SOURCE_KEY)
+                                                                                                                        .getAlias()
+                                                                                                                        .toStringUtf8()))
+                                                                                        .evmAddress(
+                                                                                                ByteString
+                                                                                                        .copyFrom(
+                                                                                                                (Address
+                                                                                                                                .contractAddress(
+                                                                                                                                        Address
+                                                                                                                                                .wrap(
+                                                                                                                                                        Bytes
+                                                                                                                                                                .wrap(
+                                                                                                                                                                        spec.registry()
+                                                                                                                                                                                .getBytes(
+                                                                                                                                                                                        ETH_SENDER_ADDRESS))),
+                                                                                                                                        0L))
+                                                                                                                        .toArray())))
+                                                                        .ethereumHash(
+                                                                                ByteString.copyFrom(
+                                                                                        spec.registry()
+                                                                                                .getBytes(
+                                                                                                        ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
     @Override

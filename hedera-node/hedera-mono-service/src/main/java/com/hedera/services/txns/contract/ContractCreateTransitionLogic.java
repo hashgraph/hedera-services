@@ -45,6 +45,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -97,6 +98,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
     private final Supplier<AccountStorageAdapter> accounts;
     private final NodeInfo nodeInfo;
     private final SyntheticTxnFactory syntheticTxnFactory;
+    private final AliasManager aliasManager;
 
     @Inject
     public ContractCreateTransitionLogic(
@@ -113,7 +115,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final SigImpactHistorian sigImpactHistorian,
             final SyntheticTxnFactory syntheticTxnFactory,
             final Supplier<AccountStorageAdapter> accounts,
-            final NodeInfo nodeInfo) {
+            final NodeInfo nodeInfo,
+            final AliasManager aliasmanager) {
         this.hfs = hfs;
         this.txnCtx = txnCtx;
         this.validator = validator;
@@ -128,6 +131,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         this.properties = properties;
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
+        this.aliasManager = aliasmanager;
     }
 
     @Override
@@ -177,8 +181,12 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         } else {
             // Since there is an Ethereum origin, set the contract address as the CREATE format
             // specified in the Yellow Paper
-            newContractAddress =
+            final var create1ContractAddress =
                     Address.contractAddress(sender.canonicalAddress(), sender.getEthereumNonce());
+            aliasManager.link(
+                    create1ContractAddress,
+                    worldState.newContractAddress(sender.getId().asEvmAddress()));
+            newContractAddress = create1ContractAddress;
         }
 
         // --- Do the business logic ---
@@ -232,7 +240,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         }
         if (result.isSuccessful()) {
             final var newEvmAddress = newContractAddress.toArrayUnsafe();
-            final var newContractId = contractIdFromEvmAddress(newEvmAddress);
+            final var newEvmAddressResolved = aliasManager.resolveForEvm(newContractAddress);
+            final var newContractId = contractIdFromEvmAddress(newEvmAddressResolved);
             final var contractBytecodeSidecar =
                     op.getInitcodeSourceCase() != INITCODE
                             ? SidecarUtils.createContractBytecodeSidecarFrom(
