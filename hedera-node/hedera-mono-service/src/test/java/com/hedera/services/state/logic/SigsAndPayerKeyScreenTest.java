@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.sigs.Rationalization;
@@ -32,6 +33,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -61,6 +63,8 @@ class SigsAndPayerKeyScreenTest {
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private RecordsHistorian recordsHistorian;
+    @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
+    @Mock private AliasManager aliasManager;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private SigsAndPayerKeyScreen subject;
@@ -78,7 +82,9 @@ class SigsAndPayerKeyScreenTest {
                         creator,
                         syntheticTxnFactory,
                         sigImpactHistorian,
-                        recordsHistorian);
+                        recordsHistorian,
+                        spanMapAccessor,
+                        aliasManager);
     }
 
     @Test

@@ -923,6 +923,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .given(
                         overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
                         uploadInitCode(CONTRACT))
                 .when()
@@ -965,11 +966,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .type(
                                                             EthTxData.EthTransactionType
                                                                     .LEGACY_ETHEREUM)
-                                                    .payingWith(SECP_256K1_SOURCE_KEY)
                                                     .gasLimit(1_000_000)
-                                                    .sigMapPrefixes(
-                                                            uniqueWithFullPrefixesFor(
-                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
                                                     .hasKnownStatus(SUCCESS)
                                                     .via(TRANSFER_TXN_2);
 

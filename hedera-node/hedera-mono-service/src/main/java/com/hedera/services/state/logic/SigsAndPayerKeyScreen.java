@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -22,6 +23,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.records.RecordsHistorian;
@@ -30,8 +33,10 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -57,6 +62,8 @@ public class SigsAndPayerKeyScreen {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private SigImpactHistorian sigImpactHistorian;
     private RecordsHistorian recordsHistorian;
+    private ExpandHandleSpanMapAccessor spanMapAccessor;
+    private AliasManager aliasManager;
 
     @Inject
     public SigsAndPayerKeyScreen(
@@ -69,7 +76,9 @@ public class SigsAndPayerKeyScreen {
             final EntityCreator creator,
             final SyntheticTxnFactory syntheticTxnFactory,
             SigImpactHistorian sigImpactHistorian,
-            RecordsHistorian recordsHistorian) {
+            RecordsHistorian recordsHistorian,
+            ExpandHandleSpanMapAccessor spanMapAccessor,
+            AliasManager aliasManager) {
         this.txnCtx = txnCtx;
         this.validityTest = validityTest;
         this.speedometers = speedometers;
@@ -80,6 +89,8 @@ public class SigsAndPayerKeyScreen {
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.sigImpactHistorian = sigImpactHistorian;
         this.recordsHistorian = recordsHistorian;
+        this.spanMapAccessor = spanMapAccessor;
+        this.aliasManager = aliasManager;
     }
 
     public ResponseCodeEnum applyTo(SwirldsTxnAccessor accessor) {
@@ -102,38 +113,55 @@ public class SigsAndPayerKeyScreen {
                 accounts.get()
                         .getForModify(EntityNum.fromAccountId(txnCtx.activePayer()))
                         .setAccountKey(sigMeta.payerKey());
+                trackHollowAccountCompletion(txnCtx.activePayer(), sigMeta.payerKey());
+            }
+        }
 
-                final var accountKey =
-                        Key.newBuilder()
-                                .setECDSASecp256K1(
-                                        ByteString.copyFrom(
-                                                sigMeta.payerKey().getECDSASecp256k1Key()))
-                                .build();
-
-                var syntheticUpdate =
-                        syntheticTxnFactory.updateHollowAccount(
-                                EntityNum.fromAccountId(txnCtx.activePayer()), accountKey);
-                final var sideEffects = new SideEffectsTracker();
-                sideEffects.trackHollowAccountUpdate(txnCtx.activePayer());
-                final var childRecordBuilder =
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, "lazy-create completion");
-                final var inProgress =
-                        new InProgressChildRecord(
-                                DEFAULT_SOURCE_ID,
-                                syntheticUpdate,
-                                childRecordBuilder,
-                                Collections.emptyList());
-
-                final var childRecord = inProgress.recordBuilder();
-                sigImpactHistorian.markEntityChanged(
-                        childRecord.getReceiptBuilder().getAccountId().num());
-                recordsHistorian.trackPrecedingChildRecord(
-                        DEFAULT_SOURCE_ID, inProgress.syntheticBody(), childRecord);
+        final var ethTxExpansion = spanMapAccessor.getEthTxExpansion(accessor);
+        if (ethTxExpansion != null && ethTxExpansion.result().equals(OK)) {
+            final var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(accessor);
+            final var callerNum = aliasManager.lookupIdBy(wrapUnsafely(ethTxSigs.address()));
+            if (callerNum != EntityNum.MISSING_NUM) {
+                var account = accounts.get().getForModify(callerNum);
+                if (account.getAccountKey() == null) {
+                    var key = new JECDSASecp256k1Key(ethTxSigs.publicKey());
+                    account.setAccountKey(key);
+                    trackHollowAccountCompletion(callerNum.toGrpcAccountId(), key);
+                }
             }
         }
 
         return sigStatus;
+    }
+
+    private void trackHollowAccountCompletion(AccountID accountID, JKey key) {
+        final var accountKey =
+                Key.newBuilder()
+                        .setECDSASecp256K1(ByteString.copyFrom(key.getECDSASecp256k1Key()))
+                        .build();
+
+        var syntheticUpdate =
+                syntheticTxnFactory.updateHollowAccount(
+                        EntityNum.fromAccountId(accountID), accountKey);
+
+        final var sideEffects = new SideEffectsTracker();
+        sideEffects.trackHollowAccountUpdate(accountID);
+
+        final var childRecordBuilder =
+                creator.createSuccessfulSyntheticRecord(
+                        Collections.emptyList(), sideEffects, "lazy-create completion");
+
+        final var inProgress =
+                new InProgressChildRecord(
+                        DEFAULT_SOURCE_ID,
+                        syntheticUpdate,
+                        childRecordBuilder,
+                        Collections.emptyList());
+
+        final var childRecord = inProgress.recordBuilder();
+        sigImpactHistorian.markEntityChanged(childRecord.getReceiptBuilder().getAccountId().num());
+        recordsHistorian.trackPrecedingChildRecord(
+                DEFAULT_SOURCE_ID, inProgress.syntheticBody(), childRecord);
     }
 
     private boolean hasActivePayerSig(SwirldsTxnAccessor accessor) {
