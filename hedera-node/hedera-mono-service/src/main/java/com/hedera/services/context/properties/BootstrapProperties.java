@@ -17,6 +17,7 @@ package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toSet;
@@ -187,6 +188,7 @@ public final class BootstrapProperties implements PropertySource {
                     ACCOUNTS_SYSTEM_DELETE_ADMIN,
                     ACCOUNTS_SYSTEM_UNDELETE_ADMIN,
                     ACCOUNTS_TREASURY,
+                    ACCOUNTS_STORE_ON_DISK,
                     AUTO_RENEW_GRANT_FREE_RENEWALS,
                     ENTITIES_MAX_LIFETIME,
                     ENTITIES_SYSTEM_DELETABLE,
@@ -243,6 +245,7 @@ public final class BootstrapProperties implements PropertySource {
                     CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST,
                     CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS,
                     CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE,
+                    CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
                     CONTRACTS_EVM_VERSION,
                     CONTRACTS_DYNAMIC_EVM_VERSION,
                     EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
@@ -393,6 +396,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, AS_LONG),
                     entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, AS_LONG),
                     entry(ACCOUNTS_TREASURY, AS_LONG),
+                    entry(ACCOUNTS_STORE_ON_DISK, AS_BOOLEAN),
                     entry(BALANCES_EXPORT_ENABLED, AS_BOOLEAN),
                     entry(BALANCES_EXPORT_PERIOD_SECS, AS_INT),
                     entry(BALANCES_NODE_BALANCE_WARN_THRESHOLD, AS_LONG),
@@ -528,6 +532,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, AS_LONG),
                     entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, AS_BOOLEAN),
                     entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, AS_BOOLEAN),
+                    entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, AS_BOOLEAN),
                     entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
                     entry(CONTRACTS_EVM_VERSION, AS_STRING),
                     entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),

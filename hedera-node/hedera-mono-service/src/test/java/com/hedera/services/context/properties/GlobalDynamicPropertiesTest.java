@@ -16,6 +16,7 @@
 package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -105,6 +106,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.shouldDoTraceabilityExport());
         assertTrue(subject.isLazyCreationEnabled());
         assertFalse(subject.isCryptoCreateWithAliasEnabled());
+        assertFalse(subject.isAtomicCryptoTransferEnabled());
     }
 
     @Test
@@ -213,6 +215,7 @@ class GlobalDynamicPropertiesTest {
 
         // expect:
         assertEquals(accountWith(1L, 2L, 7L), subject.fundingAccount());
+        assertEquals(asTypedEvmAddress(accountWith(1L, 2L, 7L)), subject.fundingAccountAddress());
         assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
         assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
         assertEquals(oddCongestion, subject.congestionMultipliers());
@@ -359,6 +362,7 @@ class GlobalDynamicPropertiesTest {
 
         // expect:
         assertEquals(accountWith(1L, 2L, 8L), subject.fundingAccount());
+        assertEquals(asTypedEvmAddress(accountWith(1L, 2L, 8L)), subject.fundingAccountAddress());
         assertEquals(balanceExportPaths[0], subject.pathToBalancesExportDir());
         assertEquals(Set.of(HederaFunctionality.CryptoCreate), subject.schedulingWhitelist());
         assertEquals(evenCongestion, subject.congestionMultipliers());

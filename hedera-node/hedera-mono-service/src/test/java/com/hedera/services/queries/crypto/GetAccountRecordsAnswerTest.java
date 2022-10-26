@@ -42,6 +42,9 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.QueryableRecords;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -53,7 +56,6 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,7 +67,8 @@ import org.junit.jupiter.api.Test;
 class GetAccountRecordsAnswerTest {
     private static final long fee = 1_234L;
     private StateView view;
-    private MerkleMap<EntityNum, MerkleAccount> accounts;
+    private AccountStorageAdapter accounts;
+    private RecordsStorageAdapter payerRecords;
     private static final String target = payer;
     private MerkleAccount payerAccount;
     private OptionValidator optionValidator;
@@ -87,11 +90,18 @@ class GetAccountRecordsAnswerTest {
         payerAccount.records().offer(recordOne());
         payerAccount.records().offer(recordTwo());
 
-        accounts = mock(MerkleMap.class);
-        given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+        payerRecords = mock(RecordsStorageAdapter.class);
+        accounts = mock(AccountStorageAdapter.class);
+        final var targetNum = EntityNum.fromAccountId(asAccount(target));
+        given(accounts.containsKey(targetNum)).willReturn(true);
+        given(payerRecords.getReadOnlyPayerRecords(targetNum))
+                .willReturn(
+                        new QueryableRecords(
+                                payerAccount.numRecords(), payerAccount.recordIterator()));
 
         final MutableStateChildren children = new MutableStateChildren();
         children.setAccounts(accounts);
+        children.setPayerRecords(payerRecords);
         view = new StateView(null, children, null);
 
         optionValidator = mock(OptionValidator.class);

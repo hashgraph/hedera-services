@@ -39,6 +39,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -158,7 +159,7 @@ class OpUsageCtxHelperTest {
     void returnsExpectedCtxForAccount() {
         var accounts = mock(MerkleMap.class);
         var merkleAccount = mock(MerkleAccount.class);
-        given(workingView.accounts()).willReturn(accounts);
+        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
         given(accounts.get(any())).willReturn(merkleAccount);
         given(merkleAccount.getCryptoAllowances()).willReturn(Collections.emptyMap());
         given(merkleAccount.getApproveForAllNfts()).willReturn(Collections.emptySet());
@@ -180,7 +181,7 @@ class OpUsageCtxHelperTest {
     void returnsExpectedCtxForCryptoApproveAccount() {
         var accounts = mock(MerkleMap.class);
         var merkleAccount = mock(MerkleAccount.class);
-        given(workingView.accounts()).willReturn(accounts);
+        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
         given(accounts.get(any())).willReturn(merkleAccount);
         given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
         given(merkleAccount.getMemo()).willReturn(memo);
@@ -206,7 +207,7 @@ class OpUsageCtxHelperTest {
     @Test
     void returnsMissingCtxWhenAccountNotFound() {
         var accounts = mock(MerkleMap.class);
-        given(workingView.accounts()).willReturn(accounts);
+        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
         given(accounts.get(any())).willReturn(null);
 
         final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
@@ -217,7 +218,8 @@ class OpUsageCtxHelperTest {
 
     @Test
     void returnsMissingCtxWhenApproveAccountNotFound() {
-        given(workingView.accounts()).willReturn(new MerkleMap<>());
+        given(workingView.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(new MerkleMap<>()));
         given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(accessor.getPayer()).willReturn(AccountID.getDefaultInstance());
 

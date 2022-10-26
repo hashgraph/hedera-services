@@ -18,7 +18,7 @@ package com.hedera.services.files.sysfiles;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.test.utils.SerdeUtils;
 import java.io.IOException;
@@ -30,7 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ThrottlesCallbackTest {
-    @Mock FeeMultiplierSource multiplierSource;
+    @Mock MultiplierSources multiplierSources;
     @Mock FunctionalityThrottling hapiThrottling;
     @Mock FunctionalityThrottling handleThrottling;
     @Mock FunctionalityThrottling scheduleThrottling;
@@ -41,7 +41,7 @@ class ThrottlesCallbackTest {
     void setUp() {
         subject =
                 new ThrottlesCallback(
-                        multiplierSource, hapiThrottling, handleThrottling, scheduleThrottling);
+                        multiplierSources, hapiThrottling, handleThrottling, scheduleThrottling);
     }
 
     @Test
@@ -55,6 +55,6 @@ class ThrottlesCallbackTest {
         verify(hapiThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
         verify(handleThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
         verify(scheduleThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
-        verify(multiplierSource).resetExpectations();
+        verify(multiplierSources).resetExpectations();
     }
 }

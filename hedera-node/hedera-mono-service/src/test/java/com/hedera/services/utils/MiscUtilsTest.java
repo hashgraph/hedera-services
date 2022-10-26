@@ -126,6 +126,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -1148,6 +1149,25 @@ class MiscUtilsTest {
         assertEquals(
                 Integer.parseUnsignedInt(byteArrayToBinaryString(hashBytes).substring(0, 32), 2),
                 ByteBuffer.wrap(hashBytes, 0, 32).getInt());
+    }
+
+    @Test
+    void testAsPrimitiveKeyUnchecked() {
+        final var ecdsaKeyBytes =
+                unhex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
+        final var ecdsaKey =
+                Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsaKeyBytes)).build();
+
+        assertEquals(ecdsaKey, MiscUtils.asPrimitiveKeyUnchecked(ecdsaKey.toByteString()));
+    }
+
+    @Test
+    void testAsPrimitiveKeyUncheckedFails() {
+        final var ecdsaKeyBytes =
+                unhex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
+        final var alias = ByteString.copyFrom(ecdsaKeyBytes);
+
+        assertThrows(IllegalStateException.class, () -> MiscUtils.asPrimitiveKeyUnchecked(alias));
     }
 
     public static String byteArrayToBinaryString(byte[] bytes) {

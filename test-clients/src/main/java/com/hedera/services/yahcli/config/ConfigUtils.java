@@ -57,6 +57,16 @@ public class ConfigUtils {
         return keyFileAt(keysLoc + File.separator + typedNum);
     }
 
+    public static File uncheckedKeyFileFor(String keysLoc, String typedNum) {
+        final var fileLoc = keysLoc + File.separator + typedNum;
+        final var file = keyFileAt(fileLoc);
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("No such key file " + fileLoc);
+        } else {
+            return file.get();
+        }
+    }
+
     public static Optional<File> keyFileAt(String sansExt) {
         var pemFile = Paths.get(sansExt + ".pem").toFile();
         if (pemFile.exists()) {
@@ -165,6 +175,7 @@ public class ConfigUtils {
                         SendSuite.class,
                         CreateSuite.class,
                         SpecialFileHashSuite.class,
+                        StakeSuite.class,
                         CustomSpecAssert.class)
                 .forEach(cls -> setLogLevel(cls, logLevel));
     }

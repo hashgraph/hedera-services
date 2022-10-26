@@ -15,6 +15,7 @@
  */
 package com.hedera.test.serde;
 
+import static com.hedera.services.state.virtual.entities.OnDiskAccountSerdeTest.NUM_ON_DISK_ACCOUNT_TEST_CASES;
 import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -27,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
+import com.hedera.services.state.merkle.MerklePayerRecords;
 import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.services.state.merkle.MerkleScheduledTransactionsStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -60,11 +62,14 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.virtualmap.VirtualValue;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -79,10 +84,11 @@ import java.util.function.Function;
  * classes from being serialized unless you are absolutely sure they are no longer in saved signed
  * state data.
  *
- * <p>When running this file, be sure to set the hedera-services/hedera-node directory as the
- * working directory before running.
+ * <p>When running this class, be sure to set <i>hedera-services/hedera-node/hedera-mono-service</i>
+ * as the working directory before running.
  */
 public class SerializedForms {
+    private static final int MAX_SERIALIAZED_LEN = 4096;
     private static final String SERIALIZED_FORMS_LOC = "src/test/resources/serdes";
     private static final String FORM_TPL = "%s-v%d-sn%d.hex";
 
@@ -112,6 +118,18 @@ public class SerializedForms {
         assertArrayEquals(expected, actual, "Regression in serializing test case #" + testCaseNo);
     }
 
+    public static <T extends VirtualValue> void assertSameBufferSerialization(
+            final Class<T> type,
+            final Function<SeededPropertySource, T> factory,
+            final int version,
+            final int testCaseNo) {
+        final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
+        final var example = factory.apply(propertySource);
+        final var actual = SerdeUtils.serializeToBuffer(example, MAX_SERIALIAZED_LEN);
+        final var expected = loadForm(type, version, testCaseNo);
+        assertArrayEquals(expected, actual, "Regression in serializing test case #" + testCaseNo);
+    }
+
     private static void generateSerializedData() {
         GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
         //        for (var entry : GENERATOR_MAPPING.entrySet()) {
@@ -133,6 +151,14 @@ public class SerializedForms {
      */
     private static final Map<Class<? extends SelfSerializable>, Runnable> GENERATOR_MAPPING =
             Map.ofEntries(
+                    entry(
+                            MerklePayerRecords.class,
+                            SeededPropertySource::nextPayerRecords,
+                            MIN_TEST_CASES_PER_VERSION),
+                    entry(
+                            OnDiskAccount.class,
+                            SeededPropertySource::nextOnDiskAccount,
+                            NUM_ON_DISK_ACCOUNT_TEST_CASES),
                     entry(
                             CurrencyAdjustments.class,
                             SeededPropertySource::nextCurrencyAdjustments,
@@ -191,7 +217,7 @@ public class SerializedForms {
                             MIN_TEST_CASES_PER_VERSION),
                     entry(
                             MerkleNetworkContext.class,
-                            SeededPropertySource::next0310NetworkContext,
+                            SeededPropertySource::next0320NetworkContext,
                             MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
                     entry(
                             MerkleScheduledTransactionsState.class,
@@ -287,7 +313,7 @@ public class SerializedForms {
             final Class<T> type, final int version, final int testCaseNo) {
         return Paths.get(
                 SERIALIZED_FORMS_LOC
-                        + "/"
+                        + File.separator
                         + String.format(FORM_TPL, type.getSimpleName(), version, testCaseNo));
     }
 }

@@ -71,8 +71,8 @@ import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -114,7 +114,7 @@ class TxnAwareEvmSigsVerifierTest {
     @Mock private PlatformTxnAccessor accessor;
     @Mock private Function<byte[], TransactionSignature> pkToCryptoSigsFn;
     @Mock private ContractAliases aliases;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     @Mock private WorldLedgers ledgers;
 

@@ -30,7 +30,7 @@ import com.hedera.services.setup.EvmKeyValueSource;
 import com.hedera.services.setup.InfrastructureBundle;
 import com.hedera.services.setup.InfrastructureType;
 import com.hedera.services.setup.KvMutationBatch;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -110,7 +110,7 @@ public class SizeLimitedStorageBench {
     // --- Benchmarks ---
     @Benchmark
     public void simulateContractTransaction() {
-        final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger =
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger =
                 bundle.get(ACCOUNTS_LEDGER);
         ledger.begin();
 

@@ -48,7 +48,7 @@ public class ClassLoaderHelper {
                         .enableClassInfo()
                         .enableMethodInfo()
                         .whitelistPackages(prefixes.toArray(new String[] {}))
-                        .overrideClasspath(urlList)
+                        .overrideClasspath((Object[]) urlList)
                         .scan();
 
         for (var info : result.getAllClasses()) {
@@ -57,20 +57,18 @@ public class ClassLoaderHelper {
             }
             try {
                 Constructor<?> constructor = info.loadClass().getConstructor();
-                if (info == null) {
-                    continue;
-                }
                 // Check if class id is already registered and avoid registering twice.
                 RuntimeConstructable object = (RuntimeConstructable) constructor.newInstance();
                 long classId = object.getClassId();
-                if (ConstructableRegistry.getConstructor(classId) == null) {
-                    ConstructableRegistry.registerConstructable(
-                            new ClassConstructorPair(
-                                    object.getClass(), tryOrNull(constructor::newInstance)));
+                if (ConstructableRegistry.getInstance().getConstructor(classId) == null) {
+                    ConstructableRegistry.getInstance()
+                            .registerConstructable(
+                                    new ClassConstructorPair(
+                                            object.getClass(),
+                                            tryOrNull(constructor::newInstance)));
                 }
-            } catch (Exception e) {
+            } catch (Exception ignore) {
                 // Skip class since not valid
-                continue;
             }
         }
     }

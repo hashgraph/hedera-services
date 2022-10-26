@@ -40,6 +40,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -76,7 +77,7 @@ class AwareNodeDiligenceScreenTest {
 
     @Mock private TransactionContext txnCtx;
     @Mock private OptionValidator validator;
-    @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
+    @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
 
     @LoggingTarget private LogCaptor logCaptor;
 

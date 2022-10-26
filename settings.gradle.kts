@@ -46,7 +46,7 @@ dependencyResolutionManagement {
         // distribution. These libs can be depended on during compilation, or bundled as part of runtime.
         create("libs") {
             // Definition of version numbers for all libraries
-            version("besu-version", "22.7.1")
+            version("besu-version", "22.7.5-20221005.164856-10")
             version("besu-native-version", "0.5.0")
             version("bouncycastle-version", "1.70")
             version("caffeine-version", "3.0.6")
@@ -59,7 +59,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.39.0")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.31.0-alpha.0-SNAPSHOT")
+            version("hapi-version", "0.31.0-modules-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("jackson-version", "2.12.6.1")
             version("javax-annotation-version", "1.3.2")
@@ -68,7 +68,7 @@ dependencyResolutionManagement {
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
-            version("swirlds-version", "0.31.0-alpha.1")
+            version("swirlds-version", "0.32.0-alpha.2")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
 

@@ -18,9 +18,10 @@ package com.hedera.services.contracts.execution;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -30,31 +31,26 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class LivePricesSource {
+public class LivePricesSource implements PricesAndFeesProvider {
     private final HbarCentExchange exchange;
     private final UsagePricesProvider usagePrices;
-    private final FeeMultiplierSource feeMultiplierSource;
+    private final MultiplierSources multiplierSources;
     private final TransactionContext txnCtx;
 
     @Inject
     public LivePricesSource(
             final HbarCentExchange exchange,
             final UsagePricesProvider usagePrices,
-            final FeeMultiplierSource feeMultiplierSource,
+            final MultiplierSources multiplierSources,
             final TransactionContext txnCtx) {
         this.exchange = exchange;
         this.usagePrices = usagePrices;
-        this.feeMultiplierSource = feeMultiplierSource;
+        this.multiplierSources = multiplierSources;
         this.txnCtx = txnCtx;
     }
 
     public long currentGasPrice(final Instant now, final HederaFunctionality function) {
         return currentPrice(now, function, FeeComponents::getGas);
-    }
-
-    public long currentStorageByteHoursPrice(
-            final Instant now, final HederaFunctionality function) {
-        return currentPrice(now, function, FeeComponents::getSbh);
     }
 
     public long currentGasPriceInTinycents(final Instant now, final HederaFunctionality function) {
@@ -71,7 +67,7 @@ public class LivePricesSource {
         final var unscaledPrice = Math.max(1L, feeInTinyBars);
 
         final var maxMultiplier = Long.MAX_VALUE / feeInTinyBars;
-        final var curMultiplier = feeMultiplierSource.currentMultiplier(txnCtx.accessor());
+        final var curMultiplier = multiplierSources.maxCurrentMultiplier(txnCtx.accessor());
         if (curMultiplier > maxMultiplier) {
             return Long.MAX_VALUE;
         } else {

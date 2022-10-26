@@ -66,6 +66,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -135,7 +136,7 @@ class CryptoUpdateTransitionLogicTest {
                         sigImpactHistorian,
                         txnCtx,
                         dynamicProperties,
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         nodeInfo);
     }
 

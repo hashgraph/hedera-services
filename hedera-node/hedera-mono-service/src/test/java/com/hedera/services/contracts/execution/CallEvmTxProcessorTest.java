@@ -47,7 +47,7 @@ import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -185,8 +185,8 @@ class CallEvmTxProcessorTest {
     @Test
     void assertSuccessExecution() {
         givenValidMock();
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 
         givenSenderWithBalance(350_000L);
@@ -201,8 +201,8 @@ class CallEvmTxProcessorTest {
     void assertSuccessExecutionEth() {
         givenValidMockEth();
 
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         var evmAccount = mock(EvmAccount.class);
         given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
@@ -262,8 +262,8 @@ class CallEvmTxProcessorTest {
     void assertSuccessExecutionChargesCorrectMinimumGas() {
         givenValidMock();
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         givenSenderWithBalance(350_000L);
         final var receiverAddress = receiver.getId().asEvmAddress();
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
@@ -281,8 +281,8 @@ class CallEvmTxProcessorTest {
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
                 .willReturn(INTRINSIC_GAS_COST);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
 
         givenSenderWithBalance(350_000L);
         final var receiverAddress = receiver.getId().asEvmAddress();
@@ -298,8 +298,8 @@ class CallEvmTxProcessorTest {
     @Test
     void assertSuccessExecutionPopulatesStateChanges() {
         givenValidMock();
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         given(globalDynamicProperties.enabledSidecars())
                 .willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
         givenSenderWithBalance(350_000L);
@@ -336,8 +336,8 @@ class CallEvmTxProcessorTest {
     @Test
     void assertSuccessExecutionWithDisabledTraceabilityDoNotPopulatesStorageChanges() {
         givenValidMock();
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         given(globalDynamicProperties.enabledSidecars()).willReturn(Collections.emptySet());
         givenSenderWithBalance(350_000L);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
@@ -356,8 +356,8 @@ class CallEvmTxProcessorTest {
     @Test
     void assertSuccessExecutionPopulatesContractActionsWhenEnabled() {
         givenValidMock();
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         givenSenderWithBalance(350_000L);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 
@@ -387,6 +387,26 @@ class CallEvmTxProcessorTest {
     @Test
     void throwsWhenSenderCannotCoverUpfrontCost() {
         givenInvalidMock();
+
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(wrappedSenderAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(mutableSenderAccount);
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(100_000L);
+
+        final var wrappedRecipientAccount = mock(EvmAccount.class);
+        final var mutableRecipientAccount = mock(MutableAccount.class);
+
+        given(stackedUpdater.getOrCreate(any())).willReturn(wrappedRecipientAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(mutableRecipientAccount);
+        given(updater.updater()).willReturn(stackedUpdater);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+
         givenSenderWithBalance(123);
 
         assertFailsWith(
@@ -403,6 +423,30 @@ class CallEvmTxProcessorTest {
 
     @Test
     void throwsWhenIntrinsicGasCostExceedsGasLimit() {
+        given(worldState.updater()).willReturn(updater);
+        given(updater.updater()).willReturn(stackedUpdater);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+
+        var evmAccount = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(evmAccount);
+        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
+        given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+
+        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+
         givenInvalidMock();
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
@@ -424,7 +468,7 @@ class CallEvmTxProcessorTest {
 
     @Test
     void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
-        givenInvalidMock();
+        givenValidMockWithoutGetOrCreate(100_000L);
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
         given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -488,8 +532,8 @@ class CallEvmTxProcessorTest {
         givenValidMockEth();
         final var MAX_REFUND_PERCENTAGE = 100;
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
         given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -540,7 +584,7 @@ class CallEvmTxProcessorTest {
     void assertResourceExhaustionChargesBothSenderAndRelayerWithoutRefunds() {
         givenValidMockEth();
         final var mockAccounts =
-                (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>)
+                (TransactionalLedger<AccountID, AccountProperty, HederaAccount>)
                         mock(TransactionalLedger.class);
         given(updater.trackingAccounts()).willReturn(mockAccounts);
 
@@ -549,8 +593,8 @@ class CallEvmTxProcessorTest {
                 .commit();
         final var MAX_REFUND_PERCENTAGE = 100;
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
         given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -600,8 +644,8 @@ class CallEvmTxProcessorTest {
         givenValidMockEth();
         final var MAX_REFUND_PERCENTAGE = 100;
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
         given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -653,8 +697,8 @@ class CallEvmTxProcessorTest {
         givenValidMockEth();
         final var MAX_REFUND_PERCENTAGE = 1;
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
         given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -702,19 +746,36 @@ class CallEvmTxProcessorTest {
     @Test
     void assertThrowsEthereumTransactionWhenSenderBalanceNotEnoughToCoverFeeWhenBothPay() {
         given(worldState.updater()).willReturn(updater);
-        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-        given(worldState.updater()).willReturn(updater);
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
-        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-                .willReturn(wrappedSenderAccount);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(wrappedSenderAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(mutableSenderAccount);
+        given(mutableSenderAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
         given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
+
+        given(updater.getOrCreateSenderAccount(any())).willReturn(wrappedSenderAccount);
+
+        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(updater.updater()).willReturn(stackedUpdater);
+
+        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+
         final var wrappedRelayerAccount = mock(EvmAccount.class);
         final var mutableRelayerAccount = mock(MutableAccount.class);
+
+        given(stackedUpdater.getOrCreate(any())).willReturn(wrappedRelayerAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(mutableRelayerAccount);
+
         given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
-        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
-                .willReturn(wrappedRelayerAccount);
         final long gasPrice = 40L;
         given(
                         livePricesSource.currentGasPrice(
@@ -744,6 +805,7 @@ class CallEvmTxProcessorTest {
 
     @Test
     void assertThrowsEthereumTransactionWhenGasAllowanceNotEnoughWhenBothPay() {
+        givenValidMockWithoutGetOrCreateEth();
         given(worldState.updater()).willReturn(updater);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
         given(worldState.updater()).willReturn(updater);
@@ -787,6 +849,7 @@ class CallEvmTxProcessorTest {
 
     @Test
     void assertThrowsEthereumTransactionWhenRelayerBalanceNotEnoughToCoverAllowanceWhenBothPay() {
+        givenValidMockWithoutGetOrCreateEth();
         given(worldState.updater()).willReturn(updater);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
         given(worldState.updater()).willReturn(updater);
@@ -834,8 +897,8 @@ class CallEvmTxProcessorTest {
         givenValidMockEth();
         final var MAX_REFUND_PERCENTAGE = 100;
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
         given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -879,6 +942,7 @@ class CallEvmTxProcessorTest {
 
     @Test
     void assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndAllowanceCannotCoverFees() {
+        givenValidMockWithoutGetOrCreate(0L);
         given(worldState.updater()).willReturn(updater);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
@@ -924,20 +988,36 @@ class CallEvmTxProcessorTest {
     void
             assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndRelayerDoesNotHaveBalanceForAllowance() {
         given(worldState.updater()).willReturn(updater);
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
 
-        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-        given(worldState.updater()).willReturn(updater);
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(wrappedSenderAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(mutableSenderAccount);
+        given(mutableSenderAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+        given(mutableSenderAccount.getBalance()).willReturn(Wei.ONE);
+
+        given(updater.getOrCreateSenderAccount(any())).willReturn(wrappedSenderAccount);
+
+        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(updater.updater()).willReturn(stackedUpdater);
+
         given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-                .willReturn(wrappedSenderAccount);
+
         final var wrappedRelayerAccount = mock(EvmAccount.class);
         final var mutableRelayerAccount = mock(MutableAccount.class);
+
+        given(stackedUpdater.getOrCreate(any())).willReturn(wrappedRelayerAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(mutableRelayerAccount);
+
         given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
-        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
-                .willReturn(wrappedRelayerAccount);
-        given(mutableRelayerAccount.getBalance()).willReturn(Wei.ONE);
         final long gasPrice = 40L;
         given(
                         livePricesSource.currentGasPrice(
@@ -971,8 +1051,8 @@ class CallEvmTxProcessorTest {
         givenValidMockEth();
         final var MAX_REFUND_PERCENTAGE = 100;
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         final var wrappedSenderAccount = mock(EvmAccount.class);
         final var mutableSenderAccount = mock(MutableAccount.class);
         given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -1016,6 +1096,7 @@ class CallEvmTxProcessorTest {
 
     @Test
     void assertThrowsEthereumTransactionWhenSenderGasPriceBiggerThanGasPriceButBalanceNotEnough() {
+        givenValidMockWithoutGetOrCreate(0L);
         given(worldState.updater()).willReturn(updater);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
@@ -1062,8 +1143,8 @@ class CallEvmTxProcessorTest {
     void assertSuccessExecutionWithRefund() {
         givenValidMock();
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(100);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         givenSenderWithBalance(ONE_HBAR * 10);
         final var receiverAddress = receiver.getId().asEvmAddress();
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
@@ -1086,18 +1167,23 @@ class CallEvmTxProcessorTest {
     }
 
     private void givenValidMock() {
+        final var evmAccount = givenValidMockWithoutGetOrCreate(0L);
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
+    }
+
+    private EvmAccount givenValidMockWithoutGetOrCreate(final long intrinsicGasCost) {
         given(worldState.updater()).willReturn(updater);
         given(updater.updater()).willReturn(stackedUpdater);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
 
         var evmAccount = mock(EvmAccount.class);
 
-        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
+                .willReturn(intrinsicGasCost);
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
                 .willReturn(evmAccount);
-        given(updater.getOrCreate(any())).willReturn(evmAccount);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1114,19 +1200,25 @@ class CallEvmTxProcessorTest {
         given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+
+        return evmAccount;
     }
 
     private void givenValidMockEth() {
+        final var evmAccount = givenValidMockWithoutGetOrCreateEth();
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
+    }
+
+    private EvmAccount givenValidMockWithoutGetOrCreateEth() {
         given(worldState.updater()).willReturn(updater);
         given(updater.updater()).willReturn(stackedUpdater);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
 
         var evmAccount = mock(EvmAccount.class);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
-        given(updater.getOrCreate(any())).willReturn(evmAccount);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1142,6 +1234,8 @@ class CallEvmTxProcessorTest {
         given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
         given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+
+        return evmAccount;
     }
 
     private void givenSenderWithBalance(final long amount) {
@@ -1160,8 +1254,8 @@ class CallEvmTxProcessorTest {
         given(globalDynamicProperties.dynamicEvmVersion()).willReturn(false, false, true, true);
 
         givenValidMock();
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         givenSenderWithBalance(350_000L);
 

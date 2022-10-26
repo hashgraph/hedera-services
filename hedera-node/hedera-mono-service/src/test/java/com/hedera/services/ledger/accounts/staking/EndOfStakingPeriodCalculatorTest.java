@@ -34,6 +34,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -64,7 +65,7 @@ class EndOfStakingPeriodCalculatorTest {
     void setup() {
         subject =
                 new EndOfStakingPeriodCalculator(
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         () -> stakingInfos,
                         () -> merkleNetworkContext,
                         syntheticTxnFactory,

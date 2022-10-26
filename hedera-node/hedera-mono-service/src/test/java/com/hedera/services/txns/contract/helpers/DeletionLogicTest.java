@@ -35,14 +35,13 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,7 +62,7 @@ class DeletionLogicTest {
     @Mock private AliasManager aliasManager;
     @Mock private OptionValidator validator;
     @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
+    @Mock private AccountStorageAdapter contracts;
 
     private DeletionLogic subject;
 

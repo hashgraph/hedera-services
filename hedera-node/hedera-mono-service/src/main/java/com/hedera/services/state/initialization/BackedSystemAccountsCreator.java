@@ -31,11 +31,12 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.system.address.AddressBook;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -48,30 +49,35 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
 
     public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
+    private static final int ZERO_BALANCE = 0;
 
     private final AccountNumbers accountNums;
     private final PropertySource properties;
     private final Supplier<JEd25519Key> genesisKeySource;
     private final TreasuryCloner treasuryCloner;
+    private final Supplier<HederaAccount> accountSupplier;
 
     private JKey genesisKey;
+    private final List<HederaAccount> systemAccountsCreated = new ArrayList<>();
 
     @Inject
     public BackedSystemAccountsCreator(
             final AccountNumbers accountNums,
             final @CompositeProps PropertySource properties,
             final Supplier<JEd25519Key> genesisKeySource,
+            final Supplier<HederaAccount> accountSupplier,
             final TreasuryCloner treasuryCloner) {
         this.accountNums = accountNums;
         this.properties = properties;
         this.genesisKeySource = genesisKeySource;
+        this.accountSupplier = accountSupplier;
         this.treasuryCloner = treasuryCloner;
     }
 
     /** {@inheritDoc} */
     @Override
     public void ensureSystemAccounts(
-            final BackingStore<AccountID, MerkleAccount> accounts, final AddressBook addressBook) {
+            final BackingStore<AccountID, HederaAccount> accounts, final AddressBook addressBook) {
         long systemAccounts = properties.getIntProperty(LEDGER_NUM_SYSTEM_ACCOUNTS);
         long expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
         long tinyBarFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
@@ -81,11 +87,14 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
             if (accounts.contains(id)) {
                 continue;
             }
+            final HederaAccount account;
             if (num == accountNums.treasury()) {
-                accounts.put(id, accountWith(tinyBarFloat, expiry));
+                account = accountWith(tinyBarFloat, expiry);
             } else {
-                accounts.put(id, accountWith(0, expiry));
+                account = accountWith(ZERO_BALANCE, expiry);
             }
+            accounts.put(id, account);
+            systemAccountsCreated.add(account);
         }
 
         final var stakingRewardAccountNum = accountNums.stakingRewardAccount();
@@ -96,7 +105,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         final var stakingFundAccounts = List.of(stakingRewardAccountId, nodeRewardAccountId);
         for (final var id : stakingFundAccounts) {
             if (!accounts.contains(id)) {
-                final var stakingFundAccount = new MerkleAccount();
+                final var stakingFundAccount = accountSupplier.get();
                 customizeAsStakingFund(stakingFundAccount);
                 accounts.put(id, stakingFundAccount);
             }
@@ -104,7 +113,9 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         for (long num = 900; num <= 1000; num++) {
             var id = STATIC_PROPERTIES.scopedAccountWith(num);
             if (!accounts.contains(id)) {
-                accounts.put(id, accountWith(0, expiry));
+                final var account = accountWith(ZERO_BALANCE, expiry);
+                accounts.put(id, account);
+                systemAccountsCreated.add(account);
             }
         }
 
@@ -118,7 +129,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         log.info("Ledger float is {} tinyBars in {} accounts.", ledgerFloat, allIds.size());
     }
 
-    public static void customizeAsStakingFund(final MerkleAccount account) {
+    public static void customizeAsStakingFund(final HederaAccount account) {
         account.setExpiry(FUNDING_ACCOUNT_EXPIRY);
         account.setAccountKey(EMPTY_KEY);
         account.setSmartContract(false);
@@ -126,7 +137,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         account.setMaxAutomaticAssociations(0);
     }
 
-    private MerkleAccount accountWith(long balance, long expiry) {
+    private HederaAccount accountWith(final long balance, final long expiry) {
         var account =
                 new HederaAccountCustomizer()
                         .isReceiverSigRequired(false)
@@ -136,7 +147,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
                         .isSmartContract(false)
                         .key(getGenesisKey())
                         .autoRenewPeriod(expiry)
-                        .customizing(new MerkleAccount());
+                        .customizing(accountSupplier.get());
         try {
             account.setBalance(balance);
         } catch (NegativeAccountBalanceException e) {
@@ -159,5 +170,18 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
                                     .build());
         }
         return genesisKey;
+    }
+
+    public List<HederaAccount> getSystemAccountsCreated() {
+        return systemAccountsCreated;
+    }
+
+    public List<HederaAccount> getTreasuryClonesCreated() {
+        return treasuryCloner.getClonesCreated();
+    }
+
+    public void forgetCreations() {
+        treasuryCloner.forgetCreatedClones();
+        systemAccountsCreated.clear();
     }
 }
