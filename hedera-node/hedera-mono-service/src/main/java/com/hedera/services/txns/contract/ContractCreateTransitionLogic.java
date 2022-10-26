@@ -116,7 +116,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final SyntheticTxnFactory syntheticTxnFactory,
             final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo,
-            final AliasManager aliasmanager) {
+            final AliasManager aliasManager) {
         this.hfs = hfs;
         this.txnCtx = txnCtx;
         this.validator = validator;
@@ -131,7 +131,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         this.properties = properties;
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
-        this.aliasManager = aliasmanager;
+        this.aliasManager = aliasManager;
     }
 
     @Override
