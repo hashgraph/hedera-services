@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAILED;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PASSED;
 
-import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -70,9 +69,8 @@ public abstract class HapiApiSuite {
     public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
-    public static final byte[] CHAIN_ID =
-            Integers.toBytes(
-                    Integer.parseInt(HapiSpecSetup.getDefaultNodeProps().get("contracts.chainId")));
+    public static final Integer CHAIN_ID =
+            Integer.parseInt(HapiSpecSetup.getDefaultNodeProps().get("contracts.chainId"));
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";
     public static final String RELAYER = "RELAYER";

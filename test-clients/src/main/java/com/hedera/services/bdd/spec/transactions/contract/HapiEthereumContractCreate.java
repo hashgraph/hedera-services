@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiApiSuite.WEIBARS_TO_TINYBARS;
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -194,7 +195,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 new EthTxData(
                         null,
                         type,
-                        CHAIN_ID,
+                        Integers.toBytes(CHAIN_ID),
                         nonce,
                         gasPriceBytes,
                         maxPriorityGasBytes,

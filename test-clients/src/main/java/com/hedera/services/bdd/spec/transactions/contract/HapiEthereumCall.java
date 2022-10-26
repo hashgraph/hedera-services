@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.WEIBARS_TO_TINYBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -299,7 +300,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 new EthTxData(
                         null,
                         type,
-                        CHAIN_ID,
+                        Integers.toBytes(CHAIN_ID),
                         nonce,
                         gasPriceBytes,
                         maxPriorityGasBytes,
