@@ -47,6 +47,7 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -208,9 +209,9 @@ public class AutoCreationLogic {
         // maxAutoAssociations needed on auto created account
         analyzeTokenTransferCreations(changes);
         final var maxAutoAssociations =
-                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+            tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         customizer.maxAutomaticAssociations(maxAutoAssociations);
-        if (alias.size() == EVM_ADDRESS_SIZE) {
+        if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             memo = LAZY_MEMO;
         } else {
@@ -251,7 +252,7 @@ public class AutoCreationLogic {
         // If the transaction fails, we will get an opportunity to unlink this alias in
         // reclaimPendingAliases()
         aliasManager.link(alias, EntityNum.fromAccountId(newId));
-        if (alias.size() > EVM_ADDRESS_SIZE) {
+        if (alias.size() > EntityIdUtils.EVM_ADDRESS_SIZE) {
             final var key = asPrimitiveKeyUnchecked(alias);
             JKey jKey = asFcKeyUnchecked(key);
             aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
