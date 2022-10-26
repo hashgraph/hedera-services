@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.migration;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerklePayerRecords;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
@@ -131,6 +133,7 @@ public class AccountStorageAdapter {
         if (accountsOnDisk) {
             try {
                 virtualMapDataAccess.extractVirtualMapData(
+                        getStaticThreadManager(),
                         onDiskAccounts,
                         entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
                         THREAD_COUNT);
