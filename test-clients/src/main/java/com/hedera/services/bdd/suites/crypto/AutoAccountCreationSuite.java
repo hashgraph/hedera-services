@@ -39,10 +39,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAli
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
@@ -80,6 +82,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -178,6 +181,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 hollowAccountCreationWithCryptoTransfer(),
                 hollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled(),
                 hollowAccountCompletionWithCryptoTransfer(),
+                hollowAccountCompletionWithEthereumTransaction(),
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
                 multipleTokenTransfersSucceed(),
@@ -909,6 +913,79 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .logged();
 
                                     allRunFor(spec, op3, op4, hapiGetSecondTxnRecord);
+                                    resetToDefault(LAZY_CREATE_FEATURE_FLAG);
+                                }));
+    }
+
+    private HapiApiSpec hollowAccountCompletionWithEthereumTransaction() {
+        final String CONTRACT = "Fuse";
+        return defaultHapiSpec("HollowAccountCompletionWithEthereumTransaction")
+                .given(
+                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        uploadInitCode(CONTRACT))
+                .when()
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(
+                                                    EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
+                                    final var op =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    evmAddress,
+                                                                    2 * ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+
+                                    final HapiGetTxnRecord hapiGetTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, op, hapiGetTxnRecord);
+
+                                    final AccountID newAccountID =
+                                            hapiGetTxnRecord
+                                                    .getChildRecord(0)
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    spec.registry()
+                                            .saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+
+                                    final var op2 =
+                                            ethereumContractCreate(CONTRACT)
+                                                    .type(
+                                                            EthTxData.EthTransactionType
+                                                                    .LEGACY_ETHEREUM)
+                                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                                    .gasLimit(1_000_000)
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var op3 =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .evmAddressAlias(evmAddress));
+
+                                    final HapiGetTxnRecord hapiGetSecondTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN_2)
+                                                    .andAllChildRecords()
+                                                    .logged();
+
+                                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
                                     resetToDefault(LAZY_CREATE_FEATURE_FLAG);
                                 }));
     }
