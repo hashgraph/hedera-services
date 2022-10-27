@@ -215,6 +215,13 @@ public class Utils {
                 .build();
     }
 
+    public static AccountAmount aaWithNum(final long num, final long amount) {
+        return AccountAmount.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(num))
+                .setAmount(amount)
+                .build();
+    }
+
     public static AccountAmount aaWith(final AccountID account, final long amount) {
         return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
     }
@@ -238,6 +245,15 @@ public class Utils {
         return NftTransfer.newBuilder()
                 .setSenderAccountID(from)
                 .setReceiverAccountID(to)
+                .setSerialNumber(serialNo)
+                .build();
+    }
+
+    public static NftTransfer ocWithNumAndAlias(
+            final long from, final ByteString to, final long serialNo) {
+        return NftTransfer.newBuilder()
+                .setSenderAccountID(AccountID.newBuilder().setAccountNum(from))
+                .setReceiverAccountID(AccountID.newBuilder().setAlias(to))
                 .setSerialNumber(serialNo)
                 .build();
     }

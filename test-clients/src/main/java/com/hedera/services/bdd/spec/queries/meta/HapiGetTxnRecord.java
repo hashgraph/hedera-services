@@ -74,6 +74,7 @@ import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -84,6 +85,8 @@ import org.junit.jupiter.api.Assertions;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private static final Logger LOG = LogManager.getLogger(HapiGetTxnRecord.class);
+
+    public static final int EVM_ADDRESS_SIZE = 20;
 
     private static final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
     public static final int MAX_PSEUDORANDOM_BYTES_LENGTH = 48;
@@ -128,6 +131,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
+    private @Nullable Consumer<AccountID> childCreationObserver = null;
 
     private boolean pseudorandomBytesExpected = false;
 
@@ -166,6 +170,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     @Override
     protected HapiGetTxnRecord self() {
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingChildCreationsTo(final Consumer<AccountID> observer) {
+        this.childCreationObserver = observer;
         return this;
     }
 
@@ -413,6 +422,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     private void assertChildRecords(HapiApiSpec spec, List<TransactionRecord> actualRecords)
             throws Throwable {
+        if (childCreationObserver != null) {
+            actualRecords.forEach(
+                    childRecord -> {
+                        if (childRecord.getReceipt().hasAccountID()) {
+                            childCreationObserver.accept(childRecord.getReceipt().getAccountID());
+                        }
+                    });
+        }
         if (childRecordsExpectations.isPresent()) {
             int numStakingRecords = 0;
             if (!actualRecords.isEmpty() && isEndOfStakingPeriodRecord(actualRecords.get(0))) {
@@ -860,16 +877,13 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 spec.registry()
                         .saveAccountId(
                                 rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
-                try {
+                final var createdAlias = rec.getAlias();
+                if (createdAlias.size() > EVM_ADDRESS_SIZE) {
                     spec.registry()
                             .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
-                } catch (InvalidProtocolBufferException e) {
-                    LOG.debug(
-                            "Cannot save alias {} as key, since it is an evmAddress alias.",
-                            rec.getAlias()::toStringUtf8);
                 }
                 LOG.info(
-                        "{}  Saving alias {} to registry for Account ID {}",
+                        "{} Saving alias {} to registry for Account ID {}",
                         spec::logPrefix,
                         rec.getAlias()::toStringUtf8,
                         rec.getReceipt()::getAccountID);

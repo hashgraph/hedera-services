@@ -415,6 +415,10 @@ public class TxnUtils {
         return randomSampling(l, UPPER);
     }
 
+    public static String randomHex(int l) {
+        return randomSampling(2 * l, HEXED);
+    }
+
     public static String randomAlphaNumeric(int l) {
         return randomSampling(l, ALNUM);
     }
@@ -429,6 +433,7 @@ public class TxnUtils {
 
     private static final SplittableRandom r = new SplittableRandom();
     private static final char[] UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+    private static final char[] HEXED = "0123456789abcdef".toCharArray();
     private static final char[] ALNUM =
             "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 

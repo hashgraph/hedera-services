@@ -16,19 +16,14 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord.EVM_ADDRESS_SIZE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
@@ -48,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.*;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
@@ -66,11 +62,17 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
+import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -89,6 +91,7 @@ import org.apache.logging.log4j.Logger;
  * done with cleaning up old test cases.
  */
 public class FileUpdateSuite extends HapiApiSuite {
+    public static final String STILL_HOLLOW = "STILL_HOLLOW";
     private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
     private static final String CONTRACT = "CreateTrivial";
     private static final String CREATE_TXN = "create";
@@ -124,6 +127,7 @@ public class FileUpdateSuite extends HapiApiSuite {
     private static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
     public static final String CIVILIAN = "civilian";
     public static final String TEST_TOPIC = "testTopic";
+    public static final String FALSE = "false";
 
     public static void main(String... args) {
         new FileUpdateSuite().runSuiteSync();
@@ -150,7 +154,8 @@ public class FileUpdateSuite extends HapiApiSuite {
                     chainIdChangesDynamically(),
                     entitiesNotCreatableAfterUsageLimitsReached(),
                     rentItemizedAsExpectedWithOverridePriceTiers(),
-                    messageSubmissionSizeChange()
+                    messageSubmissionSizeChange(),
+                    hollowCreationWorksWithBothUniqueAndRepeatedUnknownEvmAddresses(),
                 });
     }
 
@@ -212,8 +217,8 @@ public class FileUpdateSuite extends HapiApiSuite {
         return defaultHapiSpec("AutoCreationIsDynamic")
                 .given(
                         newKeyNamed(aliasKey),
-                        overriding(AUTO_CREATION_PROP, "false"),
-                        overriding(LAZY_CREATION_PROP, "false"))
+                        overriding(AUTO_CREATION_PROP, FALSE),
+                        overriding(LAZY_CREATION_PROP, FALSE))
                 .when(
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR))
                                 .hasKnownStatus(NOT_SUPPORTED))
@@ -770,6 +775,142 @@ public class FileUpdateSuite extends HapiApiSuite {
                                         Map.of(
                                                 "consensus.message.maxBytesAllowed",
                                                 String.valueOf(defaultMaxBytesAllowed))));
+    }
+
+    @SuppressWarnings("java:S5669")
+    private HapiApiSpec hollowCreationWorksWithBothUniqueAndRepeatedUnknownEvmAddresses() {
+        final var ft = "fungibleToken";
+        final var nft = "nonFungibleToken";
+        final var uniqueCreation = "uniqueCreation";
+        final var validRepeatedCreation = "validRepeatedCreation";
+
+        // Four new EVM addresses we can repeat (or not) in our tests below
+        final ByteString aNewEvmAddress =
+                ByteString.copyFrom(CommonUtils.unhex(TxnUtils.randomHex(EVM_ADDRESS_SIZE)));
+        final ByteString bNewEvmAddress =
+                ByteString.copyFrom(CommonUtils.unhex(TxnUtils.randomHex(EVM_ADDRESS_SIZE)));
+        final ByteString cNewEvmAddress =
+                ByteString.copyFrom(CommonUtils.unhex(TxnUtils.randomHex(EVM_ADDRESS_SIZE)));
+        final AtomicReference<TokenID> fungibleTokenId = new AtomicReference<>();
+        final AtomicReference<TokenID> nonFungibleTokenId = new AtomicReference<>();
+        final AtomicReference<AccountID> aCreatedId = new AtomicReference<>();
+
+        // Note all auto-creations use the GENESIS superuser as payer
+        // account to avoid being throttled when running in CI
+        return defaultHapiSpec("HollowCreationWorksWithBothUniqueAndRepeatedUnknownEvmAddresses")
+                .given(
+                        overriding(LAZY_CREATION_PROP, "true"),
+                        tokenCreate(ft)
+                                .treasury(GENESIS)
+                                .payingWith(GENESIS)
+                                .initialSupply(1_000_000)
+                                .exposingCreatedIdTo(id -> fungibleTokenId.set(asToken(id))),
+                        tokenCreate(nft)
+                                .treasury(GENESIS)
+                                .payingWith(GENESIS)
+                                .supplyKey(GENESIS)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(id -> nonFungibleTokenId.set(asToken(id))),
+                        mintToken(nft, List.of(ByteString.copyFromUtf8("HELLO"))))
+                .when(
+                        // Valid hollow creation via hbar transfer
+                        cryptoTransfer(
+                                        (spec, b) ->
+                                                b.getTransfersBuilder()
+                                                        .addAccountAmounts(
+                                                                aaWithNum(2, -ONE_HUNDRED_HBARS))
+                                                        .addAccountAmounts(
+                                                                aaWith(
+                                                                        aNewEvmAddress,
+                                                                        +ONE_HUNDRED_HBARS)))
+                                .signedBy(GENESIS)
+                                .via(uniqueCreation),
+                        getTxnRecord(uniqueCreation)
+                                .andAllChildRecords()
+                                .exposingChildCreationsTo(aCreatedId::set)
+                                .hasNonStakingChildRecordCount(1),
+                        getAccountInfoWithLiteralAlias(aNewEvmAddress)
+                                // QUESTION - should we expect .hasEmptyKey() here?
+                                .logged(),
+                        // Hollow account cannot be used as payer account
+                        withOpContext(
+                                (spec, opLog) ->
+                                        spec.registry()
+                                                .saveAccountId(STILL_HOLLOW, aCreatedId.get())),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+                                .payingWith(STILL_HOLLOW)
+                                .fee(ONE_HBAR)
+                                .signedBy(GENESIS)
+                                .hasPrecheck(INVALID_SIGNATURE),
+                        cryptoTransfer(tinyBarsFromTo(STILL_HOLLOW, FUNDING, 1))
+                                .payingWith(GENESIS)
+                                .fee(ONE_HBAR)
+                                .signedBy(GENESIS),
+                        // Invalid hollow creation as hbar transfer list repeats a new EVM address
+                        cryptoTransfer(
+                                        (spec, b) ->
+                                                b.getTransfersBuilder()
+                                                        .addAccountAmounts(aaWithNum(2, -1000))
+                                                        .addAccountAmounts(
+                                                                aaWith(bNewEvmAddress, +500))
+                                                        .addAccountAmounts(
+                                                                aaWith(bNewEvmAddress, +500)))
+                                .signedBy(GENESIS)
+                                .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+                        // Invalid hollow creation as fungible transfer list repeats the new EVM
+                        // address
+                        cryptoTransfer(
+                                        (spec, b) -> {
+                                            b.getTransfersBuilder()
+                                                    .addAccountAmounts(aaWithNum(2, -1000))
+                                                    .addAccountAmounts(
+                                                            aaWith(bNewEvmAddress, -1000));
+                                            b.addTokenTransfers(
+                                                    TokenTransferList.newBuilder()
+                                                            .setToken(fungibleTokenId.get())
+                                                            .addTransfers(aaWithNum(2, -1000))
+                                                            .addTransfers(
+                                                                    aaWith(cNewEvmAddress, +500))
+                                                            .addTransfers(
+                                                                    aaWith(cNewEvmAddress, +500)));
+                                        })
+                                .signedBy(GENESIS)
+                                .hasPrecheck(INVALID_ACCOUNT_AMOUNTS),
+                        // Valid hollow creation with the new EVM address in both the hbar transfer
+                        // list *and* a token transfer list; fails with
+                        // TOKEN_NOT_ASSOCIATED_TO_ACCOUNT
+                        cryptoTransfer(
+                                        (spec, b) -> {
+                                            b.getTransfersBuilder()
+                                                    .addAccountAmounts(aaWithNum(2, -500))
+                                                    .addAccountAmounts(
+                                                            aaWith(bNewEvmAddress, +500));
+                                            b.addTokenTransfers(
+                                                    TokenTransferList.newBuilder()
+                                                            .setToken(fungibleTokenId.get())
+                                                            .addTransfers(aaWithNum(2, -1000))
+                                                            .addTransfers(
+                                                                    aaWith(bNewEvmAddress, +1000)));
+                                            b.addTokenTransfers(
+                                                    TokenTransferList.newBuilder()
+                                                            .setToken(nonFungibleTokenId.get())
+                                                            .addNftTransfers(
+                                                                    ocWithNumAndAlias(
+                                                                            2,
+                                                                            bNewEvmAddress,
+                                                                            1L)));
+                                        })
+                                .signedBy(GENESIS)
+                                .via(validRepeatedCreation))
+                .then(
+                        getTxnRecord(validRepeatedCreation)
+                                .andAllChildRecords()
+                                .hasNonStakingChildRecordCount(1),
+                        getAccountInfoWithLiteralAlias(bNewEvmAddress)
+                                .hasMaxAutomaticAssociations(2)
+                                .logged(),
+                        overriding(LAZY_CREATION_PROP, FALSE));
     }
 
     @Override
