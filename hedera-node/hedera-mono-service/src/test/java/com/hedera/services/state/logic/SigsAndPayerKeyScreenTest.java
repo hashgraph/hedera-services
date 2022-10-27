@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -65,6 +66,7 @@ class SigsAndPayerKeyScreenTest {
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
     @Mock private AliasManager aliasManager;
+    @Mock private GlobalDynamicProperties properties;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private SigsAndPayerKeyScreen subject;
@@ -84,7 +86,8 @@ class SigsAndPayerKeyScreenTest {
                         sigImpactHistorian,
                         recordsHistorian,
                         spanMapAccessor,
-                        aliasManager);
+                        aliasManager,
+                        properties);
     }
 
     @Test

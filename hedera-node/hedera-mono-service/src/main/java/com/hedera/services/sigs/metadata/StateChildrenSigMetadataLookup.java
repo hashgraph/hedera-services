@@ -33,6 +33,7 @@ import static com.hedera.services.utils.EntityNum.fromTopicId;
 
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
@@ -64,10 +65,13 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
     private final Map<FileID, HFileMeta> metaMap;
     private final Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform;
 
+    private final GlobalDynamicProperties properties;
+
     public StateChildrenSigMetadataLookup(
             final FileNumbers fileNumbers,
             final StateChildren stateChildren,
-            final Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform) {
+            final Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform,
+            final GlobalDynamicProperties properties) {
         this.fileNumbers = fileNumbers;
         this.stateChildren = stateChildren;
         this.tokenMetaTransform = tokenMetaTransform;
@@ -75,6 +79,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 
         final var blobStore = new FcBlobsBytesStore(stateChildren::storage);
         this.metaMap = MetadataMapFactory.metaMapFrom(blobStore);
+        this.properties = properties;
     }
 
     @Override
@@ -221,6 +226,10 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         } else {
             final var key = account.getAccountKey();
             if (key == null || key.isEmpty()) {
+                if (!properties.isLazyCreationEnabled()) {
+                    return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
+                }
+
                 final var accountAlias = account.getAlias();
                 if (accountAlias.isEmpty()) {
                     return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);

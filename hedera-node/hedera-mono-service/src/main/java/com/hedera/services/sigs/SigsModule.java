@@ -18,6 +18,7 @@ package com.hedera.services.sigs;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.keys.HederaKeyActivation;
@@ -70,10 +71,11 @@ public interface SigsModule {
     static SigRequirements provideWorkingStateSigReqs(
             final FileNumbers fileNumbers,
             final SignatureWaivers signatureWaivers,
-            final MutableStateChildren workingState) {
+            final MutableStateChildren workingState,
+            final GlobalDynamicProperties properties) {
         final var sigMetaLookup =
                 new StateChildrenSigMetadataLookup(
-                        fileNumbers, workingState, TokenMetaUtils::signingMetaFrom);
+                        fileNumbers, workingState, TokenMetaUtils::signingMetaFrom, properties);
         return new SigRequirements(sigMetaLookup, signatureWaivers);
     }
 

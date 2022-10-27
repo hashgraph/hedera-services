@@ -35,6 +35,7 @@ import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.BasicTransactionContext;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -96,6 +97,7 @@ class StateChildrenSigMetadataLookupTest {
     @Mock private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
+    @Mock private GlobalDynamicProperties properties;
 
     private StateChildrenSigMetadataLookup subject;
 
@@ -103,7 +105,7 @@ class StateChildrenSigMetadataLookupTest {
     void setUp() {
         subject =
                 new StateChildrenSigMetadataLookup(
-                        new MockFileNumbers(), stateChildren, tokenMetaTransform);
+                        new MockFileNumbers(), stateChildren, tokenMetaTransform, properties);
     }
 
     @Test
@@ -250,7 +252,6 @@ class StateChildrenSigMetadataLookupTest {
         given(stateChildren.accounts()).willReturn(accounts);
         given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
         given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
-        given(account.getAlias()).willReturn(ByteString.EMPTY);
 
         final var linkedRefs = new LinkedRefs();
         final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
@@ -263,7 +264,6 @@ class StateChildrenSigMetadataLookupTest {
     void recognizesImmutableAccountWithUnexpectedNullKeyAndEmptyAlias() {
         given(stateChildren.accounts()).willReturn(accounts);
         given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
-        given(account.getAlias()).willReturn(ByteString.EMPTY);
 
         final var linkedRefs = new LinkedRefs();
         final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);

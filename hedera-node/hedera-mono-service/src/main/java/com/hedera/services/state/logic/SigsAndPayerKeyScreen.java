@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -60,10 +61,11 @@ public class SigsAndPayerKeyScreen {
     private final Supplier<AccountStorageAdapter> accounts;
     private EntityCreator creator;
     private final SyntheticTxnFactory syntheticTxnFactory;
-    private SigImpactHistorian sigImpactHistorian;
-    private RecordsHistorian recordsHistorian;
-    private ExpandHandleSpanMapAccessor spanMapAccessor;
-    private AliasManager aliasManager;
+    private final SigImpactHistorian sigImpactHistorian;
+    private final RecordsHistorian recordsHistorian;
+    private final ExpandHandleSpanMapAccessor spanMapAccessor;
+    private final AliasManager aliasManager;
+    private final GlobalDynamicProperties properties;
 
     @Inject
     public SigsAndPayerKeyScreen(
@@ -75,10 +77,11 @@ public class SigsAndPayerKeyScreen {
             final Supplier<AccountStorageAdapter> accounts,
             final EntityCreator creator,
             final SyntheticTxnFactory syntheticTxnFactory,
-            SigImpactHistorian sigImpactHistorian,
-            RecordsHistorian recordsHistorian,
-            ExpandHandleSpanMapAccessor spanMapAccessor,
-            AliasManager aliasManager) {
+            final SigImpactHistorian sigImpactHistorian,
+            final RecordsHistorian recordsHistorian,
+            final ExpandHandleSpanMapAccessor spanMapAccessor,
+            final AliasManager aliasManager,
+            final GlobalDynamicProperties properties) {
         this.txnCtx = txnCtx;
         this.validityTest = validityTest;
         this.speedometers = speedometers;
@@ -91,6 +94,7 @@ public class SigsAndPayerKeyScreen {
         this.recordsHistorian = recordsHistorian;
         this.spanMapAccessor = spanMapAccessor;
         this.aliasManager = aliasManager;
+        this.properties = properties;
     }
 
     public ResponseCodeEnum applyTo(SwirldsTxnAccessor accessor) {
@@ -118,7 +122,9 @@ public class SigsAndPayerKeyScreen {
         }
 
         final var ethTxExpansion = spanMapAccessor.getEthTxExpansion(accessor);
-        if (ethTxExpansion != null && ethTxExpansion.result().equals(OK)) {
+        if (properties.isLazyCreationEnabled()
+                && ethTxExpansion != null
+                && ethTxExpansion.result().equals(OK)) {
             final var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(accessor);
             final var callerNum = aliasManager.lookupIdBy(wrapUnsafely(ethTxSigs.address()));
             if (callerNum != EntityNum.MISSING_NUM) {

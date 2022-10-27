@@ -68,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -146,6 +147,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
     private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
     private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 40927290L;
+    public static final String CRYPTO_TRANSFER_RECEIVER = "cryptoTransferReceiver";
+    public static final String FALSE = "false";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteSync();
@@ -234,7 +237,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("tokenTransfersFailWhenFeatureFlagDisabled")
                 .given(
-                        overriding(FEATURE_FLAG, "false"),
+                        overriding(FEATURE_FLAG, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
@@ -804,7 +807,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         "HollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled")
                 .given(
                         overriding(AUTO_CREATE_FEATURE_FLAG, "true"),
-                        overriding(LAZY_CREATE_FEATURE_FLAG, "false"),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when()
@@ -840,9 +843,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        cryptoCreate("cryptoTransferReceiver").balance(INITIAL_BALANCE * ONE_HBAR))
-                .when()
-                .then(
+                        cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
+                .when(
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var ecdsaKey =
@@ -886,12 +888,43 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .getAccountID();
                                     spec.registry()
                                             .saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+                                }))
+                .then(
+                        overriding(LAZY_CREATE_FEATURE_FLAG, FALSE),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var op3 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    CRYPTO_TRANSFER_RECEIVER,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .hasPrecheck(INVALID_SIGNATURE)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    allRunFor(spec, op3);
+                                }),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(
+                                                    EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
 
                                     final var op3 =
                                             cryptoTransfer(
                                                             tinyBarsFromTo(
                                                                     LAZY_CREATE_SPONSOR,
-                                                                    "cryptoTransferReceiver",
+                                                                    CRYPTO_TRANSFER_RECEIVER,
                                                                     ONE_HUNDRED_HBARS))
                                                     .payingWith(SECP_256K1_SOURCE_KEY)
                                                     .sigMapPrefixes(
@@ -913,8 +946,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .logged();
 
                                     allRunFor(spec, op3, op4, hapiGetSecondTxnRecord);
-                                    resetToDefault(LAZY_CREATE_FEATURE_FLAG);
-                                }));
+                                }),
+                        resetToDefault(LAZY_CREATE_FEATURE_FLAG));
     }
 
     private HapiApiSpec hollowAccountCompletionWithEthereumTransaction() {
