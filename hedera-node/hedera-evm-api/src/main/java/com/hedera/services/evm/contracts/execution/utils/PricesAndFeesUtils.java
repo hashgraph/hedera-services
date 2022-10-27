@@ -15,6 +15,8 @@
  */
 package com.hedera.services.evm.contracts.execution.utils;
 
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+
 import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.evm.contracts.execution.RequiredPriceTypes;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -28,9 +30,6 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.EnumMap;
@@ -38,9 +37,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.ToLongFunction;
-
-
-import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class PricesAndFeesUtils {
     static final Logger log = LogManager.getLogger(PricesAndFeesUtils.class);
@@ -52,37 +50,60 @@ public class PricesAndFeesUtils {
     private static EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
     private static final long DEFAULT_FEE = 100_000L;
     private static final int FEE_DIVISOR_FACTOR = 1000;
-    private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES = FeeComponents.newBuilder().setMin(DEFAULT_FEE)
-            .setMax(DEFAULT_FEE).setConstant(0).setBpt(0).setVpt(0).setRbh(0).setSbh(0).setGas(0).setTv(0).setBpr(0)
-            .setSbpr(0).build();
-    public static final Map<SubType, FeeData> DEFAULT_RESOURCE_PRICES = Map.of(DEFAULT, FeeData.newBuilder()
-            .setNetworkdata(DEFAULT_PROVIDER_RESOURCE_PRICES).setNodedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
-            .setServicedata(DEFAULT_PROVIDER_RESOURCE_PRICES).build());
+    private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES =
+            FeeComponents.newBuilder()
+                    .setMin(DEFAULT_FEE)
+                    .setMax(DEFAULT_FEE)
+                    .setConstant(0)
+                    .setBpt(0)
+                    .setVpt(0)
+                    .setRbh(0)
+                    .setSbh(0)
+                    .setGas(0)
+                    .setTv(0)
+                    .setBpr(0)
+                    .setSbpr(0)
+                    .build();
+    public static final Map<SubType, FeeData> DEFAULT_RESOURCE_PRICES =
+            Map.of(
+                    DEFAULT,
+                    FeeData.newBuilder()
+                            .setNetworkdata(DEFAULT_PROVIDER_RESOURCE_PRICES)
+                            .setNodedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
+                            .setServicedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
+                            .build());
 
     public void setFeeSchedules(final CurrentAndNextFeeSchedule feeSchedules) {
         this.feeSchedules = feeSchedules;
 
         currFunctionUsagePrices = functionUsagePricesFrom(feeSchedules.getCurrentFeeSchedule());
-        currFunctionUsagePricesExpiry = asTimestamp(feeSchedules.getCurrentFeeSchedule().getExpiryTime());
+        currFunctionUsagePricesExpiry =
+                asTimestamp(feeSchedules.getCurrentFeeSchedule().getExpiryTime());
 
         nextFunctionUsagePrices = functionUsagePricesFrom(feeSchedules.getNextFeeSchedule());
-        nextFunctionUsagePricesExpiry = asTimestamp(feeSchedules.getNextFeeSchedule().getExpiryTime());
+        nextFunctionUsagePricesExpiry =
+                asTimestamp(feeSchedules.getNextFeeSchedule().getExpiryTime());
     }
 
     public static Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
         try {
-            Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices = applicableUsagePrices(at);
+            Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices =
+                    applicableUsagePrices(at);
             Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
             Objects.requireNonNull(usagePrices);
             return usagePrices;
         } catch (Exception e) {
-            log.debug("Default usage price will be used, no specific usage prices available for function {} @ {}!",
-                    function, Instant.ofEpochSecond(at.getSeconds(), at.getNanos()));
+            log.debug(
+                    "Default usage price will be used, no specific usage prices available for"
+                            + " function {} @ {}!",
+                    function,
+                    Instant.ofEpochSecond(at.getSeconds(), at.getNanos()));
         }
         return DEFAULT_RESOURCE_PRICES;
     }
 
-    private static Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(final Timestamp at) {
+    private static Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(
+            final Timestamp at) {
         if (onlyNextScheduleApplies(at)) {
             return nextFunctionUsagePrices;
         } else {
@@ -91,7 +112,8 @@ public class PricesAndFeesUtils {
     }
 
     private static boolean onlyNextScheduleApplies(final Timestamp at) {
-        return at.getSeconds() >= currFunctionUsagePricesExpiry.getSeconds() && at.getSeconds() < nextFunctionUsagePricesExpiry.getSeconds();
+        return at.getSeconds() >= currFunctionUsagePricesExpiry.getSeconds()
+                && at.getSeconds() < nextFunctionUsagePricesExpiry.getSeconds();
     }
 
     public static ExchangeRate rateAt(final long now) {
@@ -116,19 +138,24 @@ public class PricesAndFeesUtils {
         return Math.max(priceInTinyBars, 1L);
     }
 
-    public static long currentPrice(final Instant now, final HederaFunctionality function,
-                                    final ToLongFunction<FeeComponents> resourcePriceFn) {
+    public static long currentPrice(
+            final Instant now,
+            final HederaFunctionality function,
+            final ToLongFunction<FeeComponents> resourcePriceFn) {
         final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
         long feeInTinyCents = currentFeeInTinycents(now, function, resourcePriceFn);
-        long feeInTinyBars = getTinybarsFromTinyCents(PricesAndFeesProvider.rate(timestamp), feeInTinyCents);
+        long feeInTinyBars =
+                getTinybarsFromTinyCents(PricesAndFeesProvider.rate(timestamp), feeInTinyCents);
         final var unscaledPrice = Math.max(1L, feeInTinyBars);
         final var curMultiplier = 1L;
 
         return unscaledPrice * curMultiplier;
     }
 
-    private static long currentFeeInTinycents(final Instant now, final HederaFunctionality function,
-                                              final ToLongFunction<FeeComponents> resourcePriceFn) {
+    private static long currentFeeInTinycents(
+            final Instant now,
+            final HederaFunctionality function,
+            final ToLongFunction<FeeComponents> resourcePriceFn) {
         final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
         final var prices = PricesAndFeesProvider.defaultPricesGiven(function, timestamp);
 
@@ -136,8 +163,10 @@ public class PricesAndFeesUtils {
         return resourcePriceFn.applyAsLong(prices.getServicedata()) / 1000;
     }
 
-    EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(final FeeSchedule feeSchedule) {
-        final EnumMap<HederaFunctionality, Map<SubType, FeeData>> allPrices = new EnumMap<>(HederaFunctionality.class);
+    EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(
+            final FeeSchedule feeSchedule) {
+        final EnumMap<HederaFunctionality, Map<SubType, FeeData>> allPrices =
+                new EnumMap<>(HederaFunctionality.class);
         for (var pricingData : feeSchedule.getTransactionFeeScheduleList()) {
             final var function = pricingData.getHederaFunctionality();
             Map<SubType, FeeData> pricesMap = allPrices.get(function);
@@ -155,8 +184,10 @@ public class PricesAndFeesUtils {
         return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
     }
 
-    void ensurePricesMapHasRequiredTypes(final TransactionFeeSchedule tfs, final Map<SubType, FeeData> pricesMap,
-                                         final Set<SubType> requiredTypes) {
+    void ensurePricesMapHasRequiredTypes(
+            final TransactionFeeSchedule tfs,
+            final Map<SubType, FeeData> pricesMap,
+            final Set<SubType> requiredTypes) {
         /* The deprecated prices are the final fallback; if even they are not set, the function will be free */
         final var oldDefaultPrices = tfs.getFeeData();
         FeeData newDefaultPrices = null;

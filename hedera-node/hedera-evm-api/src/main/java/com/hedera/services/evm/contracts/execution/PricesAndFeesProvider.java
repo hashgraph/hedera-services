@@ -15,19 +15,18 @@
  */
 package com.hedera.services.evm.contracts.execution;
 
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
-
-import java.time.Instant;
-
 import static com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils.currentPrice;
 import static com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils.gasPriceInTinybars;
 import static com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils.pricesGiven;
 import static com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils.rateAt;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import java.time.Instant;
 
 public interface PricesAndFeesProvider {
     static FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
