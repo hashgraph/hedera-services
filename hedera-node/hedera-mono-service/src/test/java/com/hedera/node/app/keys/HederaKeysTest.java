@@ -13,29 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.spi.key;
+package com.hedera.node.app.keys;
 
-import com.hedera.node.app.keys.impl.HederaEd25519Key;
-import com.hedera.node.app.spi.keys.HederaKey;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.Key;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static com.hedera.node.app.keys.impl.HederaKeys.asHederaKey;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-class HederaKeyTest {
-    @Test
-    void visitsAllSimpleKeys() {
-        final HederaKey key = new HederaEd25519Key("test".getBytes());
+class HederaKeysTest {
+	@Test
+	void canConvertToHederaKey() {
+		final var id = IdUtils.asContract("1.2.3");
+		final var input = Key.newBuilder().setDelegatableContractId(id).build();
 
-        final List<HederaKey> visitedPrimitiveKeys = new ArrayList<>();
-        key.visitPrimitiveKeys(simpleKey -> visitedPrimitiveKeys.add(simpleKey));
+		final var subject = asHederaKey(input);
 
-        assertThat(visitedPrimitiveKeys, contains(key));
-    }
+		assertTrue(subject.isPresent());
+
+		final var jkey = (JKey) subject.get();
+		Assertions.assertTrue(jkey.hasDelegatableContractId());
+	}
 }

@@ -1,7 +1,6 @@
-package com.hedera.node.app.keys;
+package com.hedera.node.app.keys.impl;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.MoreObjects;
 import com.hedera.node.app.spi.keys.HederaKey;
 import com.hedera.node.app.spi.keys.ReplHederaKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -21,8 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import static com.swirlds.common.utility.CommonUtils.hex;
-
 /**
  * A HederaKey that is a list of HederaKeys.
  */
@@ -31,7 +28,6 @@ public class HederaKeyList implements ReplHederaKey {
 	private static final int VERSION = 1;
 	private List<ReplHederaKey> keys;
 
-	@VisibleForTesting
 	public HederaKeyList() {
 		this.keys = new LinkedList<>();
 	}
@@ -106,7 +102,7 @@ public class HederaKeyList implements ReplHederaKey {
 		final var len = keys.size();
 		out.writeInt(len);
 		for (final var key : keys){
-			key.serialize(out);
+			out.writeSerializable(key, true);
 		}
 	}
 

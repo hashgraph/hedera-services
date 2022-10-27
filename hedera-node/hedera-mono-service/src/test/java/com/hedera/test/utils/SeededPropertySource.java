@@ -22,9 +22,9 @@ import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBy
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.keys.HederaEd25519Key;
-import com.hedera.node.app.keys.HederaKeyList;
-import com.hedera.node.app.keys.HederaThresholdKey;
+import com.hedera.node.app.keys.impl.HederaEd25519Key;
+import com.hedera.node.app.keys.impl.HederaKeyList;
+import com.hedera.node.app.keys.impl.HederaThresholdKey;
 import com.hedera.services.context.properties.EntityType;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.*;

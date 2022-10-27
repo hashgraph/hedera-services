@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.keys;
 
+import com.hedera.node.app.keys.impl.HederaEd25519Key;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.hedera.node.app.keys.HederaKeys.asHederaKey;
+import static com.hedera.node.app.keys.impl.HederaKeys.asHederaKey;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys

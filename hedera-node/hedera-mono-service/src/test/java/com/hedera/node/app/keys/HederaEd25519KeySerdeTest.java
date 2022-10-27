@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.keys;
 
+import com.hedera.node.app.keys.impl.HederaEd25519Key;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 

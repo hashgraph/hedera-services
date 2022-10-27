@@ -15,9 +15,13 @@
  */
 package com.hedera.test.factories.keys;
 
+import com.hedera.node.app.keys.impl.HederaKeys;
+import com.hedera.node.app.spi.keys.HederaKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
+
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.commons.codec.DecoderException;
@@ -53,6 +57,10 @@ public class KeyTree {
 
     public JKey asJKey() throws DecoderException {
         return JKey.mapKey(asKey());
+    }
+
+    public Optional<HederaKey> asHederaKey(){
+        return HederaKeys.asHederaKey(asKey());
     }
 
     public JKey asJKeyUnchecked() {

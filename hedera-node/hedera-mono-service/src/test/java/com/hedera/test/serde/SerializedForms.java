@@ -20,11 +20,9 @@ import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import com.hedera.node.app.keys.HederaEd25519Key;
-import com.hedera.node.app.keys.HederaEd25519KeySerdeTest;
-import com.hedera.node.app.keys.HederaKeyList;
-import com.hedera.node.app.keys.HederaKeyListSerdeTest;
-import com.hedera.node.app.keys.HederaThresholdKey;
+import com.hedera.node.app.keys.impl.HederaEd25519Key;
+import com.hedera.node.app.keys.impl.HederaKeyList;
+import com.hedera.node.app.keys.impl.HederaThresholdKey;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;

@@ -16,6 +16,9 @@
 package com.hedera.node.app.keys;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.keys.impl.HederaEd25519Key;
+import com.hedera.node.app.keys.impl.HederaKeyList;
+import com.hedera.node.app.keys.impl.HederaThresholdKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

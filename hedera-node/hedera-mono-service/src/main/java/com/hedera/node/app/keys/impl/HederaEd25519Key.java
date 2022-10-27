@@ -1,4 +1,4 @@
-package com.hedera.node.app.keys;
+package com.hedera.node.app.keys.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.keys.ReplHederaKey;

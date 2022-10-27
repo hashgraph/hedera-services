@@ -1,4 +1,4 @@
-package com.hedera.node.app.keys;
+package com.hedera.node.app.keys.impl;
 
 import com.hedera.node.app.spi.keys.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;

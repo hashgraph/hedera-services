@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi;
 
-import static com.hedera.node.app.keys.HederaKeys.asHederaKey;
+import static com.hedera.node.app.keys.impl.HederaKeys.asHederaKey;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;

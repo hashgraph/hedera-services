@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.hedera.node.app.keys.HederaKeys;
+import com.hedera.node.app.keys.impl.HederaKeys;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

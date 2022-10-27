@@ -210,4 +210,21 @@ class JKeyTest {
         var key = assertDoesNotThrow(() -> JKey.convertJKeyBasic(jkey));
         assertFalse(key.getRSA3072().isEmpty());
     }
+
+    @Test
+    void checksIfPrimitive(){
+        ByteString edcsaSecp256K1Bytes =
+                ByteString.copyFrom(new byte[] {0x02})
+                        .concat(
+                                TxnUtils.randomUtf8ByteString(
+                                        JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
+                                                - 1));
+        JKey jkey = new JECDSASecp256k1Key(edcsaSecp256K1Bytes.toByteArray());
+
+        assertTrue(jkey.isPrimitive());
+
+        final var thresholdKey = new JThresholdKey(new JKeyList(), 0);
+
+        assertFalse(thresholdKey.isPrimitive());
+    }
 }
