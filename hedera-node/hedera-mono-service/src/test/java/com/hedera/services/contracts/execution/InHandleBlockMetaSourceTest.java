@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 

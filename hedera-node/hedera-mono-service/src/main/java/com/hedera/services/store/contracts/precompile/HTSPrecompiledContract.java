@@ -279,6 +279,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             functionId,
                             senderAddress,
                             impliedTransfersMarshal);
+                    case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
+                            dynamicProperties.isAtomicCryptoTransferEnabled(),
+                            () ->
+                                    new TransferPrecompile(
+                                            ledgers,
+                                            updater,
+                                            sigsVerifier,
+                                            sideEffectsTracker,
+                                            syntheticTxnFactory,
+                                            infrastructureFactory,
+                                            precompilePricingUtils,
+                                            functionId,
+                                            senderAddress,
+                                            impliedTransfersMarshal));
                     case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
                             ledgers,
                             encoder,
@@ -580,6 +594,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     precompilePricingUtils,
                                                     functionId,
                                                     impliedTransfersMarshal));
+
                             case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
                                     () ->

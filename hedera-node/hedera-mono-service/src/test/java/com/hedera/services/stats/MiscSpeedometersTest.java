@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,13 +37,15 @@ class MiscSpeedometersTest {
     @Mock private Platform platform;
     @Mock private SpeedometerMetric syncVerifies;
     @Mock private SpeedometerMetric txnRejections;
+    @Mock private Metrics metrics;
 
     private MiscSpeedometers subject;
 
     @BeforeEach
     void setup() {
         platform = mock(Platform.class);
-        given(platform.getOrCreateMetric(any())).willReturn(syncVerifies).willReturn(txnRejections);
+        given(platform.getMetrics()).willReturn(metrics);
+        given(metrics.getOrCreate(any())).willReturn(syncVerifies).willReturn(txnRejections);
 
         subject = new MiscSpeedometers(halfLife);
     }
@@ -54,7 +57,7 @@ class MiscSpeedometersTest {
 
         subject.registerWith(platform);
 
-        verify(platform, times(2)).getOrCreateMetric(any());
+        verify(metrics, times(2)).getOrCreate(any());
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.fees;
+package com.hedera.services.evm.contracts.execution;
 
-import com.hedera.services.utils.accessors.TxnAccessor;
-import java.time.Instant;
+import org.hyperledger.besu.datatypes.Address;
 
-public interface FeeMultiplierSource {
-    void updateMultiplier(final TxnAccessor accessor, Instant consensusNow);
+public interface EvmProperties {
 
-    long currentMultiplier(final TxnAccessor accessor);
+    String evmVersion();
 
-    void resetExpectations();
+    Address fundingAccountAddress();
 
-    void resetCongestionLevelStarts(Instant[] savedStartTimes);
+    boolean dynamicEvmVersion();
 
-    Instant[] congestionLevelStarts();
+    int maxGasRefundPercentage();
 }

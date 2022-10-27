@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.fees.congestion.TxnRateFeeMultiplierSource;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -177,7 +178,7 @@ class TxnRateFeeMultiplierSourceTest {
     void logsCongestionPricingStart() {
         final var desired = "Congestion pricing beginning w/ 10x multiplier";
 
-        subject.logMultiplierChange(1L, 10L);
+        subject.getDelegate().logMultiplierChange(1L, 10L);
 
         assertThat(logCaptor.infoLogs(), contains(desired));
     }
@@ -186,7 +187,7 @@ class TxnRateFeeMultiplierSourceTest {
     void logsCongestionPricingIncrease() {
         final var desired = "Congestion pricing continuing, reached 100x multiplier";
 
-        subject.logMultiplierChange(10L, 100L);
+        subject.getDelegate().logMultiplierChange(10L, 100L);
 
         assertThat(logCaptor.infoLogs(), contains(desired));
     }
@@ -195,23 +196,24 @@ class TxnRateFeeMultiplierSourceTest {
     void logsCongestionPricingEnd() {
         final var desired = "Congestion pricing ended";
 
-        subject.logMultiplierChange(10L, 1L);
+        subject.getDelegate().logMultiplierChange(10L, 1L);
 
         assertThat(logCaptor.infoLogs(), contains(desired));
     }
 
     @Test
     void silentOnCongestionPricingDrop() {
-        subject.logMultiplierChange(100L, 10L);
+        subject.getDelegate().logMultiplierChange(100L, 10L);
 
         assertTrue(logCaptor.infoLogs().isEmpty());
     }
 
     @Test
     void toStringIndicatesUnavailableConfig() {
-        final var desired = "The new cutoffs for congestion pricing are :  <N/A>";
+        final var desired =
+                "The new cutoffs for CryptoTransfer throughput congestion pricing are :  <N/A>";
 
-        subject.logReadableCutoffs();
+        subject.getDelegate().logReadableCutoffs();
 
         assertThat(logCaptor.infoLogs(), contains(desired));
     }
@@ -219,7 +221,7 @@ class TxnRateFeeMultiplierSourceTest {
     @Test
     void toStringHasExpectedCutoffsMsg() {
         final var desired =
-                "The new cutoffs for congestion pricing are : \n"
+                "The new cutoffs for CryptoTransfer throughput congestion pricing are : \n"
                         + "  (A) When logical TPS exceeds:\n"
                         + "    900.00 TPS, multiplier is 10x\n"
                         + "    950.00 TPS, multiplier is 25x\n"
