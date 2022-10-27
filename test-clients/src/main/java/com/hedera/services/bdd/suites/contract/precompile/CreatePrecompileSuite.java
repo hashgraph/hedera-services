@@ -45,9 +45,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
@@ -86,8 +89,15 @@ import org.apache.logging.log4j.Logger;
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
 public class CreatePrecompileSuite extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
+    public static final String ACCOUNT_2 = "account2";
+    public static final String CONTRACT_ADMIN_KEY = "contractAdminKey";
+    public static final String ACCOUNT_TO_ASSOCIATE = "account3";
+    public static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
 
+    public static final String FALSE = "false";
+    public static final String CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE =
+            "createTokenWithAllCustomFeesAvailable";
+    private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
     private static final long GAS_TO_OFFER = 1_000_000L;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
     private static final String TOKEN_SYMBOL = "tokenSymbol";
@@ -101,7 +111,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     private static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
     private static final String ED25519KEY = "ed25519key";
     private static final String ECDSA_KEY = "ecdsa";
-    private final String EXISTING_TOKEN = "EXISTING_TOKEN";
+    private static final String EXISTING_TOKEN = "EXISTING_TOKEN";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     private static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
     private static final String CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION =
@@ -158,26 +168,22 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     private HapiApiSpec fungibleTokenCreateHappyPath() {
         final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
         final var createTokenNum = new AtomicLong();
-        final var ACCOUNT2 = "account2";
-        final var contractAdminKey = "contractAdminKey";
-        final var ACCOUNT_TO_ASSOCIATE = "account3";
-        final var ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
         return defaultHapiSpec("fungibleTokenCreateHappyPath")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(contractAdminKey),
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(ONE_HUNDRED_HBARS).key(ED25519KEY),
-                        cryptoCreate(ACCOUNT2).balance(ONE_HUNDRED_HBARS).key(ECDSA_KEY),
+                        cryptoCreate(ACCOUNT_2).balance(ONE_HUNDRED_HBARS).key(ECDSA_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT)
                                 .gas(GAS_TO_OFFER)
-                                .adminKey(contractAdminKey)
+                                .adminKey(CONTRACT_ADMIN_KEY)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
-                                .signedBy(contractAdminKey, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
+                                .signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
@@ -294,7 +300,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 .hasWipeKey(ECDSA_KEY)
                                                 .hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
                                                 .hasFeeScheduleKey(tokenCreateContractAsKeyDelegate)
-                                                .hasPauseKey(contractAdminKey)
+                                                .hasPauseKey(CONTRACT_ADMIN_KEY)
                                                 .hasPauseStatus(TokenPauseStatus.Unpaused)),
                         cryptoDelete(ACCOUNT).hasKnownStatus(ACCOUNT_IS_TREASURY));
     }
@@ -305,6 +311,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
         final var feeCollector = "feeCollector";
         return defaultHapiSpec("fungibleTokenCreateWithFeesHappyPath")
                 .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
@@ -319,7 +326,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
-                                                                "createTokenWithAllCustomFeesAvailable",
+                                                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
                                                                 spec.registry()
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
@@ -404,7 +411,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                             OptionalLong.of(30),
                                                             true,
                                                             feeCollector));
-                                }));
+                                }),
+                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
@@ -491,27 +499,24 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
     private HapiApiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
         final var createTokenNum = new AtomicLong();
-        final var contractAdminKey = "contractAdminKey";
-        final var ACCOUNT_TO_ASSOCIATE = "account3";
-        final var ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
         return defaultHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(contractAdminKey),
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(ONE_HUNDRED_HBARS).key(ED25519KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT)
                                 .gas(GAS_TO_OFFER)
-                                .adminKey(contractAdminKey)
+                                .adminKey(CONTRACT_ADMIN_KEY)
                                 .autoRenewAccountId(
                                         AUTO_RENEW_ACCOUNT) // inherits if the tokenCreateOp doesn't
                                 // have
                                 // autoRenewAccount
-                                .signedBy(contractAdminKey, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
+                                .signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
@@ -719,10 +724,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     // TEST-004
     private HapiApiSpec nonFungibleTokenCreateWithFeesHappyPath() {
         final var createTokenNum = new AtomicLong();
-        final var feeCollector = "account2";
+        final var feeCollector = ACCOUNT_2;
         final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return defaultHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
                 .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(treasuryAndFeeCollectorKey),
@@ -830,7 +836,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             .hasCustom(
                                                     royaltyFeeWithoutFallbackInSchedule(
                                                             4, 5, feeCollector));
-                                }));
+                                }),
+                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     // TEST-005
@@ -1263,7 +1270,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     private HapiApiSpec createTokenWithInvalidExpiry() {
         return defaultHapiSpec("createTokenWithInvalidExpiry")
                 .given(
-                        newKeyNamed("ecdsa").shape(SECP256K1),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER))
@@ -1302,15 +1309,15 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
     // TEST-012
     private HapiApiSpec createTokenWithInvalidRoyaltyFee() {
-        final String feeCollector = "account2";
-        final String contractAdminKey = "contractAdminKey";
+        final String feeCollector = ACCOUNT_2;
         AtomicReference<String> existingToken = new AtomicReference<>();
         final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return defaultHapiSpec("createTokenWithInvalidRoyaltyFee")
                 .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
-                        newKeyNamed(contractAdminKey),
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
                         newKeyNamed(treasuryAndFeeCollectorKey),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector)
@@ -1319,7 +1326,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT)
                                 .gas(GAS_TO_OFFER)
-                                .adminKey(contractAdminKey),
+                                .adminKey(CONTRACT_ADMIN_KEY),
                         tokenCreate(EXISTING_TOKEN).exposingCreatedIdTo(existingToken::set))
                 .when(
                         withOpContext(
@@ -1375,7 +1382,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 ContractFnResultAsserts.resultWith()
                                                         .error(
                                                                 CUSTOM_FEE_MUST_BE_POSITIVE
-                                                                        .name()))));
+                                                                        .name()))),
+                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     // TEST-013
@@ -1430,9 +1438,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
     // TEST-014
     private HapiApiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
-        final String feeCollector = "account2";
+        final String feeCollector = ACCOUNT_2;
         return defaultHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
                 .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
@@ -1449,7 +1458,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
-                                                                "createTokenWithAllCustomFeesAvailable",
+                                                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
                                                                 spec.registry()
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
@@ -1487,13 +1496,15 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 ContractFnResultAsserts.resultWith()
                                                         .error(
                                                                 CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON
-                                                                        .name()))));
+                                                                        .name()))),
+                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     // TEST-015
     private HapiApiSpec createTokenWithInvalidFeeCollector() {
         return defaultHapiSpec("createTokenWithInvalidFeeCollector")
                 .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -1506,7 +1517,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
-                                                                "createTokenWithAllCustomFeesAvailable",
+                                                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
                                                                 spec.registry()
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
@@ -1543,7 +1554,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 ContractFnResultAsserts.resultWith()
                                                         .error(
                                                                 INVALID_CUSTOM_FEE_COLLECTOR
-                                                                        .name()))));
+                                                                        .name()))),
+                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     // TEST-018
@@ -1679,26 +1691,22 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     private HapiApiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
         final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
         final var createTokenNum = new AtomicLong();
-        final var ACCOUNT2 = "account2";
-        final var contractAdminKey = "contractAdminKey";
-        final var ACCOUNT_TO_ASSOCIATE = "account3";
-        final var ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
-        return defaultHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
+        return defaultHapiSpec(tokenCreateContractAsKeyDelegate)
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(contractAdminKey),
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(ONE_HUNDRED_HBARS).key(ED25519KEY),
-                        cryptoCreate(ACCOUNT2).balance(ONE_HUNDRED_HBARS).key(ECDSA_KEY),
+                        cryptoCreate(ACCOUNT_2).balance(ONE_HUNDRED_HBARS).key(ECDSA_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT)
                                 .gas(GAS_TO_OFFER)
-                                .adminKey(contractAdminKey)
+                                .adminKey(CONTRACT_ADMIN_KEY)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
-                                .signedBy(contractAdminKey, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
+                                .signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
@@ -1711,7 +1719,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
-                                                                "createTokenWithDefaultExpiryAndEmptyKeys")
+                                                                tokenCreateContractAsKeyDelegate)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
