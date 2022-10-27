@@ -127,7 +127,7 @@ public final class AbiConstants {
     // updateTokenInfo(address token, HederaToken tokenInfo)
     public static final int ABI_ID_UPDATE_TOKEN_INFO_V2 = 0x18370d34;
     // updateTokenInfo(address token, HederaToken tokenInfo)
-    public static final int ABI_ID_UPDATE_TOKEN_INFO_V3 = 0x1d6d6529;
+    public static final int ABI_ID_UPDATE_TOKEN_INFO_V3 = 0x7d305cfa;
     // updateTokenKeys(address token, TokenKey [])
     public static final int ABI_ID_UPDATE_TOKEN_KEYS = 0x6fc3cbaf;
     // getTokenKey(address token, uint tokenType)
@@ -150,7 +150,7 @@ public final class AbiConstants {
     // createFungibleToken(HederaToken memory token, uint64 initialTotalSupply, uint32 decimals)
     public static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_V2 = 0xc23baeb6;
     // createFungibleToken(HederaToken memory token, int64 initialTotalSupply, int32 decimals)
-    public static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_V3 = 0x2c1e9423;
+    public static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_V3 = 0xfb65bf3;
     // createFungibleTokenWithCustomFees(
     //  HederaToken memory token,
     //  uint initialTotalSupply,
@@ -171,14 +171,14 @@ public final class AbiConstants {
     //  int32 decimals,
     //  FixedFee[] memory fixedFees,
     //  FractionalFee[] memory fractionalFees)
-    public static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3 = 0x6daa94d8;
+    public static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3 = 0x2af0c59a;
     // createNonFungibleToken(HederaToken memory token)
     public static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN = 0x9dc711e0;
     // createNonFungibleToken(HederaToken memory token)
     // HederaToken field maxSupply updated to int64
     public static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2 = 0x9c89bb35;
     // createNonFungibleToken(HederaToken memory token)
-    public static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3 = 0xa4bcba95;
+    public static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3 = 0xea83f293;
     // createNonFungibleTokenWithCustomFees(
     //  HederaToken memory token,
     //  FixedFee[] memory fixedFees,
@@ -194,7 +194,7 @@ public final class AbiConstants {
     //  HederaToken memory token,
     //  FixedFee[] memory fixedFees,
     //  RoyaltyFee[] memory royaltyFees)
-    public static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 = 0xaddb7110;
+    public static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 = 0xabb54eb5;
 
     // **** HIP-514 function selectors ****
     // getFungibleTokenInfo(address token)
@@ -224,5 +224,5 @@ public final class AbiConstants {
     // updateTokenExpiryInfo(address token, Expiry expiryInfoStruct)
     public static final int ABI_ID_UPDATE_TOKEN_EXPIRY_INFO = 0x593d6e82;
     // updateTokenExpiryInfo(address token, Expiry expiryInfoStruct)
-    public static final int ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 = 0x4a089f09;
+    public static final int ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 = 0xd27be6cd;
 }
