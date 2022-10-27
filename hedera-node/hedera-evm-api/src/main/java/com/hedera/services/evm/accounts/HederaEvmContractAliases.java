@@ -44,7 +44,7 @@ public abstract class HederaEvmContractAliases {
         return isMirror(address.toArrayUnsafe());
     }
 
-    public boolean isMirror(final byte[] address) {
+    public static boolean isMirror(final byte[] address) {
         if (address.length != EVM_ADDRESS_LEN) {
             return false;
         }

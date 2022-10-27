@@ -15,12 +15,7 @@
  */
 package com.hedera.node.app.service.token.util;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
-
-import com.google.common.primitives.Longs;
-import java.util.Arrays;
 
 /** Utility class needed for resolving aliases */
 public final class AliasUtils {
@@ -28,17 +23,6 @@ public final class AliasUtils {
 
     private AliasUtils() {
         throw new UnsupportedOperationException("Utility class");
-    }
-
-    public static boolean isMirror(final byte[] address) {
-        if (address.length != EVM_ADDRESS_LEN) {
-            return false;
-        }
-        byte[] mirrorPrefix = new byte[12];
-        System.arraycopy(Longs.toByteArray(STATIC_PROPERTIES.getShard()), 4, mirrorPrefix, 0, 4);
-        System.arraycopy(Longs.toByteArray(STATIC_PROPERTIES.getRealm()), 0, mirrorPrefix, 4, 8);
-
-        return Arrays.equals(mirrorPrefix, 0, 12, address, 0, 12);
     }
 
     public static Long fromMirror(final byte[] evmAddress) {
