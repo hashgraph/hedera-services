@@ -45,7 +45,9 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord.Builder;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -347,8 +349,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
             frame.decrementRemainingGas(creationFeeInGas);
             // track auto-creation preceding child record
-            autoCreationLogic.submitRecordsTo(recordsHistorian);
-            // track the lazy account so it is accessible to the EVM
+            final var pendingCreations = autoCreationLogic.getPendingCreations();
+            final var lastRecord = pendingCreations.get(pendingCreations.size() - 1);
+            final var recordSoFar = lastRecord.recordBuilder();
+            recordSoFar.onlyExternalizeIfSuccessful();
+            updater.manageInProgressPrecedingRecord(recordsHistorian,
+                recordSoFar, lastRecord.syntheticBody());
+            // track the lazy account, so it is accessible to the EVM
             updater.trackLazilyCreatedAccount(EntityIdUtils.asTypedEvmAddress(change.accountId()));
         }
     }
