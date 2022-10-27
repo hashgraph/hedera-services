@@ -95,6 +95,6 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void storageEntriesFrom() {
-        assertEquals(subject.storageEntriesFrom(Bytes32.ZERO, 0), Collections.emptyNavigableMap());
+        assertEquals(Collections.emptyNavigableMap(), subject.storageEntriesFrom(Bytes32.ZERO, 0));
     }
 }
