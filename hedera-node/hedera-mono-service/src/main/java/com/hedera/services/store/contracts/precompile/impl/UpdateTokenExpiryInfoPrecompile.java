@@ -20,11 +20,9 @@ import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.services.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.EXPIRY_DECODER;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.EXPIRY_DECODER_V2;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiryV2;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
 import static com.hedera.services.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_EXPIRY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -61,8 +59,6 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
             new Function("updateTokenExpiryInfo(address," + EXPIRY_V2 + ")");
     private static final Bytes TOKEN_UPDATE_EXPIRY_INFO_SELECTOR_V2 =
             Bytes.wrap(TOKEN_UPDATE_EXPIRY_INFO_FUNCTION_V2.selector());
-    private static final ABIType<Tuple> TOKEN_UPDATE_EXPIRY_INFO_DECODER_V2 =
-            TypeFactory.create("(" + removeBrackets(BYTES32) + "," + EXPIRY_DECODER_V2 + ")");
     private TokenUpdateExpiryInfoWrapper updateExpiryInfoOp;
 
     public UpdateTokenExpiryInfoPrecompile(
@@ -109,25 +105,22 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
 
     public static TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfo(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR, TOKEN_UPDATE_EXPIRY_INFO_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final Tuple tokenExpiryStruct = decodedArguments.get(1);
-        final var tokenExpiry = decodeTokenExpiry(tokenExpiryStruct, aliasResolver);
-        return new TokenUpdateExpiryInfoWrapper(tokenID, tokenExpiry);
+        return getTokenUpdateExpiryInfoWrapper(input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR);
     }
 
     public static TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfoV2(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        return getTokenUpdateExpiryInfoWrapper(input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR_V2);
+    }
+
+    private static TokenUpdateExpiryInfoWrapper getTokenUpdateExpiryInfoWrapper(Bytes input, UnaryOperator<byte[]> aliasResolver, Bytes tokenUpdateExpiryInfoSelector) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
-                        input, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR_V2, TOKEN_UPDATE_EXPIRY_INFO_DECODER_V2);
+                        input, tokenUpdateExpiryInfoSelector, TOKEN_UPDATE_EXPIRY_INFO_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final Tuple tokenExpiryStruct = decodedArguments.get(1);
-        final var tokenExpiry = decodeTokenExpiryV2(tokenExpiryStruct, aliasResolver);
+        final var tokenExpiry = decodeTokenExpiry(tokenExpiryStruct, aliasResolver);
         return new TokenUpdateExpiryInfoWrapper(tokenID, tokenExpiry);
     }
 }

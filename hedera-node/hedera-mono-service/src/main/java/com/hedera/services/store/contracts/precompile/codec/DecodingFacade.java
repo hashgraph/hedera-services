@@ -53,7 +53,6 @@ public class DecodingFacade {
     private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
     public static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
     public static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
-    public static final String EXPIRY_DECODER_V2 = "(int32,bytes32,int32)";
     public static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
     public static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
     public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
@@ -85,13 +84,6 @@ public class DecodingFacade {
                     + ARRAY_BRACKETS
                     + ","
                     + EXPIRY_DECODER
-                    + ")";
-    public static final String HEDERA_TOKEN_STRUCT_DECODER_V2 =
-            "(string,string,bytes32,string,bool,int64,bool,"
-                    + TOKEN_KEY_DECODER
-                    + ARRAY_BRACKETS
-                    + ","
-                    + EXPIRY_DECODER_V2
                     + ")";
 
     private DecodingFacade() {
@@ -136,18 +128,6 @@ public class DecodingFacade {
         final var autoRenewAccount =
                 convertLeftPaddedAddressToAccountId(expiryTuple.get(1), aliasResolver);
         final var autoRenewPeriod = (long) expiryTuple.get(2);
-        return new TokenExpiryWrapper(
-                second,
-                autoRenewAccount.getAccountNum() == 0 ? null : autoRenewAccount,
-                autoRenewPeriod);
-    }
-
-    public static TokenExpiryWrapper decodeTokenExpiryV2(
-            @NotNull final Tuple expiryTuple, final UnaryOperator<byte[]> aliasResolver) {
-        final var second = (int) expiryTuple.get(0);
-        final var autoRenewAccount =
-                convertLeftPaddedAddressToAccountId(expiryTuple.get(1), aliasResolver);
-        final var autoRenewPeriod = (int) expiryTuple.get(2);
         return new TokenExpiryWrapper(
                 second,
                 autoRenewAccount.getAccountNum() == 0 ? null : autoRenewAccount,

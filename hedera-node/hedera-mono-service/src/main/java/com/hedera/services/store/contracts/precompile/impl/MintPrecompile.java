@@ -171,8 +171,12 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     public static MintWrapper decodeMint(final Bytes input) {
+        return getMintWrapper(input, MINT_TOKEN_SELECTOR);
+    }
+
+    private static MintWrapper getMintWrapper(Bytes input, Bytes mintTokenSelector) {
         final Tuple decodedArguments =
-                decodeFunctionCall(input, MINT_TOKEN_SELECTOR, MINT_TOKEN_DECODER);
+                decodeFunctionCall(input, mintTokenSelector, MINT_TOKEN_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var fungibleAmount = (long) decodedArguments.get(1);
@@ -189,20 +193,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     public static MintWrapper decodeMintV2(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, MINT_TOKEN_SELECTOR_V2, MINT_TOKEN_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var fungibleAmount = (long) decodedArguments.get(1);
-        final var metadataList = (byte[][]) decodedArguments.get(2);
-        final List<ByteString> wrappedMetadata = new ArrayList<>();
-        for (final var meta : metadataList) {
-            wrappedMetadata.add(ByteStringUtils.wrapUnsafely(meta));
-        }
-        if (fungibleAmount > 0) {
-            return MintWrapper.forFungible(tokenID, fungibleAmount);
-        } else {
-            return MintWrapper.forNonFungible(tokenID, wrappedMetadata);
-        }
+        return getMintWrapper(input, MINT_TOKEN_SELECTOR_V2);
     }
 }

@@ -182,6 +182,9 @@ class MintPrecompilesTest {
     private static final Bytes NON_FUNGIBLE_MINT_INPUT =
             Bytes.fromHexString(
                     "0x278e0b88000000000000000000000000000000000000000000000000000000000000042e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000124e4654206d65746164617461207465737431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000124e4654206d657461646174612074657374320000000000000000000000000000");
+    private static final Bytes NON_FUNGIBLE_MINT_INPUT_V2 =
+            Bytes.fromHexString(
+                    "0xe0f4059a000000000000000000000000000000000000000000000000000000000000042e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000124e4654206d65746164617461207465737431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000124e4654206d657461646174612074657374320000000000000000000000000000");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<MintPrecompile> mintPrecompile;
@@ -221,7 +224,9 @@ class MintPrecompilesTest {
 
     @AfterEach
     void closeMocks() {
-        mintPrecompile.close();
+        if (!mintPrecompile.isClosed()) {
+            mintPrecompile.close();
+        }
     }
 
     @Test
@@ -577,7 +582,7 @@ class MintPrecompilesTest {
 
     @Test
     void decodeFungibleMintInput() {
-        mintPrecompile.when(() -> decodeMint(FUNGIBLE_MINT_INPUT)).thenCallRealMethod();
+        mintPrecompile.close();
         final var decodedInput = decodeMint(FUNGIBLE_MINT_INPUT);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
@@ -587,7 +592,7 @@ class MintPrecompilesTest {
 
     @Test
     void decodeFungibleMintInputV2() {
-        mintPrecompile.when(() -> decodeMintV2(FUNGIBLE_MINT_INPUT_V2)).thenCallRealMethod();
+        mintPrecompile.close();
         final var decodedInput = decodeMintV2(FUNGIBLE_MINT_INPUT_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
@@ -597,8 +602,21 @@ class MintPrecompilesTest {
 
     @Test
     void decodeNonFungibleMintInput() {
-        mintPrecompile.when(() -> decodeMint(NON_FUNGIBLE_MINT_INPUT)).thenCallRealMethod();
+        mintPrecompile.close();
         final var decodedInput = decodeMint(NON_FUNGIBLE_MINT_INPUT);
+        final var metadata1 = ByteString.copyFrom("NFT metadata test1".getBytes());
+        final var metadata2 = ByteString.copyFrom("NFT metadata test2".getBytes());
+        final List<ByteString> metadata = Arrays.asList(metadata1, metadata2);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(metadata, decodedInput.metadata());
+        assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
+    @Test
+    void decodeNonFungibleMintInputV2() {
+        mintPrecompile.close();
+        final var decodedInput = decodeMintV2(NON_FUNGIBLE_MINT_INPUT_V2);
         final var metadata1 = ByteString.copyFrom("NFT metadata test1".getBytes());
         final var metadata2 = ByteString.copyFrom("NFT metadata test2".getBytes());
         final List<ByteString> metadata = Arrays.asList(metadata1, metadata2);

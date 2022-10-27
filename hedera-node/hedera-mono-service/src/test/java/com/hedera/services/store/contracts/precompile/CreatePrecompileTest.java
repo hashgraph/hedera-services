@@ -47,7 +47,6 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_DECODER;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_DECODER_V2;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_SELECTOR_V2;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_SELECTOR_V3;
@@ -59,7 +58,6 @@ import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePre
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_SELECTOR_V2;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER_V2;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V3;
@@ -259,6 +257,9 @@ class CreatePrecompileTest {
     private static final Bytes CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V2 =
             Bytes.fromHexString(
                     "0x9c89bb350000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000007a120000000000000000000000000000000000000000000000000000000000000000074d794e465456320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054e4654563200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096e66744d656d6f56320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V3 =
+            Bytes.fromHexString(
+                    "0xa4bcba950000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000007a120000000000000000000000000000000000000000000000000000000000000000074d794e465456320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054e4654563200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096e66744d656d6f56320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
     private static final Bytes CREATE_NON_FUNGIBLE_WITH_FEES_INPUT =
             Bytes.fromHexString(
@@ -270,7 +271,7 @@ class CreatePrecompileTest {
 
     private static final Bytes CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V3 =
             Bytes.fromHexString(
-                    "0x3eed0a290000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000052000000000000000000000000000000000000000000000000000000000000005e0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000007a120000000000000000000000000000000000000000000000000000000000000000074d794e465456320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054e4654563200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096e66744d656d6f56320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002");
+                    "0xaddb71100000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000052000000000000000000000000000000000000000000000000000000000000005e0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000007a120000000000000000000000000000000000000000000000000000000000000000074d794e465456320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054e4654563200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096e66744d656d6f56320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002");
 
     private static final Bytes CREATE_FUNGIBLE_WITH_FEES_INPUT_NULL_ACCOUNTS =
             Bytes.fromHexString(
@@ -315,7 +316,9 @@ class CreatePrecompileTest {
 
     @AfterEach
     void closeMocks() {
-        tokenCreatePrecompile.close();
+        if (!tokenCreatePrecompile.isClosed()) {
+            tokenCreatePrecompile.close();
+        }
     }
 
     @Test
@@ -1187,24 +1190,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeFungibleCreateNoFeesInput() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_FUNGIBLE_NO_FEES_INPUT,
-                        TOKEN_CREATE_FUNGIBLE_SELECTOR,
-                        TOKEN_CREATE_FUNGIBLE_DECODER);
-        tokenCreatePrecompile
-                .when(() -> decodeFungibleCreate(CREATE_FUNGIBLE_NO_FEES_INPUT, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        true,
-                                        decodedArguments.get(1),
-                                        decodedArguments.get(2),
-                                        identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
 
         final var decodedInput = decodeFungibleCreate(CREATE_FUNGIBLE_NO_FEES_INPUT, identity());
 
@@ -1216,33 +1202,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeFungibleCreateWithFeesInput() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_FUNGIBLE_WITH_FEES_INPUT,
-                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR,
-                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER);
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeFungibleCreateWithFees(
-                                        CREATE_FUNGIBLE_WITH_FEES_INPUT, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        true,
-                                        decodedArguments.get(1),
-                                        decodedArguments.get(2),
-                                        identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFixedFees(decodedArguments.get(3), identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFractionalFees(decodedArguments.get(4), identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeFungibleCreateWithFees(CREATE_FUNGIBLE_WITH_FEES_INPUT, identity());
 
@@ -1279,24 +1239,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeNonFungibleCreateNoFeesInput() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_NON_FUNGIBLE_NO_FEES_INPUT,
-                        TOKEN_CREATE_NON_FUNGIBLE_SELECTOR,
-                        TOKEN_CREATE_NON_FUNGIBLE_DECODER);
-        tokenCreatePrecompile
-                .when(() -> decodeNonFungibleCreate(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        false,
-                                        BigInteger.ZERO,
-                                        BigInteger.ZERO,
-                                        identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeNonFungibleCreate(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, identity());
 
@@ -1308,33 +1251,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeNonFungibleCreateWithFeesInput() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_NON_FUNGIBLE_WITH_FEES_INPUT,
-                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR,
-                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeNonFungibleCreateWithFees(
-                                        CREATE_NON_FUNGIBLE_WITH_FEES_INPUT, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        false,
-                                        BigInteger.ZERO,
-                                        BigInteger.ZERO,
-                                        identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFixedFees(decodedArguments.get(1), identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeRoyaltyFees(decodedArguments.get(2), identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
 
         final var decodedInput =
                 decodeNonFungibleCreateWithFees(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT, identity());
@@ -1381,33 +1298,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeTokenCreateWithEmptyAddressesAsExpected() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_FUNGIBLE_WITH_FEES_INPUT_NULL_ACCOUNTS,
-                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR,
-                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER);
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeFungibleCreateWithFees(
-                                        CREATE_FUNGIBLE_WITH_FEES_INPUT_NULL_ACCOUNTS, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        true,
-                                        decodedArguments.get(1),
-                                        decodedArguments.get(2),
-                                        identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFixedFees(decodedArguments.get(3), identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFractionalFees(decodedArguments.get(4), identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeFungibleCreateWithFees(
                         CREATE_FUNGIBLE_WITH_FEES_INPUT_NULL_ACCOUNTS, identity());
@@ -1421,33 +1312,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodesTokenCreateWithRoyaltyFeeWithEmptyAddressesAsExpected() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_NON_FUNGIBLE_WITH_EMPTY_ROYALTY_FEE,
-                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR,
-                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeNonFungibleCreateWithFees(
-                                        CREATE_NON_FUNGIBLE_WITH_EMPTY_ROYALTY_FEE, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        false,
-                                        BigInteger.ZERO,
-                                        BigInteger.ZERO,
-                                        identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFixedFees(decodedArguments.get(1), identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeRoyaltyFees(decodedArguments.get(2), identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeNonFungibleCreateWithFees(
                         CREATE_NON_FUNGIBLE_WITH_EMPTY_ROYALTY_FEE, identity());
@@ -1460,13 +1325,7 @@ class CreatePrecompileTest {
     @Test
     void decodeCreateTokenWithInvalidInput() {
         UnaryOperator<byte[]> identity = identity();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeFungibleCreate(
-                                        CREATE_FUNGIBLE_NO_FEES_TOKEN_KEY_EXCEEDING_INTEGER_MAX_INVALID_INPUT,
-                                        identity))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -1477,24 +1336,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeFungibleCreateNoFeesInputV2() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_FUNGIBLE_NO_FEES_INPUT_V2,
-                        TOKEN_CREATE_FUNGIBLE_SELECTOR_V2,
-                        TOKEN_CREATE_FUNGIBLE_DECODER);
-        tokenCreatePrecompile
-                .when(() -> decodeFungibleCreateV2(CREATE_FUNGIBLE_NO_FEES_INPUT_V2, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        true,
-                                        decodedArguments.get(1),
-                                        decodedArguments.get(2),
-                                        identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeFungibleCreateV2(CREATE_FUNGIBLE_NO_FEES_INPUT_V2, identity());
 
@@ -1507,24 +1349,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeFungibleCreateNoFeesInputV3() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_FUNGIBLE_NO_FEES_INPUT_V3,
-                        TOKEN_CREATE_FUNGIBLE_SELECTOR_V3,
-                        TOKEN_CREATE_FUNGIBLE_DECODER_V2);
-        tokenCreatePrecompile
-                .when(() -> decodeFungibleCreateV3(CREATE_FUNGIBLE_NO_FEES_INPUT_V3, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFeesV2(
-                                        decodedArguments.get(0),
-                                        true,
-                                        decodedArguments.get(1),
-                                        decodedArguments.get(2),
-                                        identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeFungibleCreateV3(CREATE_FUNGIBLE_NO_FEES_INPUT_V3, identity());
 
@@ -1537,33 +1362,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeFungibleCreateWithFeesInputV2() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_FUNGIBLE_WITH_FEES_INPUT_V2,
-                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR_V2,
-                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER);
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeFungibleCreateWithFeesV2(
-                                        CREATE_FUNGIBLE_WITH_FEES_INPUT_V2, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        true,
-                                        decodedArguments.get(1),
-                                        decodedArguments.get(2),
-                                        identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFixedFees(decodedArguments.get(3), identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFractionalFees(decodedArguments.get(4), identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeFungibleCreateWithFeesV2(CREATE_FUNGIBLE_WITH_FEES_INPUT_V2, identity());
 
@@ -1601,33 +1400,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeFungibleCreateWithFeesInputV3() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_FUNGIBLE_WITH_FEES_INPUT_V3,
-                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR_V3,
-                        TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER);
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeFungibleCreateWithFeesV3(
-                                        CREATE_FUNGIBLE_WITH_FEES_INPUT_V3, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        true,
-                                        decodedArguments.get(1),
-                                        decodedArguments.get(2),
-                                        identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFixedFees(decodedArguments.get(3), identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFractionalFees(decodedArguments.get(4), identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeFungibleCreateWithFeesV3(CREATE_FUNGIBLE_WITH_FEES_INPUT_V3, identity());
 
@@ -1665,27 +1438,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeNonFungibleCreateNoFeesInputV2() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V2,
-                        TOKEN_CREATE_NON_FUNGIBLE_SELECTOR_V2,
-                        TOKEN_CREATE_NON_FUNGIBLE_DECODER);
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeNonFungibleCreateV2(
-                                        CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V2, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        false,
-                                        BigInteger.ZERO,
-                                        BigInteger.ZERO,
-                                        identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeNonFungibleCreateV2(CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V2, identity());
 
@@ -1708,34 +1461,32 @@ class CreatePrecompileTest {
     }
 
     @Test
+    void decodeNonFungibleCreateNoFeesInputV3() {
+        tokenCreatePrecompile.close();
+        final var decodedInput =
+                decodeNonFungibleCreateV3(CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V3, identity());
+
+        assertFalse(decodedInput.isFungible());
+        assertEquals("MyNFTV2", decodedInput.getName());
+        assertEquals("NFTV2", decodedInput.getSymbol());
+        assertEquals(AccountID.newBuilder().setAccountNum(1L).build(), decodedInput.getTreasury());
+        assertEquals("nftMemoV2", decodedInput.getMemo());
+        assertTrue(decodedInput.isSupplyTypeFinite());
+        assertEquals(9223372036854775807L, decodedInput.getMaxSupply());
+        assertFalse(decodedInput.isFreezeDefault());
+        assertEquals(0L, decodedInput.getExpiry().second());
+        assertEquals(8000000L, decodedInput.getExpiry().autoRenewPeriod());
+        assertEquals(
+                AccountID.newBuilder().setAccountNum(4L).build(),
+                decodedInput.getExpiry().autoRenewAccount());
+        assertEquals(BigInteger.valueOf(0), decodedInput.getInitSupply());
+        assertEquals(BigInteger.valueOf(0), decodedInput.getDecimals());
+        assertExpectedKeys(decodedInput);
+    }
+
+    @Test
     void decodeNonFungibleCreateWithFeesInputV2() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V2,
-                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2,
-                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeNonFungibleCreateWithFeesV2(
-                                        CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V2, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        false,
-                                        BigInteger.ZERO,
-                                        BigInteger.ZERO,
-                                        identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFixedFees(decodedArguments.get(1), identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeRoyaltyFees(decodedArguments.get(2), identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeNonFungibleCreateWithFeesV2(
                         CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V2, identity());
@@ -1784,33 +1535,7 @@ class CreatePrecompileTest {
 
     @Test
     void decodeNonFungibleCreateWithFeesInputV3() {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V3,
-                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V3,
-                        TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER_V2);
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeNonFungibleCreateWithFeesV3(
-                                        CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V3, identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(
-                        () ->
-                                decodeTokenCreateWithoutFees(
-                                        decodedArguments.get(0),
-                                        false,
-                                        BigInteger.ZERO,
-                                        BigInteger.ZERO,
-                                        identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeFixedFees(decodedArguments.get(1), identity()))
-                .thenCallRealMethod();
-        tokenCreatePrecompile
-                .when(() -> decodeRoyaltyFees(decodedArguments.get(2), identity()))
-                .thenCallRealMethod();
+        tokenCreatePrecompile.close();
         final var decodedInput =
                 decodeNonFungibleCreateWithFeesV3(
                         CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V3, identity());
