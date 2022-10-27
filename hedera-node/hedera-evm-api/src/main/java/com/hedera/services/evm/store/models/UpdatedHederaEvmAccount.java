@@ -25,17 +25,17 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 
-public class EvmAccount implements Account {
+public class UpdatedHederaEvmAccount implements Account {
 
     private Address address;
     private long nonce;
     private Wei balance;
 
-    public EvmAccount(Address address) {
+    public UpdatedHederaEvmAccount(Address address) {
         this.address = address;
     }
 
-    public EvmAccount(Address address, long nonce, Wei balance) {
+    public UpdatedHederaEvmAccount(Address address, long nonce, Wei balance) {
         this.address = address;
         this.nonce = nonce;
         this.balance = balance;

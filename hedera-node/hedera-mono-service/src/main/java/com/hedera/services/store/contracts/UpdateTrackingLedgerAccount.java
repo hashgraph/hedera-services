@@ -19,6 +19,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import com.google.common.base.Preconditions;
+import com.hedera.services.evm.store.models.UpdatedHederaEvmAccount;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
@@ -41,7 +42,7 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
 public class UpdateTrackingLedgerAccount<A extends Account>
-        extends com.hedera.services.evm.store.models.EvmAccount
+        extends UpdatedHederaEvmAccount
         implements MutableAccount, EvmAccount {
     private final Hash addressHash;
     private final AccountID accountId;

@@ -16,6 +16,7 @@
 package com.hedera.services.evm.store.contracts;
 
 import com.hedera.services.evm.accounts.AccountAccessor;
+import com.hedera.services.evm.store.models.UpdatedHederaEvmAccount;
 import java.util.Collection;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
@@ -73,10 +74,6 @@ public class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
 
     @Override
     public Account get(Address address) {
-        return new com.hedera.services.evm.store.models.EvmAccount(getCanonicalAddress(address));
-    }
-
-    public Address getCanonicalAddress(Address address) {
-        return accountAccessor.exists(address);
+        return new UpdatedHederaEvmAccount(accountAccessor.exists(address));
     }
 }
