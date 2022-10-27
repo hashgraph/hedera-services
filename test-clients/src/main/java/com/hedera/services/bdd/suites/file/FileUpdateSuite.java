@@ -103,7 +103,6 @@ public class FileUpdateSuite extends HapiApiSuite {
     private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
     private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
     private static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
-    private static final String CHAIN_ID_PROP = "contracts.chainId";
 
     private static final long DEFAULT_CHAIN_ID =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAIN_ID_PROP));

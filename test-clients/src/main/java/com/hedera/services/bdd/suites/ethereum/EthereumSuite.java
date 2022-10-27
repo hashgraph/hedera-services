@@ -56,7 +56,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -98,7 +97,6 @@ public class EthereumSuite extends HapiApiSuite {
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
 
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
-    private static final String CHAIN_ID_PROP = "contracts.chainId";
 
     public static void main(String... args) {
         new EthereumSuite().runSuiteSync();
@@ -120,7 +118,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
                                         ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
                                         ETX_014_contractCreateInheritsSignerProperties(),
-                                        ETX_026_accountWithoutAliasCannotMakeEthTxns(),
+                                        ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                                         ETX_009_callsToTokenAddresses(),
                                         originAndSenderAreEthereumSigner(),
                                         ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
@@ -392,7 +390,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                 .logged()
                                                 .has(
                                                         ContractInfoAsserts.contractWith()
-                                                                .adminKey(SECP_256K1_SOURCE_KEY)
+                                                                .defaultAdminKey()
                                                                 .autoRenew(AUTO_RENEW_PERIOD)
                                                                 .balance(INITIAL_BALANCE)
                                                                 .memo(MEMO))));
@@ -451,9 +449,10 @@ public class EthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)));
     }
 
-    HapiApiSpec ETX_026_accountWithoutAliasCannotMakeEthTxns() {
+    HapiApiSpec ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
-        return defaultHapiSpec("accountWithoutAliasCannotMakeEthTxns")
+        return defaultHapiSpec(
+                        "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
@@ -465,7 +464,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(FIVE_HBARS)
                                 .nonce(0)
                                 .gasLimit(GAS_LIMIT)
-                                .hasKnownStatus(INVALID_ACCOUNT_ID))
+                                .hasKnownStatus(SUCCESS))
                 .then();
     }
 

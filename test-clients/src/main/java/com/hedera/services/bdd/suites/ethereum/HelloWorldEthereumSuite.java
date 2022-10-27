@@ -42,6 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
@@ -61,6 +62,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -81,7 +83,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(ethereumCalls(), ethereumCreates());
+        return allOf(Stream.of(setChainId()).toList(), ethereumCalls(), ethereumCreates());
     }
 
     List<HapiApiSpec> ethereumCalls() {
@@ -99,6 +101,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 new HapiApiSpec[] {
                     smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate()
                 });
+    }
+
+    HapiApiSpec setChainId() {
+        return defaultHapiSpec("SetChainId").given().when().then(overriding(CHAIN_ID_PROP, "298"));
     }
 
     HapiApiSpec badRelayClient() {
