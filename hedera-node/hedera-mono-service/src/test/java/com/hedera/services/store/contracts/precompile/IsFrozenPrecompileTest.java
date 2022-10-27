@@ -56,6 +56,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.IsFrozenPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -150,9 +151,12 @@ class IsFrozenPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        autoCreationLogic);
         isFrozenPrecompile = Mockito.mockStatic(IsFrozenPrecompile.class);
     }
+
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @AfterEach
     void closeMocks() {

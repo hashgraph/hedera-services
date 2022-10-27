@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -27,8 +28,9 @@ public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaWor
     public MockLedgerWorldUpdater(
             final HederaWorldState world,
             final WorldLedgers trackingLedgers,
-            final ContractCustomizer customizer) {
-        super(world, trackingLedgers);
+            final ContractCustomizer customizer,
+            final AutoCreationLogic autoCreationLogic) {
+        super(world, trackingLedgers, autoCreationLogic);
         this.customizer = customizer;
     }
 
@@ -49,6 +51,7 @@ public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaWor
 
     @Override
     public WorldUpdater updater() {
-        return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped(), customizer);
+        return new MockStackedLedgerUpdater(
+                this, trackingLedgers().wrapped(), customizer, autoCreationLogic);
     }
 }

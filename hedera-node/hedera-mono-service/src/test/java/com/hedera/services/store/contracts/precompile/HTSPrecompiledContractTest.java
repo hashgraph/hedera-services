@@ -101,6 +101,7 @@ import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor
 import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -226,7 +227,8 @@ class HTSPrecompiledContractTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        autoCreationLogic);
         tokenInfoPrecompile = Mockito.mockStatic(TokenInfoPrecompile.class);
         mintPrecompile = Mockito.mockStatic(MintPrecompile.class);
         associatePrecompile = Mockito.mockStatic(AssociatePrecompile.class);
@@ -243,6 +245,8 @@ class HTSPrecompiledContractTest {
         updateTokenExpiryInfoPrecompile = Mockito.mockStatic(UpdateTokenExpiryInfoPrecompile.class);
         ercTransferPrecompile = Mockito.mockStatic(ERCTransferPrecompile.class);
     }
+
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @AfterEach
     void closeMocks() {

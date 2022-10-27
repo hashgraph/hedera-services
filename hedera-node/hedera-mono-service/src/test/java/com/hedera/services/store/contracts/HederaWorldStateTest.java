@@ -44,6 +44,7 @@ import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
@@ -78,6 +79,7 @@ class HederaWorldStateTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private ContractCustomizer customizer;
     @Mock private UsageLimits usageLimits;
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     private CodeCache codeCache;
 
@@ -102,7 +104,8 @@ class HederaWorldStateTest {
                         entityAccess,
                         codeCache,
                         sigImpactHistorian,
-                        dynamicProperties);
+                        dynamicProperties,
+                        autoCreationLogic);
     }
 
     @Test

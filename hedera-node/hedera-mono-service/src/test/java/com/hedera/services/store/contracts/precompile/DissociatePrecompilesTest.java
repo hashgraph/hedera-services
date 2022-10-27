@@ -79,6 +79,7 @@ import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -203,11 +204,14 @@ class DissociatePrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        autoCreationLogic);
 
         dissociatePrecompile = Mockito.mockStatic(DissociatePrecompile.class);
         multiDissociatePrecompile = Mockito.mockStatic(MultiDissociatePrecompile.class);
     }
+
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @AfterEach
     void closeMocks() {

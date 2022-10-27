@@ -130,6 +130,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
@@ -235,6 +236,7 @@ class ERC721PrecompilesTest {
     private MockedStatic<OwnerOfPrecompile> ownerOfPrecompile;
     private MockedStatic<ERCTransferPrecompile> ercTransferPrecompile;
     private MockedStatic<TokenURIPrecompile> tokenURIPrecompile;
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @BeforeEach
     void setUp() {
@@ -259,7 +261,8 @@ class ERC721PrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        autoCreationLogic);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils

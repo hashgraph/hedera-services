@@ -146,7 +146,7 @@ dependencyResolutionManagement {
             version("ethereumj-version", "1.12.0-v0.5.0")
             version("hamcrest-version", "2.2")
             version("json-version", "20210307")
-            version("junit5-version", "5.8.2")
+            version("junit5-version", "5.9.0")
             version("mockito-version", "4.6.1")
             version("picocli-version", "4.6.3")
             version("snakeyaml-version", "1.26")

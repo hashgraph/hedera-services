@@ -92,6 +92,7 @@ import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecom
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -147,6 +148,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final InfrastructureFactory infrastructureFactory;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
+    private final AutoCreationLogic autoCreationLogic;
 
     private Precompile precompile;
     private TransactionBody.Builder transactionBody;
@@ -172,6 +174,35 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final Provider<FeeCalculator> feeCalculator,
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
+            final InfrastructureFactory infrastructureFactory,
+            AutoCreationLogic autoCreationLogic) {
+        super("HTS", gasCalculator);
+        this.encoder = encoder;
+        this.sigsVerifier = sigsVerifier;
+        this.recordsHistorian = recordsHistorian;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.creator = creator;
+        this.dynamicProperties = dynamicProperties;
+        this.impliedTransfersMarshal = impliedTransfersMarshal;
+        this.feeCalculator = feeCalculator;
+        this.currentView = currentView;
+        this.precompilePricingUtils = precompilePricingUtils;
+        this.infrastructureFactory = infrastructureFactory;
+        this.autoCreationLogic = autoCreationLogic;
+    }
+
+    public HTSPrecompiledContract(
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final RecordsHistorian recordsHistorian,
+            final TxnAwareEvmSigsVerifier sigsVerifier,
+            final EncodingFacade encoder,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final ExpiringCreations creator,
+            final ImpliedTransfersMarshal impliedTransfersMarshal,
+            final Provider<FeeCalculator> feeCalculator,
+            final StateView currentView,
+            final PrecompilePricingUtils precompilePricingUtils,
             final InfrastructureFactory infrastructureFactory) {
         super("HTS", gasCalculator);
         this.encoder = encoder;
@@ -185,6 +216,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.currentView = currentView;
         this.precompilePricingUtils = precompilePricingUtils;
         this.infrastructureFactory = infrastructureFactory;
+        this.autoCreationLogic = null;
     }
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -279,6 +311,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             functionId,
                             senderAddress,
                             impliedTransfersMarshal,
+                            recordsHistorian,
+                            autoCreationLogic,
                             dynamicProperties.isAutoCreationEnabled()
                                     && dynamicProperties.isLazyCreationEnabled());
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
@@ -295,6 +329,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             functionId,
                                             senderAddress,
                                             impliedTransfersMarshal,
+                                            recordsHistorian,
+                                            autoCreationLogic,
                                             dynamicProperties.isAutoCreationEnabled()
                                                     && dynamicProperties.isLazyCreationEnabled()));
                     case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
@@ -598,6 +634,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     precompilePricingUtils,
                                                     functionId,
                                                     impliedTransfersMarshal,
+                                                    recordsHistorian,
+                                                    autoCreationLogic,
                                                     dynamicProperties.isAutoCreationEnabled()
                                                             && dynamicProperties
                                                                     .isLazyCreationEnabled()));
@@ -619,6 +657,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     precompilePricingUtils,
                                                     functionId,
                                                     impliedTransfersMarshal,
+                                                    recordsHistorian,
+                                                    autoCreationLogic,
                                                     dynamicProperties.isAutoCreationEnabled()
                                                             && dynamicProperties
                                                                     .isLazyCreationEnabled()));
@@ -781,6 +821,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             precompilePricingUtils,
                                             functionId,
                                             impliedTransfersMarshal,
+                                            recordsHistorian,
+                                            autoCreationLogic,
                                             dynamicProperties.isAutoCreationEnabled()
                                                     && dynamicProperties.isLazyCreationEnabled()));
                     case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
@@ -799,6 +841,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             precompilePricingUtils,
                                             functionId,
                                             impliedTransfersMarshal,
+                                            recordsHistorian,
+                                            autoCreationLogic,
                                             dynamicProperties.isAutoCreationEnabled()
                                                     && dynamicProperties.isLazyCreationEnabled()));
                     default -> null;

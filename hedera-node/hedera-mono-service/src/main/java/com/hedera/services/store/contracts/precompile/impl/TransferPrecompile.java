@@ -45,6 +45,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -56,15 +57,22 @@ import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper
 import com.hedera.services.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -116,11 +124,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final int functionId;
     private final Address senderAddress;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
+    private final AutoCreationLogic autoCreationLogic;
+    private final RecordsHistorian recordsHistorian;
     private ResponseCodeEnum impliedValidity;
     private ImpliedTransfers impliedTransfers;
     private List<BalanceChange> explicitChanges;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
+    private final Set<AccountID> requestedLazyCreates = new HashSet<>();
     private final boolean isLazyCreationEnabled;
 
     public TransferPrecompile(
@@ -134,6 +145,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final int functionId,
             final Address senderAddress,
             final ImpliedTransfersMarshal impliedTransfersMarshal,
+            final RecordsHistorian recordsHistorian,
+            final AutoCreationLogic autoCreationLogic,
             final boolean isLazyCreationEnabled) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.updater = updater;
@@ -141,6 +154,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         this.functionId = functionId;
         this.senderAddress = senderAddress;
         this.impliedTransfersMarshal = impliedTransfersMarshal;
+        this.recordsHistorian = recordsHistorian;
+        this.autoCreationLogic = autoCreationLogic;
         this.isLazyCreationEnabled = isLazyCreationEnabled;
     }
 
@@ -205,6 +220,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (impliedValidity != ResponseCodeEnum.OK) {
             throw new InvalidTransactionException(impliedValidity);
         }
+        if (requestedLazyCreates.size() > 0) {
+            validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
+        }
 
         /* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
         final var numExplicitChanges = explicitChanges.size();
@@ -222,6 +240,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                         ledgers.accounts(),
                         ledgers.tokenRels());
 
+        final Map<AccountID, List<BalanceChange>> nonExistingAliasToBalanceChanges =
+                new HashMap<>();
+
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
             final var units = change.getAggregatedUnits();
@@ -229,12 +250,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 if (change.isApprovedAllowance()) {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
-                    if (change.isForNft()
-                            && !ledgers.accounts().contains(change.counterPartyAccountId()) && frame.getWorldUpdater()
-                                            .get(asTypedEvmAddress(change.counterPartyAccountId()))
-                                    == null) {
-                        validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
+                    if (requestedLazyCreates.contains(change.counterPartyAccountId())) {
                         change.changeCounterPartyToAlias();
+                        final var balanceChanges =
+                                nonExistingAliasToBalanceChanges.getOrDefault(
+                                        change.counterPartyAccountId(), new ArrayList<>());
+                        balanceChanges.add(change);
+                        nonExistingAliasToBalanceChanges.put(
+                                change.counterPartyAccountId(), balanceChanges);
                     }
                     continue;
                 }
@@ -260,9 +283,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                                     ledgers,
                                     updater.aliases());
-                    if (!ledgers.accounts().contains(change.counterPartyAccountId()) && frame.getWorldUpdater().get(counterPartyAddress) == null) {
-                        validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
+                    if (requestedLazyCreates.contains(change.counterPartyAccountId())) {
                         change.changeCounterPartyToAlias();
+                        final var balanceChanges =
+                                nonExistingAliasToBalanceChanges.getOrDefault(
+                                        change.counterPartyAccountId(), new ArrayList<>());
+                        balanceChanges.add(change);
+                        nonExistingAliasToBalanceChanges.put(
+                                change.counterPartyAccountId(), balanceChanges);
                     }
                 } else if (units > 0) {
                     hasReceiverSigIfReq =
@@ -272,9 +300,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                                     ledgers,
                                     updater.aliases());
-                    if (!ledgers.accounts().contains(change.getAccount().asGrpcAccount()) && frame.getWorldUpdater().get(change.getAccount().asEvmAddress()) == null) {
-                        validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
+                    if (requestedLazyCreates.contains(change.getAccount().asGrpcAccount())) {
                         change.changeAccountToAlias();
+                        final var balanceChanges =
+                                nonExistingAliasToBalanceChanges.getOrDefault(
+                                        change.getAccount().asGrpcAccount(), new ArrayList<>());
+                        balanceChanges.add(change);
+                        nonExistingAliasToBalanceChanges.put(
+                                change.getAccount().asGrpcAccount(), balanceChanges);
                     }
                 }
                 validateTrue(
@@ -284,7 +317,40 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             }
         }
 
+        if (!nonExistingAliasToBalanceChanges.isEmpty()) {
+            for (final var entry : nonExistingAliasToBalanceChanges.entrySet()) {
+                final var balanceChanges = entry.getValue();
+                final var firstBalanceChangeForAlias = balanceChanges.get(0);
+                executeLazyCreate(frame, changes, firstBalanceChangeForAlias);
+                // substitute the alias for the new id for the
+                // rest of the balance changes to the same evmAddress
+                for (int i = 1; i < balanceChanges.size(); i++) {
+                    balanceChanges
+                            .get(i)
+                            .replaceNonEmptyAliasWith(
+                                    EntityNum.fromAccountId(
+                                            firstBalanceChangeForAlias.accountId()));
+                }
+            }
+        }
+
         transferLogic.doZeroSum(changes);
+    }
+
+    private void executeLazyCreate(
+            MessageFrame frame, List<BalanceChange> changes, BalanceChange change) {
+        final var lazyCreateResult = autoCreationLogic.create(change, ledgers.accounts(), changes);
+        if (lazyCreateResult.getLeft() != OK) {
+            throw new InvalidTransactionException(lazyCreateResult.getLeft());
+        } else {
+            final var creationFeeInTinybars = lazyCreateResult.getRight();
+            final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
+            frame.decrementRemainingGas(creationFeeInGas);
+            // track auto-creation preceding child record
+            autoCreationLogic.submitRecordsTo(recordsHistorian);
+            // track the lazy account so it is accessible to the EVM
+            updater.trackLazilyCreatedAccount(EntityIdUtils.asTypedEvmAddress(change.accountId()));
+        }
     }
 
     @Override
@@ -304,6 +370,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         }
         explicitChanges = constructBalanceChanges();
         final var hbarOnly = transferOp.transferWrapper().hbarTransfers().size();
+        // we may have lazy creations, but at this point we cannot know,
+        // so pass 0 here and count lazy creations at a later point
         impliedTransfers =
                 impliedTransfersMarshal.assessCustomFeesAndValidate(
                         hbarOnly,
@@ -341,6 +409,31 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         for (var transfer : transferOp.tokenTransferWrappers()) {
             accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
             accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
+            for (final var s : transfer.fungibleTransfers()) {
+                final AccountID receiver = s.receiver();
+                if (receiver != null
+                        && !ledgers.accounts().contains(receiver)
+                        && updater.get(EntityIdUtils.asTypedEvmAddress(receiver)) == null) {
+                    accumulatedCost +=
+                            pricingUtils.getMinimumPriceInTinybars(
+                                            GasCostType.CRYPTO_CREATE, consensusTime)
+                                    + pricingUtils.getMinimumPriceInTinybars(
+                                            GasCostType.CRYPTO_UPDATE, consensusTime);
+                    requestedLazyCreates.add(receiver);
+                }
+            }
+            for (final var s : transfer.nftExchanges()) {
+                final AccountID receiver = s.asGrpc().getReceiverAccountID();
+                if (!ledgers.accounts().contains(receiver)
+                        && updater.get(EntityIdUtils.asTypedEvmAddress(receiver)) == null) {
+                    accumulatedCost +=
+                            pricingUtils.getMinimumPriceInTinybars(
+                                            GasCostType.CRYPTO_CREATE, consensusTime)
+                                    + pricingUtils.getMinimumPriceInTinybars(
+                                            GasCostType.CRYPTO_UPDATE, consensusTime);
+                    requestedLazyCreates.add(receiver);
+                }
+            }
         }
 
         // add the cost for transferring hbars
@@ -350,7 +443,19 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                 PrecompilePricingUtils.GasCostType.TRANSFER_HBAR, consensusTime)
                         / 2;
         accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
-
+        for (final var s : transferOp.transferWrapper().hbarTransfers()) {
+            final AccountID receiver = s.receiver();
+            if (receiver != null
+                    && !ledgers.accounts().contains(receiver)
+                    && updater.get(EntityIdUtils.asTypedEvmAddress(receiver)) == null) {
+                accumulatedCost +=
+                        pricingUtils.getMinimumPriceInTinybars(
+                                        GasCostType.CRYPTO_CREATE, consensusTime)
+                                + pricingUtils.getMinimumPriceInTinybars(
+                                        GasCostType.CRYPTO_UPDATE, consensusTime);
+                requestedLazyCreates.add(receiver);
+            }
+        }
         return accumulatedCost;
     }
 

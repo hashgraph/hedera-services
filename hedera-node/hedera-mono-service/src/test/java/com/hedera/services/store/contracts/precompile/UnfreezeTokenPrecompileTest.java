@@ -61,6 +61,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.token.UnfreezeLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -168,9 +169,12 @@ class UnfreezeTokenPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        autoCreationLogic);
         unfreezeTokenPrecompile = Mockito.mockStatic(UnfreezeTokenPrecompile.class);
     }
+
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @AfterEach
     void closeMocks() {

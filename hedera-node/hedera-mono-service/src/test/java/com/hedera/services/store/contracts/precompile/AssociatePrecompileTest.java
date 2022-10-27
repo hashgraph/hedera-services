@@ -82,6 +82,7 @@ import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecomp
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -204,11 +205,14 @@ class AssociatePrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        autoCreationLogic);
 
         associatePrecompile = Mockito.mockStatic(AssociatePrecompile.class);
         multiAssociatePrecompile = Mockito.mockStatic(MultiAssociatePrecompile.class);
     }
+
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @AfterEach
     void closeMocks() {

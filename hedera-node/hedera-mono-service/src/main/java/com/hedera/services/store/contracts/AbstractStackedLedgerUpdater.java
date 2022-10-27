@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts;
 
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
@@ -36,8 +37,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
                 AbstractLedgerWorldUpdater<W, A>, UpdateTrackingLedgerAccount<A>> {
 
     protected AbstractStackedLedgerUpdater(
-            final AbstractLedgerWorldUpdater<W, A> world, final WorldLedgers trackingLedgers) {
-        super(world, trackingLedgers);
+            final AbstractLedgerWorldUpdater<W, A> world,
+            final WorldLedgers trackingLedgers,
+            final AutoCreationLogic autoCreationLogic) {
+        super(world, trackingLedgers, autoCreationLogic);
     }
 
     /** {@inheritDoc} */

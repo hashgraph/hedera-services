@@ -128,6 +128,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.utils.EntityIdUtils;
@@ -230,6 +231,7 @@ class ERC20PrecompilesTest {
     private MockedStatic<AllowancePrecompile> allowancePrecompile;
     private MockedStatic<BalanceOfPrecompile> balanceOfPrecompile;
     private MockedStatic<ApprovePrecompile> approvePrecompile;
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -260,7 +262,8 @@ class ERC20PrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        autoCreationLogic);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils

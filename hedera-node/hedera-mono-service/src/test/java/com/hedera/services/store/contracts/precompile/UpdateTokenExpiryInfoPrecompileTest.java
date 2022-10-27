@@ -62,6 +62,7 @@ import com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfo
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -154,10 +155,13 @@ class UpdateTokenExpiryInfoPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        autoCreationLogic);
 
         updateTokenExpiryInfoPrecompile = Mockito.mockStatic(UpdateTokenExpiryInfoPrecompile.class);
     }
+
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @AfterEach
     void closeMocks() {

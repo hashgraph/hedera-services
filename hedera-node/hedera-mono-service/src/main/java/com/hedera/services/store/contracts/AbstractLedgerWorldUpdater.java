@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -98,13 +99,18 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     protected int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
     protected List<Integer> committedRecordSourceIds = Collections.emptyList();
     protected RecordsHistorian recordsHistorian = null;
+    protected AutoCreationLogic autoCreationLogic = null;
 
     protected Set<Address> deletedAccounts = new HashSet<>();
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
-    protected AbstractLedgerWorldUpdater(final W world, final WorldLedgers trackingLedgers) {
+    protected AbstractLedgerWorldUpdater(
+            final W world,
+            final WorldLedgers trackingLedgers,
+            AutoCreationLogic autoCreationLogic) {
         this.world = world;
         this.trackingLedgers = trackingLedgers;
+        this.autoCreationLogic = autoCreationLogic;
     }
 
     /**
@@ -235,6 +241,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             recordsHistorian.revertChildRecordsFromSource(thisRecordSourceId);
             committedRecordSourceIds.forEach(recordsHistorian::revertChildRecordsFromSource);
         }
+
+        if (autoCreationLogic != null) {
+            autoCreationLogic.reclaimPendingAliases();
+        }
     }
 
     public void manageInProgressRecord(
@@ -256,6 +266,17 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         }
         recordsHistorian.trackFollowingChildRecord(
                 thisRecordSourceId, syntheticBody, recordSoFar, sidecarRecords);
+    }
+
+    public void manageInProgressPrecedingRecord(
+            final RecordsHistorian recordsHistorian,
+            final ExpirableTxnRecord.Builder recordSoFar,
+            final TransactionBody.Builder syntheticBody) {
+        ensureFamiliarityWith(recordsHistorian);
+        if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
+            thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
+        }
+        recordsHistorian.trackPrecedingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
     }
 
     public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
@@ -336,6 +357,11 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         updatedAccounts.put(address, account);
         deletedAccounts.remove(address);
         return account;
+    }
+
+    public void trackLazilyCreatedAccount(final Address address) {
+        final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingAccounts());
+        track(newMutable);
     }
 
     protected W wrappedWorldView() {

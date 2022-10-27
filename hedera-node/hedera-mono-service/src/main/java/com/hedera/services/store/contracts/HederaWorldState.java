@@ -29,6 +29,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.ArrayList;
@@ -62,6 +63,7 @@ public class HederaWorldState implements HederaMutableWorldState {
     private final List<ContractID> provisionalContractCreations = new LinkedList<>();
     private final CodeCache codeCache;
     private final GlobalDynamicProperties dynamicProperties;
+    private final AutoCreationLogic autoCreationLogic;
 
     // If non-null, the new contract customizations requested by the HAPI contractCreate sender
     private ContractCustomizer hapiSenderCustomizer;
@@ -73,13 +75,15 @@ public class HederaWorldState implements HederaMutableWorldState {
             final EntityAccess entityAccess,
             final CodeCache codeCache,
             final SigImpactHistorian sigImpactHistorian,
-            final GlobalDynamicProperties dynamicProperties) {
+            final GlobalDynamicProperties dynamicProperties,
+            AutoCreationLogic autoCreationLogic) {
         this.ids = ids;
         this.usageLimits = usageLimits;
         this.entityAccess = entityAccess;
         this.codeCache = codeCache;
         this.sigImpactHistorian = sigImpactHistorian;
         this.dynamicProperties = dynamicProperties;
+        this.autoCreationLogic = autoCreationLogic;
     }
 
     /* Used to manage static calls. */
@@ -94,6 +98,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         this.usageLimits = null;
         this.sigImpactHistorian = null;
         this.dynamicProperties = dynamicProperties;
+        this.autoCreationLogic = null;
     }
 
     /** {@inheritDoc} */
@@ -135,7 +140,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 
     @Override
     public Updater updater() {
-        return new Updater(this, entityAccess.worldLedgers().wrapped(), dynamicProperties);
+        return new Updater(
+                this, entityAccess.worldLedgers().wrapped(), dynamicProperties, autoCreationLogic);
     }
 
     @Override
@@ -186,8 +192,9 @@ public class HederaWorldState implements HederaMutableWorldState {
         protected Updater(
                 final HederaWorldState world,
                 final WorldLedgers trackingLedgers,
-                final GlobalDynamicProperties dynamicProperties) {
-            super(world, trackingLedgers);
+                final GlobalDynamicProperties dynamicProperties,
+                final AutoCreationLogic autoCreationLogic) {
+            super(world, trackingLedgers, autoCreationLogic);
             this.dynamicProperties = dynamicProperties;
         }
 
@@ -355,7 +362,11 @@ public class HederaWorldState implements HederaMutableWorldState {
         @Override
         public WorldUpdater updater() {
             return new HederaStackedWorldStateUpdater(
-                    this, wrappedWorldView(), trackingLedgers().wrapped(), dynamicProperties);
+                    this,
+                    wrappedWorldView(),
+                    trackingLedgers().wrapped(),
+                    dynamicProperties,
+                    autoCreationLogic);
         }
     }
 }

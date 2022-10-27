@@ -67,6 +67,7 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
@@ -117,6 +118,7 @@ class AbstractLedgerWorldUpdaterTest {
     @Mock private EntityAccess entityAccess;
     @Mock private StaticEntityAccess staticEntityAccess;
     @Mock private WorldLedgers mockLedgers;
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     private WorldLedgers ledgers;
     private MockLedgerWorldUpdater subject;
@@ -125,13 +127,15 @@ class AbstractLedgerWorldUpdaterTest {
     void setUp() {
         setupLedgers();
 
-        subject = new MockLedgerWorldUpdater(worldState, ledgers, customizer);
+        subject = new MockLedgerWorldUpdater(worldState, ledgers, customizer, autoCreationLogic);
     }
 
     @Test
     void isPossibleToWrapStaticLedgers() {
         final var staticLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        subject = new MockLedgerWorldUpdater(worldState, staticLedgers, customizer);
+        subject =
+                new MockLedgerWorldUpdater(
+                        worldState, staticLedgers, customizer, autoCreationLogic);
         assertDoesNotThrow(() -> subject.wrappedTrackingLedgers(sideEffectsTracker));
     }
 
@@ -235,7 +239,8 @@ class AbstractLedgerWorldUpdaterTest {
 
     @Test
     void getReturnsNullWithMirrorUsageInsteadOfCreate2() {
-        subject = new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
+        subject =
+                new MockLedgerWorldUpdater(worldState, mockLedgers, customizer, autoCreationLogic);
         given(mockLedgers.canonicalAddress(aAddress)).willReturn(bAddress);
 
         final var result = subject.get(aAddress);
@@ -245,9 +250,10 @@ class AbstractLedgerWorldUpdaterTest {
     @Test
     void getPropagatesToParentUpdaterProperly() {
         final var worldStateUpdater =
-                new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
+                new MockLedgerWorldUpdater(worldState, mockLedgers, customizer, autoCreationLogic);
         final var stackedWorldStateUpdater =
-                new MockStackedLedgerUpdater(worldStateUpdater, mockLedgers, customizer);
+                new MockStackedLedgerUpdater(
+                        worldStateUpdater, mockLedgers, customizer, autoCreationLogic);
         final var wrappedAccount =
                 new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
         given(worldState.get(aAddress)).willReturn(wrappedAccount);
@@ -554,7 +560,10 @@ class AbstractLedgerWorldUpdaterTest {
 
         subject =
                 new MockLedgerWorldUpdater(
-                        worldState, staticLedgersWith(aliases, null), customizer);
+                        worldState,
+                        staticLedgersWith(aliases, null),
+                        customizer,
+                        autoCreationLogic);
 
         assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
     }

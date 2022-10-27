@@ -51,6 +51,7 @@ import com.hedera.services.store.contracts.precompile.impl.GetTokenTypePrecompil
 import com.hedera.services.store.contracts.precompile.impl.IsTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -126,7 +127,8 @@ class TokenPrecompileReadOperationsTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        autoCreationLogic);
         merkleToken =
                 new MerkleToken(
                         Long.MAX_VALUE,
@@ -141,6 +143,8 @@ class TokenPrecompileReadOperationsTest {
         isTokenPrecompile = Mockito.mockStatic(IsTokenPrecompile.class);
         getTokenTypePrecompile = Mockito.mockStatic(GetTokenTypePrecompile.class);
     }
+
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @AfterEach
     void closeMocks() {

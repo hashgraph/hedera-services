@@ -19,8 +19,10 @@ import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -49,12 +51,23 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowance;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowance;
+import com.hederahashgraph.api.proto.java.CryptoTransfer;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenBurn;
+import com.hederahashgraph.api.proto.java.TokenDelete;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccount;
+import com.hederahashgraph.api.proto.java.TokenMint;
+import com.hederahashgraph.api.proto.java.TokenPause;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccount;
+import com.hederahashgraph.api.proto.java.TokenUnpause;
+import com.hederahashgraph.api.proto.java.TokenUpdate;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
@@ -205,6 +218,8 @@ public class PrecompilePricingUtils {
 
     public enum GasCostType {
         UNRECOGNIZED(HederaFunctionality.UNRECOGNIZED, SubType.UNRECOGNIZED),
+        CRYPTO_CREATE(CryptoCreate, DEFAULT),
+        CRYPTO_UPDATE(CryptoUpdate, DEFAULT),
         TRANSFER_HBAR(CryptoTransfer, DEFAULT),
         TRANSFER_FUNGIBLE(CryptoTransfer, TOKEN_FUNGIBLE_COMMON),
         TRANSFER_NFT(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE),
