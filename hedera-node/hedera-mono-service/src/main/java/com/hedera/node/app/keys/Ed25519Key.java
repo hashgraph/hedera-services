@@ -2,6 +2,7 @@ package com.hedera.node.app.keys;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.keys.HederaKey;
+import com.hedera.node.app.spi.keys.ReplHederaKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -18,10 +19,14 @@ import java.util.Objects;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.lang.Math.min;
 
-public class Ed25519Key implements HederaKey {
+/**
+ * A HederaKey that is an Ed25519 Key.
+ */
+public class Ed25519Key implements ReplHederaKey {
 	private static final int ED25519_BYTE_LENGTH = 32;
 	private static final long CLASS_ID = 15528682L;
 	private static final int VERSION = 1;
+
 	private byte[] key;
 
 	@VisibleForTesting
@@ -37,6 +42,10 @@ public class Ed25519Key implements HederaKey {
 	public Ed25519Key(@Nonnull final Ed25519Key that) {
 		Objects.requireNonNull(that);
 		this.key = that.key;
+	}
+
+	public byte[] getKey() {
+		return key;
 	}
 
 	@Override

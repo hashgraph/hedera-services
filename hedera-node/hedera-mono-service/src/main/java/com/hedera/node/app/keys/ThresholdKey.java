@@ -1,23 +1,30 @@
 package com.hedera.node.app.keys;
 
-import com.hedera.node.app.spi.keys.HederaKey;
+import com.hedera.node.app.spi.keys.ReplHederaKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualValue;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
-public class ThresholdKey implements HederaKey {
-	private static final long CLASS_ID = 15528682L;
+public class ThresholdKey implements ReplHederaKey {
+	private static final long CLASS_ID = 15520365L;
 	private static final int VERSION = 1;
-
 	int threshold;
 	private KeyList keys;
 
-	public ThresholdKey(final int threshold, final KeyList keys) {
+	public ThresholdKey(final int threshold, @Nonnull final KeyList keys) {
+		Objects.requireNonNull(keys);
 		this.threshold = threshold;
 		this.keys = keys;
+	}
+
+	public ThresholdKey(@Nonnull final ThresholdKey that) {
+		Objects.requireNonNull(that);
+		this.threshold = that.threshold;
+		this.keys = that.keys;
 	}
 
 	@Override
@@ -27,52 +34,58 @@ public class ThresholdKey implements HederaKey {
 
 	@Override
 	public boolean isEmpty() {
-		return false;
+		return keys.isEmpty();
 	}
 
 	@Override
 	public boolean isValid() {
-		return false;
+		if (isEmpty()) {
+			return false;
+		}
+		int length = keys.getKeys().size();
+		return (threshold >= 1 && threshold <= length && keys.isValid());
 	}
 
 	@Override
-	public VirtualValue copy() {
-		return null;
+	public ThresholdKey copy() {
+		return new ThresholdKey(this);
 	}
 
 	@Override
-	public VirtualValue asReadOnly() {
-		return null;
+	public ThresholdKey asReadOnly() {
+		return copy();
 	}
 
 	@Override
-	public void serialize(final ByteBuffer byteBuffer) throws IOException {
-
+	public void serialize(final ByteBuffer buf) throws IOException {
+		buf.putInt(threshold);
+		keys.serialize(buf);
 	}
 
 	@Override
-	public void deserialize(final ByteBuffer byteBuffer, final int i) throws IOException {
-
+	public void deserialize(final ByteBuffer buf, final int i) throws IOException {
+		threshold = buf.getInt();
 	}
 
 	@Override
-	public void deserialize(final SerializableDataInputStream serializableDataInputStream,
-			final int i) throws IOException {
-
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+		threshold = in.readInt();
+		keys.deserialize(in, version);
 	}
 
 	@Override
-	public void serialize(final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
+		out.writeInt(threshold);
+		keys.serialize(out);
 	}
 
 	@Override
 	public long getClassId() {
-		return 0;
+		return CLASS_ID;
 	}
 
 	@Override
 	public int getVersion() {
-		return 0;
+		return VERSION;
 	}
 }

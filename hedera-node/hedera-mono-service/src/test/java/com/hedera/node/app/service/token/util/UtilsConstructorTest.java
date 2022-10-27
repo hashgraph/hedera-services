@@ -19,11 +19,17 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
+import com.hedera.node.app.keys.HederaKeys;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(AliasUtils.class));
+    private static final Set<Class<?>> toBeTested = new HashSet<>(
+            Arrays.asList(
+                    AliasUtils.class,
+                    HederaKeys.class
+            ));
 
     @Test
     void throwsInConstructor() {

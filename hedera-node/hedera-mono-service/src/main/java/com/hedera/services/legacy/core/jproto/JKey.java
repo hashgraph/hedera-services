@@ -365,47 +365,6 @@ public abstract class JKey implements HederaKey {
 
     @Override
     public boolean isPrimitive() {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public VirtualValue copy() {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public VirtualValue asReadOnly() {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public void serialize(final ByteBuffer byteBuffer) throws IOException {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public void deserialize(final ByteBuffer byteBuffer, final int i) throws IOException {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream serializableDataInputStream,
-            final int i) throws IOException {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public long getClassId() {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public int getVersion() {
-        throw new NotImplementedException();
+        return hasEd25519Key() || hasECDSAsecp256k1Key();
     }
 }

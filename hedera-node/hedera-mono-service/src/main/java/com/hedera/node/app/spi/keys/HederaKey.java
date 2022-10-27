@@ -21,11 +21,34 @@ import com.swirlds.virtualmap.VirtualValue;
 import java.util.function.Consumer;
 
 /** A replacement class for legacy {@link com.hedera.services.legacy.core.jproto.JKey}.
- * It represents different types of {@link Key}s supported in the codebase.*/
-public interface HederaKey extends VirtualValue {
+ * It represents different types of {@link Key}s supported in the codebase.
+ * NOTE: This interface will implement {@link VirtualValue} once JKey is removed.
+ */
+public interface HederaKey {
+    /**
+     * Returns if the key is primitive key. Currently, supported primitive key types
+     * are ECDSA_SECP256K1 keys or ED25519 Keys
+     * @return true if the keys is primitive, false otherwise
+     */
     boolean isPrimitive();
+
+    /**
+     * Returns if the key is empty
+     * @return true if the key is empty, false otherwise
+     */
     boolean isEmpty();
+
+    /**
+     * Returns if the given key is valid.
+     * @return true if valid, false otherwise
+     */
     boolean isValid();
+
+    /**
+     * Performs a left-to-right DFS of the primitive keys in a HederaKey, offering each
+     * simple key to the provided {@link Consumer}.
+     * @param actionOnSimpleKey the logic to apply to each visited simple key.
+     */
     default void visitPrimitiveKeys(final Consumer<HederaKey> actionOnSimpleKey) {
         actionOnSimpleKey.accept(this);
     }

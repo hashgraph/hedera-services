@@ -2,10 +2,13 @@ package com.hedera.node.app.keys;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.spi.keys.HederaKey;
+import com.hedera.node.app.spi.keys.ReplHederaKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import javax.annotation.Nonnull;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -13,16 +16,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public class KeyList implements HederaKey {
+public class KeyList implements ReplHederaKey {
 	private static final long CLASS_ID = 15512048L;
 	private static final int VERSION = 1;
-	private List<HederaKey> keys;
+	private List<ReplHederaKey> keys;
 
 	public KeyList() {
 		this.keys = new LinkedList<>();
 	}
 
-	public KeyList(@Nonnull List<HederaKey> keys) {
+	public KeyList(@Nonnull List<ReplHederaKey> keys) {
 		Objects.requireNonNull(keys);
 		this.keys = keys;
 	}
@@ -30,6 +33,10 @@ public class KeyList implements HederaKey {
 	public KeyList(@Nonnull KeyList that) {
 		Objects.requireNonNull(that);
 		this.keys = that.keys;
+	}
+
+	public List<ReplHederaKey> getKeys() {
+		return keys;
 	}
 
 	@Override
@@ -67,10 +74,12 @@ public class KeyList implements HederaKey {
 
 	@Override
 	public void serialize(final ByteBuffer buf) throws IOException {
-		final var len = keys.size();
-		buf.put((byte) len);
-		for(final var key : keys){
-			key.serialize(buf);
+		try (final var baos = new ByteArrayOutputStream()) {
+			try (final var out = new SerializableDataOutputStream(baos)) {
+				this.serialize(out);
+			}
+			baos.flush();
+			buf.put(baos.toByteArray());
 		}
 	}
 
@@ -85,18 +94,20 @@ public class KeyList implements HederaKey {
 
 	@Override
 	public void deserialize(final ByteBuffer buf, final int version) throws IOException {
-		final var len = buf.getInt();
-		final List<HederaKey> keys = new LinkedList<>();
-		for(int i = 0; i < len ; i++){
-//			final HederaKey key = deserialize(buf, version);
-//			keys.add(key);
+		try (final var bais = new ByteArrayInputStream(buf.array())) {
+			try (final var in = new SerializableDataInputStream(bais)) {
+				this.deserialize(in, version);
+			}
 		}
-		this.keys = keys;
 	}
 
 	@Override
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-
+		final var len = in.readInt();
+		for (int i =0 ; i < len ; i++){
+			final ReplHederaKey childKey = in.readSerializable();
+			keys.add(childKey);
+		}
 	}
 
 	@Override
