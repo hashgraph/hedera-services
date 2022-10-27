@@ -427,7 +427,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         }
         // The stakeChangeScenarios and stakePeriodStartUpdates arrays are filled and used
         // left-to-right only. We need to reset all the arrays to avoid causing any errors
-        // during reconnect.
+        // during reconnect. 0.0.800 will be added to the change-list in a reward situation,
+        // after this, it should have NA set instead of any old values.
 
         Arrays.fill(rewardsEarned, NA);
         Arrays.fill(stakeAtStartOfLastRewardedPeriodUpdates, NA);
