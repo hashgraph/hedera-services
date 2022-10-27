@@ -76,9 +76,9 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -86,12 +86,25 @@ import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -168,9 +181,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                           """;
     public static final String HODL_XFER = "hodlXfer";
     public static final String PAYEE_NO_SIG_REQ = "payeeNoSigReq";
-    public static final String HBAR_XFER = "hbarXfer";
-    public static final String NFT_XFER = "nftXfer";
-    public static final String FT_XFER = "ftXfer";
+    private static final String HBAR_XFER = "hbarXfer";
+    private static final String NFT_XFER = "nftXfer";
+    private static final String FT_XFER = "ftXfer";
 
     public static void main(String... args) {
         new CryptoTransferSuite().runSuiteAsync();
@@ -200,10 +213,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
                 canUseEip1014AliasesForXfers(),
                 cannotTransferFromImmutableAccounts(),
                 nftTransfersCannotRepeatSerialNos(),
-                vanillaTransferSucceeds(),
-                transferHbarsToEVMAddressAlias(),
-                transferFungibleToEVMAddressAlias(),
-                transferNonFungibleToEVMAddressAlias());
+                vanillaTransferSucceeds());
     }
 
     @Override
@@ -1438,139 +1448,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
         final var netExchangeAmount = exchangeAmount - firstRoyaltyAmount - secondRoyaltyAmount;
 
         return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(firstRoyaltyCollector)
-                                .maxAutomaticTokenAssociations(plentyOfSlots),
-                        cryptoCreate(secondRoyaltyCollector)
-                                .maxAutomaticTokenAssociations(plentyOfSlots),
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(plentyOfSlots),
-                        cryptoCreate(COUNTERPARTY).maxAutomaticTokenAssociations(plentyOfSlots),
-                        newKeyNamed(MULTI_KEY),
-                        getAccountInfo(PARTY).savingSnapshot(PARTY),
-                        getAccountInfo(COUNTERPARTY).savingSnapshot(COUNTERPARTY),
-                        getAccountInfo(firstRoyaltyCollector).savingSnapshot(firstRoyaltyCollector),
-                        getAccountInfo(secondRoyaltyCollector)
-                                .savingSnapshot(secondRoyaltyCollector))
-                .when(
-                        tokenCreate(firstFungible)
-                                .treasury(TOKEN_TREASURY)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(123456789),
-                        tokenCreate(secondFungible)
-                                .treasury(TOKEN_TREASURY)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(123456789),
-                        cryptoTransfer(
-                                moving(1000, firstFungible).between(TOKEN_TREASURY, COUNTERPARTY),
-                                moving(1000, secondFungible).between(TOKEN_TREASURY, COUNTERPARTY)),
-                        tokenCreate(uniqueWithRoyalty)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .supplyKey(MULTI_KEY)
-                                .withCustom(royaltyFeeNoFallback(1, 12, firstRoyaltyCollector))
-                                .withCustom(royaltyFeeNoFallback(1, 15, secondRoyaltyCollector))
-                                .initialSupply(0L),
-                        mintToken(uniqueWithRoyalty, List.of(copyFromUtf8("HODL"))),
-                        cryptoTransfer(
-                                movingUnique(uniqueWithRoyalty, 1L).between(TOKEN_TREASURY, PARTY)))
-                .then(
-                        cryptoTransfer(
-                                        movingUnique(uniqueWithRoyalty, 1L)
-                                                .between(PARTY, COUNTERPARTY),
-                                        moving(12 * 15L, firstFungible)
-                                                .between(COUNTERPARTY, PARTY),
-                                        moving(12 * 15L, secondFungible)
-                                                .between(COUNTERPARTY, PARTY))
-                                .fee(ONE_HBAR)
-                                .via(HODL_XFER),
-                        getTxnRecord(HODL_XFER)
-                                .hasPriority(
-                                        recordWith()
-                                                .autoAssociated(
-                                                        accountTokenPairsInAnyOrder(
-                                                                List.of(
-                                                                        /* The counterparty auto-associates to the non-fungible type */
-                                                                        Pair.of(
-                                                                                COUNTERPARTY,
-                                                                                uniqueWithRoyalty),
-                                                                        /* The sending party auto-associates to both fungibles */
-                                                                        Pair.of(
-                                                                                PARTY,
-                                                                                firstFungible),
-                                                                        Pair.of(
-                                                                                PARTY,
-                                                                                secondFungible),
-                                                                        /* Both royalty collectors auto-associate to both fungibles */
-                                                                        Pair.of(
-                                                                                firstRoyaltyCollector,
-                                                                                firstFungible),
-                                                                        Pair.of(
-                                                                                secondRoyaltyCollector,
-                                                                                firstFungible),
-                                                                        Pair.of(
-                                                                                firstRoyaltyCollector,
-                                                                                secondFungible),
-                                                                        Pair.of(
-                                                                                secondRoyaltyCollector,
-                                                                                secondFungible))))),
-                        getAccountInfo(PARTY)
-                                .has(
-                                        accountWith()
-                                                .newAssociationsFromSnapshot(
-                                                        PARTY,
-                                                        List.of(
-                                                                relationshipWith(uniqueWithRoyalty)
-                                                                        .balance(0),
-                                                                relationshipWith(firstFungible)
-                                                                        .balance(netExchangeAmount),
-                                                                relationshipWith(secondFungible)
-                                                                        .balance(
-                                                                                netExchangeAmount)))),
-                        getAccountInfo(COUNTERPARTY)
-                                .has(
-                                        accountWith()
-                                                .newAssociationsFromSnapshot(
-                                                        PARTY,
-                                                        List.of(
-                                                                relationshipWith(uniqueWithRoyalty)
-                                                                        .balance(1),
-                                                                relationshipWith(firstFungible)
-                                                                        .balance(
-                                                                                1000L
-                                                                                        - exchangeAmount),
-                                                                relationshipWith(secondFungible)
-                                                                        .balance(
-                                                                                1000L
-                                                                                        - exchangeAmount)))),
-                        getAccountInfo(firstRoyaltyCollector)
-                                .has(
-                                        accountWith()
-                                                .newAssociationsFromSnapshot(
-                                                        PARTY,
-                                                        List.of(
-                                                                relationshipWith(firstFungible)
-                                                                        .balance(
-                                                                                exchangeAmount
-                                                                                        / 12),
-                                                                relationshipWith(secondFungible)
-                                                                        .balance(
-                                                                                exchangeAmount
-                                                                                        / 12)))),
-                        getAccountInfo(secondRoyaltyCollector)
-                                .has(
-                                        accountWith()
-                                                .newAssociationsFromSnapshot(
-                                                        PARTY,
-                                                        List.of(
-                                                                relationshipWith(firstFungible)
-                                                                        .balance(
-                                                                                exchangeAmount
-                                                                                        / 15),
-                                                                relationshipWith(secondFungible)
-                                                                        .balance(
-                                                                                exchangeAmount
-                                                                                        / 15)))));
+                .given(uploadDefaultFeeSchedules(GENESIS))
+                .when()
+                .then();
     }
 
     private HapiApiSpec royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {
@@ -2096,163 +1976,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                         AccountDetailsAsserts.accountWith()
                                                 .balance(initialBalance + 2_000L)
                                                 .noAllowances()));
-    }
-
-    private HapiApiSpec transferHbarsToEVMAddressAlias() {
-
-        final AtomicReference<AccountID> partyId = new AtomicReference<>();
-        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
-        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-
-        return defaultHapiSpec("TransferHbarsToEVMAddressAlias")
-                .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var registry = spec.registry();
-                                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
-                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                                    partyId.set(registry.getAccountID(PARTY));
-                                    partyAlias.set(
-                                            ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                                    counterAlias.set(evmAddressBytes);
-                                }))
-                .when(
-                        cryptoTransfer(
-                                        (spec, b) ->
-                                                b.setTransfers(
-                                                        TransferList.newBuilder()
-                                                                .addAccountAmounts(
-                                                                        aaWith(
-                                                                                partyAlias.get(),
-                                                                                -2))
-                                                                .addAccountAmounts(
-                                                                        aaWith(
-                                                                                counterAlias.get(),
-                                                                                +2))))
-                                .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(HBAR_XFER))
-                .then(
-                        getTxnRecord(HBAR_XFER)
-                                .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
-    }
-
-    private HapiApiSpec transferFungibleToEVMAddressAlias() {
-
-        final var fungibleToken = "fungibleToken";
-        final AtomicReference<TokenID> ftId = new AtomicReference<>();
-        final AtomicReference<AccountID> partyId = new AtomicReference<>();
-        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
-        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-
-        return defaultHapiSpec("TransferFungibleToEVMAddressAlias")
-                .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var registry = spec.registry();
-                                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
-                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                                    ftId.set(registry.getTokenID(fungibleToken));
-                                    partyId.set(registry.getAccountID(PARTY));
-                                    partyAlias.set(
-                                            ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                                    counterAlias.set(evmAddressBytes);
-                                }))
-                .when(
-                        cryptoTransfer(
-                                        (spec, b) ->
-                                                b.addTokenTransfers(
-                                                        TokenTransferList.newBuilder()
-                                                                .setToken(ftId.get())
-                                                                .addTransfers(
-                                                                        aaWith(
-                                                                                partyAlias.get(),
-                                                                                -500))
-                                                                .addTransfers(
-                                                                        aaWith(
-                                                                                counterAlias.get(),
-                                                                                +500))))
-                                .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(FT_XFER))
-                .then(
-                        getTxnRecord(FT_XFER)
-                                .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
-    }
-
-    private HapiApiSpec transferNonFungibleToEVMAddressAlias() {
-
-        final var nonFungibleToken = "nonFungibleToken";
-        final AtomicReference<TokenID> nftId = new AtomicReference<>();
-        final AtomicReference<AccountID> partyId = new AtomicReference<>();
-        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
-        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-
-        return defaultHapiSpec("TransferNonFungibleToEVMAddressAlias")
-                .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
-                        newKeyNamed(MULTI_KEY),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        tokenCreate(nonFungibleToken)
-                                .initialSupply(0)
-                                .treasury(PARTY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(MULTI_KEY),
-                        mintToken(
-                                nonFungibleToken,
-                                List.of(copyFromUtf8("Test transfer nft to EVM address alias."))),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var registry = spec.registry();
-                                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
-                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                                    nftId.set(registry.getTokenID(nonFungibleToken));
-                                    partyId.set(registry.getAccountID(PARTY));
-                                    partyAlias.set(
-                                            ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                                    counterAlias.set(evmAddressBytes);
-                                }))
-                .when(
-                        cryptoTransfer(
-                                        (spec, b) ->
-                                                b.addTokenTransfers(
-                                                        TokenTransferList.newBuilder()
-                                                                .setToken(nftId.get())
-                                                                .addNftTransfers(
-                                                                        ocWith(
-                                                                                accountId(
-                                                                                        partyAlias
-                                                                                                .get()),
-                                                                                accountId(
-                                                                                        counterAlias
-                                                                                                .get()),
-                                                                                1L))))
-                                .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(NFT_XFER))
-                .then(
-                        getTxnRecord(NFT_XFER)
-                                .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
     @Override
