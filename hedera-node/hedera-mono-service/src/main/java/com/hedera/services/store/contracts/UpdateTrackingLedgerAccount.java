@@ -41,8 +41,7 @@ import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-public class UpdateTrackingLedgerAccount<A extends Account>
-        extends UpdatedHederaEvmAccount
+public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount
         implements MutableAccount, EvmAccount {
     private final Hash addressHash;
     private final AccountID accountId;
