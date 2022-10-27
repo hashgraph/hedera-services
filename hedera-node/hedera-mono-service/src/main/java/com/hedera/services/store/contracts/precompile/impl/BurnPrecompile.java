@@ -158,8 +158,12 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     }
 
     public static BurnWrapper decodeBurn(final Bytes input) {
+        return getBurnWrapper(input, BURN_TOKEN_SELECTOR);
+    }
+
+    private static BurnWrapper getBurnWrapper(Bytes input, Bytes burnTokenSelector) {
         final Tuple decodedArguments =
-                decodeFunctionCall(input, BURN_TOKEN_SELECTOR, BURN_TOKEN_DECODER);
+                decodeFunctionCall(input, burnTokenSelector, BURN_TOKEN_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var fungibleAmount = (long) decodedArguments.get(1);
@@ -174,18 +178,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     }
 
     public static BurnWrapper decodeBurnV2(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, BURN_TOKEN_SELECTOR_V2, BURN_TOKEN_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var fungibleAmount = (long) decodedArguments.get(1);
-        final var serialNumbers = (long[]) decodedArguments.get(2);
-
-        if (fungibleAmount > 0) {
-            return BurnWrapper.forFungible(tokenID, fungibleAmount);
-        } else {
-            return BurnWrapper.forNonFungible(
-                    tokenID, Arrays.stream(serialNumbers).boxed().toList());
-        }
+        return getBurnWrapper(input, BURN_TOKEN_SELECTOR_V2);
     }
 }

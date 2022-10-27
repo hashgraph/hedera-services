@@ -529,7 +529,6 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
-        mintPrecompile.when(() -> MintPrecompile.decodeMint(any())).thenReturn(fungibleMint);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -546,7 +545,6 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN_V2));
-        mintPrecompile.when(() -> MintPrecompile.decodeMintV2(any())).thenReturn(fungibleMint);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 

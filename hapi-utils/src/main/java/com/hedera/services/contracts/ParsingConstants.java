@@ -41,7 +41,7 @@ public final class ParsingConstants {
 
     // struct types
     public static final String EXPIRY = "(uint32,address,uint32)";
-    public static final String EXPIRY_V2 = "(int32,address,int32)";
+    public static final String EXPIRY_V2 = "(int64,address,int64)";
     public static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
     public static final String FIXED_FEE_V2 = "(int64,address,bool,bool,address)";
     public static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
