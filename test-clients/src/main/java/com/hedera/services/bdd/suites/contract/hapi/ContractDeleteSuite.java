@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contra
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -35,6 +36,7 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
@@ -68,7 +70,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
                     cannotDeleteOrSelfDestructTokenTreasury(),
                     cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
                     cannotSendValueToTokenAccount(),
-                    cannotUseMoreThanChildContractLimit(),
+                    cannotUseMoreThanChildContractLimit()
                 });
     }
 
@@ -107,9 +109,9 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                         contractCall(
                                                         contract,
                                                         "checkBalanceRepeatedly",
-                                                        tokenMirrorAddr.get(),
-                                                        treasuryMirrorAddr.get(),
-                                                        illegalNumChildren)
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(treasuryMirrorAddr.get()),
+                                                        BigInteger.valueOf(illegalNumChildren))
                                                 .via(precompileViolation)
                                                 .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
                         sourcing(
@@ -117,7 +119,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                         contractCall(
                                                         contract,
                                                         "createThingsRepeatedly",
-                                                        illegalNumChildren)
+                                                        BigInteger.valueOf(illegalNumChildren))
                                                 .via(internalCreateViolation)
                                                 .gas(15_000_000)
                                                 .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)))
@@ -166,7 +168,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                         contractCall(
                                                         contract,
                                                         "sendSomeValueTo",
-                                                        tokenMirrorAddr.get())
+                                                        asHeadlongAddress(tokenMirrorAddr.get()))
                                                 .sending(ONE_HBAR)
                                                 .payingWith(TOKEN_TREASURY)
                                                 .via(internalViolation)

@@ -22,8 +22,6 @@ group = "com.hedera.evm"
 description = "Hedera EVM - API"
 
 dependencies {
-    api(libs.protobuf.java)
-    api(libs.commons.lang3)
     api(libs.besu.evm)
     api(libs.besu.datatypes) {
         exclude("com.google.code.findbugs", "jsr305")
@@ -33,4 +31,6 @@ dependencies {
         exclude("com.google.code.findbugs", "jsr305")
     }
     implementation(libs.javax.inject)
+
+    testImplementation(testLibs.mockito.jupiter)
 }

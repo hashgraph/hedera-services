@@ -563,6 +563,12 @@ public class SeededPropertySource {
         return base;
     }
 
+    public MerkleNetworkContext next0320NetworkContext() {
+        final var base = next0310NetworkContext();
+        base.setEvmCongestionLevelStarts(nextNullableInstants(nextInt(3)));
+        return base;
+    }
+
     public Instant[] nextNullableInstants(final int n) {
         return IntStream.range(0, n).mapToObj(i -> nextNullableInstant()).toArray(Instant[]::new);
     }

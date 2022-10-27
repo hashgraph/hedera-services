@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -86,7 +87,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
-import org.ethereum.core.CallTransaction;
 
 public class TxnVerbs {
     /* CRYPTO */
@@ -540,8 +540,9 @@ public class TxnVerbs {
                     final byte[] params =
                             args.length == 0
                                     ? new byte[] {}
-                                    : CallTransaction.Function.fromJsonInterface(abi)
-                                            .encodeArguments(args);
+                                    : com.esaulpaugh.headlong.abi.Function.fromJson(abi)
+                                            .encodeCall(Tuple.of(args))
+                                            .array();
                     final var updatedFile =
                             updateLargeFile(
                                     GENESIS,

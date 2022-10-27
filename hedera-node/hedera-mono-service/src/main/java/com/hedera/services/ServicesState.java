@@ -56,6 +56,7 @@ import com.swirlds.common.system.events.Event;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
@@ -287,6 +288,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                             .bootstrapProps(bootstrapProps)
                             .initialHash(initialHash)
                             .platform(platform)
+                            .consoleCreator(SwirldsGui::createConsole)
                             .crypto(CryptoFactory.getInstance())
                             .selfId(selfId)
                             .build();
