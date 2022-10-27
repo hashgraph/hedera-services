@@ -48,27 +48,31 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
     @Override
     protected MerkleNetworkContext getExpectedObject(final int version, final int testCaseNo) {
         final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
-        if (version < MerkleNetworkContext.RELEASE_0300_VERSION) {
-            if (version < MerkleNetworkContext.RELEASE_0270_VERSION) {
-                final var seeded = propertySource.next0260NetworkContext();
-                if (version < MerkleNetworkContext.RELEASE_0260_VERSION) {
-                    seeded.setBlockNo(0L);
-                    seeded.setFirstConsTimeOfCurrentBlock(null);
-                    seeded.getBlockHashes().clear();
+        if (version < MerkleNetworkContext.RELEASE_0310_VERSION) {
+            if (version < MerkleNetworkContext.RELEASE_0300_VERSION) {
+                if (version < MerkleNetworkContext.RELEASE_0270_VERSION) {
+                    final var seeded = propertySource.next0260NetworkContext();
+                    if (version < MerkleNetworkContext.RELEASE_0260_VERSION) {
+                        seeded.setBlockNo(0L);
+                        seeded.setFirstConsTimeOfCurrentBlock(null);
+                        seeded.getBlockHashes().clear();
+                    }
+                    return seeded;
+                } else {
+                    return propertySource.next0270NetworkContext();
                 }
-                return seeded;
             } else {
-                return propertySource.next0270NetworkContext();
+                return propertySource.next0300NetworkContext();
             }
         } else {
-            return version == MerkleNetworkContext.RELEASE_0300_VERSION
-                    ? propertySource.next0300NetworkContext()
-                    : propertySource.next0310NetworkContext();
+            return version == MerkleNetworkContext.RELEASE_0310_VERSION
+                    ? propertySource.next0310NetworkContext()
+                    : propertySource.next0320NetworkContext();
         }
     }
 
     @Override
     protected MerkleNetworkContext getExpectedObject(final SeededPropertySource propertySource) {
-        return propertySource.next0310NetworkContext();
+        return propertySource.next0320NetworkContext();
     }
 }

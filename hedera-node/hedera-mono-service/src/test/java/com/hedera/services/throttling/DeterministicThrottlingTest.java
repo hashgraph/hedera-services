@@ -743,7 +743,7 @@ class DeterministicThrottlingTest {
         subject.applyGasConfig();
 
         // then:
-        assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
+        assertEquals(0L, gasLimitDeterministicThrottle.capacity());
         assertThat(
                 logCaptor.warnLogs(),
                 contains("Consensus gas throttling enabled, but limited to 0 gas/sec"));
@@ -759,7 +759,7 @@ class DeterministicThrottlingTest {
         subject.applyGasConfig();
 
         // then:
-        assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
+        assertEquals(0L, gasLimitDeterministicThrottle.capacity());
         assertThat(
                 logCaptor.warnLogs(),
                 contains("Frontend gas throttling enabled, but limited to 0 gas/sec"));
@@ -775,7 +775,7 @@ class DeterministicThrottlingTest {
         subject.applyGasConfig();
 
         // then:
-        assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
+        assertEquals(0L, gasLimitDeterministicThrottle.capacity());
         assertThat(
                 logCaptor.warnLogs(),
                 contains("Schedule gas throttling enabled, but limited to 0 gas/sec"));
@@ -1084,7 +1084,7 @@ class DeterministicThrottlingTest {
         subject.setMode(CONSENSUS);
         subject.applyGasConfig();
         // expect:
-        assertEquals(capacity, subject.gasLimitThrottle().getCapacity());
+        assertEquals(capacity, subject.gasLimitThrottle().capacity());
     }
 
     @Test
@@ -1094,7 +1094,7 @@ class DeterministicThrottlingTest {
         subject.setMode(HAPI);
         subject.applyGasConfig();
         // expect:
-        assertEquals(capacity, subject.gasLimitThrottle().getCapacity());
+        assertEquals(capacity, subject.gasLimitThrottle().capacity());
     }
 
     @Test
@@ -1104,7 +1104,7 @@ class DeterministicThrottlingTest {
         subject.setMode(SCHEDULE);
         subject.applyGasConfig();
         // expect:
-        assertEquals(capacity, subject.gasLimitThrottle().getCapacity());
+        assertEquals(capacity, subject.gasLimitThrottle().capacity());
     }
 
     @Test
@@ -1535,12 +1535,12 @@ class DeterministicThrottlingTest {
         assertTrue(subject.shouldThrottleQuery(ContractCallLocal, now, query));
 
         assertEquals(1000000000000L, subject.activeThrottlesFor(ContractCallLocal).get(0).used());
-        assertEquals(3L, subject.gasLimitThrottle().getUsed());
+        assertEquals(3L, subject.gasLimitThrottle().used());
 
         subject.resetUsage();
 
         assertEquals(0L, subject.activeThrottlesFor(ContractCallLocal).get(0).used());
-        assertEquals(0L, subject.gasLimitThrottle().getUsed());
+        assertEquals(0L, subject.gasLimitThrottle().used());
     }
 
     @Test
