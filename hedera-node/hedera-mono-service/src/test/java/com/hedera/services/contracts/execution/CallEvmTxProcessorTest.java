@@ -42,6 +42,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
+import com.hedera.services.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.ledger.TransactionalLedger;

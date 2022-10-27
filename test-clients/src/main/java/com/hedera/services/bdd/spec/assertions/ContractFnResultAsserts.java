@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.assertions;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
@@ -39,7 +40,6 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
@@ -93,8 +93,9 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     }
 
     public static Object[] viaAbi(String abi, byte[] bytes) {
-        CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(abi);
-        return function.decodeResult(bytes);
+        com.esaulpaugh.headlong.abi.Function function =
+                com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+        return function.decodeReturn(bytes).toList().toArray();
     }
 
     public ContractFnResultAsserts contract(String contract) {
@@ -225,7 +226,10 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                         Assertions.assertEquals(
                                 1, actualObjs.length, "Extra contract function return values!");
                         String implicitContract = "contract" + new Random().nextInt();
-                        ContractID contract = TxnUtils.asContractId((byte[]) actualObjs[0]);
+                        ContractID contract =
+                                TxnUtils.asContractId(
+                                        Bytes.fromHexString(((Address) actualObjs[0]).toString())
+                                                .toArray());
                         spec.registry().saveContractId(implicitContract, contract);
                         HapiGetContractInfo op =
                                 getContractInfo(implicitContract).has(theExpectedInfo);

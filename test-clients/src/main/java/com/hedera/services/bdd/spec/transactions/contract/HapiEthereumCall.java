@@ -60,7 +60,6 @@ import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
 import org.bouncycastle.util.encoders.Hex;
-import org.ethereum.core.CallTransaction;
 
 public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     public static final String ETH_HASH_KEY = "EthHash";
@@ -373,13 +372,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                     spec,
                     txnSubmitted,
                     rcd -> {
-                        final var function = CallTransaction.Function.fromJsonInterface(abi);
+                        final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
                         final var result =
-                                function.decodeResult(
+                                function.decodeReturn(
                                         rcd.getContractCallResult()
                                                 .getContractCallResult()
                                                 .toByteArray());
-                        resultObserver.accept(result);
+                        resultObserver.accept(result.toList().toArray());
                     });
         }
     }
