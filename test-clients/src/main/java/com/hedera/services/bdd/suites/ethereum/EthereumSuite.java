@@ -118,7 +118,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
                                         ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
                                         ETX_014_contractCreateInheritsSignerProperties(),
-                                        ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
+                                        accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                                         ETX_009_callsToTokenAddresses(),
                                         originAndSenderAreEthereumSigner(),
                                         ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
@@ -449,7 +449,7 @@ public class EthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)));
     }
 
-    HapiApiSpec ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
+    HapiApiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
         return defaultHapiSpec(
                         "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
