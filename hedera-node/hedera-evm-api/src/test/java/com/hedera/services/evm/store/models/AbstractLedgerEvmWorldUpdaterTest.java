@@ -49,7 +49,9 @@ class AbstractLedgerEvmWorldUpdaterTest {
     void getAccount() {
         UpdatedHederaEvmAccount updatedHederaEvmAccount = new UpdatedHederaEvmAccount(address);
 
-        assertEquals(updatedHederaEvmAccount.getAddress(), abstractLedgerEvmWorldUpdater.get(address).getAddress());
+        assertEquals(
+                updatedHederaEvmAccount.getAddress(),
+                abstractLedgerEvmWorldUpdater.get(address).getAddress());
     }
 
     @Test
