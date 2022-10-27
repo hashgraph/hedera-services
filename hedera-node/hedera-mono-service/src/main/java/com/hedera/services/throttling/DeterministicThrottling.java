@@ -222,7 +222,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
                 "Resolved "
                         + mode
                         + " gas throttle -\n  "
-                        + gasThrottle.getCapacity()
+                        + gasThrottle.capacity()
                         + " gas/sec (throttling "
                         + (dynamicProperties.shouldThrottleByGas() ? "ON" : "OFF")
                         + ")";

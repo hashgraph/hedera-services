@@ -39,6 +39,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TestFileUtils;
 import com.swirlds.platform.state.DualStateImpl;
 import java.io.File;
 import java.io.IOException;
@@ -48,27 +49,26 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import javax.annotation.Nullable;
-import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class UpgradeActionsTest {
     private static final Instant then = Instant.ofEpochSecond(1_234_567L, 890);
-    private static final String markerFilesLoc = "src/test/resources/upgrade";
-    private static final String noiseDirLoc = markerFilesLoc + "/outdated";
-    private static final String noiseFileLoc = markerFilesLoc + "/old-config.txt";
-    private static final String noiseSubFileLoc = noiseDirLoc + "/forgotten.cfg";
-    private static final String otherMarkerFilesLoc = "src/test/resources/upgrade/edargpu";
+    private String markerFilesLoc;
+    private String noiseDirLoc;
+    private String noiseFileLoc;
+    private String noiseSubFileLoc;
     private static final byte[] PRETEND_ARCHIVE =
             "This is missing something. Hard to put a finger on what..."
                     .getBytes(StandardCharsets.UTF_8);
-
+    @TempDir private File tempDir;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private DualStateImpl dualState;
     @Mock private UpgradeActions.UnzipAction unzipAction;
@@ -80,6 +80,11 @@ class UpgradeActionsTest {
 
     @BeforeEach
     void setUp() {
+        markerFilesLoc = TestFileUtils.toPath(tempDir, "outdated");
+        noiseDirLoc = TestFileUtils.toPath(markerFilesLoc, "old-config.txt");
+        noiseFileLoc = TestFileUtils.toPath(markerFilesLoc, "forgotten.cfg");
+        noiseSubFileLoc = TestFileUtils.toPath(markerFilesLoc, "edargpu");
+
         subject =
                 new UpgradeActions(
                         unzipAction,
@@ -89,9 +94,12 @@ class UpgradeActionsTest {
                         () -> networkCtx);
     }
 
-    @AfterAll
-    static void cleanup() throws IOException {
-        FileUtils.deleteDirectory(new File(markerFilesLoc));
+    @AfterEach
+    void tearDown() {
+        final var testLoc = new File(markerFilesLoc);
+        if (testLoc.exists()) {
+            assertTrue(testLoc.delete());
+        }
     }
 
     @Test
@@ -128,6 +136,7 @@ class UpgradeActionsTest {
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
         given(dualState.getFreezeTime()).willReturn(then);
         given(dualState.getLastFrozenTime()).willReturn(then);
+        assertTrue(new File(markerFilesLoc).mkdirs());
 
         subject.catchUpOnMissedSideEffects();
 
@@ -213,8 +222,8 @@ class UpgradeActionsTest {
 
     @Test
     void complainsLoudlyWhenUnableToUnzipArchive() throws IOException {
-        new File(markerFilesLoc).mkdirs();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
+        assertTrue(new File(markerFilesLoc).mkdirs());
 
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
         willThrow(IOException.class).given(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
@@ -235,6 +244,7 @@ class UpgradeActionsTest {
 
     @Test
     void preparesForUpgrade() throws IOException {
+        assertTrue(new File(markerFilesLoc).mkdirs());
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
@@ -250,6 +260,7 @@ class UpgradeActionsTest {
     @Test
     void upgradesTelemetry() throws IOException {
         rmIfPresent(EXEC_TELEMETRY_MARKER);
+        assertTrue(new File(markerFilesLoc).mkdirs());
 
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
@@ -323,10 +334,11 @@ class UpgradeActionsTest {
 
     @Test
     void canStillWriteMarkersEvenIfDirDoesntExist() throws IOException {
+        final String otherMarkerFilesLoc = noiseSubFileLoc;
         rmIfPresent(otherMarkerFilesLoc, FREEZE_ABORTED_MARKER);
         final var d = Paths.get(otherMarkerFilesLoc).toFile();
         if (d.exists()) {
-            d.delete();
+            assertTrue(d.delete());
         }
 
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(otherMarkerFilesLoc);
@@ -339,7 +351,7 @@ class UpgradeActionsTest {
 
         rmIfPresent(otherMarkerFilesLoc, FREEZE_ABORTED_MARKER);
         if (d.exists()) {
-            d.delete();
+            assertTrue(d.delete());
         }
     }
 
@@ -372,7 +384,7 @@ class UpgradeActionsTest {
         assertTrue(subject.isFreezeScheduled());
     }
 
-    private static void rmIfPresent(String file) {
+    private void rmIfPresent(String file) {
         rmIfPresent(markerFilesLoc, file);
     }
 
@@ -380,7 +392,7 @@ class UpgradeActionsTest {
         final var p = Paths.get(baseDir, file);
         final var f = p.toFile();
         if (f.exists()) {
-            f.delete();
+            assertTrue(f.delete());
         }
     }
 
@@ -396,7 +408,7 @@ class UpgradeActionsTest {
         final var f = p.toFile();
         assertTrue(f.exists(), file + " should have been created, but wasn't");
         final var contents = Files.readString(p);
-        f.delete();
+        assertTrue(f.delete());
         if (file.equals(EXEC_IMMEDIATE_MARKER)) {
             assertThat(
                     logCaptor.infoLogs(),
@@ -429,8 +441,6 @@ class UpgradeActionsTest {
     }
 
     private void setupNoiseFiles() throws IOException {
-        final var noiseDir = new File(noiseDirLoc);
-        noiseDir.mkdirs();
         Files.write(
                 Paths.get(noiseFileLoc),
                 List.of(
