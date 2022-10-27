@@ -17,9 +17,9 @@ package com.hedera.node.app.keys.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.keys.ReplHederaKey;
+import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualValue;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static java.lang.Math.min;
 
 /**
  * A HederaKey that is an Ed25519 Key.
@@ -58,10 +57,6 @@ public class HederaEd25519Key implements ReplHederaKey {
 		this.key = that.key;
 	}
 
-	public byte[] getKey() {
-		return key;
-	}
-
 	@Override
 	public boolean isPrimitive() {
 		return true;
@@ -82,46 +77,35 @@ public class HederaEd25519Key implements ReplHederaKey {
 
 	@Override
 	public HederaEd25519Key copy() {
+		this.immutable = true;
 		return new HederaEd25519Key(this);
 	}
 
 	@Override
-	public VirtualValue asReadOnly() {
-		return copy();
+	public HederaEd25519Key asReadOnly() {
+		final var copy = new HederaEd25519Key(this);
+		copy.immutable = true;
+		return copy;
 	}
 
 	@Override
-	public void serialize(final ByteBuffer buf) throws IOException {
-		final var len = min(key.length, ED25519_BYTE_LENGTH);
-		buf.put((byte) len);
-		if(len > 0) {
-			buf.put(key, 0, len);
-		}
+	public void serialize(final ByteBuffer to) throws IOException {
+		to.put(key, 0, key.length);
 	}
 
 	@Override
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
-		final var len = key.length;
-		out.writeInt(len);
-		if(len > 0){
-			out.writeByteArray(key);
-		}
+		out.write(key, 0, key.length);
 	}
 
 	@Override
-	public void deserialize(final ByteBuffer buf, final int version) throws IOException {
-		final var len = min(buf.getInt(), ED25519_BYTE_LENGTH);
-		byte[] data = new byte[len];
-		if(len > 0) {
-			buf.get(data);
-		}
-		this.key = data;
+	public void deserialize(final ByteBuffer from, final int version) throws IOException {
+		from.get(key);
 	}
 
 	@Override
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-		final var length = in.readInt();
-		this.key = in.readByteArray(length);
+		in.readFully(key);
 	}
 
 	@Override
@@ -160,5 +144,22 @@ public class HederaEd25519Key implements ReplHederaKey {
 	@Override
 	public int getVersion() {
 		return VERSION;
+	}
+
+	@Override
+	public boolean isImmutable() {
+		return immutable;
+	}
+
+	/* ------- Object's setters and getters --------- */
+
+	public byte[] getKey() {
+		return key;
+	}
+
+	@StateSetter
+	public void setKey(final byte[] key) {
+		throwIfImmutable("Tried to set the key on an immutable HederaEd25519Key");
+		this.key = key;
 	}
 }

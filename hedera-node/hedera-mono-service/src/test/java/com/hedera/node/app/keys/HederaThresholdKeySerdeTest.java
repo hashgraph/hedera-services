@@ -16,10 +16,12 @@
 package com.hedera.node.app.keys;
 
 import com.hedera.node.app.keys.impl.HederaThresholdKey;
-import com.hedera.test.serde.SelfSerializableDataTest;
+import com.hedera.test.serde.VirtualValueDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
-public class HederaThresholdKeySerdeTest extends SelfSerializableDataTest<HederaThresholdKey> {
+import static com.hedera.node.app.keys.HederaEd25519KeySerdeTest.NUM_TEST_CASES;
+
+public class HederaThresholdKeySerdeTest extends VirtualValueDataTest<HederaThresholdKey> {
 	@Override
 	protected Class<HederaThresholdKey> getType() {
 		return HederaThresholdKey.class;
@@ -27,7 +29,7 @@ public class HederaThresholdKeySerdeTest extends SelfSerializableDataTest<Hedera
 
 	@Override
 	protected int getNumTestCasesFor(final int version) {
-		return MIN_TEST_CASES_PER_VERSION;
+		return NUM_TEST_CASES;
 	}
 
 	@Override
