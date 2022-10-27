@@ -239,15 +239,6 @@ public abstract class JKey implements HederaKey {
         return JKeySerializer.serialize(this);
     }
 
-    public abstract boolean isEmpty();
-
-    /**
-     * Expected to return {@code false} if the key is empty
-     *
-     * @return whether the key is valid
-     */
-    public abstract boolean isValid();
-
     public void setForScheduledTxn(boolean flag) {
         forScheduledTxn = flag;
     }

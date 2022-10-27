@@ -1,7 +1,6 @@
 package com.hedera.node.app.keys;
 
 import com.hedera.node.app.spi.keys.HederaKey;
-import com.hedera.node.app.spi.keys.ReplHederaKey;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.NotImplementedException;

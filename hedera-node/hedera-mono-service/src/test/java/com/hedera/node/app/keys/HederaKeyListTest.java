@@ -85,7 +85,7 @@ class HederaKeyListTest {
 		assertEquals(key1, key3);
 		assertEquals(key1.hashCode(), key3.hashCode());
 		assertEquals(key1, key1);
-		assertFalse(key1.equals(null));
+		assertNotEquals(null, key1);
 	}
 
 	@Test
