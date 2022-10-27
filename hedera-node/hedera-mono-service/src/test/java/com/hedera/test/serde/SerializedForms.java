@@ -20,8 +20,10 @@ import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import com.hedera.node.app.keys.Ed25519Key;
-import com.hedera.node.app.keys.Ed25519KeySerdeTest;
+import com.hedera.node.app.keys.HederaEd25519Key;
+import com.hedera.node.app.keys.HederaEd25519KeySerdeTest;
+import com.hedera.node.app.keys.HederaKeyList;
+import com.hedera.node.app.keys.HederaKeyListSerdeTest;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
@@ -100,7 +102,7 @@ public class SerializedForms {
     }
 
     private static void generateSerializedData() {
-        GENERATOR_MAPPING.get(Ed25519Key.class).run();
+        GENERATOR_MAPPING.get(HederaKeyList.class).run();
         //        for (var entry : GENERATOR_MAPPING.entrySet()) {
         //            entry.getValue().run();
         //        }
@@ -257,9 +259,13 @@ public class SerializedForms {
                             SeededPropertySource::nextSerializableSemVers,
                             2 * MIN_TEST_CASES_PER_VERSION),
                     entry(
-                            Ed25519Key.class,
-                            SeededPropertySource::nextEd25519HederaKey,
-                            Ed25519KeySerdeTest.NUM_TEST_CASES));
+                            HederaEd25519Key.class,
+                            SeededPropertySource::nextHederaEd25519Key,
+                            MIN_TEST_CASES_PER_VERSION),
+                    entry(
+                            HederaKeyList.class,
+                            SeededPropertySource::nextHederaKeyList,
+                            MIN_TEST_CASES_PER_VERSION));
 
     private static <T extends SelfSerializable> void saveForCurrentVersion(
             final Class<T> type,

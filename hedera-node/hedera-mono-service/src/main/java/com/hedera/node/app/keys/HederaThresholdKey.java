@@ -8,20 +8,22 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
-public class ThresholdKey implements ReplHederaKey {
+/**
+ * A HederaKey that is a threshold key.
+ */
+public class HederaThresholdKey implements ReplHederaKey {
 	private static final long CLASS_ID = 15520365L;
 	private static final int VERSION = 1;
 	int threshold;
-	private KeyList keys;
+	private HederaKeyList keys;
 
-	public ThresholdKey(final int threshold, @Nonnull final KeyList keys) {
+	public HederaThresholdKey(final int threshold, @Nonnull final HederaKeyList keys) {
 		Objects.requireNonNull(keys);
 		this.threshold = threshold;
 		this.keys = keys;
 	}
 
-	public ThresholdKey(@Nonnull final ThresholdKey that) {
+	public HederaThresholdKey(@Nonnull final HederaThresholdKey that) {
 		Objects.requireNonNull(that);
 		this.threshold = that.threshold;
 		this.keys = that.keys;
@@ -47,12 +49,12 @@ public class ThresholdKey implements ReplHederaKey {
 	}
 
 	@Override
-	public ThresholdKey copy() {
-		return new ThresholdKey(this);
+	public HederaThresholdKey copy() {
+		return new HederaThresholdKey(this);
 	}
 
 	@Override
-	public ThresholdKey asReadOnly() {
+	public HederaThresholdKey asReadOnly() {
 		return copy();
 	}
 

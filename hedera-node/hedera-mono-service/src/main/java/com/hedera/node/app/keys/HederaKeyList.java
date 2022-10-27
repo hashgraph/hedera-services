@@ -15,22 +15,24 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-
-public class KeyList implements ReplHederaKey {
+/**
+ * A HederaKey that is a list of HederaKeys.
+ */
+public class HederaKeyList implements ReplHederaKey {
 	private static final long CLASS_ID = 15512048L;
 	private static final int VERSION = 1;
 	private List<ReplHederaKey> keys;
 
-	public KeyList() {
+	public HederaKeyList() {
 		this.keys = new LinkedList<>();
 	}
 
-	public KeyList(@Nonnull List<ReplHederaKey> keys) {
+	public HederaKeyList(@Nonnull List<ReplHederaKey> keys) {
 		Objects.requireNonNull(keys);
 		this.keys = keys;
 	}
 
-	public KeyList(@Nonnull KeyList that) {
+	public HederaKeyList(@Nonnull HederaKeyList that) {
 		Objects.requireNonNull(that);
 		this.keys = that.keys;
 	}
@@ -63,12 +65,12 @@ public class KeyList implements ReplHederaKey {
 	}
 
 	@Override
-	public KeyList copy() {
-		return new KeyList(this);
+	public HederaKeyList copy() {
+		return new HederaKeyList(this);
 	}
 
 	@Override
-	public KeyList asReadOnly() {
+	public HederaKeyList asReadOnly() {
 		return copy();
 	}
 
@@ -104,7 +106,7 @@ public class KeyList implements ReplHederaKey {
 	@Override
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		final var len = in.readInt();
-		for (int i =0 ; i < len ; i++){
+		for (int i = 0 ; i < len ; i++){
 			final ReplHederaKey childKey = in.readSerializable();
 			keys.add(childKey);
 		}
@@ -115,10 +117,10 @@ public class KeyList implements ReplHederaKey {
 		if (o == this) {
 			return true;
 		}
-		if (o == null || KeyList.class != o.getClass()) {
+		if (o == null || HederaKeyList.class != o.getClass()) {
 			return false;
 		}
-		final var that = (KeyList) o;
+		final var that = (HederaKeyList) o;
 		return keys.equals(that.keys);
 	}
 
@@ -129,7 +131,7 @@ public class KeyList implements ReplHederaKey {
 
 	@Override
 	public String toString(){
-		return MoreObjects.toStringHelper(KeyList.class)
+		return MoreObjects.toStringHelper(HederaKeyList.class)
 				.add("keys", keys)
 				.toString();
 	}

@@ -1,7 +1,6 @@
 package com.hedera.node.app.keys;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.spi.keys.HederaKey;
 import com.hedera.node.app.spi.keys.ReplHederaKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -22,7 +21,7 @@ import static java.lang.Math.min;
 /**
  * A HederaKey that is an Ed25519 Key.
  */
-public class Ed25519Key implements ReplHederaKey {
+public class HederaEd25519Key implements ReplHederaKey {
 	private static final int ED25519_BYTE_LENGTH = 32;
 	private static final long CLASS_ID = 15528682L;
 	private static final int VERSION = 1;
@@ -30,16 +29,16 @@ public class Ed25519Key implements ReplHederaKey {
 	private byte[] key;
 
 	@VisibleForTesting
-	public Ed25519Key(){
+	public HederaEd25519Key(){
 		this.key = new byte[ED25519_BYTE_LENGTH];
 	}
 
-	public Ed25519Key(@Nonnull final byte[] key) {
+	public HederaEd25519Key(@Nonnull final byte[] key) {
 		Objects.requireNonNull(key);
 		this.key = key;
 	}
 
-	public Ed25519Key(@Nonnull final Ed25519Key that) {
+	public HederaEd25519Key(@Nonnull final HederaEd25519Key that) {
 		Objects.requireNonNull(that);
 		this.key = that.key;
 	}
@@ -67,8 +66,8 @@ public class Ed25519Key implements ReplHederaKey {
 	}
 
 	@Override
-	public Ed25519Key copy() {
-		return new Ed25519Key(this);
+	public HederaEd25519Key copy() {
+		return new HederaEd25519Key(this);
 	}
 
 	@Override
@@ -116,11 +115,11 @@ public class Ed25519Key implements ReplHederaKey {
 			return true;
 		}
 
-		if (!(o instanceof Ed25519Key)) {
+		if (!(o instanceof HederaEd25519Key)) {
 			return false;
 		}
 
-		final Ed25519Key that = (Ed25519Key) o;
+		final HederaEd25519Key that = (HederaEd25519Key) o;
 		return new EqualsBuilder()
 				.append(key, that.key)
 				.isEquals();

@@ -18,22 +18,20 @@ package com.hedera.node.app.keys;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
-public class Ed25519KeySerdeTest extends SelfSerializableDataTest<Ed25519Key> {
-	public static final int NUM_TEST_CASES = MIN_TEST_CASES_PER_VERSION;
-
+public class HederaEd25519KeySerdeTest extends SelfSerializableDataTest<HederaEd25519Key> {
 	@Override
-	protected Class<Ed25519Key> getType() {
-		return Ed25519Key.class;
+	protected Class<HederaEd25519Key> getType() {
+		return HederaEd25519Key.class;
 	}
 
 	@Override
 	protected int getNumTestCasesFor(final int version) {
-		return NUM_TEST_CASES;
+		return MIN_TEST_CASES_PER_VERSION;
 	}
 
 	@Override
-	protected Ed25519Key getExpectedObject(
+	protected HederaEd25519Key getExpectedObject(
 			final SeededPropertySource propertySource) {
-		return propertySource.nextEd25519HederaKey();
+		return propertySource.nextHederaEd25519Key();
 	}
 }
