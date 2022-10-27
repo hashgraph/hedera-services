@@ -72,19 +72,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -144,8 +140,9 @@ class SignedStateBalancesExporterTest {
 
     @BeforeEach
     void setUp() throws ConstructableRegistryException, NoSuchAlgorithmException {
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
         final var secondNonNodeDelTokenAssociationKey =
                 fromAccountTokenRel(secondNonNode, theDeletedToken);
         final var secondNonNodeTokenAssociationKey = fromAccountTokenRel(secondNonNode, theToken);
@@ -267,7 +264,7 @@ class SignedStateBalancesExporterTest {
                 logCaptor.errorLogs(),
                 contains(Matchers.startsWith("Could not sign balance file")));
 
-        new File(loc).delete();
+        assertTrue(new File(loc).delete());
     }
 
     @ParameterizedTest
@@ -323,7 +320,7 @@ class SignedStateBalancesExporterTest {
 
         verify(sigFileWriter).writeSigFile(loc, sig, expectedHash);
         assertThat(logCaptor.debugLogs(), contains(desiredDebugMsg));
-        new File(loc).delete();
+        assertTrue(new File(loc).delete());
     }
 
     @Test
@@ -528,14 +525,6 @@ class SignedStateBalancesExporterTest {
         now = now.plusSeconds(exportPeriodInSecs);
         assertTrue(subject.isTimeToExport(now));
         assertEquals(startTime.plusSeconds(exportPeriodInSecs * 2), subject.getNextExportTime());
-    }
-
-    @AfterAll
-    static void tearDown() throws IOException {
-        Files.walk(Path.of("src/test/resources/balance0.0.3"))
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
     }
 
     static Optional<AllAccountBalances> importBalanceProtoFile(final String protoLoc) {

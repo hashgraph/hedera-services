@@ -32,6 +32,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class FeesJsonToProtoSerdeTest {
     private static final String UNTYPED_FEE_SCHEDULE_REPR_PATH =
@@ -39,7 +40,8 @@ class FeesJsonToProtoSerdeTest {
     private static final String TYPED_FEE_SCHEDULE_JSON_PATH =
             "src/test/resources/sysfiles/r16feeSchedules.json";
     private static final String TYPED_FEE_SCHEDULE_JSON_RESOURCE = "sysfiles/r16feeSchedules.json";
-    private static final String TMP_PROTO_LOC = "tbd.bin";
+
+    @TempDir private File tempDir;
 
     @Test
     void isUninstantiable() throws NoSuchMethodException {
@@ -62,16 +64,14 @@ class FeesJsonToProtoSerdeTest {
         // given:
         final var typedSchedules = loadFeeScheduleFromStream(in);
         // and:
-        final var tmpFile = new File(TMP_PROTO_LOC);
+        final var tmpFile = newTempFile();
         Files.write(typedSchedules.toByteArray(), tmpFile);
 
         // and sanity check:
         Assertions.assertDoesNotThrow(
                 () ->
                         CurrentAndNextFeeSchedule.parseFrom(
-                                java.nio.file.Files.readAllBytes(Paths.get(TMP_PROTO_LOC))));
-        // cleanup:
-        tmpFile.delete();
+                                java.nio.file.Files.readAllBytes(Paths.get(tmpFile.getPath()))));
     }
 
     @Test
@@ -79,17 +79,14 @@ class FeesJsonToProtoSerdeTest {
         // given:
         final var typedSchedules = loadFeeScheduleFromJson(TYPED_FEE_SCHEDULE_JSON_RESOURCE);
         // and:
-        final var tmpFile = new File(TMP_PROTO_LOC);
+        final var tmpFile = newTempFile();
         Files.write(typedSchedules.toByteArray(), tmpFile);
 
         // and sanity check:
         Assertions.assertDoesNotThrow(
                 () ->
                         CurrentAndNextFeeSchedule.parseFrom(
-                                java.nio.file.Files.readAllBytes(Paths.get(TMP_PROTO_LOC))));
-
-        // cleanup:
-        tmpFile.delete();
+                                java.nio.file.Files.readAllBytes(Paths.get(tmpFile.getPath()))));
     }
 
     @Test
@@ -101,7 +98,7 @@ class FeesJsonToProtoSerdeTest {
 
         // given:
         final var typedSchedules = parseFeeScheduleFromJson(jsonLiteral);
-        final var tmpFile = new File(TMP_PROTO_LOC);
+        final var tmpFile = newTempFile();
         // and:
         Files.write(typedSchedules.toByteArray(), tmpFile);
 
@@ -109,10 +106,7 @@ class FeesJsonToProtoSerdeTest {
         Assertions.assertDoesNotThrow(
                 () ->
                         CurrentAndNextFeeSchedule.parseFrom(
-                                java.nio.file.Files.readAllBytes(Paths.get(TMP_PROTO_LOC))));
-
-        // cleanup:
-        tmpFile.delete();
+                                java.nio.file.Files.readAllBytes(Paths.get(tmpFile.getPath()))));
     }
 
     @Test
@@ -156,5 +150,9 @@ class FeesJsonToProtoSerdeTest {
 
         str = "blah";
         assertEquals(SubType.DEFAULT, stringToSubType(str));
+    }
+
+    private File newTempFile() {
+        return new File(tempDir + File.separator + "tbd.bin");
     }
 }

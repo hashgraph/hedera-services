@@ -17,7 +17,7 @@ package com.hedera.services.state.merkle;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
@@ -26,7 +26,7 @@ import static com.hedera.services.utils.MiscUtils.safeResetThrottles;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -53,6 +53,8 @@ import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.IntConsumer;
+import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -88,7 +90,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     static final int RELEASE_0270_VERSION = 9;
     static final int RELEASE_0300_VERSION = 10;
     static final int RELEASE_0310_VERSION = 11;
-    static final int CURRENT_VERSION = RELEASE_0310_VERSION;
+    static final int RELEASE_0320_VERSION = 12;
+    static final int CURRENT_VERSION = RELEASE_0320_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
     static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
     static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS =
@@ -101,6 +104,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     private int stateVersion = UNRECORDED_STATE_VERSION;
     private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
+    private Instant[] evmCongestionLevelStarts = NO_CONGESTION_STARTS;
     private ExchangeRates midnightRates;
     @Nullable private Instant consensusTimeOfLastHandledTxn = null;
     private SequenceNumber seqNo;
@@ -114,7 +118,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     private byte preExistingEntityScanStatus;
     private byte[] preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
     private boolean migrationRecordsStreamed;
-    @Nullable private FeeMultiplierSource multiplierSource = null;
+    @Nullable private MultiplierSources multiplierSources = null;
     @Nullable private FunctionalityThrottling throttling = null;
     @Nullable private ExpiryThrottle expiryThrottle = null;
     private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
@@ -153,6 +157,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         this.expiryUsageSnapshot = that.expiryUsageSnapshot;
         this.gasThrottleUsageSnapshot = that.gasThrottleUsageSnapshot;
         this.congestionLevelStarts = that.congestionLevelStarts;
+        this.evmCongestionLevelStarts = that.evmCongestionLevelStarts;
         this.stateVersion = that.stateVersion;
         this.entitiesScannedThisSecond = that.entitiesScannedThisSecond;
         this.entitiesTouchedThisSecond = that.entitiesTouchedThisSecond;
@@ -174,14 +179,17 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     // Helpers that reset the received argument based on the network context
     public void resetMultiplierSourceFromSavedCongestionStarts(
-            FeeMultiplierSource feeMultiplierSource) {
+            final MultiplierSources multiplierSources) {
         if (congestionLevelStarts.length > 0) {
-            feeMultiplierSource.resetCongestionLevelStarts(congestionLevelStarts);
+            multiplierSources.resetGenericCongestionLevelStarts(congestionLevelStarts);
+        }
+        if (evmCongestionLevelStarts.length > 0) {
+            multiplierSources.resetGasCongestionLevelStarts(evmCongestionLevelStarts);
         }
     }
 
     public void resetThrottlingFromSavedSnapshots(final FunctionalityThrottling throttling) {
-        var activeThrottles = throttling.allActiveThrottles();
+        var activeThrottles = throttling.<DeterministicThrottle>allActiveThrottles();
         if (activeThrottles.size() != usageSnapshots.length) {
             log.warn(
                     "There are {} active throttles, but {} usage snapshots from saved state. "
@@ -253,8 +261,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         this.expiryThrottle = expiryThrottle;
     }
 
-    public void syncMultiplierSource(FeeMultiplierSource multiplierSource) {
-        this.multiplierSource = multiplierSource;
+    public void syncMultiplierSources(final MultiplierSources multiplierSources) {
+        this.multiplierSources = multiplierSources;
     }
 
     public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
@@ -336,9 +344,9 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             updateSnapshotsFrom(throttling);
             throttling = null;
         }
-        if (multiplierSource != null) {
-            updateCongestionStartsFrom(multiplierSource);
-            multiplierSource = null;
+        if (multiplierSources != null) {
+            updateCongestionStartsFrom(multiplierSources);
+            multiplierSources = null;
         }
         if (expiryThrottle != null) {
             updateExpirySnapshotFrom(expiryThrottle);
@@ -360,7 +368,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         midnightRates = in.readSerializable(true, ratesSupplier);
 
         // Added in 0.13
-        readCongestionControlData(in);
+        readCongestionControlData(in, version);
         // Added in 0.14
         whenVersionHigherOrEqualTo0140(in);
         // Added in 0.15 and removed in 0.27
@@ -411,7 +419,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
     }
 
-    private void readCongestionControlData(final SerializableDataInputStream in)
+    private void readCongestionControlData(final SerializableDataInputStream in, final int version)
             throws IOException {
         int numUsageSnapshots = in.readInt();
         if (numUsageSnapshots > 0) {
@@ -424,12 +432,37 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                                 used, (lastUsed == null) ? null : lastUsed.toJava());
             }
         }
-        int numCongestionStarts = in.readInt();
-        if (numCongestionStarts > 0) {
-            congestionLevelStarts = new Instant[numCongestionStarts];
-            for (int i = 0; i < numCongestionStarts; i++) {
+        readCongestionStarts(
+                this::resetCongestionLevelStarts,
+                (start, i) -> congestionLevelStarts[i] = start,
+                in);
+        if (version >= RELEASE_0320_VERSION) {
+            readCongestionStarts(
+                    this::resetEvmCongestionLevelStarts,
+                    (start, i) -> evmCongestionLevelStarts[i] = start,
+                    in);
+        }
+    }
+
+    private void resetCongestionLevelStarts(final int n) {
+        congestionLevelStarts = new Instant[n];
+    }
+
+    private void resetEvmCongestionLevelStarts(final int n) {
+        evmCongestionLevelStarts = new Instant[n];
+    }
+
+    private void readCongestionStarts(
+            final IntConsumer lengthObserver,
+            final ObjIntConsumer<Instant> startObserver,
+            final SerializableDataInputStream in)
+            throws IOException {
+        final var n = in.readInt();
+        if (n > 0) {
+            lengthObserver.accept(n);
+            for (int i = 0; i < n; i++) {
                 final var levelStart = readNullable(in, RichInstant::from);
-                congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
+                startObserver.accept(levelStart == null ? null : levelStart.toJava(), i);
             }
         }
     }
@@ -524,8 +557,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                 + expirySnapshotDesc()
                 + "\n  Throttle usage snapshots are               :: "
                 + usageSnapshotsDesc()
-                + "\n  Congestion level start times are           :: "
+                + "\n  Generic congestion level start times are   :: "
                 + congestionStartsDesc()
+                + "\n  EVM congestion level start times are       :: "
+                + evmCongestionStartsDesc()
                 + "\n  Block number is                            :: "
                 + blockNo
                 + "\n  Block timestamp is                         :: "
@@ -607,11 +642,19 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     private String congestionStartsDesc() {
-        if (congestionLevelStarts.length == 0) {
+        return internalCongestionStartsDesc(congestionLevelStarts);
+    }
+
+    private String evmCongestionStartsDesc() {
+        return internalCongestionStartsDesc(evmCongestionLevelStarts);
+    }
+
+    private String internalCongestionStartsDesc(final Instant[] levelStarts) {
+        if (levelStarts.length == 0) {
             return NOT_AVAILABLE_SUFFIX;
         } else {
             final var sb = new StringBuilder();
-            for (var start : congestionLevelStarts) {
+            for (var start : levelStarts) {
                 sb.append(LINE_WRAP).append(reprOf(start));
             }
             return sb.toString();
@@ -690,7 +733,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     /* --- Internal helpers --- */
     void updateSnapshotsFrom(final FunctionalityThrottling throttling) {
         throwIfImmutable("Cannot update usage snapshots on an immutable context");
-        var activeThrottles = throttling.allActiveThrottles();
+        var activeThrottles = throttling.<DeterministicThrottle>allActiveThrottles();
         int n = activeThrottles.size();
         if (n == 0) {
             usageSnapshots = NO_SNAPSHOTS;
@@ -709,14 +752,14 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         expiryUsageSnapshot = (officialSnapshot != null) ? officialSnapshot : NEVER_USED_SNAPSHOT;
     }
 
-    void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
+    void updateCongestionStartsFrom(final MultiplierSources multiplierSources) {
         throwIfImmutable("Cannot update congestion starts on an immutable context");
-        final var congestionStarts = feeMultiplierSource.congestionLevelStarts();
-        if (null == congestionStarts) {
-            congestionLevelStarts = NO_CONGESTION_STARTS;
-        } else {
-            congestionLevelStarts = congestionStarts;
-        }
+        final var genericCongestionStarts = multiplierSources.genericCongestionStarts();
+        congestionLevelStarts =
+                (genericCongestionStarts == null) ? NO_CONGESTION_STARTS : genericCongestionStarts;
+        final var gasCongestionStarts = multiplierSources.gasCongestionStarts();
+        evmCongestionLevelStarts =
+                (gasCongestionStarts == null) ? NO_CONGESTION_STARTS : gasCongestionStarts;
     }
 
     void serializeNonHashData(final SerializableDataOutputStream out) throws IOException {
@@ -729,11 +772,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             out.writeLong(usageSnapshot.used());
             writeNullable(fromJava(usageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
         }
-        n = congestionLevelStarts.length;
-        out.writeInt(n);
-        for (var congestionStart : congestionLevelStarts) {
-            writeNullable(fromJava(congestionStart), out, RichInstant::serialize);
-        }
+        writeCongestionStarts(congestionLevelStarts, out);
+        writeCongestionStarts(evmCongestionLevelStarts, out);
         out.writeLong(lastScannedEntity);
         out.writeLong(entitiesScannedThisSecond);
         out.writeLong(entitiesTouchedThisSecond);
@@ -757,6 +797,15 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         out.writeLong(seqNoPostUpgrade);
         out.writeLong(lastScannedPostUpgrade);
         out.writeByte(preExistingEntityScanStatus);
+    }
+
+    private void writeCongestionStarts(
+            final Instant[] starts, final SerializableDataOutputStream out) throws IOException {
+        final var n = starts.length;
+        out.writeInt(n);
+        for (var congestionStart : starts) {
+            writeNullable(fromJava(congestionStart), out, RichInstant::serialize);
+        }
     }
 
     private void reset(
@@ -942,6 +991,14 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return congestionLevelStarts;
     }
 
+    Instant[] getEvmCongestionLevelStarts() {
+        return evmCongestionLevelStarts;
+    }
+
+    public void setEvmCongestionLevelStarts(Instant[] evmCongestionLevelStarts) {
+        this.evmCongestionLevelStarts = evmCongestionLevelStarts;
+    }
+
     Instant getConsensusTimeOfLastHandledTxn() {
         return consensusTimeOfLastHandledTxn;
     }
@@ -962,8 +1019,9 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         this.seqNo = seqNo;
     }
 
-    FeeMultiplierSource getMultiplierSource() {
-        return multiplierSource;
+    @Nullable
+    MultiplierSources getMultiplierSources() {
+        return multiplierSources;
     }
 
     FunctionalityThrottling getThrottling() {

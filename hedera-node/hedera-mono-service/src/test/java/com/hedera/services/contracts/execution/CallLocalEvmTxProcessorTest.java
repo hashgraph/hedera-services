@@ -30,6 +30,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.evm.contracts.execution.BlockMetaSource;
+import com.hedera.services.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -144,25 +146,8 @@ class CallLocalEvmTxProcessorTest {
     void throwsWhenCodeCacheFailsLoading() {
         given(worldState.updater()).willReturn(updater);
         given(worldState.updater().updater()).willReturn(updater);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
-
-        var evmAccount = mock(EvmAccount.class);
-
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-
-        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
-                .willReturn(evmAccount);
-        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable())
-                .willReturn(mock(MutableAccount.class));
         given(worldState.updater()).willReturn(updater);
-
-        var senderMutableAccount = mock(MutableAccount.class);
-
-        given(updater.getSenderAccount(any())).willReturn(evmAccount);
-        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.getOrCreate(any())).willReturn(evmAccount);
-        given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 
         assertFailsWith(
                 () ->
@@ -214,8 +199,8 @@ class CallLocalEvmTxProcessorTest {
     private void givenValidMock() {
         given(worldState.updater()).willReturn(updater);
         given(worldState.updater().updater()).willReturn(stackedUpdater);
-        given(globalDynamicProperties.fundingAccount())
-                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
 
         var evmAccount = mock(EvmAccount.class);
 

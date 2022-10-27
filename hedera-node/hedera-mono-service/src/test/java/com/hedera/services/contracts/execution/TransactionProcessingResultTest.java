@@ -124,6 +124,8 @@ class TransactionProcessingResultTest {
                         Collections.emptyMap(),
                         Collections.emptyList());
         result.setCreatedContracts(listOfCreatedContracts);
+        result.setStateChanges(Collections.emptyMap());
+        result.setActions(Collections.emptyList());
 
         assertEquals(expect.getGasUsed(), result.getGasUsed());
 
