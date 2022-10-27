@@ -43,26 +43,8 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendin
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_DECODER;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_SELECTOR;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_SELECTOR_V2;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_SELECTOR_V3;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR_V2;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR_V3;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_DECODER;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_SELECTOR;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_SELECTOR_V2;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V3;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFixedFees;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFractionalFees;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreate;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV2;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV3;
@@ -75,9 +57,6 @@ import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePre
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFees;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV2;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV3;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeRoyaltyFees;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeTokenCreateWithoutFees;
-import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeTokenCreateWithoutFeesV2;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.util.function.UnaryOperator.identity;
@@ -95,7 +74,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
@@ -711,7 +689,7 @@ class CreatePrecompileTest {
                                                 new byte[] {},
                                                 new byte
                                                         [JECDSASecp256k1Key
-                                                        .ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
+                                                                .ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
                                                 null))));
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3));
         tokenCreatePrecompile

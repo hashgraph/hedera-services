@@ -180,6 +180,9 @@ class BurnPrecompilesTest {
     private static final Bytes NON_FUNGIBLE_BURN_INPUT =
             Bytes.fromHexString(
                     "0xacb9cff9000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
+    private static final Bytes NON_FUNGIBLE_BURN_INPUT_V2 =
+            Bytes.fromHexString(
+                    "0xd6910d06000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<BurnPrecompile> burnPrecompile;
@@ -219,7 +222,9 @@ class BurnPrecompilesTest {
 
     @AfterEach
     void closeMocks() {
-        burnPrecompile.close();
+        if (!burnPrecompile.isClosed()) {
+            burnPrecompile.close();
+        }
     }
 
     @Test
@@ -538,7 +543,7 @@ class BurnPrecompilesTest {
 
     @Test
     void decodeFungibleBurnInput() {
-        burnPrecompile.when(() -> decodeBurn(FUNGIBLE_BURN_INPUT)).thenCallRealMethod();
+        burnPrecompile.close();
         final var decodedInput = decodeBurn(FUNGIBLE_BURN_INPUT);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
@@ -549,7 +554,7 @@ class BurnPrecompilesTest {
 
     @Test
     void decodeFungibleBurnInputV2() {
-        burnPrecompile.when(() -> decodeBurnV2(FUNGIBLE_BURN_INPUT_V2)).thenCallRealMethod();
+        burnPrecompile.close();
         final var decodedInput = decodeBurnV2(FUNGIBLE_BURN_INPUT_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
@@ -560,8 +565,21 @@ class BurnPrecompilesTest {
 
     @Test
     void decodeNonFungibleBurnInput() {
-        burnPrecompile.when(() -> decodeBurn(NON_FUNGIBLE_BURN_INPUT)).thenCallRealMethod();
+        burnPrecompile.close();
         final var decodedInput = decodeBurn(NON_FUNGIBLE_BURN_INPUT);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(-1, decodedInput.amount());
+        assertEquals(2, decodedInput.serialNos().size());
+        assertEquals(123, decodedInput.serialNos().get(0));
+        assertEquals(234, decodedInput.serialNos().get(1));
+        assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
+    @Test
+    void decodeNonFungibleBurnInputV2() {
+        burnPrecompile.close();
+        final var decodedInput = decodeBurnV2(NON_FUNGIBLE_BURN_INPUT_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(-1, decodedInput.amount());

@@ -49,10 +49,9 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.jetbrains.annotations.NotNull;
 
 public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
-    private static final String UPDATE_TOKEN_INFO_STRING =  "updateTokenInfo(address,";
+    private static final String UPDATE_TOKEN_INFO_STRING = "updateTokenInfo(address,";
     private static final Function TOKEN_UPDATE_INFO_FUNCTION =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT + ")");
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR =
@@ -165,7 +164,8 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
         return getTokenUpdateWrapper(input, aliasResolver, TOKEN_UPDATE_INFO_SELECTOR_V3);
     }
 
-    private static TokenUpdateWrapper getTokenUpdateWrapper(Bytes input, UnaryOperator<byte[]> aliasResolver, Bytes tokenUpdateInfoSelector) {
+    private static TokenUpdateWrapper getTokenUpdateWrapper(
+            Bytes input, UnaryOperator<byte[]> aliasResolver, Bytes tokenUpdateInfoSelector) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, tokenUpdateInfoSelector, TOKEN_UPDATE_INFO_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));

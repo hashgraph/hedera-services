@@ -44,7 +44,6 @@ import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -62,7 +61,8 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     private static final Function BURN_TOKEN_FUNCTION_V2 =
             new Function("burnToken(address,int64,int64[])", INT);
     private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
-    private static final Bytes BURN_TOKEN_SELECTOR_V2 = Bytes.wrap(BURN_TOKEN_FUNCTION_V2.selector());
+    private static final Bytes BURN_TOKEN_SELECTOR_V2 =
+            Bytes.wrap(BURN_TOKEN_FUNCTION_V2.selector());
     private static final ABIType<Tuple> BURN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,int64[])");
     private final EncodingFacade encoder;

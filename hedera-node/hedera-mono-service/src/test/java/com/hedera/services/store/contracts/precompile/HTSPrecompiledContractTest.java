@@ -16,8 +16,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.ERC20PrecompilesTest.CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER;
-import static com.hedera.services.store.contracts.precompile.ERC20PrecompilesTest.CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BURN_TOKEN;
@@ -58,6 +56,8 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
+import static com.hedera.services.store.contracts.precompile.ERC20PrecompilesTest.CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.ERC20PrecompilesTest.CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;

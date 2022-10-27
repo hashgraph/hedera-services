@@ -313,8 +313,8 @@ class UpdateTokenExpiryInfoPrecompileTest {
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
         given(
-                infrastructureFactory.newTokenUpdateLogic(
-                        hederaTokenStore, wrappedLedgers, sideEffects))
+                        infrastructureFactory.newTokenUpdateLogic(
+                                hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
         given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         updateTokenExpiryInfoPrecompile

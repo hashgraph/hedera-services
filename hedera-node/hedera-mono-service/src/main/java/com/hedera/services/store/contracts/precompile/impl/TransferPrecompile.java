@@ -74,7 +74,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                     "cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT);
     private static final Function CRYPTO_TRANSFER_FUNCTION_V2 =
             new Function(
-                    "cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])", INT);
+                    "cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])",
+                    INT);
     private static final Bytes CRYPTO_TRANSFER_SELECTOR =
             Bytes.wrap(CRYPTO_TRANSFER_FUNCTION.selector());
     private static final Bytes CRYPTO_TRANSFER_SELECTOR_V2 =
@@ -82,7 +83,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private static final ABIType<Tuple> CRYPTO_TRANSFER_DECODER =
             TypeFactory.create("((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])");
     private static final ABIType<Tuple> CRYPTO_TRANSFER_DECODER_V2 =
-            TypeFactory.create("(((bytes32,int64,bool)[]),(bytes32,(bytes32,int64,bool)[],(bytes32,bytes32,int64,bool)[])[])");
+            TypeFactory.create(
+                    "(((bytes32,int64,bool)[]),(bytes32,(bytes32,int64,bool)[],(bytes32,bytes32,int64,bool)[])[])");
     private static final Function TRANSFER_TOKENS_FUNCTION =
             new Function("transferTokens(address,address[],int64[])", INT);
     private static final Bytes TRANSFER_TOKENS_SELECTOR =

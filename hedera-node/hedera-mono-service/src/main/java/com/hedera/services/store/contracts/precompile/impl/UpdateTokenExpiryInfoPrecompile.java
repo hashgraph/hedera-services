@@ -85,8 +85,12 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
         updateExpiryInfoOp =
                 switch (functionId) {
-                    case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> decodeUpdateTokenExpiryInfo(input, aliasResolver);
-                    case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> decodeUpdateTokenExpiryInfoV2(input, aliasResolver);
+                    case AbiConstants
+                            .ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> decodeUpdateTokenExpiryInfo(
+                            input, aliasResolver);
+                    case AbiConstants
+                            .ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> decodeUpdateTokenExpiryInfoV2(
+                            input, aliasResolver);
                     default -> null;
                 };
 
@@ -105,15 +109,18 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
 
     public static TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfo(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getTokenUpdateExpiryInfoWrapper(input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR);
+        return getTokenUpdateExpiryInfoWrapper(
+                input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR);
     }
 
     public static TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfoV2(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getTokenUpdateExpiryInfoWrapper(input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR_V2);
+        return getTokenUpdateExpiryInfoWrapper(
+                input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR_V2);
     }
 
-    private static TokenUpdateExpiryInfoWrapper getTokenUpdateExpiryInfoWrapper(Bytes input, UnaryOperator<byte[]> aliasResolver, Bytes tokenUpdateExpiryInfoSelector) {
+    private static TokenUpdateExpiryInfoWrapper getTokenUpdateExpiryInfoWrapper(
+            Bytes input, UnaryOperator<byte[]> aliasResolver, Bytes tokenUpdateExpiryInfoSelector) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input, tokenUpdateExpiryInfoSelector, TOKEN_UPDATE_EXPIRY_INFO_DECODER);

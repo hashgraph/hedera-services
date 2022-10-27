@@ -396,14 +396,14 @@ class TokenUpdatePrecompileTest {
 
     private void givenUpdateTokenContextV3() {
         given(
-                sigsVerifier.hasActiveAdminKey(
-                        true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                        sigsVerifier.hasActiveAdminKey(
+                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
         given(
-                infrastructureFactory.newTokenUpdateLogic(
-                        hederaTokenStore, wrappedLedgers, sideEffects))
+                        infrastructureFactory.newTokenUpdateLogic(
+                                hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
         tokenUpdatePrecompile
                 .when(() -> decodeUpdateTokenInfoV3(any(), any()))

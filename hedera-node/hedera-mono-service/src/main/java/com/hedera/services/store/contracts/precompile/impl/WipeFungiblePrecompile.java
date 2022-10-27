@@ -79,8 +79,10 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
         wipeOp =
                 switch (functionId) {
-                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> decodeWipe(input, aliasResolver);
-                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> decodeWipeV2(input, aliasResolver);
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> decodeWipe(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> decodeWipeV2(
+                            input, aliasResolver);
                     default -> null;
                 };
         transactionBody = syntheticTxnFactory.createWipe(wipeOp);
@@ -109,7 +111,8 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     public static WipeWrapper decodeWipeV2(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR_V2, WIPE_TOKEN_ACCOUNT_DECODER_V2);
+                decodeFunctionCall(
+                        input, WIPE_TOKEN_ACCOUNT_SELECTOR_V2, WIPE_TOKEN_ACCOUNT_DECODER_V2);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
