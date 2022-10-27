@@ -15,7 +15,8 @@
  */
 package com.hedera.node.app.keys;
 
-import com.hedera.node.app.spi.keys.ReplHederaKey;
+import com.google.protobuf.ByteString;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -27,48 +28,70 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class HederaKeyListTest {
+class HederaThresholdKeyTest {
 	private static final int ED25519_BYTE_LENGTH = 32;
-	private HederaKeyList subject;
+
+	private final ByteString aPrimitiveKey = ByteString.copyFromUtf8("01234567890123456789012345678901");
+	private int threshold = 1;
+	private HederaEd25519Key k1;
+	private HederaEd25519Key k2;
+	private HederaKeyList keys;
+
+	private HederaThresholdKey subject;
+
+	@BeforeEach
+	void setUp(){
+		k1 = new HederaEd25519Key(aPrimitiveKey.toByteArray());
+		k2 = new HederaEd25519Key(aPrimitiveKey.toByteArray());
+		keys = new HederaKeyList(List.of(k1, k2));
+
+		subject = new HederaThresholdKey(threshold, keys);
+	}
 
 	@Test
 	void nullKeyListInConstructorIsNotAllowed() {
-		assertThrows(NullPointerException.class, () -> new HederaKeyList((List<ReplHederaKey>) null));
+		assertThrows(NullPointerException.class, () -> new HederaThresholdKey( null));
 	}
 
 	@Test
 	void emptyKeyListIsNotValid() {
-		subject = new HederaKeyList(List.of());
+		keys = new HederaKeyList(List.of());
+
+		subject = new HederaThresholdKey(threshold, keys);
 		assertTrue(subject.isEmpty());
 		assertFalse(subject.isValid());
 	}
 
 	@Test
 	void invalidKeyInKeyListFails() {
-		subject = new HederaKeyList(List.of(new HederaEd25519Key(new byte[1]), new HederaEd25519Key(new byte[ED25519_BYTE_LENGTH])));
+		k1 = new HederaEd25519Key(new byte[1]);
+		k2 = new HederaEd25519Key(new byte[ED25519_BYTE_LENGTH]);
+		keys = new HederaKeyList(List.of(k1, k2));
+
+		subject = new HederaThresholdKey(threshold, keys);
 		assertFalse(subject.isEmpty());
 		assertFalse(subject.isValid());
 
-		subject = new HederaKeyList(List.of(new HederaEd25519Key(new byte[ED25519_BYTE_LENGTH - 1])));
+		k1 = new HederaEd25519Key(new byte[ED25519_BYTE_LENGTH - 1]);
+		keys = new HederaKeyList(List.of(k1, k2));
+		subject = new HederaThresholdKey(threshold, keys);
 		assertFalse(subject.isEmpty());
 		assertFalse(subject.isValid());
 	}
 
 	@Test
 	void validKeyInKeyListWorks() {
-		subject = new HederaKeyList(List.of(new HederaEd25519Key(new byte[ED25519_BYTE_LENGTH])));
 		assertFalse(subject.isEmpty());
 		assertTrue(subject.isValid());
 	}
 	@Test
 	void testsIsPrimitive(){
-		subject = new HederaKeyList(List.of(new HederaEd25519Key(new byte[ED25519_BYTE_LENGTH])));
+		subject = new HederaThresholdKey(threshold, keys);
 		assertFalse(subject.isPrimitive());
 	}
 
 	@Test
 	void copyAndAsReadOnlyWorks(){
-		subject = new HederaKeyList(List.of(new HederaEd25519Key(new byte[ED25519_BYTE_LENGTH])));
 		final var copy = subject.copy();
 		assertEquals(subject, copy);
 		assertNotSame(subject, copy);
@@ -76,9 +99,10 @@ class HederaKeyListTest {
 
 	@Test
 	void equalsAndHashCodeWorks() {
-		final var key1 = new HederaKeyList(List.of(new HederaEd25519Key("firstKey".getBytes())));
-		final var key2 = new HederaKeyList(List.of(new HederaEd25519Key("secondKey".getBytes())));
-		final var key3 = new HederaKeyList(List.of(new HederaEd25519Key("firstKey".getBytes())));
+		final var key1 = subject;
+		final var key2 = new HederaThresholdKey(threshold,
+				new HederaKeyList(List.of(k1, new HederaEd25519Key(new byte[ED25519_BYTE_LENGTH]))));
+		final var key3 = subject.copy();
 
 		assertNotEquals(key1, key2);
 		assertNotEquals(key1.hashCode(), key2.hashCode());
@@ -90,8 +114,7 @@ class HederaKeyListTest {
 
 	@Test
 	void toStringWorks(){
-		subject = new HederaKeyList(List.of(new HederaEd25519Key("firstKey".getBytes())));
-		final var expectedString = "HederaKeyList[keys=[HederaEd25519Key[key=66697273744b6579]]]";
+		final var expectedString = "HederaThresholdKey[threshold=1,keys=HederaKeyList[keys=[HederaEd25519Key[key=3031323334353637383930313233343536373839303132333435363738393031], HederaEd25519Key[key=3031323334353637383930313233343536373839303132333435363738393031]]]]";
 		assertEquals(expectedString, subject.toString());
 	}
 }

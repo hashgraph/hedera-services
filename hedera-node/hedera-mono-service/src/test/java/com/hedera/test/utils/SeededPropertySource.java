@@ -24,6 +24,7 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.keys.HederaEd25519Key;
 import com.hedera.node.app.keys.HederaKeyList;
+import com.hedera.node.app.keys.HederaThresholdKey;
 import com.hedera.services.context.properties.EntityType;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.*;
@@ -414,6 +415,10 @@ public class SeededPropertySource {
 
     public HederaEd25519Key nextHederaEd25519Key() {
         return new HederaEd25519Key(nextBytes(32));
+    }
+
+    public HederaThresholdKey nextHederaThresholdKey() {
+        return new HederaThresholdKey(1, nextHederaKeyList());
     }
 
     public HederaKeyList nextHederaKeyList(){

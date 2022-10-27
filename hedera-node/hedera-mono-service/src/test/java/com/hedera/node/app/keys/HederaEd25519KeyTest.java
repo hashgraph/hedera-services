@@ -88,7 +88,7 @@ class HederaEd25519KeyTest {
 	@Test
 	void toStringWorks(){
 		subject = new HederaEd25519Key("firstKey".getBytes());
-		final var expectedString = "Ed25519Key[key=66697273744b6579]";
+		final var expectedString = "HederaEd25519Key[key=66697273744b6579]";
 		assertEquals(expectedString, subject.toString());
 	}
 }

@@ -1,10 +1,15 @@
 package com.hedera.node.app.keys;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.spi.keys.HederaKey;
 import com.hedera.node.app.spi.keys.ReplHederaKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import javax.annotation.Nonnull;
 import java.io.ByteArrayInputStream;
@@ -15,6 +20,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import static com.swirlds.common.utility.CommonUtils.hex;
+
 /**
  * A HederaKey that is a list of HederaKeys.
  */
@@ -23,6 +31,7 @@ public class HederaKeyList implements ReplHederaKey {
 	private static final int VERSION = 1;
 	private List<ReplHederaKey> keys;
 
+	@VisibleForTesting
 	public HederaKeyList() {
 		this.keys = new LinkedList<>();
 	}
@@ -48,7 +57,14 @@ public class HederaKeyList implements ReplHederaKey {
 
 	@Override
 	public boolean isEmpty() {
-		return keys.isEmpty();
+		if (keys != null) {
+			for (var key : keys) {
+				if ((null != key) && !key.isEmpty()) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	@Override
@@ -121,18 +137,20 @@ public class HederaKeyList implements ReplHederaKey {
 			return false;
 		}
 		final var that = (HederaKeyList) o;
-		return keys.equals(that.keys);
+		return new EqualsBuilder()
+				.append(keys, that.keys)
+				.isEquals();
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(keys);
+		return new HashCodeBuilder().append(keys).build();
 	}
 
 	@Override
 	public String toString(){
-		return MoreObjects.toStringHelper(HederaKeyList.class)
-				.add("keys", keys)
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("keys", keys)
 				.toString();
 	}
 

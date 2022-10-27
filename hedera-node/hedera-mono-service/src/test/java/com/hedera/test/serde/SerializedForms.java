@@ -24,6 +24,7 @@ import com.hedera.node.app.keys.HederaEd25519Key;
 import com.hedera.node.app.keys.HederaEd25519KeySerdeTest;
 import com.hedera.node.app.keys.HederaKeyList;
 import com.hedera.node.app.keys.HederaKeyListSerdeTest;
+import com.hedera.node.app.keys.HederaThresholdKey;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
@@ -137,7 +138,7 @@ public class SerializedForms {
     }
 
     private static void generateSerializedData() {
-        GENERATOR_MAPPING.get(HederaKeyList.class).run();
+        GENERATOR_MAPPING.get(HederaThresholdKey.class).run();
         //        for (var entry : GENERATOR_MAPPING.entrySet()) {
         //            entry.getValue().run();
         //        }
@@ -296,6 +297,10 @@ public class SerializedForms {
                     entry(
                             HederaEd25519Key.class,
                             SeededPropertySource::nextHederaEd25519Key,
+                            MIN_TEST_CASES_PER_VERSION),
+                    entry(
+                            HederaThresholdKey.class,
+                            SeededPropertySource::nextHederaThresholdKey,
                             MIN_TEST_CASES_PER_VERSION),
                     entry(
                             HederaKeyList.class,
