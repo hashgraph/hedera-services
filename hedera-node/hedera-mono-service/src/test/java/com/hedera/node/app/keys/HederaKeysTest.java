@@ -15,29 +15,43 @@
  */
 package com.hedera.node.app.keys;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.test.utils.IdUtils;
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.keys.impl.HederaEd25519Key;
+import com.hedera.node.app.keys.impl.HederaKeys;
 import com.hederahashgraph.api.proto.java.Key;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.node.app.keys.impl.HederaKeys.asHederaKey;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class HederaKeysTest {
 	@Test
 	void canConvertToHederaKey() {
-		final var id = IdUtils.asContract("1.2.3");
-		final var input = Key.newBuilder().setDelegatableContractId(id).build();
+		final var input = Key.newBuilder()
+				.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
+				.build();
 
 		final var subject = asHederaKey(input);
 
 		assertTrue(subject.isPresent());
 
-		final var jkey = (JKey) subject.get();
-		Assertions.assertTrue(jkey.hasDelegatableContractId());
+		final var key = subject.get();
+		Assertions.assertTrue(key.isPrimitive());
+	}
+
+	@Test
+	void toBeImplementedSolutions(){
+		final var input = Key.newBuilder()
+				.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
+				.build();
+
+		assertThrows(NotImplementedException.class, () -> HederaKeys.fromProto(input, 1));
+		assertThrows(NotImplementedException.class, () -> HederaKeys.toProto(new HederaEd25519Key()));
 	}
 }
