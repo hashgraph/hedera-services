@@ -240,11 +240,6 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
             var evmAddress = keyAliasToEVMAddress(alias);
             if (evmAddress != null) {
                 entityNum = curAliases().getOrDefault(ByteString.copyFrom(evmAddress), MISSING_NUM);
-            } else {
-                log.info(
-                        "Was not able to find entity num for {} alias or its corresponding EVM"
-                                + " address",
-                        alias);
             }
         }
 
