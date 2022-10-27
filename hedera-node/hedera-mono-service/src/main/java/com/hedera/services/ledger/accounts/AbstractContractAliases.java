@@ -15,34 +15,17 @@
  */
 package com.hedera.services.ledger.accounts;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-
-import com.google.common.primitives.Longs;
-import java.util.Arrays;
+import com.hedera.node.app.service.token.util.AliasUtils;
 import org.hyperledger.besu.datatypes.Address;
 
 public abstract class AbstractContractAliases implements ContractAliases {
     public static final int EVM_ADDRESS_LEN = 20;
-
-    /* A placeholder to store the 12-byte prefix (4-byte shard and 8-byte realm) that marks an EVM
-     * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
-    private static byte[] mirrorPrefix = null;
 
     public boolean isMirror(final Address address) {
         return isMirror(address.toArrayUnsafe());
     }
 
     public boolean isMirror(final byte[] address) {
-        if (address.length != EVM_ADDRESS_LEN) {
-            return false;
-        }
-        if (mirrorPrefix == null) {
-            mirrorPrefix = new byte[12];
-            System.arraycopy(
-                    Longs.toByteArray(STATIC_PROPERTIES.getShard()), 4, mirrorPrefix, 0, 4);
-            System.arraycopy(
-                    Longs.toByteArray(STATIC_PROPERTIES.getRealm()), 0, mirrorPrefix, 4, 8);
-        }
-        return Arrays.equals(mirrorPrefix, 0, 12, address, 0, 12);
+        return AliasUtils.isMirror(address);
     }
 }

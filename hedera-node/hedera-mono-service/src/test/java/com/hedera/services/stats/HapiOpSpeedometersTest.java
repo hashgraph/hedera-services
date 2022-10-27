@@ -28,6 +28,7 @@ import static org.mockito.Mockito.times;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
 import java.util.function.Function;
@@ -43,7 +44,7 @@ class HapiOpSpeedometersTest {
     @Mock private Platform platform;
     @Mock private HapiOpCounters counters;
     @Mock private NodeLocalProperties properties;
-
+    @Mock private Metrics metrics;
     @Mock private SpeedometerMetric xferReceived;
     @Mock private SpeedometerMetric xferSubmitted;
     @Mock private SpeedometerMetric xferHandled;
@@ -73,6 +74,8 @@ class HapiOpSpeedometersTest {
 
     @Test
     void beginsRationally() {
+        given(platform.getMetrics()).willReturn(metrics);
+
         subject.registerWith(platform);
 
         // expect:
@@ -90,10 +93,12 @@ class HapiOpSpeedometersTest {
 
     @Test
     void registersExpectedStatEntries() {
+        given(platform.getMetrics()).willReturn(metrics);
+
         subject.registerWith(platform);
 
         // then:
-        verify(platform, times(6)).getOrCreateMetric(any());
+        verify(metrics, times(6)).getOrCreate(any());
     }
 
     @Test

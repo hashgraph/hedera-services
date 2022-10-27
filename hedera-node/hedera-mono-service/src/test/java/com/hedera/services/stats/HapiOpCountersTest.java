@@ -36,6 +36,7 @@ import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +49,7 @@ class HapiOpCountersTest {
     private MiscRunningAvgs runningAvgs;
     private TransactionContext txnCtx;
     private Function<HederaFunctionality, String> statNameFn;
+    private Metrics metrics;
 
     private HapiOpCounters subject;
 
@@ -64,10 +66,12 @@ class HapiOpCountersTest {
         platform = mock(Platform.class);
         statNameFn = HederaFunctionality::toString;
         runningAvgs = mock(MiscRunningAvgs.class);
+        metrics = mock(Metrics.class);
 
         subject = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
-        given(platform.getOrCreateMetric(any())).willReturn(counter);
+        given(platform.getMetrics()).willReturn(metrics);
+        given(metrics.getOrCreate(any())).willReturn(counter);
 
         subject.registerWith(platform);
     }
@@ -98,7 +102,7 @@ class HapiOpCountersTest {
 
     @Test
     void registersExpectedStatEntries() {
-        verify(platform, times(9)).getOrCreateMetric(any());
+        verify(metrics, times(9)).getOrCreate(any());
     }
 
     @Test

@@ -320,6 +320,15 @@ public class HTSTestsUtil {
                     new SyntheticTxnFactory.HbarTransfer(-AMOUNT, false, sender, null));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), Collections.emptyList());
+    public static final List<SyntheticTxnFactory.HbarTransfer> twoHbarTransfers =
+            List.of(
+                    new SyntheticTxnFactory.HbarTransfer(AMOUNT, false, null, receiver),
+                    new SyntheticTxnFactory.HbarTransfer(-AMOUNT, false, sender, null),
+                    new SyntheticTxnFactory.HbarTransfer(AMOUNT, false, null, sender),
+                    new SyntheticTxnFactory.HbarTransfer(-AMOUNT, false, receiver, null));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(twoHbarTransfers), Collections.emptyList());
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER =
             new CryptoTransferWrapper(
                     new TransferWrapper(hbarTransfers),
@@ -328,6 +337,10 @@ public class HTSTestsUtil {
             new CryptoTransferWrapper(
                     new TransferWrapper(hbarTransfers),
                     Collections.singletonList(nftsTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(hbarTransfers),
+                    List.of(tokensTransferList, nftsTransferList));
     public static final List<BalanceChange> tokenTransferChanges =
             List.of(
                     BalanceChange.changingFtUnits(

@@ -23,7 +23,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 /** A throttle with milli-TPS resolution that exists in a deterministic timeline. */
-public class DeterministicThrottle {
+public class DeterministicThrottle implements CongestibleThrottle {
     private static final Instant NEVER = null;
     private static final String NO_NAME = null;
 
@@ -138,18 +138,22 @@ public class DeterministicThrottle {
         delegate.resetLastAllowedUse();
     }
 
+    @Override
     public String name() {
         return name;
     }
 
+    @Override
     public long mtps() {
         return delegate.mtps();
     }
 
+    @Override
     public long used() {
         return delegate.bucket().capacityUsed();
     }
 
+    @Override
     public long capacity() {
         return delegate.bucket().totalCapacity();
     }
