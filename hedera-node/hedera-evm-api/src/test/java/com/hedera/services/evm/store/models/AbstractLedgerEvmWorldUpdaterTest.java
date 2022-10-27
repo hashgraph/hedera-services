@@ -40,6 +40,7 @@ class AbstractLedgerEvmWorldUpdaterTest {
         assertNull(abstractLedgerEvmWorldUpdater.createAccount(address, 1, Wei.ONE));
         assertNull(abstractLedgerEvmWorldUpdater.getAccount(address));
         assertEquals(Collections.emptyList(), abstractLedgerEvmWorldUpdater.getTouchedAccounts());
+        abstractLedgerEvmWorldUpdater.commit();
         assertEquals(
                 Collections.emptyList(),
                 abstractLedgerEvmWorldUpdater.getDeletedAccountAddresses());
