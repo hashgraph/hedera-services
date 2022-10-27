@@ -894,6 +894,7 @@ class StakingAccountsCommitInterceptorTest {
     @Test
     void rewardAccountStakePeriodStartAlwaysReset() {
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
+
         final var changes = buildChanges();
         final var rewardPayment = 1L;
         final var expectedFundingI = 2;
