@@ -112,8 +112,8 @@ public final class AbiConstants {
     public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
     // wipeTokenAccount(address, address, uint32)
     public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE = 0x9790686d;
-    // wipeTokenAccount(address, address, int32)
-    public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 = 0x2d279ec6;
+    // wipeTokenAccount(address, address, int64)
+    public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 = 0xefef57f9;
     // wipeTokenAccountNFT(address, address, int64[])
     public static final int ABI_WIPE_TOKEN_ACCOUNT_NFT = 0xf7f38e26;
     // isFrozen(address token, address account)

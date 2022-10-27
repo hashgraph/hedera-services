@@ -168,7 +168,7 @@ class WipeFungiblePrecompileTest {
                     "0x9790686d00000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
     private static final Bytes FUNGIBLE_WIPE_INPUT_V2 =
             Bytes.fromHexString(
-                    "0x2d279ec600000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
+                    "0xefef57f900000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
     private HTSPrecompiledContract subject;
     private MockedStatic<WipeFungiblePrecompile> wipeFungiblePrecompile;
 
@@ -207,7 +207,9 @@ class WipeFungiblePrecompileTest {
 
     @AfterEach
     void closeMocks() {
-        wipeFungiblePrecompile.close();
+        if (!wipeFungiblePrecompile.isClosed()) {
+            wipeFungiblePrecompile.close();
+        }
     }
 
     @Test
@@ -400,9 +402,7 @@ class WipeFungiblePrecompileTest {
 
     @Test
     void decodeFungibleWipeInput() {
-        wipeFungiblePrecompile
-                .when(() -> decodeWipe(FUNGIBLE_WIPE_INPUT, identity()))
-                .thenCallRealMethod();
+        wipeFungiblePrecompile.close();
         final var decodedInput = decodeWipe(FUNGIBLE_WIPE_INPUT, identity());
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
@@ -414,9 +414,7 @@ class WipeFungiblePrecompileTest {
 
     @Test
     void decodeFungibleWipeInputV2() {
-        wipeFungiblePrecompile
-                .when(() -> decodeWipeV2(FUNGIBLE_WIPE_INPUT_V2, identity()))
-                .thenCallRealMethod();
+        wipeFungiblePrecompile.close();
         final var decodedInput = decodeWipeV2(FUNGIBLE_WIPE_INPUT_V2, identity());
 
         assertTrue(decodedInput.token().getTokenNum() > 0);

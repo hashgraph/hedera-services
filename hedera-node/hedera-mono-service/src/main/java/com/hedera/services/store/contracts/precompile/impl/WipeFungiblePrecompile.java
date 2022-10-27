@@ -45,7 +45,7 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
             new Function("wipeTokenAccount(address,address,uint32)", INT);
     private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION_V2 =
-            new Function("wipeTokenAccount(address,address,int32)", INT);
+            new Function("wipeTokenAccount(address,address,int64)", INT);
     private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR =
             Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
     private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR_V2 =
@@ -53,7 +53,7 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER =
             TypeFactory.create("(bytes32,bytes32,uint32)");
     private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER_V2 =
-            TypeFactory.create("(bytes32,bytes32,int32)");
+            TypeFactory.create("(bytes32,bytes32,int64)");
 
     public WipeFungiblePrecompile(
             WorldLedgers ledgers,
@@ -98,26 +98,31 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
 
     public static WipeWrapper decodeWipe(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-        final var fungibleAmount = (long) decodedArguments.get(2);
-
-        return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);
+        return getWipeWrapper(
+                input, aliasResolver, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
     }
 
     public static WipeWrapper decodeWipeV2(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        return getWipeWrapper(
+                input,
+                aliasResolver,
+                WIPE_TOKEN_ACCOUNT_SELECTOR_V2,
+                WIPE_TOKEN_ACCOUNT_DECODER_V2);
+    }
+
+    private static WipeWrapper getWipeWrapper(
+            Bytes input,
+            UnaryOperator<byte[]> aliasResolver,
+            Bytes wipeTokenAccountSelector,
+            ABIType<Tuple> wipeTokenAccountDecoder) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, WIPE_TOKEN_ACCOUNT_SELECTOR_V2, WIPE_TOKEN_ACCOUNT_DECODER_V2);
+                decodeFunctionCall(input, wipeTokenAccountSelector, wipeTokenAccountDecoder);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-        final var fungibleAmount = (int) decodedArguments.get(2);
+        final var fungibleAmount = (long) decodedArguments.get(2);
 
         return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);
     }
