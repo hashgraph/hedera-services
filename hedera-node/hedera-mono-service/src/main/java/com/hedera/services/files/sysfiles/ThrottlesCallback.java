@@ -15,7 +15,7 @@
  */
 package com.hedera.services.files.sysfiles;
 
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;
@@ -27,18 +27,18 @@ import javax.inject.Singleton;
 
 @Singleton
 public class ThrottlesCallback {
-    private final FeeMultiplierSource multiplierSource;
+    private final MultiplierSources multiplierSources;
     private final FunctionalityThrottling hapiThrottling;
     private final FunctionalityThrottling handleThrottling;
     private final FunctionalityThrottling scheduleThrottling;
 
     @Inject
     public ThrottlesCallback(
-            FeeMultiplierSource multiplierSource,
+            MultiplierSources multiplierSources,
             @HapiThrottle FunctionalityThrottling hapiThrottling,
             @HandleThrottle FunctionalityThrottling handleThrottling,
             @ScheduleThrottle FunctionalityThrottling scheduleThrottling) {
-        this.multiplierSource = multiplierSource;
+        this.multiplierSources = multiplierSources;
         this.hapiThrottling = hapiThrottling;
         this.handleThrottling = handleThrottling;
         this.scheduleThrottling = scheduleThrottling;
@@ -52,7 +52,7 @@ public class ThrottlesCallback {
             hapiThrottling.rebuildFor(defs);
             handleThrottling.rebuildFor(defs);
             scheduleThrottling.rebuildFor(defs);
-            multiplierSource.resetExpectations();
+            multiplierSources.resetExpectations();
         };
     }
 }
