@@ -15,7 +15,7 @@
  */
 package com.hedera.services.evm.store.contracts;
 
-import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.bytecodeForToken;
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.proxyBytecodeFor;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -49,7 +49,7 @@ public class AbstractCodeCache {
         }
 
         if (entityAccess.isTokenAccount(address)) {
-            final var interpolatedBytecode = bytecodeForToken(address);
+            final var interpolatedBytecode = proxyBytecodeFor(address);
             code = Code.createLegacyCode(interpolatedBytecode, Hash.hash(interpolatedBytecode));
             cache.put(cacheKey, code);
             return code;

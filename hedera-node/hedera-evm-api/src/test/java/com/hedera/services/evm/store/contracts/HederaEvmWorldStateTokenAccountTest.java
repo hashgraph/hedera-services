@@ -15,7 +15,7 @@
  */
 package com.hedera.services.evm.store.contracts;
 
-import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.bytecodeForToken;
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.proxyBytecodeFor;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.apache.tuweni.units.bigints.UInt256;
@@ -36,7 +36,7 @@ class HederaEvmWorldStateTokenAccountTest {
 
     @Test
     void getsExpectedCode() {
-        final var expected = bytecodeForToken(pretendTokenAddr);
+        final var expected = proxyBytecodeFor(pretendTokenAddr);
         final var firstActual = subject.getCode();
         final var secondActual = subject.getCode();
         assertEquals(expected, firstActual);
@@ -71,7 +71,7 @@ class HederaEvmWorldStateTokenAccountTest {
 
     @Test
     void expectedCodeHash() {
-        final var bytecode = bytecodeForToken(pretendTokenAddr);
+        final var bytecode = proxyBytecodeFor(pretendTokenAddr);
         final var expected = Hash.hash(bytecode);
         final var actual = subject.getCodeHash();
         assertEquals(expected, actual);

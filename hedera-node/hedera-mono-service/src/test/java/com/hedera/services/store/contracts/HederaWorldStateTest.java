@@ -396,14 +396,14 @@ class HederaWorldStateTest {
         assertEquals(expected.getBalance(), result.getBalance());
         assertEquals(-1, result.getNonce());
         assertEquals(
-                HederaEvmWorldStateTokenAccount.bytecodeForToken(htsProxyAddress),
+                HederaEvmWorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress),
                 result.getCode());
         // and:
         assertEquals(expected.getAddress(), evmResult.getAddress());
         assertEquals(expected.getBalance(), evmResult.getBalance());
         assertEquals(-1, evmResult.getNonce());
         assertEquals(
-                HederaEvmWorldStateTokenAccount.bytecodeForToken(htsProxyAddress),
+                HederaEvmWorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress),
                 evmResult.getCode());
     }
 

@@ -97,7 +97,7 @@ class AbstractCodeCacheTest {
         given(entityAccess.isTokenAccount(any())).willReturn(true);
 
         assertEquals(
-                HederaEvmWorldStateTokenAccount.bytecodeForToken(Address.fromHexString("0xabc")),
+                HederaEvmWorldStateTokenAccount.proxyBytecodeFor(Address.fromHexString("0xabc")),
                 codeCache.getIfPresent(Address.fromHexString("0xabc")).getBytes());
     }
 

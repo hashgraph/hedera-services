@@ -99,14 +99,14 @@ public class HederaEvmWorldStateTokenAccount implements Account {
 
     private Code interpolatedCode() {
         if (interpolatedCode == null) {
-            final var interpolatedBytecode = bytecodeForToken(address);
+            final var interpolatedBytecode = proxyBytecodeFor(address);
             interpolatedCode =
                     Code.createLegacyCode(interpolatedBytecode, Hash.hash(interpolatedBytecode));
         }
         return interpolatedCode;
     }
 
-    public static Bytes bytecodeForToken(final Address address) {
+    public static Bytes proxyBytecodeFor(final Address address) {
         return Bytes.fromHexString(
                 TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(
                         TOKEN_BYTECODE_PATTERN, address.toUnprefixedHexString()));
