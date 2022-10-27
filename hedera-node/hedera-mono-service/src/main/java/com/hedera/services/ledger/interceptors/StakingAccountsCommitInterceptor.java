@@ -426,10 +426,13 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             stakePeriodStartUpdates = new long[maxImpliedChanges];
         }
         // The stakeChangeScenarios and stakePeriodStartUpdates arrays are filled and used
-        // left-to-right only
+        // left-to-right only. We need to reset all the arrays to avoid causing any errors
+        // during reconnect.
+
         Arrays.fill(rewardsEarned, NA);
         Arrays.fill(stakeAtStartOfLastRewardedPeriodUpdates, NA);
         Arrays.fill(stakedToMeUpdates, NA);
+        Arrays.fill(stakePeriodStartUpdates, NA);
     }
 
     private void setCurrentAndNewIds(
