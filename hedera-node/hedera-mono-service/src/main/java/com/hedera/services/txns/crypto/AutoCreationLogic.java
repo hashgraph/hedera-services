@@ -17,6 +17,7 @@ package com.hedera.services.txns.crypto;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -138,6 +139,9 @@ public class AutoCreationLogic {
             for (final var pendingCreation : pendingCreations) {
                 final var alias = pendingCreation.recordBuilder().getAlias();
                 aliasManager.unlink(alias);
+                if (alias.size() != EVM_ADDRESS_SIZE) {
+                    aliasManager.forgetEvmAddress(alias);
+                }
             }
             return true;
         } else {
