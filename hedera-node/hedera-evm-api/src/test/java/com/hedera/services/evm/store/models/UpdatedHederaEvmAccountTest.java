@@ -15,7 +15,6 @@
  */
 package com.hedera.services.evm.store.models;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -32,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class UpdatedHederaEvmAccountTest {
     private final Address newAddress =
-        Address.fromHexString("0x000000000000000000000000000000000000066e");
+            Address.fromHexString("0x000000000000000000000000000000000000066e");
 
     private static final long newBalance = 200_000L;
     private static final int newNonce = 2;
