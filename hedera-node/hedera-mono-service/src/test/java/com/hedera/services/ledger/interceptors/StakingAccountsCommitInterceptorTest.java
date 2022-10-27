@@ -28,9 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.inOrder;
@@ -377,6 +375,35 @@ class StakingAccountsCommitInterceptorTest {
         // both have stakeMeta changes
         assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
         assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[1]);
+    }
+
+    @Test
+    void rewardAccountStakePeriodStartAlwaysReset() {
+        given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        final var changes = buildChanges();
+        final var rewardPayment = 1L;
+        final var expectedFundingI = 2;
+        counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+        given(networkCtx.areRewardsActivated()).willReturn(true);
+        given(rewardCalculator.computePendingReward(counterparty)).willReturn(rewardPayment);
+        given(rewardCalculator.applyReward(rewardPayment, counterparty, changes.changes(1)))
+                .willReturn(true);
+        given(rewardCalculator.rewardsPaidInThisTxn()).willReturn(rewardPayment);
+        given(stakePeriodManager.startUpdateFor(anyLong(), anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(NA);
+        given(stakeChangeManager.findOrAdd(anyLong(), any()))
+                .willAnswer(
+                        invocation -> {
+                            changes.include(stakingFundId, new MerkleAccount(), new HashMap<>());
+                            return expectedFundingI;
+                        });
+        subject.getStakePeriodStartUpdates()[expectedFundingI] = 666L;
+
+        subject.preview(changes);
+
+        System.out.println(Arrays.toString(subject.getStakePeriodStartUpdates()));
+        assertEquals(NA, subject.getStakePeriodStartUpdates()[expectedFundingI]);
     }
 
     @Test

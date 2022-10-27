@@ -208,6 +208,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                     stakeChangeManager.findOrAdd(
                             accountNumbers.stakingRewardAccount(), pendingChanges);
             updateBalance(-rewardsPaid, fundingI, pendingChanges);
+            stakePeriodStartUpdates[fundingI] = NA;
         }
     }
 
