@@ -123,7 +123,7 @@ public abstract class HederaEvmTxProcessor {
      * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
      *     address
      */
-    protected HederaEvmTransactionProcessingResult execute(
+    public HederaEvmTransactionProcessingResult execute(
             final HederaEvmAccount sender,
             final Address receiver,
             final long gasPrice,
