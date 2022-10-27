@@ -266,7 +266,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .hasDefaultKey()
                                                                     .evmAddressAlias(
                                                                             evmAddressBytes)
                                                                     .autoRenew(
@@ -395,7 +394,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .hasDefaultKey()
                                                                     .evmAddressAlias(
                                                                             evmAddressBytes)
                                                                     .autoRenew(
