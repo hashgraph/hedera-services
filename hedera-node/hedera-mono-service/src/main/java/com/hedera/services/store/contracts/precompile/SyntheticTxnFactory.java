@@ -779,7 +779,7 @@ public class SyntheticTxnFactory {
             return new NftExchange(serialNo, tokenType, sender, receiver, true);
         }
 
-        private NftExchange(
+        public NftExchange(
                 final long serialNo,
                 final TokenID tokenType,
                 final AccountID sender,

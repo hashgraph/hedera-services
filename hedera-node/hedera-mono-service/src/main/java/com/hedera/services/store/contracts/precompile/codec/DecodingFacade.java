@@ -182,8 +182,13 @@ public class DecodingFacade {
             final var receiver =
                     convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver);
             final var serialNo = (long) exchange.get(2);
+            // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
+            // otherwise default to false in order to preserve the existing behaviour.
+            // The isApproval parameter only exists in the new form of cryptoTransfer
+            final boolean isApproval = (exchange.size() > 3) && (boolean) exchange.get(3);
             nftExchanges.add(
-                    new SyntheticTxnFactory.NftExchange(serialNo, tokenType, sender, receiver));
+                    new SyntheticTxnFactory.NftExchange(
+                            serialNo, tokenType, sender, receiver, isApproval));
         }
         return nftExchanges;
     }
@@ -197,7 +202,11 @@ public class DecodingFacade {
             final AccountID accountID =
                     convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
-            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount);
+            // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
+            // otherwise default to false in order to preserve the existing behaviour.
+            // The isApproval parameter only exists in the new form of cryptoTransfer
+            final boolean isApproval = (transfer.size() > 2) && (boolean) transfer.get(2);
+            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, isApproval);
         }
         return fungibleTransfers;
     }
@@ -215,29 +224,20 @@ public class DecodingFacade {
         return hbarTransfers;
     }
 
-    public static void addApprovedAdjustment(
-            @NotNull final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
-            final TokenID tokenId,
-            final AccountID accountId,
-            final long amount) {
-        fungibleTransfers.add(
-                new SyntheticTxnFactory.FungibleTokenTransfer(
-                        -amount, true, tokenId, accountId, null));
-    }
-
     public static void addSignedAdjustment(
             final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
             final TokenID tokenType,
             final AccountID accountID,
-            final long amount) {
+            final long amount,
+            final boolean isApproval) {
         if (amount > 0) {
             fungibleTransfers.add(
                     new SyntheticTxnFactory.FungibleTokenTransfer(
-                            amount, false, tokenType, null, accountID));
+                            amount, isApproval, tokenType, null, accountID));
         } else {
             fungibleTransfers.add(
                     new SyntheticTxnFactory.FungibleTokenTransfer(
-                            -amount, false, tokenType, accountID, null));
+                            -amount, isApproval, tokenType, accountID, null));
         }
     }
 
