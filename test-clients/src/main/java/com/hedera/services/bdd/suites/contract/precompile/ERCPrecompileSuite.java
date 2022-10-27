@@ -94,6 +94,7 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -824,11 +825,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             2)
                                             .via(TRANSFER_TXN)
                                             .gas(GAS_TO_OFFER)
-                                            .hasKnownStatus(SUCCESS)
+                                            .hasKnownStatus(SUCCESS),
+                                        childRecordsCheck(TRANSFER_THEN_REVERT_TXN, CONTRACT_REVERT_EXECUTED, recordWith().status(REVERTED_SUCCESS)),
+                                        childRecordsCheck(TRANSFER_TXN, SUCCESS, recordWith().status(SUCCESS).alias(
+                                            ByteStringUtils.wrapUnsafely(addressBytes)), recordWith().status(SUCCESS))
                                             );
                                 }))
-                .then(childRecordsCheck(TRANSFER_THEN_REVERT_TXN, CONTRACT_REVERT_EXECUTED, recordWith().status(REVERTED_SUCCESS)),
-                    childRecordsCheck(TRANSFER_TXN, SUCCESS, recordWith().status(SUCCESS), recordWith().status(SUCCESS)));
+                .then(
+                    );
     }
 
     private HapiApiSpec transferErc20TokenReceiverContract() {

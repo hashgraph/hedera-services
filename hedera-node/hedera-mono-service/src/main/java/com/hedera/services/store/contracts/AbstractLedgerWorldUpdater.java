@@ -237,13 +237,13 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         getUpdatedAccounts().clear();
         trackingLedgers().revert();
 
+        if (autoCreationLogic != null) {
+            autoCreationLogic.reclaimPendingAliases();
+        }
+
         if (recordsHistorian != null) {
             recordsHistorian.revertChildRecordsFromSource(thisRecordSourceId);
             committedRecordSourceIds.forEach(recordsHistorian::revertChildRecordsFromSource);
-        }
-
-        if (autoCreationLogic != null) {
-            autoCreationLogic.reclaimPendingAliases();
         }
     }
 
