@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.atomicCryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
@@ -52,6 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.transferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.wrapIntoTupleArray;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
@@ -167,20 +167,18 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -amountToBeSent,
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    amountToBeSent,
-                                                                                                    false)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    sender,
+                                                                                    -amountToBeSent,
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    amountToBeSent,
+                                                                                    false))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER),
@@ -188,20 +186,18 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender2,
-                                                                                                    -amountToBeSent,
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    amountToBeSent,
-                                                                                                    false)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    sender2,
+                                                                                    -amountToBeSent,
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    amountToBeSent,
+                                                                                    false))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferRevertNoKeyTxn)
                                                     .gas(GAS_TO_OFFER)
@@ -210,22 +206,20 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -1000
-                                                                                                            * ONE_HUNDRED_HBARS,
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    1000
-                                                                                                            * ONE_HUNDRED_HBARS,
-                                                                                                    false)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    sender,
+                                                                                    -1000
+                                                                                            * ONE_HUNDRED_HBARS,
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    1000
+                                                                                            * ONE_HUNDRED_HBARS,
+                                                                                    false))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferRevertBalanceTooLowTxn)
                                                     .gas(GAS_TO_OFFER)
@@ -234,28 +228,26 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -amountToBeSent,
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    amountToBeSent
-                                                                                                            - (10
-                                                                                                                    * ONE_HBAR),
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver2,
-                                                                                                    amountToBeSent
-                                                                                                            - (40
-                                                                                                                    * ONE_HBAR),
-                                                                                                    false)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    sender,
+                                                                                    -amountToBeSent,
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    amountToBeSent
+                                                                                            - (10
+                                                                                                    * ONE_HBAR),
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver2,
+                                                                                    amountToBeSent
+                                                                                            - (40
+                                                                                                    * ONE_HBAR),
+                                                                                    false))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferMultiTxn)
                                                     .gas(GAS_TO_OFFER),
@@ -263,28 +255,26 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -amountToBeSent,
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    amountToBeSent
-                                                                                                            - (5
-                                                                                                                    * ONE_HBAR),
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver2,
-                                                                                                    amountToBeSent
-                                                                                                            - (40
-                                                                                                                    * ONE_HBAR),
-                                                                                                    false)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    sender,
+                                                                                    -amountToBeSent,
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    amountToBeSent
+                                                                                            - (5
+                                                                                                    * ONE_HBAR),
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver2,
+                                                                                    amountToBeSent
+                                                                                            - (40
+                                                                                                    * ONE_HBAR),
+                                                                                    false))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferRevertTxn)
                                                     .gas(GAS_TO_OFFER)
@@ -396,22 +386,23 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            EMPTY_TUPLE_ARRAY),
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -amountToBeSent,
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    amountToBeSent,
-                                                                                                    false)))
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            EMPTY_TUPLE_ARRAY)
+                                                                    .build(),
+                                                            wrapIntoTupleArray(
+                                                                    tokenTransferList()
+                                                                            .forToken(token)
+                                                                            .withAccountAmounts(
+                                                                                    accountAmount(
+                                                                                            sender,
+                                                                                            -amountToBeSent,
+                                                                                            false),
+                                                                                    accountAmount(
+                                                                                            receiver,
+                                                                                            amountToBeSent,
+                                                                                            false))
+                                                                            .build()))
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER));
@@ -482,19 +473,20 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            EMPTY_TUPLE_ARRAY),
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withNftTransfers(
-                                                                                            nftTransfer(
-                                                                                                    sender,
-                                                                                                    receiver,
-                                                                                                    1L,
-                                                                                                    false)))
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            EMPTY_TUPLE_ARRAY)
+                                                                    .build(),
+                                                            wrapIntoTupleArray(
+                                                                    tokenTransferList()
+                                                                            .forToken(token)
+                                                                            .withNftTransfers(
+                                                                                    nftTransfer(
+                                                                                            sender,
+                                                                                            receiver,
+                                                                                            1L,
+                                                                                            false))
+                                                                            .build()))
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER));
@@ -591,46 +583,42 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    fungibleTokenSender,
+                                                                                    -amountToBeSent,
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    fungibleTokenReceiver,
+                                                                                    amountToBeSent,
+                                                                                    false))
+                                                                    .build(),
+                                                            tokenTransferLists()
+                                                                    .withTokenTransferList(
+                                                                            tokenTransferList()
+                                                                                    .forToken(
+                                                                                            fungibleToken)
                                                                                     .withAccountAmounts(
                                                                                             accountAmount(
                                                                                                     fungibleTokenSender,
-                                                                                                    -amountToBeSent,
+                                                                                                    -45L,
                                                                                                     false),
                                                                                             accountAmount(
                                                                                                     fungibleTokenReceiver,
-                                                                                                    amountToBeSent,
-                                                                                                    false)),
-                                                                            tokenTransferLists()
-                                                                                    .withTokenTransferList(
-                                                                                            tokenTransferList()
-                                                                                                    .isSingleList(
-                                                                                                            false)
-                                                                                                    .forToken(
-                                                                                                            fungibleToken)
-                                                                                                    .withAccountAmounts(
-                                                                                                            accountAmount(
-                                                                                                                    fungibleTokenSender,
-                                                                                                                    -45L,
-                                                                                                                    false),
-                                                                                                            accountAmount(
-                                                                                                                    fungibleTokenReceiver,
-                                                                                                                    45L,
-                                                                                                                    false))
-                                                                                                    .build(),
-                                                                                            tokenTransferList()
-                                                                                                    .isSingleList(
-                                                                                                            false)
-                                                                                                    .forToken(
-                                                                                                            nonFungibleToken)
-                                                                                                    .withNftTransfers(
-                                                                                                            nftTransfer(
-                                                                                                                    nonFungibleTokenSender,
-                                                                                                                    nonFungibleTokenReceiver,
-                                                                                                                    1L,
-                                                                                                                    false))
-                                                                                                    .build()))
+                                                                                                    45L,
+                                                                                                    false))
+                                                                                    .build(),
+                                                                            tokenTransferList()
+                                                                                    .forToken(
+                                                                                            nonFungibleToken)
+                                                                                    .withNftTransfers(
+                                                                                            nftTransfer(
+                                                                                                    nonFungibleTokenSender,
+                                                                                                    nonFungibleTokenReceiver,
+                                                                                                    1L,
+                                                                                                    false))
+                                                                                    .build())
                                                                     .build())
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
@@ -716,86 +704,73 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -(allowance
-                                                                                                            + 1),
-                                                                                                    true),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    allowance
-                                                                                                            + 1,
-                                                                                                    true)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    owner,
+                                                                                    -(allowance
+                                                                                            + 1),
+                                                                                    true),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    allowance + 1,
+                                                                                    true))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .via(revertingTransferFromTxn)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             // revert due to no approval
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -allowance,
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    allowance,
-                                                                                                    false)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    owner,
+                                                                                    -allowance,
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    allowance,
+                                                                                    false))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .via(revertingTransferFromTxn3)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             // transfer allowance/2 amount
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -allowance
-                                                                                                            / 2,
-                                                                                                    true),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    allowance
-                                                                                                            / 2,
-                                                                                                    true)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    owner,
+                                                                                    -allowance / 2,
+                                                                                    true),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    allowance / 2,
+                                                                                    true))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS),
                                             // transfer the rest of the allowance
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -allowance
-                                                                                                            / 2,
-                                                                                                    true),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    allowance
-                                                                                                            / 2,
-                                                                                                    true)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    owner,
+                                                                                    -allowance / 2,
+                                                                                    true),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    allowance / 2,
+                                                                                    true))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .via(successfulTransferFromTxn2)
                                                     .hasKnownStatus(SUCCESS),
                                             getAccountDetails(OWNER)
@@ -805,20 +780,16 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -1L,
-                                                                                                    true),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    1L,
-                                                                                                    true)),
-                                                                            tokenTransferList()
-                                                                                    .emptyTransfers())
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    owner, -1L,
+                                                                                    true),
+                                                                            accountAmount(
+                                                                                    receiver, 1L,
+                                                                                    true))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
                                                     .via(revertingTransferFromTxn2)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
                                 }))
@@ -936,94 +907,98 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            EMPTY_TUPLE_ARRAY),
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -(allowance
-                                                                                                            + 1),
-                                                                                                    true),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    allowance
-                                                                                                            + 1,
-                                                                                                    true)))
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            EMPTY_TUPLE_ARRAY)
+                                                                    .build(),
+                                                            wrapIntoTupleArray(
+                                                                    tokenTransferList()
+                                                                            .forToken(token)
+                                                                            .withAccountAmounts(
+                                                                                    accountAmount(
+                                                                                            owner,
+                                                                                            -(allowance
+                                                                                                    + 1),
+                                                                                            true),
+                                                                                    accountAmount(
+                                                                                            receiver,
+                                                                                            allowance
+                                                                                                    + 1,
+                                                                                            true))
+                                                                            .build()))
                                                     .via(revertingTransferFromTxn)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             // revert due to no approval
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            EMPTY_TUPLE_ARRAY),
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -allowance,
-                                                                                                    false),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    allowance,
-                                                                                                    false)))
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            EMPTY_TUPLE_ARRAY)
+                                                                    .build(),
+                                                            wrapIntoTupleArray(
+                                                                    tokenTransferList()
+                                                                            .forToken(token)
+                                                                            .withAccountAmounts(
+                                                                                    accountAmount(
+                                                                                            owner,
+                                                                                            -allowance,
+                                                                                            false),
+                                                                                    accountAmount(
+                                                                                            receiver,
+                                                                                            allowance,
+                                                                                            false))
+                                                                            .build()))
                                                     .via(revertingTransferFromTxn3)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             // transfer allowance/2 amount
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            EMPTY_TUPLE_ARRAY),
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -allowance
-                                                                                                            / 2,
-                                                                                                    true),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    allowance
-                                                                                                            / 2,
-                                                                                                    true)))
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            EMPTY_TUPLE_ARRAY)
+                                                                    .build(),
+                                                            wrapIntoTupleArray(
+                                                                    tokenTransferList()
+                                                                            .forToken(token)
+                                                                            .withAccountAmounts(
+                                                                                    accountAmount(
+                                                                                            owner,
+                                                                                            -allowance
+                                                                                                    / 2,
+                                                                                            true),
+                                                                                    accountAmount(
+                                                                                            receiver,
+                                                                                            allowance
+                                                                                                    / 2,
+                                                                                            true))
+                                                                            .build()))
                                                     .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS),
                                             // transfer the rest of the allowance
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            EMPTY_TUPLE_ARRAY),
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -(allowance
-                                                                                                            / 2),
-                                                                                                    true),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    allowance
-                                                                                                            / 2,
-                                                                                                    true)))
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            EMPTY_TUPLE_ARRAY)
+                                                                    .build(),
+                                                            wrapIntoTupleArray(
+                                                                    tokenTransferList()
+                                                                            .forToken(token)
+                                                                            .withAccountAmounts(
+                                                                                    accountAmount(
+                                                                                            owner,
+                                                                                            -(allowance
+                                                                                                    / 2),
+                                                                                            true),
+                                                                                    accountAmount(
+                                                                                            receiver,
+                                                                                            allowance
+                                                                                                    / 2,
+                                                                                            true))
+                                                                            .build()))
                                                     .via(successfulTransferFromTxn2)
                                                     .hasKnownStatus(SUCCESS),
                                             getAccountDetails(OWNER)
@@ -1033,22 +1008,23 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            EMPTY_TUPLE_ARRAY),
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    owner,
-                                                                                                    -1L,
-                                                                                                    true),
-                                                                                            accountAmount(
-                                                                                                    receiver,
-                                                                                                    1L,
-                                                                                                    true)))
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            EMPTY_TUPLE_ARRAY)
+                                                                    .build(),
+                                                            wrapIntoTupleArray(
+                                                                    tokenTransferList()
+                                                                            .forToken(token)
+                                                                            .withAccountAmounts(
+                                                                                    accountAmount(
+                                                                                            owner,
+                                                                                            -1L,
+                                                                                            true),
+                                                                                    accountAmount(
+                                                                                            receiver,
+                                                                                            1L,
+                                                                                            true))
+                                                                            .build()))
                                                     .via(revertingTransferFromTxn2)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
                                 }))
@@ -1170,38 +1146,40 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            EMPTY_TUPLE_ARRAY),
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withNftTransfers(
-                                                                                            nftTransfer(
-                                                                                                    owner,
-                                                                                                    receiver,
-                                                                                                    1L,
-                                                                                                    true)))
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            EMPTY_TUPLE_ARRAY)
+                                                                    .build(),
+                                                            wrapIntoTupleArray(
+                                                                    tokenTransferList()
+                                                                            .forToken(token)
+                                                                            .withNftTransfers(
+                                                                                    nftTransfer(
+                                                                                            owner,
+                                                                                            receiver,
+                                                                                            1L,
+                                                                                            true))
+                                                                            .build()))
                                                     .via(revertingTransferFromTxn)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             // transfer allowed NFT
                                             contractCall(
                                                             CONTRACT,
                                                             transferMultipleTokens,
-                                                            atomicCryptoTransfer(
-                                                                            transferList()
-                                                                                    .withAccountAmounts(
-                                                                                            EMPTY_TUPLE_ARRAY),
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withNftTransfers(
-                                                                                            nftTransfer(
-                                                                                                    owner,
-                                                                                                    receiver,
-                                                                                                    2L,
-                                                                                                    true)))
-                                                                    .build())
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            EMPTY_TUPLE_ARRAY)
+                                                                    .build(),
+                                                            wrapIntoTupleArray(
+                                                                    tokenTransferList()
+                                                                            .forToken(token)
+                                                                            .withNftTransfers(
+                                                                                    nftTransfer(
+                                                                                            owner,
+                                                                                            receiver,
+                                                                                            2L,
+                                                                                            true))
+                                                                            .build()))
                                                     .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS));
                                 }))

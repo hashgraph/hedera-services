@@ -1268,46 +1268,8 @@ public class UtilVerbs {
                                 Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
     }
 
-    public static AtomicCryptoTransferBuilder atomicCryptoTransfer(
-            TransferListBuilder transferListBuilder,
-            TokenTransferListBuilder tokenTransferListBuilder) {
-        return new AtomicCryptoTransferBuilder(transferListBuilder)
-                .withTokenTransferListBuilder(tokenTransferListBuilder);
-    }
-
-    public static AtomicCryptoTransferBuilder atomicCryptoTransfer(
-            TransferListBuilder transferListBuilder,
-            TokenTransferListsBuilder tokenTransferListsBuilder) {
-        return new AtomicCryptoTransferBuilder(transferListBuilder)
-                .withTokenTransferListsBuilder(tokenTransferListsBuilder);
-    }
-
-    public static class AtomicCryptoTransferBuilder {
-        private final TransferListBuilder transferListBuilder;
-        private Tuple atomicCryptoTransfer;
-
-        public AtomicCryptoTransferBuilder(TransferListBuilder transferListBuilder) {
-            this.transferListBuilder = transferListBuilder;
-        }
-
-        public AtomicCryptoTransferBuilder withTokenTransferListBuilder(
-                TokenTransferListBuilder tokenTransferListBuilder) {
-            tokenTransferListBuilder.isSingleList(true);
-            atomicCryptoTransfer =
-                    Tuple.of(transferListBuilder.build(), tokenTransferListBuilder.build().get(0));
-            return this;
-        }
-
-        public AtomicCryptoTransferBuilder withTokenTransferListsBuilder(
-                TokenTransferListsBuilder tokenTransferListsBuilder) {
-            atomicCryptoTransfer =
-                    Tuple.of(transferListBuilder.build(), tokenTransferListsBuilder.build().get(0));
-            return this;
-        }
-
-        public Tuple build() {
-            return atomicCryptoTransfer;
-        }
+    public static Tuple[] wrapIntoTupleArray(Tuple tuple) {
+        return new Tuple[] {tuple};
     }
 
     public static TransferListBuilder transferList() {
@@ -1354,11 +1316,6 @@ public class UtilVerbs {
             return this;
         }
 
-        public TokenTransferListBuilder emptyTransfers() {
-            this.tokenTransferList = Tuple.singleton(new Tuple[] {});
-            return this;
-        }
-
         public Tuple build() {
             return tokenTransferList;
         }
@@ -1383,9 +1340,7 @@ public class UtilVerbs {
 
     public static Tuple accountAmount(
             final AccountID account, final Long amount, final boolean isApproval) {
-        final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(account));
-
-        return Tuple.of(account32, amount, isApproval);
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount, isApproval);
     }
 
     public static Tuple nftTransfer(
@@ -1401,10 +1356,11 @@ public class UtilVerbs {
             final AccountID receiver,
             final Long serialNumber,
             final boolean isApproval) {
-        final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(sender));
-        final byte[] receiver32 = getAddressWithFilledEmptyBytes(asAddress(receiver));
-
-        return Tuple.of(account32, receiver32, serialNumber, isApproval);
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
+                serialNumber,
+                isApproval);
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
