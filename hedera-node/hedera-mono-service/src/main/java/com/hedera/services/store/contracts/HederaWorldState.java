@@ -76,7 +76,7 @@ public class HederaWorldState implements HederaMutableWorldState {
             final CodeCache codeCache,
             final SigImpactHistorian sigImpactHistorian,
             final GlobalDynamicProperties dynamicProperties,
-            AutoCreationLogic autoCreationLogic) {
+            final AutoCreationLogic autoCreationLogic) {
         this.ids = ids;
         this.usageLimits = usageLimits;
         this.entityAccess = entityAccess;

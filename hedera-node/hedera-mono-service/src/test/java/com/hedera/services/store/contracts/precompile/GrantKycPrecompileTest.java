@@ -40,6 +40,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -171,11 +172,12 @@ class GrantKycPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                        autoCreationLogic);
+                        autoCreationLogic, sigImpactHistorian);
         grantKycPrecompile = Mockito.mockStatic(GrantKycPrecompile.class);
     }
 
     @Mock private AutoCreationLogic autoCreationLogic;
+    @Mock private SigImpactHistorian sigImpactHistorian;
 
     @AfterEach
     void closeMocks() {

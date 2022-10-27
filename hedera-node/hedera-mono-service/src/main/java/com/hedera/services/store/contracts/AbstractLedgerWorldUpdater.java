@@ -107,7 +107,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     protected AbstractLedgerWorldUpdater(
             final W world,
             final WorldLedgers trackingLedgers,
-            AutoCreationLogic autoCreationLogic) {
+            final AutoCreationLogic autoCreationLogic) {
         this.world = world;
         this.trackingLedgers = trackingLedgers;
         this.autoCreationLogic = autoCreationLogic;

@@ -34,6 +34,7 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
@@ -149,6 +150,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private final InfrastructureFactory infrastructureFactory;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
     private final AutoCreationLogic autoCreationLogic;
+    private final SigImpactHistorian sigImpactHistorian;
 
     private Precompile precompile;
     private TransactionBody.Builder transactionBody;
@@ -175,7 +177,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
             final InfrastructureFactory infrastructureFactory,
-            AutoCreationLogic autoCreationLogic) {
+            final AutoCreationLogic autoCreationLogic,
+            final SigImpactHistorian sigImpactHistorian) {
         super("HTS", gasCalculator);
         this.encoder = encoder;
         this.sigsVerifier = sigsVerifier;
@@ -189,34 +192,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.precompilePricingUtils = precompilePricingUtils;
         this.infrastructureFactory = infrastructureFactory;
         this.autoCreationLogic = autoCreationLogic;
-    }
-
-    public HTSPrecompiledContract(
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final RecordsHistorian recordsHistorian,
-            final TxnAwareEvmSigsVerifier sigsVerifier,
-            final EncodingFacade encoder,
-            final SyntheticTxnFactory syntheticTxnFactory,
-            final ExpiringCreations creator,
-            final ImpliedTransfersMarshal impliedTransfersMarshal,
-            final Provider<FeeCalculator> feeCalculator,
-            final StateView currentView,
-            final PrecompilePricingUtils precompilePricingUtils,
-            final InfrastructureFactory infrastructureFactory) {
-        super("HTS", gasCalculator);
-        this.encoder = encoder;
-        this.sigsVerifier = sigsVerifier;
-        this.recordsHistorian = recordsHistorian;
-        this.syntheticTxnFactory = syntheticTxnFactory;
-        this.creator = creator;
-        this.dynamicProperties = dynamicProperties;
-        this.impliedTransfersMarshal = impliedTransfersMarshal;
-        this.feeCalculator = feeCalculator;
-        this.currentView = currentView;
-        this.precompilePricingUtils = precompilePricingUtils;
-        this.infrastructureFactory = infrastructureFactory;
-        this.autoCreationLogic = null;
+        this.sigImpactHistorian = sigImpactHistorian;
     }
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {

@@ -51,6 +51,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -190,12 +191,13 @@ class WipeNonFungiblePrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                        autoCreationLogic);
+                        autoCreationLogic, sigImpactHistorian);
 
         wipeNonFungiblePrecompile = Mockito.mockStatic(WipeNonFungiblePrecompile.class);
     }
 
     @Mock private AutoCreationLogic autoCreationLogic;
+    @Mock private SigImpactHistorian sigImpactHistorian;
 
     @AfterEach
     void closeMocks() {

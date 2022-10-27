@@ -105,7 +105,6 @@ class InfrastructureFactoryTest {
     @Mock private TransactionContext txnCtx;
     @Mock private AliasManager aliasManager;
     @Mock private FeeDistribution feeDistribution;
-    @Mock private AutoCreationLogic autoCreationLogic;
 
     private InfrastructureFactory subject;
 
@@ -123,8 +122,7 @@ class InfrastructureFactoryTest {
                         dynamicProperties,
                         txnCtx,
                         aliasManager,
-                        feeDistribution,
-                        autoCreationLogic);
+                        feeDistribution);
     }
 
     @Test

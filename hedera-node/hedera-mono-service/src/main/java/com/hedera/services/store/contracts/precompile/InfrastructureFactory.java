@@ -88,7 +88,6 @@ public class InfrastructureFactory {
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
     private final FeeDistribution feeDistribution;
-    private final AutoCreationLogic autoCreationLogic;
 
     @Inject
     public InfrastructureFactory(
@@ -102,8 +101,7 @@ public class InfrastructureFactory {
             final GlobalDynamicProperties dynamicProperties,
             final TransactionContext txnCtx,
             final AliasManager aliasManager,
-            final FeeDistribution feeDistribution,
-            final AutoCreationLogic autoCreationLogic) {
+            final FeeDistribution feeDistribution) {
         this.ids = ids;
         this.encoder = encoder;
         this.validator = validator;
@@ -115,7 +113,6 @@ public class InfrastructureFactory {
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
         this.feeDistribution = feeDistribution;
-        this.autoCreationLogic = autoCreationLogic;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -206,7 +203,7 @@ public class InfrastructureFactory {
                 tokenStore,
                 sideEffects,
                 validator,
-                autoCreationLogic,
+                null,
                 recordsHistorian,
                 txnCtx,
                 aliasManager,
