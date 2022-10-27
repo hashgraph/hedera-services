@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
+import static com.hedera.services.bdd.suites.HapiApiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -181,13 +182,10 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
-    public AccountInfoAsserts hasDefaultKey() {
+    public AccountInfoAsserts hasEmptyKey() {
         registerProvider(
                 (spec, o) ->
-                        assertEquals(
-                                ((AccountInfo) o).getKey(),
-                                com.hederahashgraph.api.proto.java.Key.getDefaultInstance(),
-                                "Has non-default key!"));
+                        assertEquals(((AccountInfo) o).getKey(), EMPTY_KEY, "Has non-empty key!"));
         return this;
     }
 

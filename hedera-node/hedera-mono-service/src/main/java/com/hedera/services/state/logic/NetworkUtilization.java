@@ -62,7 +62,7 @@ public class NetworkUtilization {
                             .build());
 
     static {
-        STAND_IN_CRYPTO_TRANSFER.setNumAutoCreations(0);
+        STAND_IN_CRYPTO_TRANSFER.setNumImplicitCreations(0);
     }
 
     private final TransactionContext txnCtx;
