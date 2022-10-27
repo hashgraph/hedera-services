@@ -44,9 +44,6 @@ public class ContractCallLoadTest extends LoadTest {
     public static void main(String... args) {
         parseArgs(args);
 
-        /* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-        new org.ethereum.crypto.HashUtil();
-
         ContractCallLoadTest suite = new ContractCallLoadTest();
         suite.runSuiteSync();
     }

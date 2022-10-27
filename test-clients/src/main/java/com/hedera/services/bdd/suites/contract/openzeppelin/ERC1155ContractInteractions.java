@@ -23,14 +23,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -82,7 +83,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "setApprovalForAll",
-                                                            unhex(accountOneAddress),
+                                                            asHeadlongAddress(accountOneAddress),
                                                             true)
                                                     .via("acc1ApproveCall")
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
@@ -94,9 +95,9 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "mintToken",
-                                                            0,
-                                                            10,
-                                                            unhex(senderAddress))
+                                                            BigInteger.ZERO,
+                                                            BigInteger.valueOf(10),
+                                                            asHeadlongAddress(senderAddress))
                                                     .via("contractMintCall")
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                                     .hasKnownStatus(ResponseCodeEnum.SUCCESS);
@@ -107,11 +108,11 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "safeTransferFrom",
-                                                            senderAddress,
-                                                            accountOneAddress,
-                                                            0, // token id
-                                                            1, // amount
-                                                            "0x0")
+                                                            asHeadlongAddress(senderAddress),
+                                                            asHeadlongAddress(accountOneAddress),
+                                                            BigInteger.ZERO, // token id
+                                                            BigInteger.ONE, // amount
+                                                            "0x0".getBytes())
                                                     .via("contractTransferFromCall")
                                                     .payingWith(ACCOUNT1)
                                                     .hasKnownStatus(ResponseCodeEnum.SUCCESS);
