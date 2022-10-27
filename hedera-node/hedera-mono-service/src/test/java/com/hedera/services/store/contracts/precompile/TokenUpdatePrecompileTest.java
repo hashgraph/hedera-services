@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V3;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
@@ -26,6 +27,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfo;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV2;
+import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV3;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.function.UnaryOperator.identity;
@@ -223,6 +225,31 @@ class TokenUpdatePrecompileTest {
     }
 
     @Test
+    void computeCallsSuccessfullyForUpdateFungibleTokenV3() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO_V3));
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenFrameContext();
+        given(frame.getBlockValues())
+                .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        givenLedgers();
+        givenMinimalContextForSuccessfulCall();
+        givenMinimalRecordStructureForSuccessfulCall();
+        givenUpdateTokenContextV3();
+        givenPricingUtilsContext();
+        given(updateLogic.validate(any())).willReturn(OK);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance());
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
+
+    @Test
     void failsWithWrongValidityForUpdateFungibleToken() {
         // given
         final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
@@ -350,6 +377,26 @@ class TokenUpdatePrecompileTest {
                 .willReturn(updateLogic);
         tokenUpdatePrecompile
                 .when(() -> decodeUpdateTokenInfoV2(any(), any()))
+                .thenReturn(updateWrapper);
+        given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+    }
+
+    private void givenUpdateTokenContextV3() {
+        given(
+                sigsVerifier.hasActiveAdminKey(
+                        true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                infrastructureFactory.newTokenUpdateLogic(
+                        hederaTokenStore, wrappedLedgers, sideEffects))
+                .willReturn(updateLogic);
+        tokenUpdatePrecompile
+                .when(() -> decodeUpdateTokenInfoV3(any(), any()))
                 .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(

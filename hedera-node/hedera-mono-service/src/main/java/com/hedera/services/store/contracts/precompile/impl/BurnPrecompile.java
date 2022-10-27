@@ -33,6 +33,7 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
@@ -43,6 +44,7 @@ import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -52,11 +54,15 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class BurnPrecompile extends AbstractWritePrecompile {
+    private final int functionId;
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
     private static final String BURN = String.format(FAILURE_MESSAGE, "burn");
     private static final Function BURN_TOKEN_FUNCTION =
             new Function("burnToken(address,uint64,int64[])", INT);
+    private static final Function BURN_TOKEN_FUNCTION_V2 =
+            new Function("burnToken(address,int64,int64[])", INT);
     private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
+    private static final Bytes BURN_TOKEN_SELECTOR_V2 = Bytes.wrap(BURN_TOKEN_FUNCTION_V2.selector());
     private static final ABIType<Tuple> BURN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,int64[])");
     private final EncodingFacade encoder;
@@ -72,17 +78,24 @@ public class BurnPrecompile extends AbstractWritePrecompile {
             final SideEffectsTracker sideEffects,
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
-            final PrecompilePricingUtils pricingUtils) {
+            final PrecompilePricingUtils pricingUtils,
+            final int functionId) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.encoder = encoder;
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
+        this.functionId = functionId;
     }
 
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        burnOp = decodeBurn(input);
+        burnOp =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_BURN_TOKEN -> decodeBurn(input);
+                    case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> decodeBurnV2(input);
+                    default -> null;
+                };
         transactionBody = syntheticTxnFactory.createBurn(burnOp);
         return transactionBody;
     }
@@ -147,6 +160,22 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     public static BurnWrapper decodeBurn(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, BURN_TOKEN_SELECTOR, BURN_TOKEN_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var fungibleAmount = (long) decodedArguments.get(1);
+        final var serialNumbers = (long[]) decodedArguments.get(2);
+
+        if (fungibleAmount > 0) {
+            return BurnWrapper.forFungible(tokenID, fungibleAmount);
+        } else {
+            return BurnWrapper.forNonFungible(
+                    tokenID, Arrays.stream(serialNumbers).boxed().toList());
+        }
+    }
+
+    public static BurnWrapper decodeBurnV2(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, BURN_TOKEN_SELECTOR_V2, BURN_TOKEN_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var fungibleAmount = (long) decodedArguments.get(1);

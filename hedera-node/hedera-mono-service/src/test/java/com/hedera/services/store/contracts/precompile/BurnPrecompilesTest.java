@@ -40,6 +40,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.impl.BurnPrecompile.decodeBurn;
+import static com.hedera.services.store.contracts.precompile.impl.BurnPrecompile.decodeBurnV2;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -173,6 +174,9 @@ class BurnPrecompilesTest {
     private static final Bytes FUNGIBLE_BURN_INPUT =
             Bytes.fromHexString(
                     "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_BURN_INPUT_V2 =
+            Bytes.fromHexString(
+                    "0xd6910d060000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes NON_FUNGIBLE_BURN_INPUT =
             Bytes.fromHexString(
                     "0xacb9cff9000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
@@ -536,6 +540,17 @@ class BurnPrecompilesTest {
     void decodeFungibleBurnInput() {
         burnPrecompile.when(() -> decodeBurn(FUNGIBLE_BURN_INPUT)).thenCallRealMethod();
         final var decodedInput = decodeBurn(FUNGIBLE_BURN_INPUT);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(33, decodedInput.amount());
+        assertEquals(0, decodedInput.serialNos().size());
+        assertEquals(FUNGIBLE_COMMON, decodedInput.type());
+    }
+
+    @Test
+    void decodeFungibleBurnInputV2() {
+        burnPrecompile.when(() -> decodeBurnV2(FUNGIBLE_BURN_INPUT_V2)).thenCallRealMethod();
+        final var decodedInput = decodeBurnV2(FUNGIBLE_BURN_INPUT_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(33, decodedInput.amount());

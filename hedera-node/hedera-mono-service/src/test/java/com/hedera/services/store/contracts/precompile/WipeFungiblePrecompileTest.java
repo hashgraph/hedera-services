@@ -32,6 +32,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile.decodeWipe;
+import static com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile.decodeWipeV2;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static java.util.function.UnaryOperator.identity;
@@ -165,7 +166,9 @@ class WipeFungiblePrecompileTest {
     private static final Bytes FUNGIBLE_WIPE_INPUT =
             Bytes.fromHexString(
                     "0x9790686d00000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
-
+    private static final Bytes FUNGIBLE_WIPE_INPUT_V2 =
+            Bytes.fromHexString(
+                    "0x2d279ec600000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
     private HTSPrecompiledContract subject;
     private MockedStatic<WipeFungiblePrecompile> wipeFungiblePrecompile;
 
@@ -401,6 +404,20 @@ class WipeFungiblePrecompileTest {
                 .when(() -> decodeWipe(FUNGIBLE_WIPE_INPUT, identity()))
                 .thenCallRealMethod();
         final var decodedInput = decodeWipe(FUNGIBLE_WIPE_INPUT, identity());
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+        assertTrue(decodedInput.account().getAccountNum() > 0);
+        assertEquals(10, decodedInput.amount());
+        assertEquals(0, decodedInput.serialNumbers().size());
+        assertEquals(FUNGIBLE_COMMON, decodedInput.type());
+    }
+
+    @Test
+    void decodeFungibleWipeInputV2() {
+        wipeFungiblePrecompile
+                .when(() -> decodeWipeV2(FUNGIBLE_WIPE_INPUT_V2, identity()))
+                .thenCallRealMethod();
+        final var decodedInput = decodeWipeV2(FUNGIBLE_WIPE_INPUT_V2, identity());
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
         assertTrue(decodedInput.account().getAccountNum() > 0);

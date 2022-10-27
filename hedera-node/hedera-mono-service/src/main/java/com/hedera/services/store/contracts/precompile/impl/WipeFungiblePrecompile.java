@@ -29,6 +29,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -40,12 +41,19 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public class WipeFungiblePrecompile extends AbstractWipePrecompile {
+    private final int functionId;
     private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
             new Function("wipeTokenAccount(address,address,uint32)", INT);
+    private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION_V2 =
+            new Function("wipeTokenAccount(address,address,int32)", INT);
     private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR =
             Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
+    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR_V2 =
+            Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION_V2.selector());
     private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER =
             TypeFactory.create("(bytes32,bytes32,uint32)");
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER_V2 =
+            TypeFactory.create("(bytes32,bytes32,int32)");
 
     public WipeFungiblePrecompile(
             WorldLedgers ledgers,
@@ -54,7 +62,8 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
             SideEffectsTracker sideEffects,
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils pricingUtils) {
+            PrecompilePricingUtils pricingUtils,
+            final int functionId) {
         super(
                 ledgers,
                 aliases,
@@ -63,11 +72,17 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 pricingUtils);
+        this.functionId = functionId;
     }
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        wipeOp = decodeWipe(input, aliasResolver);
+        wipeOp =
+                switch (functionId) {
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> decodeWipe(input, aliasResolver);
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> decodeWipeV2(input, aliasResolver);
+                    default -> null;
+                };
         transactionBody = syntheticTxnFactory.createWipe(wipeOp);
         return transactionBody;
     }
@@ -83,11 +98,23 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
-
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
         final var fungibleAmount = (long) decodedArguments.get(2);
+
+        return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);
+    }
+
+    public static WipeWrapper decodeWipeV2(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR_V2, WIPE_TOKEN_ACCOUNT_DECODER_V2);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var fungibleAmount = (int) decodedArguments.get(2);
 
         return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);
     }
