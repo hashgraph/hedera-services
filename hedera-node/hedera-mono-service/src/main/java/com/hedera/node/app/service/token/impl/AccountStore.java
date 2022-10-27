@@ -15,13 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.service.token.util.AliasUtils.MISSING_NUM;
-import static com.hedera.node.app.service.token.util.AliasUtils.fromMirror;
-import static com.hedera.node.app.service.token.util.AliasUtils.isMirror;
-import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.keys.HederaKey;
 import com.hedera.node.app.spi.state.State;
@@ -29,9 +22,17 @@ import com.hedera.node.app.spi.state.States;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Optional;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Optional;
+
+import static com.hedera.node.app.service.token.util.AliasUtils.MISSING_NUM;
+import static com.hedera.node.app.service.token.util.AliasUtils.fromMirror;
+import static com.hedera.node.app.service.token.util.AliasUtils.isMirror;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 /**
  * Provides methods for interacting with the underlying data storage mechanisms for working with

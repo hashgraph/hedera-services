@@ -21,17 +21,13 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import org.apache.commons.codec.DecoderException;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualValue;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.lang3.NotImplementedException;
 
 /** Maps to proto Key. */
 public abstract class JKey implements HederaKey {
