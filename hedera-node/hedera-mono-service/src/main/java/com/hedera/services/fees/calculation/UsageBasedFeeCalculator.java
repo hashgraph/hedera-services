@@ -164,6 +164,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
     @Override
     public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
+        //        var rates = PricesAndFeesProvider.rate();
         var rates = exchange.rate(at);
         var prices = usagePrices.defaultPricesGiven(function, at);
         return gasPriceInTinybars(prices, rates);

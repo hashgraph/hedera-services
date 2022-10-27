@@ -219,7 +219,7 @@ public abstract class HederaEvmTxProcessor {
     }
 
     protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
-        return pricesAndFeesProvider.currentGasPrice(
+        return PricesAndFeesProvider.currentGasPrice(
                 consensusTime,
                 isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
     }

@@ -47,20 +47,18 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
         this.livePricesSource = livePricesSource;
     }
 
-    @Override
     public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
-        return usagePrices.defaultPricesGiven(function, at);
+        return PricesAndFeesProvider.defaultPricesGiven(function, at);
     }
 
-    @Override
     public ExchangeRate rate(Timestamp at) {
-        return exchange.rate(at);
+        return PricesAndFeesProvider.rate(at);
     }
 
     @Override
     public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
-        var rates = exchange.rate(at);
-        var prices = usagePrices.defaultPricesGiven(function, at);
+        var rates = PricesAndFeesProvider.rate(at);
+        var prices = PricesAndFeesProvider.defaultPricesGiven(function, at);
         return gasPriceInTinybars(prices, rates);
     }
 
@@ -70,8 +68,7 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
         return Math.max(priceInTinyBars, 1L);
     }
 
-    @Override
     public long currentGasPrice(Instant now, HederaFunctionality function) {
-        return livePricesSource.currentPrice(now, function, FeeComponents::getGas);
+        return PricesAndFeesProvider.currentGasPrice(now, function);
     }
 }

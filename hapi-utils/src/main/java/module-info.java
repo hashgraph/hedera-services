@@ -16,4 +16,6 @@ module com.hedera.services.hapi.utils {
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pkix;
     requires org.hyperledger.besu.secp256k1;
+    requires com.hedera.hashgraph.protobuf.java.api;
+    requires javax.inject;
 }
