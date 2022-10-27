@@ -15,6 +15,7 @@
  */
 package com.hedera.services.evm.store.models;
 
+import java.util.Collections;
 import java.util.NavigableMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -96,6 +97,6 @@ public class UpdatedHederaEvmAccount implements Account {
     @Override
     public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
             Bytes32 startKeyHash, int limit) {
-        return null;
+        return Collections.emptyNavigableMap();
     }
 }

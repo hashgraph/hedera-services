@@ -18,6 +18,7 @@ package com.hedera.services.evm.store.contracts;
 import com.hedera.services.evm.accounts.AccountAccessor;
 import com.hedera.services.evm.store.models.UpdatedHederaEvmAccount;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -44,23 +45,29 @@ public class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
     }
 
     @Override
-    public void deleteAccount(Address address) {}
+    public void deleteAccount(Address address) {
+        // The method is an intentionally-blank. If given implementation need it can be overridden
+    }
 
     @Override
     public Collection<? extends Account> getTouchedAccounts() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
     public Collection<Address> getDeletedAccountAddresses() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
-    public void revert() {}
+    public void revert() {
+        // The method is an intentionally-blank. If given implementation need it can be overridden
+    }
 
     @Override
-    public void commit() {}
+    public void commit() {
+        // The method is an intentionally-blank. If given implementation need it can be overridden
+    }
 
     @Override
     public Optional<WorldUpdater> parentUpdater() {
