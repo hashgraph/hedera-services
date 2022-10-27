@@ -166,7 +166,9 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
     @AfterEach
     void closeMocks() {
-        updateTokenExpiryInfoPrecompile.close();
+        if (!updateTokenExpiryInfoPrecompile.isClosed()) {
+            updateTokenExpiryInfoPrecompile.close();
+        }
     }
 
     @Test
@@ -245,12 +247,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
     @Test
     void decodeUpdateExpiryInfoForTokenInput() {
-        updateTokenExpiryInfoPrecompile
-                .when(
-                        () ->
-                                decodeUpdateTokenExpiryInfo(
-                                        UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity()))
-                .thenCallRealMethod();
+        updateTokenExpiryInfoPrecompile.close();
         final var decodedInput =
                 decodeUpdateTokenExpiryInfo(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity());
 
@@ -262,12 +259,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
     @Test
     void decodeUpdateExpiryInfoV2ForTokenInput() {
-        updateTokenExpiryInfoPrecompile
-                .when(
-                        () ->
-                                decodeUpdateTokenExpiryInfoV2(
-                                        UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, identity()))
-                .thenCallRealMethod();
+        updateTokenExpiryInfoPrecompile.close();
         final var decodedInput =
                 decodeUpdateTokenExpiryInfoV2(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, identity());
 
