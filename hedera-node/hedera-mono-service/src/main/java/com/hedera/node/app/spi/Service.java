@@ -13,19 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.ledger.accounts;
+package com.hedera.node.app.spi;
 
-import com.hedera.node.app.service.token.util.AliasUtils;
-import org.hyperledger.besu.datatypes.Address;
+import com.hedera.node.app.spi.state.States;
+import javax.annotation.Nonnull;
 
-public abstract class AbstractContractAliases implements ContractAliases {
-    public static final int EVM_ADDRESS_LEN = 20;
-
-    public boolean isMirror(final Address address) {
-        return isMirror(address.toArrayUnsafe());
-    }
-
-    public boolean isMirror(final byte[] address) {
-        return AliasUtils.isMirror(address);
-    }
+/**
+ * A definition of an interface that will be implemented by each conceptual "service" like
+ * crypto-service, token-service etc.,
+ */
+public interface Service {
+    /**
+     * Creates and returns a new {@link PreTransactionHandler}
+     *
+     * @return A new {@link PreTransactionHandler}
+     */
+    @Nonnull
+    PreTransactionHandler createPreTransactionHandler(@Nonnull States states);
 }
