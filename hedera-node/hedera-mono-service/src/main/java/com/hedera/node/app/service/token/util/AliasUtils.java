@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.token.util;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.ledger.accounts.AbstractContractAliases.EVM_ADDRESS_LEN;
+import static com.hedera.services.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
 
 import com.google.common.primitives.Longs;
