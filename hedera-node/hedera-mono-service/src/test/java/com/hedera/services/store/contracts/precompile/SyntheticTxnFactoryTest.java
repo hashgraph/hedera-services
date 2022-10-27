@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
@@ -36,6 +37,7 @@ import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -460,7 +462,7 @@ class SyntheticTxnFactoryTest {
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
-        assertEquals(Key.getDefaultInstance(), txnBody.getCryptoCreateAccount().getKey());
+        assertEquals(asKeyUnchecked(EMPTY_KEY), txnBody.getCryptoCreateAccount().getKey());
         assertEquals(
                 EntityIdUtils.EVM_ADDRESS_SIZE, txnBody.getCryptoCreateAccount().getAlias().size());
         assertEquals(LAZY_MEMO, txnBody.getCryptoCreateAccount().getMemo());
