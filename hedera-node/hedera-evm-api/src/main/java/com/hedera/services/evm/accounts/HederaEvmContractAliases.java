@@ -32,9 +32,9 @@ public abstract class HederaEvmContractAliases {
                          * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
                         byte[] result = new byte[12];
                         System.arraycopy(
-                                Longs.toByteArray(StaticProperties.getRealm()), 4, result, 0, 4);
+                                Longs.toByteArray(StaticProperties.getShard()), 4, result, 0, 4);
                         System.arraycopy(
-                                Longs.toByteArray(StaticProperties.getShard()), 0, result, 4, 8);
+                                Longs.toByteArray(StaticProperties.getRealm()), 0, result, 4, 8);
                         return result;
                     });
 
