@@ -209,6 +209,7 @@ public class AutoCreationLogic {
         customizer.maxAutomaticAssociations(maxAutoAssociations);
         if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
+            customizer.key(EMPTY_KEY);
             memo = LAZY_MEMO;
         } else {
             final var key = asPrimitiveKeyUnchecked(alias);

@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
@@ -22,6 +23,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
@@ -516,7 +518,7 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
         final var baseBuilder = createAccountBase(balance);
-        baseBuilder.setAlias(alias).setMemo(LAZY_MEMO);
+        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 

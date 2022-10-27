@@ -58,7 +58,7 @@ import org.bouncycastle.util.Arrays;
 public class SignedTxnAccessor implements TxnAccessor {
     private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
 
-    private static final int UNKNOWN_NUM_AUTO_CREATIONS = -1;
+    private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
     private static final String ACCESSOR_LITERAL = " accessor";
 
     private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
@@ -69,7 +69,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     private int sigMapSize;
     private int numSigPairs;
-    private int numAutoCreations = UNKNOWN_NUM_AUTO_CREATIONS;
+    private int numImplicitCreations = UNKNOWN_NUM_IMPLICIT_CREATIONS;
     private byte[] hash;
     private byte[] txnBytes;
     private byte[] utf8MemoBytes;
@@ -161,25 +161,26 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     @Override
-    public void countAutoCreationsWith(final AliasManager aliasManager) {
+    public void countImplicitCreationsWith(final AliasManager aliasManager) {
         final var resolver = new AliasResolver();
         resolver.resolve(txn.getCryptoTransfer(), aliasManager);
-        numAutoCreations = resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
+        numImplicitCreations =
+                resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
     }
 
     @Override
-    public void setNumAutoCreations(final int numAutoCreations) {
-        this.numAutoCreations = numAutoCreations;
+    public void setNumImplicitCreations(final int numImplicitCreations) {
+        this.numImplicitCreations = numImplicitCreations;
     }
 
     @Override
-    public int getNumAutoCreations() {
-        return numAutoCreations;
+    public int getNumImplicitCreations() {
+        return numImplicitCreations;
     }
 
     @Override
-    public boolean areAutoCreationsCounted() {
-        return numAutoCreations != UNKNOWN_NUM_AUTO_CREATIONS;
+    public boolean areImplicitCreationsCounted() {
+        return numImplicitCreations != UNKNOWN_NUM_IMPLICIT_CREATIONS;
     }
 
     @Override
@@ -314,7 +315,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         return MoreObjects.toStringHelper(this)
                 .add("sigMapSize", sigMapSize)
                 .add("numSigPairs", numSigPairs)
-                .add("numAutoCreations", numAutoCreations)
+                .add("numImplicitCreations", numImplicitCreations)
                 .add("hash", hash)
                 .add("txnBytes", txnBytes)
                 .add("utf8MemoBytes", utf8MemoBytes)
