@@ -15,16 +15,13 @@
  */
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersWithTuple;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForCall;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.swirlds.common.utility.CommonUtils;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.ethereum.core.CallTransaction;
 
 public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
 
@@ -43,17 +40,7 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
         if (explicitHexedParams.isPresent()) {
             callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).orElseThrow();
         } else {
-            final var paramsList = Arrays.asList(params);
-            final var tupleExist =
-                    paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
-            if (tupleExist) {
-                callData = encodeParametersWithTuple(params, abi);
-            } else {
-                callData =
-                        (!abi.equals(FALLBACK_ABI))
-                                ? CallTransaction.Function.fromJsonInterface(abi).encode(params)
-                                : new byte[] {};
-            }
+            callData = encodeParametersForCall(params, abi);
         }
 
         return callData;
