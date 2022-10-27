@@ -230,7 +230,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
                     if (change.isForNft()
-                            && !ledgers.accounts().contains(change.counterPartyAccountId()) && frame.getWorldUpdater()
+                            && !ledgers.accounts().contains(change.counterPartyAccountId())
+                            && frame.getWorldUpdater()
                                             .get(asTypedEvmAddress(change.counterPartyAccountId()))
                                     == null) {
                         validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
@@ -260,7 +261,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                                     ledgers,
                                     updater.aliases());
-                    if (!ledgers.accounts().contains(change.counterPartyAccountId()) && frame.getWorldUpdater().get(counterPartyAddress) == null) {
+                    if (!ledgers.accounts().contains(change.counterPartyAccountId())
+                            && frame.getWorldUpdater().get(counterPartyAddress) == null) {
                         validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
                         change.changeCounterPartyToAlias();
                     }
@@ -272,7 +274,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                                     ledgers,
                                     updater.aliases());
-                    if (!ledgers.accounts().contains(change.getAccount().asGrpcAccount()) && frame.getWorldUpdater().get(change.getAccount().asEvmAddress()) == null) {
+                    if (!ledgers.accounts().contains(change.getAccount().asGrpcAccount())
+                            && frame.getWorldUpdater().get(change.getAccount().asEvmAddress())
+                                    == null) {
                         validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
                         change.changeAccountToAlias();
                     }

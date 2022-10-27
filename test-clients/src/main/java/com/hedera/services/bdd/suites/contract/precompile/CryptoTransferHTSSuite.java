@@ -165,7 +165,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN_2)),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
-                        cryptoTransfer(moving(200, FUNGIBLE_TOKEN_2).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(200, FUNGIBLE_TOKEN_2).between(TOKEN_TREASURY, SENDER)),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
                         getContractInfo(CONTRACT)
@@ -217,7 +218,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
-                                                                                .isSingleList(false)
+                                                                                    .isSingleList(
+                                                                                            false)
                                                                                     .forToken(token)
                                                                                     .withAccountAmounts(
                                                                                             accountAmount(
@@ -229,7 +231,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                     amountToBeSent))
                                                                                     .build(),
                                                                             tokenTransferList()
-                                                                                .isSingleList(false)
+                                                                                    .isSingleList(
+                                                                                            false)
                                                                                     .forToken(
                                                                                             token2)
                                                                                     .withAccountAmounts(
@@ -245,22 +248,21 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER),
-                                        contractCall(
-                                            CONTRACT,
-                                            "transferMultipleTokens",
-                                            tokenTransferList()
-                                                .forToken(token)
-                                                .withAccountAmounts(
-                                                    accountAmount(
-                                                        sender,
-                                                        -1L),
-                                                    accountAmount(
-                                                        accountId(
-                                                            evmAddressBytes),
-                                                        1L))
-                                                .build())
-                                            .payingWith(GENESIS)
-                                            .gas(GAS_TO_OFFER),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            tokenTransferList()
+                                                                    .forToken(token)
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    sender, -1L),
+                                                                            accountAmount(
+                                                                                    accountId(
+                                                                                            evmAddressBytes),
+                                                                                    1L))
+                                                                    .build())
+                                                    .payingWith(GENESIS)
+                                                    .gas(GAS_TO_OFFER),
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
@@ -272,13 +274,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(evmAddressBytes)
-                                                .hasTokenBalance(FUNGIBLE_TOKEN, 51)
+                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 51)
                                                     .hasTokenBalance(FUNGIBLE_TOKEN_2, 50)
-                                                        .logged());
+                                                    .logged());
                                 }))
-                .then(
-                    resetToDefault(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
-                );
+                .then(resetToDefault(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     private HapiApiSpec transferNFTToEVMAddress() {
@@ -314,7 +314,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 List.of(
                                         ByteStringUtils.wrapUnsafely("meta1".getBytes()),
                                         ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-                    mintToken(
+                        mintToken(
                                 NFT_TOKEN2,
                                 List.of(
                                         ByteStringUtils.wrapUnsafely("meta1".getBytes()),
@@ -363,29 +363,32 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                tokenTransferLists()
-                                                    .withTokenTransferList(
-                                                        tokenTransferList()
-                                                            .isSingleList(false)
-                                                            .forToken(token)
-                                                            .withNftTransfers(
-                                                                nftTransfer(
-                                                                    sender,
-                                                                    accountId(
-                                                                        evmAddressBytes),
-                                                                    1L))
-                                                            .build(),
-                                                        tokenTransferList()
-                                                            .isSingleList(false)
-                                                            .forToken(token2)
-                                                            .withNftTransfers(
-                                                                nftTransfer(
-                                                                    sender,
-                                                                    accountId(
-                                                                        evmAddressBytes),
-                                                                    1L))
-                                                            .build())
-                                                    .build())
+                                                            tokenTransferLists()
+                                                                    .withTokenTransferList(
+                                                                            tokenTransferList()
+                                                                                    .isSingleList(
+                                                                                            false)
+                                                                                    .forToken(token)
+                                                                                    .withNftTransfers(
+                                                                                            nftTransfer(
+                                                                                                    sender,
+                                                                                                    accountId(
+                                                                                                            evmAddressBytes),
+                                                                                                    1L))
+                                                                                    .build(),
+                                                                            tokenTransferList()
+                                                                                    .isSingleList(
+                                                                                            false)
+                                                                                    .forToken(
+                                                                                            token2)
+                                                                                    .withNftTransfers(
+                                                                                            nftTransfer(
+                                                                                                    sender,
+                                                                                                    accountId(
+                                                                                                            evmAddressBytes),
+                                                                                                    1L))
+                                                                                    .build())
+                                                                    .build())
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER),
@@ -1802,8 +1805,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var htsTransferFrom = "htsTransferFrom";
         return defaultHapiSpec("transferFromForFungibleTokenToEVMAddressAlias")
                 .given(
-                    UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
-                    UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)
@@ -1890,8 +1893,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var htsTransferFromNFT = "htsTransferFromNFT";
         return defaultHapiSpec("transferFromForNFTToEVMAddressAlias")
                 .given(
-                    UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
-                    UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)

@@ -127,6 +127,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private static final String BALANCE_OF_TXN = "balanceOfTxn";
     private static final String ALLOWANCE_TXN = "allowanceTxn";
     private static final String TRANSFER_TXN = "transferTxn";
+
+    private static final String TRANSFER_THEN_REVERT_TXN = "transferThenRevertTxn";
     private static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
     private static final String IS_APPROVED_FOR_ALL = "isApprovedForAll";
@@ -137,6 +139,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private static final String TOTAL_SUPPLY = "totalSupply";
     private static final String BALANCE_OF = "balanceOf";
     private static final String TRANSFER = "transfer";
+
+    private static final String TRANSFER_THEN_REVERT = "transferThenRevert";
     private static final String APPROVE = "approve";
     private static final String OWNER_OF = "ownerOf";
     private static final String TOKEN_URI = "tokenURI";
@@ -207,7 +211,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                 directCallsWorkForERC20(),
                 erc20TransferFrom(),
                 erc20TransferFromSelf(),
-                transferErc20TokenToEVMAddressAlias());
+                transferErc20TokenToEVMAddressAlias(),
+                transferErc20TokenToEVMAddressAliasRevertAndTransferAgainSuccessfully());
     }
 
     List<HapiApiSpec> ERC_721() {
@@ -726,6 +731,84 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                     assert addressBytes != null;
                                     allRunFor(
                                             spec,
+                                            contractCall(
+                                                            ERC_20_CONTRACT,
+                                                            TRANSFER,
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(
+                                                                                    FUNGIBLE_TOKEN)),
+                                                            addressBytes,
+                                                            2)
+                                                    .via(TRANSFER_TXN)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(SUCCESS));
+                                }))
+                .then(
+                        childRecordsCheck(
+                                TRANSFER_TXN,
+                                SUCCESS,
+                                recordWith().status(SUCCESS).memo(LAZY_MEMO),
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .ERC_TRANSFER)
+                                                                        .withErcFungibleTransferStatus(
+                                                                                true)))));
+    }
+
+    private HapiApiSpec transferErc20TokenToEVMAddressAliasRevertAndTransferAgainSuccessfully() {
+        final AtomicReference<String> tokenAddr = new AtomicReference<>();
+
+        return defaultHapiSpec(
+                        "transferErc20TokenToEVMAddressAliasRevertAndTransferAgainSuccessfully")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(5)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .exposingCreatedIdTo(
+                                        id ->
+                                                tokenAddr.set(
+                                                        HapiPropertySource.asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(id)))),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT),
+                        tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(
+                                moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    assert addressBytes != null;
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            ERC_20_CONTRACT,
+                                                            TRANSFER_THEN_REVERT,
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(
+                                                                                    FUNGIBLE_TOKEN)),
+                                                            addressBytes,
+                                                            2)
+                                                    .via(TRANSFER_THEN_REVERT_TXN)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
                                                             ERC_20_CONTRACT,
                                                             TRANSFER,
