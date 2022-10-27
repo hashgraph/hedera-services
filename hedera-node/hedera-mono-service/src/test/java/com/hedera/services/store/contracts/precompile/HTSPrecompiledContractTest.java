@@ -72,6 +72,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleWipe;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.getTokenExpiryInfoWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungiblePause;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleUnpause;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
@@ -218,6 +219,7 @@ class HTSPrecompiledContractTest {
     private MockedStatic<GetTokenExpiryInfoPrecompile> getTokenExpiryInfoPrecompile;
     private MockedStatic<UpdateTokenExpiryInfoPrecompile> updateTokenExpiryInfoPrecompile;
     private MockedStatic<ERCTransferPrecompile> ercTransferPrecompile;
+    private MockedStatic<BurnPrecompile> burnPrecompile;
     @Mock private AssetsLoader assetLoader;
 
     private static final long viewTimestamp = 10L;
@@ -285,6 +287,7 @@ class HTSPrecompiledContractTest {
         getTokenExpiryInfoPrecompile = Mockito.mockStatic(GetTokenExpiryInfoPrecompile.class);
         updateTokenExpiryInfoPrecompile = Mockito.mockStatic(UpdateTokenExpiryInfoPrecompile.class);
         ercTransferPrecompile = Mockito.mockStatic(ERCTransferPrecompile.class);
+        burnPrecompile = Mockito.mockStatic(BurnPrecompile.class);
     }
 
     @AfterEach
@@ -304,6 +307,7 @@ class HTSPrecompiledContractTest {
         getTokenExpiryInfoPrecompile.close();
         updateTokenExpiryInfoPrecompile.close();
         ercTransferPrecompile.close();
+        burnPrecompile.close();
     }
 
     private ByteString fromString(final String value) {
@@ -896,6 +900,24 @@ class HTSPrecompiledContractTest {
         mintPrecompile
                 .when(() -> MintPrecompile.decodeMint(any()))
                 .thenReturn(fungibleMintAmountOversize);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        var result = subject.computePrecompile(input, messageFrame);
+        assertNull(result.getOutput());
+    }
+
+    @Test
+    void computeReturnsNullForBurnEmptyTransactionBody() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN_V2));
+        burnPrecompile.when(() -> BurnPrecompile.decodeBurnV2(any())).thenReturn(nonFungibleBurn);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
