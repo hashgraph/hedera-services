@@ -18,7 +18,6 @@ package com.hedera.services.evm.store.models;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.hedera.services.evm.accounts.AccountAccessor;
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import java.util.Collections;
 import java.util.Optional;
@@ -29,10 +28,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class AbstractLedgerEvmWorldUpdaterTest {
+class AbstractLedgerEvmWorldUpdaterTest {
     private final Address address =
             Address.fromHexString("0x000000000000000000000000000000000000077e");
-    AccountAccessor accountAccessor;
+    MockAccountAccessor accountAccessor = new MockAccountAccessor();
     AbstractLedgerEvmWorldUpdater abstractLedgerEvmWorldUpdater =
             new AbstractLedgerEvmWorldUpdater(accountAccessor);
 
@@ -44,6 +43,13 @@ public class AbstractLedgerEvmWorldUpdaterTest {
         assertEquals(
                 Collections.emptyList(),
                 abstractLedgerEvmWorldUpdater.getDeletedAccountAddresses());
+    }
+
+    @Test
+    void getAccount() {
+        UpdatedHederaEvmAccount updatedHederaEvmAccount = new UpdatedHederaEvmAccount(address);
+
+        assertEquals(updatedHederaEvmAccount.getAddress(), abstractLedgerEvmWorldUpdater.get(address).getAddress());
     }
 
     @Test
