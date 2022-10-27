@@ -788,7 +788,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             accountWith()
-                                                                    .hasDefaultKey()
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(evmAddress)
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)

@@ -217,23 +217,9 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
     }
 
     public void forgetEvmAddress(final ByteString alias) {
-        try {
-            var key = Key.parseFrom(alias);
-            var jKey = JKey.mapKey(key);
-            if (jKey.hasECDSAsecp256k1Key()) {
-                // ecdsa keys from alias are currently only stored in compressed form.
-                byte[] rawCompressedKey = jKey.getECDSASecp256k1Key();
-                // trust, but verify
-                if (rawCompressedKey.length
-                        == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                    var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
-                    if (evmAddress != null) {
-                        curAliases().remove(ByteString.copyFrom(evmAddress));
-                    }
-                }
-            }
-        } catch (InvalidProtocolBufferException | DecoderException internal) {
-            // any parse error means it's not a evm address
+        var evmAddress = keyAliasToEVMAddress(alias);
+        if (evmAddress != null) {
+            curAliases().remove(ByteString.copyFrom(evmAddress));
         }
     }
 
@@ -245,25 +231,15 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
      */
     public EntityNum lookupIdBy(final ByteString alias) {
         var entityNum = curAliases().getOrDefault(alias, MISSING_NUM);
+
+        // We don't want to treat a Key-derived alias as "missing" if its auto-created account
+        // would collide with an existing EVM address; so check for that case now
         if (alias.size() > EVM_ADDRESS_LEN && entityNum == MISSING_NUM) {
             // if we don't find entity num for key alias we can try to derive EVM address from it
             // and look it up
-            try {
-                final Key key = Key.parseFrom(alias);
-                final JKey jKey = JKey.mapKey(key);
-                final var evmAddress = tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
-                if (evmAddress != null) {
-                    entityNum =
-                            curAliases().getOrDefault(ByteString.copyFrom(evmAddress), MISSING_NUM);
-                }
-            } catch (InvalidProtocolBufferException
-                    | DecoderException
-                    | IllegalArgumentException ignore) {
-                // any expected exception means no eth mapping
-                log.info(
-                        "Was not able to find entity num for {} alias or its corresponding EVM"
-                                + " address",
-                        alias);
+            var evmAddress = keyAliasToEVMAddress(alias);
+            if (evmAddress != null) {
+                entityNum = curAliases().getOrDefault(ByteString.copyFrom(evmAddress), MISSING_NUM);
             }
         }
 
@@ -277,5 +253,19 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
     @VisibleForTesting
     Map<ByteString, EntityNum> getAliases() {
         return curAliases();
+    }
+
+    @Nullable
+    private byte[] keyAliasToEVMAddress(final ByteString alias) {
+        try {
+            final Key key = Key.parseFrom(alias);
+            final JKey jKey = JKey.mapKey(key);
+            return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
+        } catch (InvalidProtocolBufferException
+                | DecoderException
+                | IllegalArgumentException ignore) {
+            // any expected exception means no eth mapping
+            return null;
+        }
     }
 }

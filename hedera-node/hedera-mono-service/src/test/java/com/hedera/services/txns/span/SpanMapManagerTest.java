@@ -204,7 +204,7 @@ class SpanMapManagerTest {
     }
 
     @Test
-    void setsNumAutoCreationsOnExpanding() {
+    void setsNumImplicitCreationsOnExpanding() {
         given(accessor.getPayer()).willReturn(payer);
         given(accessor.getTxn()).willReturn(pretendXferTxn);
         given(accessor.getSpanMap()).willReturn(span);
@@ -215,7 +215,7 @@ class SpanMapManagerTest {
 
         subject.expandSpan(accessor);
 
-        verify(accessor).setNumAutoCreations(2);
+        verify(accessor).setNumImplicitCreations(2);
     }
 
     @Test
