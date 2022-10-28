@@ -955,6 +955,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         return defaultHapiSpec("HollowAccountCompletionWithEthereumTransaction")
                 .given(
                         overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        overriding("contracts.chainId", "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -1018,8 +1019,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .logged();
 
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
-                                    resetToDefault(LAZY_CREATE_FEATURE_FLAG);
-                                }));
+                                }),
+                        resetToDefault(LAZY_CREATE_FEATURE_FLAG),
+                        resetToDefault("contracts.chainId"));
     }
 
     private HapiApiSpec canGetBalanceAndInfoViaAlias() {

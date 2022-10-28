@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -129,7 +130,7 @@ public class SigsAndPayerKeyScreen {
             final var callerNum = aliasManager.lookupIdBy(wrapUnsafely(ethTxSigs.address()));
             if (callerNum != EntityNum.MISSING_NUM) {
                 var account = accounts.get().getForModify(callerNum);
-                if (account.getAccountKey() == null) {
+                if (account.getAccountKey() == EMPTY_KEY) {
                     var key = new JECDSASecp256k1Key(ethTxSigs.publicKey());
                     account.setAccountKey(key);
                     trackHollowAccountCompletion(callerNum.toGrpcAccountId(), key);
