@@ -99,33 +99,12 @@ public class HederaKeyList implements ReplHederaKey {
     }
 
     @Override
-    public void serialize(final ByteBuffer buf) throws IOException {
-        try (final var baos = new ByteArrayOutputStream()) {
-            try (final var out = new SerializableDataOutputStream(baos)) {
-                this.serialize(out);
-            }
-            baos.flush();
-            buf.put(baos.toByteArray());
-        }
-    }
-
-    @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         final var len = keys.size();
         out.writeInt(len);
         for (final var key : keys) {
             out.writeSerializable(key, true);
         }
-    }
-
-    @Override
-    public void deserialize(final ByteBuffer buf, final int version) throws IOException {
-        try (final var bais = new ByteArrayInputStream(buf.array())) {
-            try (final var in = new SerializableDataInputStream(bais)) {
-                this.deserialize(in, version);
-            }
-        }
-        buf.position(buf.array().length);
     }
 
     @Override
