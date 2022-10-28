@@ -82,7 +82,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
 
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
     private static final long GAS_TO_OFFER = 5_000_000L;
-    private static final long TOTAL_SUPPLY = 10_000;
+    private static final long TOTAL_SUPPLY = 1_000;
     private static final String NFT_TOKEN = "AToken_NFT";
     private static final String TOKEN_TREASURY = "the_treasury";
     private static final String FUNGIBLE_TOKEN = "AToken";
