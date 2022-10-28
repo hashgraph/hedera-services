@@ -81,15 +81,15 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(AtomicCryptoTransferHTSSuite.class);
 
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
-    private static final long GAS_TO_OFFER = 4_000_000L;
-    private static final long TOTAL_SUPPLY = 1_000;
-    private static final String FUNGIBLE_TOKEN = "TokenA";
-    private static final String NFT_TOKEN = "Token_NFT";
-    private static final String TOKEN_TREASURY = "treasury";
-    private static final String RECEIVER = "receiver";
-    private static final String RECEIVER2 = "receiver2";
-    private static final String SENDER = "sender";
-    private static final String SENDER2 = "sender2";
+    private static final long GAS_TO_OFFER = 5_000_000L;
+    private static final long TOTAL_SUPPLY = 10_000;
+    private static final String FUNGIBLE_TOKEN = "AToken";
+    private static final String NFT_TOKEN = "AToken_NFT";
+    private static final String TOKEN_TREASURY = "the_treasury";
+    private static final String RECEIVER = "the_receiver";
+    private static final String RECEIVER2 = "the_receiver2";
+    private static final String SENDER = "the_sender";
+    private static final String SENDER2 = "the_sender2";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
 
@@ -97,6 +97,11 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     private static final String CONTRACT = "AtomicCryptoTransfer";
     private static final String MULTI_KEY = "purpose";
     private static final String OWNER = "Owner";
+
+    private static final String cryptoTransferTxn = "cryptoTransferTxn";
+    private static final String transferMultipleTokens = "transferMultipleTokens";
+    private static final String revertingTransferFromTxn = "revertWhenMoreThanAllowance";
+    private static final String baseApproveTxn = "baseApproveTxn";
 
     public static void main(String... args) {
         new AtomicCryptoTransferHTSSuite().runSuiteAsync();
@@ -122,7 +127,6 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec cryptoTransferForHbarOnly() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
         final var cryptoTransferMultiTxn = "cryptoTransferMultiTxn";
         final var cryptoTransferRevertTxn = "cryptoTransferRevertTxn";
         final var cryptoTransferRevertNoKeyTxn = "cryptoTransferRevertNoKeyTxn";
@@ -166,7 +170,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             // transfer between 2 parties
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            transferMultipleTokens,
                                                             transferList()
                                                                     .withAccountAmounts(
                                                                             accountAmount(
@@ -185,7 +189,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             // Sender does not have key
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            transferMultipleTokens,
                                                             transferList()
                                                                     .withAccountAmounts(
                                                                             accountAmount(
@@ -205,7 +209,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             // Sender balance is too low
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            transferMultipleTokens,
                                                             transferList()
                                                                     .withAccountAmounts(
                                                                             accountAmount(
@@ -227,7 +231,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             // transfer among 3 parties
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            transferMultipleTokens,
                                                             transferList()
                                                                     .withAccountAmounts(
                                                                             accountAmount(
@@ -254,7 +258,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             // transfer does not add up to 0
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            transferMultipleTokens,
                                                             transferList()
                                                                     .withAccountAmounts(
                                                                             accountAmount(
@@ -345,7 +349,6 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec cryptoTransferForFungibleTokenOnly() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
 
         return defaultHapiSpec("cryptoTransferForFungibleTokenOnly")
                 .given(
@@ -385,7 +388,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            transferMultipleTokens,
                                                             transferList()
                                                                     .withAccountAmounts(
                                                                             EMPTY_TUPLE_ARRAY)
@@ -430,7 +433,6 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec cryptoTransferForNonFungibleTokenOnly() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
 
         return defaultHapiSpec("cryptoTransferForNonFungibleTokenOnly")
                 .given(
@@ -472,7 +474,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            transferMultipleTokens,
                                                             transferList()
                                                                     .withAccountAmounts(
                                                                             EMPTY_TUPLE_ARRAY)
@@ -516,7 +518,6 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec cryptoTransferHBarFungibleNft() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
 
         return defaultHapiSpec("cryptoTransferHBarFungibleNft")
                 .given(
@@ -582,7 +583,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            transferMultipleTokens,
                                                             transferList()
                                                                     .withAccountAmounts(
                                                                             accountAmount(
@@ -668,7 +669,6 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
-        final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         final var revertingTransferFromTxn2 = "revertingTxn";
         final var revertingTransferFromTxn3 = "revertingTxnNoApproval";
         final var transferMultipleTokens = "transferMultipleTokens";
@@ -685,7 +685,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addCryptoAllowance(OWNER, CONTRACT, allowance)
-                                .via("baseApproveTxn")
+                                .via(baseApproveTxn)
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .logged(),
                         getAccountDetails(OWNER)
@@ -861,7 +861,6 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
-        final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         final var revertingTransferFromTxn2 = "revertingTxn";
         final var revertingTransferFromTxn3 = "revertingTxnNoApproval";
         final var transferMultipleTokens = "transferMultipleTokens";
@@ -884,7 +883,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, CONTRACT, allowance)
-                                .via("baseApproveTxn")
+                                .via(baseApproveTxn)
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR),
                         getAccountDetails(OWNER)
@@ -1106,7 +1105,6 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
 
     private HapiApiSpec cryptoTransferAllowanceNft() {
         final var successfulTransferFromTxn = "txn";
-        final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         final var transferMultipleTokens = "transferMultipleTokens";
         return defaultHapiSpec("cryptoTransferAllowanceNft")
                 .given(
@@ -1130,7 +1128,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addNftAllowance(OWNER, NFT_TOKEN, CONTRACT, false, List.of(2L))
-                                .via("baseApproveTxn")
+                                .via(baseApproveTxn)
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR))
                 .when(
