@@ -98,7 +98,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -198,7 +197,6 @@ class TransferPrecompilesTest {
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
     @Mock private AutoCreationLogic autoCreationLogic;
-    @Mock private SigImpactHistorian sigImpactHistorian;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -272,7 +270,7 @@ class TransferPrecompilesTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                        autoCreationLogic, sigImpactHistorian);
+                        autoCreationLogic);
 
         transferPrecompile = Mockito.mockStatic(TransferPrecompile.class);
     }

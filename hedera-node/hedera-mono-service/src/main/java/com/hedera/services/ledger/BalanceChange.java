@@ -385,15 +385,15 @@ public class BalanceChange {
         else return null;
     }
 
-    public void changeAccountToAlias() {
-        this.alias = ByteStringUtils.wrapUnsafely(account.asEvmAddress().toArrayUnsafe());
-        this.accountId = AccountID.newBuilder().setAlias(this.alias).build();
-    }
-
-    public void changeCounterPartyToAlias() {
-        this.counterPartyAlias =
-                ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(counterPartyAccountId));
-        this.counterPartyAccountId =
-                AccountID.newBuilder().setAlias(this.counterPartyAlias).build();
+    public void changeReceiverToAlias() {
+        if (this.counterPartyAccountId != null) {
+            this.counterPartyAlias =
+                    ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(counterPartyAccountId));
+            this.counterPartyAccountId =
+                    AccountID.newBuilder().setAlias(this.counterPartyAlias).build();
+        } else {
+            this.alias = ByteStringUtils.wrapUnsafely(account.asEvmAddress().toArrayUnsafe());
+            this.accountId = AccountID.newBuilder().setAlias(this.alias).build();
+        }
     }
 }

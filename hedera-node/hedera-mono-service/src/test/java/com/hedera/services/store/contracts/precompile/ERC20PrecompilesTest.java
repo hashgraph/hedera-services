@@ -90,7 +90,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -233,7 +232,6 @@ class ERC20PrecompilesTest {
     private MockedStatic<BalanceOfPrecompile> balanceOfPrecompile;
     private MockedStatic<ApprovePrecompile> approvePrecompile;
     @Mock private AutoCreationLogic autoCreationLogic;
-    @Mock private SigImpactHistorian sigImpactHistorian;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -265,7 +263,7 @@ class ERC20PrecompilesTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                        autoCreationLogic, sigImpactHistorian);
+                        autoCreationLogic);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils

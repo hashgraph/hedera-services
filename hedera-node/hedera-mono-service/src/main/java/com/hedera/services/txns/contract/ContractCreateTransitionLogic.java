@@ -32,6 +32,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 
@@ -221,6 +222,14 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
         }
         if (result.isSuccessful()) {
+            for (final var precedingRecord : recordsHistorian.getPrecedingChildRecords()) {
+                final var expirableTxnRecord = precedingRecord.getExpirableTransactionRecord();
+                if (!expirableTxnRecord.getEnumStatus().equals(REVERTED_SUCCESS)) {
+                    sigImpactHistorian.markAliasChanged(expirableTxnRecord.getAlias());
+                    sigImpactHistorian.markEntityChanged(
+                        expirableTxnRecord.getReceipt().getAccountId().num());
+                }
+            }
             final var newEvmAddress = newContractAddress.toArrayUnsafe();
             final var newContractId = contractIdFromEvmAddress(newEvmAddress);
             final var contractBytecodeSidecar =

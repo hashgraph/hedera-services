@@ -35,6 +35,7 @@ import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -81,6 +82,7 @@ class ContractCallTransitionLogicTest {
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private AliasManager aliasManager;
     @Mock private EntityAccess entityAccess;
+    @Mock private RecordsHistorian recordsHistorian;
 
     private TransactionBody contractCallTxn;
     private final Account senderAccount = new Account(new Id(0, 0, 1002));
@@ -101,7 +103,8 @@ class ContractCallTransitionLogicTest {
                         codeCache,
                         sigImpactHistorian,
                         aliasManager,
-                        entityAccess);
+                        entityAccess,
+                        recordsHistorian);
     }
 
     @Test

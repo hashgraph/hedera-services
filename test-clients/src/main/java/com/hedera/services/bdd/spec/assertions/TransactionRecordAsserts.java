@@ -97,10 +97,10 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
-  public TransactionRecordAsserts alias(ByteString alias) {
-    registerTypedProvider("alias", shouldBe(alias));
-    return this;
-  }
+    public TransactionRecordAsserts alias(ByteString alias) {
+        registerTypedProvider("alias", shouldBe(alias));
+        return this;
+    }
 
     @SuppressWarnings("java:S1181")
     public TransactionRecordAsserts assessedCustomFeeCount(final int n) {

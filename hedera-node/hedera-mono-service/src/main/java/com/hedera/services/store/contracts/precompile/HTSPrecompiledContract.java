@@ -150,7 +150,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private final InfrastructureFactory infrastructureFactory;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
     private final AutoCreationLogic autoCreationLogic;
-    private final SigImpactHistorian sigImpactHistorian;
 
     private Precompile precompile;
     private TransactionBody.Builder transactionBody;
@@ -177,8 +176,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
             final InfrastructureFactory infrastructureFactory,
-            final AutoCreationLogic autoCreationLogic,
-            final SigImpactHistorian sigImpactHistorian) {
+            final AutoCreationLogic autoCreationLogic) {
         super("HTS", gasCalculator);
         this.encoder = encoder;
         this.sigsVerifier = sigsVerifier;
@@ -192,7 +190,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.precompilePricingUtils = precompilePricingUtils;
         this.infrastructureFactory = infrastructureFactory;
         this.autoCreationLogic = autoCreationLogic;
-        this.sigImpactHistorian = sigImpactHistorian;
     }
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {

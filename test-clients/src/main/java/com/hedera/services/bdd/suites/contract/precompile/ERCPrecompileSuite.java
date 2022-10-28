@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -196,26 +195,26 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
     List<HapiApiSpec> ERC_20() {
         return List.of(
-//                getErc20TokenName(),
-//                getErc20TokenSymbol(),
-//                getErc20TokenDecimals(),
-//                getErc20TotalSupply(),
-//                getErc20BalanceOfAccount(),
-//                transferErc20Token(),
-//                erc20Allowance(),
-//                erc20Approve(),
-//                someERC20ApproveAllowanceScenariosPass(),
-//                someERC20NegativeTransferFromScenariosPass(),
-//                someERC20ApproveAllowanceScenarioInOneCall(),
-//                getErc20TokenDecimalsFromErc721TokenFails(),
-//                transferErc20TokenFromErc721TokenFails(),
-//                transferErc20TokenReceiverContract(),
-//                transferErc20TokenSenderAccount(),
-//                transferErc20TokenAliasedSender(),
-//                directCallsWorkForERC20(),
-//                erc20TransferFrom(),
-//                erc20TransferFromSelf(),
-//                transferErc20TokenToEVMAddressAlias(),
+                //                getErc20TokenName(),
+                //                getErc20TokenSymbol(),
+                //                getErc20TokenDecimals(),
+                //                getErc20TotalSupply(),
+                //                getErc20BalanceOfAccount(),
+                //                transferErc20Token(),
+                //                erc20Allowance(),
+                //                erc20Approve(),
+                //                someERC20ApproveAllowanceScenariosPass(),
+                //                someERC20NegativeTransferFromScenariosPass(),
+                //                someERC20ApproveAllowanceScenarioInOneCall(),
+                //                getErc20TokenDecimalsFromErc721TokenFails(),
+                //                transferErc20TokenFromErc721TokenFails(),
+                //                transferErc20TokenReceiverContract(),
+                //                transferErc20TokenSenderAccount(),
+                //                transferErc20TokenAliasedSender(),
+                //                directCallsWorkForERC20(),
+                //                erc20TransferFrom(),
+                //                erc20TransferFromSelf(),
+                //                transferErc20TokenToEVMAddressAlias(),
                 transferErc20TokenToEVMAddressAliasRevertAndTransferAgainSuccessfully());
     }
 
@@ -772,7 +771,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec(
                         "transferErc20TokenToEVMAddressAliasRevertAndTransferAgainSuccessfully")
                 .given(
-                    UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -814,25 +813,33 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                     .via(TRANSFER_THEN_REVERT_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                        contractCall(
-                                            ERC_20_CONTRACT,
-                                            TRANSFER,
-                                            asAddress(
-                                                spec.registry()
-                                                    .getTokenID(
-                                                        FUNGIBLE_TOKEN)),
-                                            addressBytes,
-                                            2)
-                                            .via(TRANSFER_TXN)
-                                            .gas(GAS_TO_OFFER)
-                                            .hasKnownStatus(SUCCESS),
-                                        childRecordsCheck(TRANSFER_THEN_REVERT_TXN, CONTRACT_REVERT_EXECUTED, recordWith().status(REVERTED_SUCCESS)),
-                                        childRecordsCheck(TRANSFER_TXN, SUCCESS, recordWith().status(SUCCESS).alias(
-                                            ByteStringUtils.wrapUnsafely(addressBytes)), recordWith().status(SUCCESS))
-                                            );
+                                            contractCall(
+                                                            ERC_20_CONTRACT,
+                                                            TRANSFER,
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(
+                                                                                    FUNGIBLE_TOKEN)),
+                                                            addressBytes,
+                                                            2)
+                                                    .via(TRANSFER_TXN)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(SUCCESS),
+                                            childRecordsCheck(
+                                                    TRANSFER_THEN_REVERT_TXN,
+                                                    CONTRACT_REVERT_EXECUTED,
+                                                    recordWith().status(REVERTED_SUCCESS)),
+                                            childRecordsCheck(
+                                                    TRANSFER_TXN,
+                                                    SUCCESS,
+                                                    recordWith()
+                                                            .status(SUCCESS)
+                                                            .alias(
+                                                                    ByteStringUtils.wrapUnsafely(
+                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS)));
                                 }))
-                .then(
-                    );
+                .then();
     }
 
     private HapiApiSpec transferErc20TokenReceiverContract() {

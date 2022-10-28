@@ -118,27 +118,27 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    nonNestedCryptoTransferForFungibleToken(),
-                    nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-                    nonNestedCryptoTransferForNonFungibleToken(),
-                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-                    nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-                    repeatedTokenIdsAreAutomaticallyConsolidated(),
-                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
-                    hapiTransferFromForFungibleToken(),
-                    hapiTransferFromForNFT(),
-                    transferFungibleToEVMAddress(),
+//                    nonNestedCryptoTransferForFungibleToken(),
+//                    nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+//                    nonNestedCryptoTransferForNonFungibleToken(),
+//                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+//                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+//                    nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+//                    repeatedTokenIdsAreAutomaticallyConsolidated(),
+//                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
+//                    hapiTransferFromForFungibleToken(),
+//                    hapiTransferFromForNFT(),
+//                    transferFungibleToEVMAddress(),
                     transferNFTToEVMAddress(),
-                    transferFromForFungibleTokenToEVMAddressAlias(),
-                    transferFromForNFTToEVMAddressAlias()
+//                    transferFromForFungibleTokenToEVMAddressAlias(),
+//                    transferFromForNFTToEVMAddressAlias()
                 });
     }
 
@@ -1861,6 +1861,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                             .getAccountID(OWNER)),
                                                             addressBytes,
                                                             allowance / 2)
+                                                .gas(GAS_TO_OFFER)
                                                     .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS));
                                 }))
@@ -1944,7 +1945,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                             .getAccountID(OWNER)),
                                                             addressBytes,
                                                             2L)
-                                                    .via(successfulTransferFromTxn)
+                                                .gas(GAS_TO_OFFER)
+
+                                                .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS));
                                 }))
                 .then(
