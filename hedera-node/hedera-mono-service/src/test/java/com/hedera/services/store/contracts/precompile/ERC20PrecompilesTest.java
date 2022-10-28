@@ -546,7 +546,7 @@ class ERC20PrecompilesTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransfer(
-                                        eq(nestedPretendArguments), any(), any(), any()))
+                                        eq(nestedPretendArguments), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1248,7 +1248,7 @@ class ERC20PrecompilesTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransfer(
-                                        eq(nestedPretendArguments), any(), any(), any()))
+                                        eq(nestedPretendArguments), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
 
         given(aliases.resolveForEvm(any()))
@@ -1344,6 +1344,7 @@ class ERC20PrecompilesTest {
                                         eq(true),
                                         any(),
                                         any(),
+                                        any(),
                                         any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
 
@@ -1428,6 +1429,7 @@ class ERC20PrecompilesTest {
                                         eq(pretendArguments),
                                         eq(null),
                                         eq(true),
+                                        any(),
                                         any(),
                                         any(),
                                         any()))
@@ -1523,6 +1525,7 @@ class ERC20PrecompilesTest {
                                         eq(false),
                                         any(),
                                         any(),
+                                        any(),
                                         any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER);
 
@@ -1603,7 +1606,7 @@ class ERC20PrecompilesTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransfer(
-                                        eq(nestedPretendArguments), any(), any(), any()))
+                                        eq(nestedPretendArguments), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
 
         given(aliases.resolveForEvm(any()))

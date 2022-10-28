@@ -166,6 +166,19 @@ public class DecodingFacade {
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
     }
 
+    public static AccountID convertLeftPaddedAddressToAccountId(
+            final byte[] leftPaddedAddress,
+            @NotNull final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> exists) {
+        final var addressOrAlias =
+                Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
+        var accountID = accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
+        if (!exists.test(accountID)) {
+            accountID = accountIDWithAliasOnlyFrom(accountID);
+        }
+        return accountID;
+    }
+
     public static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
         final var address =
                 Address.wrap(
@@ -182,10 +195,9 @@ public class DecodingFacade {
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
         for (final var exchange : abiExchanges) {
             final var sender = convertLeftPaddedAddressToAccountId(exchange.get(0), aliasResolver);
-            var receiver = convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver);
-            if (!existingCheck.test(receiver)) {
-                receiver = getAsAliasedAccountID(receiver);
-            }
+            final var receiver =
+                    convertLeftPaddedAddressToAccountId(
+                            exchange.get(1), aliasResolver, existingCheck);
             final var serialNo = (long) exchange.get(2);
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
@@ -208,7 +220,7 @@ public class DecodingFacade {
             var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
             if (amount > 0 && !isExisting.test(accountID)) {
-                accountID = getAsAliasedAccountID(accountID);
+                accountID = accountIDWithAliasOnlyFrom(accountID);
             }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
@@ -219,8 +231,9 @@ public class DecodingFacade {
         return fungibleTransfers;
     }
 
+    // TODO: add comment
     @NotNull
-    private static AccountID getAsAliasedAccountID(AccountID accountID) {
+    public static AccountID accountIDWithAliasOnlyFrom(final AccountID accountID) {
         return AccountID.newBuilder()
                 .setAlias(ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(accountID)))
                 .build();

@@ -125,22 +125,20 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                    nonNestedCryptoTransferForFungibleToken(),
-                    //
-                    // nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-                    //                    nonNestedCryptoTransferForNonFungibleToken(),
-                    //                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-                    //                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-                    //
-                    // nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-                    //                    repeatedTokenIdsAreAutomaticallyConsolidated(),
-                    //                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
-                    //                    hapiTransferFromForFungibleToken(),
-                    //                    hapiTransferFromForNFT(),
-                    //                    transferFungibleToEVMAddress()
+                    nonNestedCryptoTransferForFungibleToken(),
+                    nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+                    nonNestedCryptoTransferForNonFungibleToken(),
+                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+                    nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+                    repeatedTokenIdsAreAutomaticallyConsolidated(),
+                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
+                    hapiTransferFromForFungibleToken(),
+                    hapiTransferFromForNFT(),
+                    transferFungibleToEVMAddress(),
                     transferNFTToEVMAddress(),
-                    //                    transferFromForFungibleTokenToEVMAddressAlias(),
-                    //                    transferFromForNFTToEVMAddressAlias()
+                    transferFromForFungibleTokenToEVMAddressAlias(),
+                    transferFromForNFTToEVMAddressAlias()
                 });
     }
 

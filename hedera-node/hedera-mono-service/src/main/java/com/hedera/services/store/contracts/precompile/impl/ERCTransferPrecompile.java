@@ -60,6 +60,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -175,7 +176,11 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         transferOp =
                 switch (nestedInput.getInt(0)) {
                     case AbiConstants.ABI_ID_ERC_TRANSFER -> decodeERCTransfer(
-                            nestedInput, tokenID, callerAccountID, aliasResolver);
+                            nestedInput,
+                            tokenID,
+                            callerAccountID,
+                            aliasResolver,
+                            ledgers.accounts()::contains);
                     case AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
                             AbiConstants.ABI_ID_TRANSFER_FROM,
                             AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
@@ -186,7 +191,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                                 isFungible,
                                 aliasResolver,
                                 ledgers,
-                                operatorId);
+                                operatorId,
+                                ledgers.accounts()::contains);
                     }
                     default -> null;
                 };
@@ -226,13 +232,14 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final Bytes input,
             final TokenID token,
             final AccountID caller,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedArguments =
                 decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
 
         final var recipient =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver, exists);
         final var amount = (BigInteger) decodedArguments.get(1);
 
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
@@ -252,7 +259,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final boolean isFungible,
             final UnaryOperator<byte[]> aliasResolver,
             final WorldLedgers ledgers,
-            final EntityId operatorId) {
+            final EntityId operatorId,
+            final Predicate<AccountID> exists) {
 
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final var offset = impliedTokenId == null ? 1 : 0;
@@ -277,9 +285,9 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
         final var from =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
-        final var to =
+        var to =
                 convertLeftPaddedAddressToAccountId(
-                        decodedArguments.get(offset + 1), aliasResolver);
+                        decodedArguments.get(offset + 1), aliasResolver, exists);
 
         if (isFungible) {
             final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers =

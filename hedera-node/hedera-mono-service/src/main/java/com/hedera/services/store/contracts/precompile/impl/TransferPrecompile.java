@@ -187,7 +187,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                             input, aliasResolver, ledgers.accounts()::contains);
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(
                             input, aliasResolver, ledgers.accounts()::contains);
-                        // TODO: add existing check for all
+                        // TODO: add existing check for all below
                     case AbiConstants.ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(
                             input, aliasResolver);
                     case AbiConstants.ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(
@@ -344,7 +344,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         updater.manageInProgressPrecedingRecord(
                 recordsHistorian, recordSoFar, lastRecord.syntheticBody());
         // track the lazy account, so it is accessible to the EVM
-        updater.trackLazilyCreatedAccount(EntityIdUtils.asTypedEvmAddress(change.accountId()));
+        //
+        // updater.trackLazilyCreatedAccount(EntityIdUtils.asTypedEvmAddress(change.accountId()));
     }
 
     @Override

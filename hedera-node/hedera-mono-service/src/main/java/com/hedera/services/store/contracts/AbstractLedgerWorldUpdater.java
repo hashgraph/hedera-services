@@ -303,36 +303,34 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
     private void onAccountPropertyChange(
             final AccountID id, final AccountProperty property, final Object newValue) {
-        /* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
-        if (property == BALANCE) {
-            final var address = EntityIdUtils.asTypedEvmAddress(id);
-            /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
-            if (deletedAccounts.contains(address)) {
-                throw new IllegalArgumentException(
-                        "A wrapped tracking ledger tried to change the "
-                                + "balance of deleted account "
-                                + asLiteralString(id)
-                                + " to "
-                                + newValue);
-            }
-            var updatedAccount = updatedAccounts.get(address);
-            if (updatedAccount == null) {
-                final var origin = getForMutation(address);
-                /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as
-                 * non-existent, and none of the HTS precompiles should be creating accounts */
-                if (origin == null) {
-                    throw new IllegalArgumentException(
-                            "A wrapped tracking ledger tried to create/change the "
-                                    + "balance of missing account "
-                                    + asLiteralString(id)
-                                    + " to "
-                                    + newValue);
-                }
+        // TODO: clean this
+        final var address = EntityIdUtils.asTypedEvmAddress(id);
+        /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
+        if (deletedAccounts.contains(address)) {
+            throw new IllegalArgumentException(
+                    "A wrapped tracking ledger tried to change the "
+                            + "balance of deleted account "
+                            + asLiteralString(id)
+                            + " to "
+                            + newValue);
+        }
+        var updatedAccount = updatedAccounts.get(address);
+        if (updatedAccount == null) {
+            final var origin = getForMutation(address);
+            // TODO: fix comments here
+            /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as
+             * non-existent, and none of the HTS precompiles should be creating accounts */
+            if (origin == null) {
+                updatedAccount =
+                        new UpdateTrackingLedgerAccount<A>(address, trackingLedgers.accounts());
+            } else {
                 updatedAccount =
                         new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
-                track(updatedAccount);
             }
-
+            track(updatedAccount);
+        }
+        /* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
+        if (property == BALANCE) {
             final var newBalance = (long) newValue;
             updatedAccount.setBalanceFromPropertyChangeObserver(Wei.of(newBalance));
         }
