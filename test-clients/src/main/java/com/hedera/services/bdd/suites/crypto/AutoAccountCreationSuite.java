@@ -789,8 +789,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                     .memo(LAZY_MEMO));
 
                                     allRunFor(spec, op, op2);
-                                    resetToDefault(LAZY_CREATE_FEATURE_FLAG);
-                                }));
+                                }),
+                        resetToDefault(LAZY_CREATE_FEATURE_FLAG));
     }
 
     private HapiApiSpec
@@ -824,9 +824,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .via(TRANSFER_TXN);
 
                                     allRunFor(spec, op);
-                                    resetToDefault(LAZY_CREATE_FEATURE_FLAG);
-                                    resetToDefault(AUTO_CREATE_FEATURE_FLAG);
-                                }));
+                                }),
+                        resetToDefault(LAZY_CREATE_FEATURE_FLAG),
+                        resetToDefault(AUTO_CREATE_FEATURE_FLAG));
     }
 
     private HapiApiSpec canGetBalanceAndInfoViaAlias() {
