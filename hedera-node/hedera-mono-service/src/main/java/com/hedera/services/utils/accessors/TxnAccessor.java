@@ -100,8 +100,10 @@ public interface TxnAccessor {
 
     void setPayer(AccountID payer);
 
-    // --- Used universally for transaction submission
+    // --- Used universally for transaction submission/validation
     byte[] getSignedTxnWrapperBytes();
+
+    boolean hasConsequentialUnknownFields();
 
     // --- Used universally for logging ---
     Transaction getSignedTxnWrapper();

@@ -15,11 +15,7 @@
  */
 package com.hedera.services.txns.submission;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,6 +31,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.UnknownFieldSet;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.SignedStateViewFactory;
@@ -45,15 +42,7 @@ import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureList;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
@@ -217,6 +206,134 @@ class StructuralPrecheckTest {
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
         verify(counter).increment();
+    }
+
+    @Test
+    void cannotHaveUnknownFieldsInTransaction() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
+        final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
+        final var hostTxn =
+                TransactionBody.newBuilder()
+                        .setCryptoCreateAccount(
+                                CryptoCreateTransactionBody.newBuilder()
+                                        .setKey(reasonablyNestedKey));
+        final var signedTxn =
+                Transaction.newBuilder()
+                        .setBodyBytes(hostTxn.build().toByteString())
+                        .setUnknownFields(
+                                UnknownFieldSet.newBuilder()
+                                        .addField(
+                                                666,
+                                                UnknownFieldSet.Field.newBuilder()
+                                                        .addFixed32(42)
+                                                        .build())
+                                        .build())
+                        .build();
+        final var view = mock(StateView.class);
+
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+        given(viewFactory.latestSignedStateView()).willReturn(Optional.of(view));
+
+        final var assess = subject.assess(signedTxn);
+
+        assertExpectedFail(TRANSACTION_HAS_UNKNOWN_FIELDS, assess);
+    }
+
+    @Test
+    void cannotHaveUnknownFieldsInSignedTransaction() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
+        final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
+        final var hostTxn =
+                TransactionBody.newBuilder()
+                        .setCryptoCreateAccount(
+                                CryptoCreateTransactionBody.newBuilder()
+                                        .setKey(reasonablyNestedKey));
+        final var wrapperSignedTxn =
+                SignedTransaction.newBuilder()
+                        .setBodyBytes(hostTxn.build().toByteString())
+                        .setUnknownFields(
+                                UnknownFieldSet.newBuilder()
+                                        .addField(
+                                                666,
+                                                UnknownFieldSet.Field.newBuilder()
+                                                        .addFixed32(42)
+                                                        .build())
+                                        .build())
+                        .build();
+        final var signedTxn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(wrapperSignedTxn.toByteString())
+                        .build();
+        final var view = mock(StateView.class);
+
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+        given(viewFactory.latestSignedStateView()).willReturn(Optional.of(view));
+
+        final var assess = subject.assess(signedTxn);
+
+        assertExpectedFail(TRANSACTION_HAS_UNKNOWN_FIELDS, assess);
+    }
+
+    @Test
+    void cannotHaveUnknownFieldsInTransactionBody() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
+        final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
+        final var hostTxn =
+                TransactionBody.newBuilder()
+                        .setUnknownFields(
+                                UnknownFieldSet.newBuilder()
+                                        .addField(
+                                                666,
+                                                UnknownFieldSet.Field.newBuilder()
+                                                        .addFixed32(42)
+                                                        .build())
+                                        .build())
+                        .setCryptoCreateAccount(
+                                CryptoCreateTransactionBody.newBuilder()
+                                        .setKey(reasonablyNestedKey));
+        final var signedTxn =
+                Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        final var view = mock(StateView.class);
+
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+        given(viewFactory.latestSignedStateView()).willReturn(Optional.of(view));
+
+        final var assess = subject.assess(signedTxn);
+
+        assertExpectedFail(TRANSACTION_HAS_UNKNOWN_FIELDS, assess);
+    }
+
+    @Test
+    void cannotHaveUnknownFieldsInOpTransactionBody() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
+        final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
+        final var hostTxn =
+                TransactionBody.newBuilder()
+                        .setCryptoCreateAccount(
+                                CryptoCreateTransactionBody.newBuilder()
+                                        .setUnknownFields(
+                                                UnknownFieldSet.newBuilder()
+                                                        .addField(
+                                                                666,
+                                                                UnknownFieldSet.Field.newBuilder()
+                                                                        .addFixed32(42)
+                                                                        .build())
+                                                        .build())
+                                        .setKey(reasonablyNestedKey));
+        final var signedTxn =
+                Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        final var view = mock(StateView.class);
+
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+        given(viewFactory.latestSignedStateView()).willReturn(Optional.of(view));
+
+        final var assess = subject.assess(signedTxn);
+
+        assertExpectedFail(TRANSACTION_HAS_UNKNOWN_FIELDS, assess);
     }
 
     @Test

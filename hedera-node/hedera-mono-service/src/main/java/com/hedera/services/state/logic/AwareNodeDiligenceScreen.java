@@ -17,13 +17,7 @@ package com.hedera.services.state.logic;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -62,6 +56,10 @@ public final class AwareNodeDiligenceScreen {
 
     public boolean nodeIgnoredDueDiligence(final DuplicateClassification duplicity) {
         final var accessor = txnCtx.accessor();
+        if (accessor.hasConsequentialUnknownFields()) {
+            txnCtx.setStatus(TRANSACTION_HAS_UNKNOWN_FIELDS);
+            return true;
+        }
 
         final var submittingAccount = txnCtx.submittingNodeAccount();
         final var designatedAccount = accessor.getTxn().getNodeAccountID();
@@ -144,6 +142,7 @@ public final class AwareNodeDiligenceScreen {
      * @param relatedAccount related account as to which the warning applies to
      * @param accessor transaction accessor
      */
+    @SuppressWarnings("java:S2629")
     private void logAccountWarning(
             final String message,
             final AccountID submittingNodeAccount,
