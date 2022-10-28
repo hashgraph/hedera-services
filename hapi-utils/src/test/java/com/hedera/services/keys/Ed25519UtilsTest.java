@@ -25,6 +25,7 @@ import java.io.File;
 import java.security.KeyPair;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class Ed25519UtilsTest {
     private static final String devGenesisPemLoc = "src/test/resources/vectors/genesis.pem";
@@ -34,6 +35,8 @@ class Ed25519UtilsTest {
     // security impact
     final String devPrivateKey = "91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137";
     final String devPublicKey = "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
+
+    @TempDir private File tempDir;
 
     @Test
     void throwsIllegalArgumentOnMissingTargetLoc() {
@@ -48,14 +51,14 @@ class Ed25519UtilsTest {
 
     @Test
     void writesRecoverableDevGenesisKey() {
-        final var tmpLoc = "re-encrypted_genesis.pem";
+        final var tmpLoc = tempDir.getPath() + File.separator + "re-encrypted_genesis.pem";
         final var tmpPassphrase = "hedera";
 
         Ed25519Utils.writeKeyTo(CommonUtils.unhex(devPrivateKey), tmpLoc, tmpPassphrase);
         final var recovered = Ed25519Utils.readKeyFrom(tmpLoc, tmpPassphrase);
         assertIsGenesisDevKey(recovered);
 
-        new File(tmpLoc).delete();
+        assertTrue(new File(tmpLoc).delete());
     }
 
     @Test

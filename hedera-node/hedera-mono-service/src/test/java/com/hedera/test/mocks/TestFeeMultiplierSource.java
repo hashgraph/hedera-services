@@ -15,7 +15,7 @@
  */
 package com.hedera.test.mocks;
 
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import java.time.Instant;
 
