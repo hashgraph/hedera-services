@@ -30,9 +30,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaKeyTest {
     @Test
     void visitsAllSimpleKeys() {
-        final HederaKey key = new HederaEd25519Key("test".getBytes());
+        final var key = new HederaEd25519Key("test".getBytes());
 
-        final List<HederaKey> visitedPrimitiveKeys = new ArrayList<>();
+        final var visitedPrimitiveKeys = new ArrayList<>();
         key.visitPrimitiveKeys(simpleKey -> visitedPrimitiveKeys.add(simpleKey));
 
         assertThat(visitedPrimitiveKeys, contains(key));

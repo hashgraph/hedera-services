@@ -20,7 +20,6 @@ import com.hedera.node.app.spi.keys.HederaReplKey;
 import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;

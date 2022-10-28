@@ -15,20 +15,24 @@
  */
 package com.hedera.node.app.keys;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.keys.impl.HederaEd25519Key;
+import com.hedera.node.app.keys.impl.HederaKeyList;
+import com.hedera.node.app.keys.impl.HederaThresholdKey;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.keys.impl.HederaEd25519Key;
-import com.hedera.node.app.keys.impl.HederaKeyList;
-import com.hedera.node.app.keys.impl.HederaThresholdKey;
-import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 class HederaThresholdKeyTest {
     private static final int ED25519_BYTE_LENGTH = 32;
@@ -125,5 +129,17 @@ class HederaThresholdKeyTest {
                 "HederaThresholdKey[threshold=1,keys=HederaKeyList[keys=[HederaEd25519Key[key=3031323334353637383930313233343536373839303132333435363738393031],"
                     + " HederaEd25519Key[key=3031323334353637383930313233343536373839303132333435363738393031]]]]";
         assertEquals(expectedString, subject.toString());
+    }
+
+    @Test
+    void visitsAllSimpleKeys() {
+        final var k1 = new HederaEd25519Key("test".getBytes());
+        final var k2 = new HederaEd25519Key("test-again".getBytes());
+        final var key = new HederaThresholdKey(1, new HederaKeyList(List.of(k1, k2)));
+
+        final var visitedPrimitiveKeys = new ArrayList<>();
+        key.visitPrimitiveKeys(simpleKey -> visitedPrimitiveKeys.add(simpleKey));
+
+        assertThat(visitedPrimitiveKeys, contains(k1, k2));
     }
 }

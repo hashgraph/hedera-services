@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.keys;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -24,7 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.keys.impl.HederaEd25519Key;
 import com.hedera.node.app.keys.impl.HederaKeyList;
+import com.hedera.node.app.keys.impl.HederaThresholdKey;
 import com.hedera.node.app.spi.keys.HederaReplKey;
+
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -101,5 +106,17 @@ class HederaKeyListTest {
         subject = new HederaKeyList(List.of(new HederaEd25519Key("firstKey".getBytes())));
         final var expectedString = "HederaKeyList[keys=[HederaEd25519Key[key=66697273744b6579]]]";
         assertEquals(expectedString, subject.toString());
+    }
+
+    @Test
+    void visitsAllSimpleKeys() {
+        final var k1 = new HederaEd25519Key("test".getBytes());
+        final var k2 = new HederaEd25519Key("test-again".getBytes());
+        final var key = new HederaKeyList(List.of(k1, k2));
+
+        final var visitedPrimitiveKeys = new ArrayList<>();
+        key.visitPrimitiveKeys(simpleKey -> visitedPrimitiveKeys.add(simpleKey));
+
+        assertThat(visitedPrimitiveKeys, contains(k1, k2));
     }
 }

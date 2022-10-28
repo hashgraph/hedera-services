@@ -15,19 +15,21 @@
  */
 package com.hedera.node.app.keys;
 
-import static com.hedera.node.app.keys.impl.HederaKeys.asHederaKey;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.keys.impl.HederaEd25519Key;
 import com.hedera.node.app.keys.impl.HederaKeys;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static com.hedera.node.app.keys.impl.HederaKeys.asHederaKey;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class HederaKeysTest {
@@ -47,14 +49,31 @@ class HederaKeysTest {
     }
 
     @Test
+    void returnsEmptyIfKeyInvalid() {
+        var input =
+                Key.newBuilder()
+                        .setEd25519(ByteString.copyFromUtf8("test"))
+                        .build();
+
+        var subject = asHederaKey(input);
+
+        assertFalse(subject.isPresent());
+
+        input = TxnUtils.nestKeys(Key.newBuilder(), 20).build();
+        subject = asHederaKey(input);
+
+        assertFalse(subject.isPresent());
+    }
+
+    @Test
     void toBeImplementedSolutions() {
         final var input =
                 Key.newBuilder()
                         .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
                         .build();
+        final var key = new HederaEd25519Key();
 
         assertThrows(NotImplementedException.class, () -> HederaKeys.fromProto(input, 1));
-        assertThrows(
-                NotImplementedException.class, () -> HederaKeys.toProto(new HederaEd25519Key()));
+        assertThrows(NotImplementedException.class, () -> HederaKeys.toProto(key));
     }
 }

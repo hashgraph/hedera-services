@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,5 +22,4 @@ import com.swirlds.virtualmap.VirtualValue;
  * com.hedera.services.legacy.core.jproto.JKey} is replaced with {@link HederaKey}. Once this is
  * removed {@link HederaKey} will extend {@link VirtualValue}
  */
-public interface HederaReplKey extends VirtualValue, HederaKey {
-}
+public interface HederaReplKey extends VirtualValue, HederaKey {}
