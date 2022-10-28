@@ -384,16 +384,4 @@ public class BalanceChange {
         else if (hasNonEmptyCounterPartyAlias()) return counterPartyAlias;
         else return null;
     }
-
-    public void changeReceiverToAlias() {
-        if (this.counterPartyAccountId != null) {
-            this.counterPartyAlias =
-                    ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(counterPartyAccountId));
-            this.counterPartyAccountId =
-                    AccountID.newBuilder().setAlias(this.counterPartyAlias).build();
-        } else {
-            this.alias = ByteStringUtils.wrapUnsafely(account.asEvmAddress().toArrayUnsafe());
-            this.accountId = AccountID.newBuilder().setAlias(this.alias).build();
-        }
-    }
 }
