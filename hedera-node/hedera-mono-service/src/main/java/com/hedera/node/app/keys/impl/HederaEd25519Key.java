@@ -86,18 +86,8 @@ public class HederaEd25519Key implements ReplHederaKey {
     }
 
     @Override
-    public void serialize(final ByteBuffer to) throws IOException {
-        to.put(key, 0, key.length);
-    }
-
-    @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.write(key, 0, key.length);
-    }
-
-    @Override
-    public void deserialize(final ByteBuffer from, final int version) throws IOException {
-        from.get(key);
     }
 
     @Override
