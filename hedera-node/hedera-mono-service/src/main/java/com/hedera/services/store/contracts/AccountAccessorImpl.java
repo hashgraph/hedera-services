@@ -27,7 +27,7 @@ public class AccountAccessorImpl implements AccountAccessor {
     }
 
     @Override
-    public Address exists(final Address addressOrAlias) {
+    public Address canonicalAddress(final Address addressOrAlias) {
         return trackingLedgers.canonicalAddress(addressOrAlias);
     }
 }

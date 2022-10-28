@@ -152,7 +152,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
     @Override
     public Account get(final Address addressOrAlias) {
-        if (!addressOrAlias.equals(accountAccessor.exists(addressOrAlias))) {
+        if (!addressOrAlias.equals(accountAccessor.canonicalAddress(addressOrAlias))) {
             return null;
         }
 

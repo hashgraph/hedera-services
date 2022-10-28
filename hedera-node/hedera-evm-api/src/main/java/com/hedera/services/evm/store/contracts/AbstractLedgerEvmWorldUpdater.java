@@ -81,6 +81,6 @@ public class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
 
     @Override
     public Account get(Address address) {
-        return new UpdatedHederaEvmAccount(accountAccessor.exists(address));
+        return new UpdatedHederaEvmAccount(accountAccessor.canonicalAddress(address));
     }
 }

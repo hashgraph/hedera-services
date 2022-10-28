@@ -23,7 +23,7 @@ public class MockAccountAccessor implements AccountAccessor {
             Address.fromHexString("0x000000000000000000000000000000000000077e");
 
     @Override
-    public Address exists(Address addressOrAlias) {
+    public Address canonicalAddress(Address addressOrAlias) {
         return address;
     }
 }

@@ -19,5 +19,5 @@ import org.hyperledger.besu.datatypes.Address;
 
 public interface AccountAccessor {
 
-    Address exists(final Address addressOrAlias);
+    Address canonicalAddress(final Address addressOrAlias);
 }
