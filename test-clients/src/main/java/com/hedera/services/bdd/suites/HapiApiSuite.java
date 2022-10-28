@@ -70,8 +70,7 @@ public abstract class HapiApiSuite {
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
     public static final String CHAIN_ID_PROP = "contracts.chainId";
-    public static final String AUTO_CREATION_ENABLED = "autoCreation.enabled";
-    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final Integer CHAIN_ID = 298;
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";

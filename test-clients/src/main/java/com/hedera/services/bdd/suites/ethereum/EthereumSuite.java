@@ -56,6 +56,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -69,6 +70,7 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
@@ -459,8 +461,7 @@ public class EthereumSuite extends HapiApiSuite {
         return defaultHapiSpec(
                         "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
-                        overriding(AUTO_CREATION_ENABLED, "true"),
-                        overriding(LAZY_CREATION_ENABLED, "true"),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(
@@ -471,8 +472,8 @@ public class EthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(FIVE_HBARS)
                                 .nonce(0)
                                 .gasLimit(GAS_LIMIT)
-                                .hasKnownStatus(SUCCESS))
-                .then();
+                                .hasKnownStatus(INVALID_ACCOUNT_ID))
+                .then(UtilVerbs.resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     HapiApiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {
