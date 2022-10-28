@@ -141,10 +141,12 @@ public class SignedTxnAccessor implements TxnAccessor {
             sigMap = signedTxn.getSigMap();
             hash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(signedTxnBytes));
         }
-        usesUnknownFields |= hasUnknownFields(sigMap);
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
 
         txn = TransactionBody.parseFrom(txnBytes);
+        // Note that the SignatureMap was parsed with either the top-level
+        // Transaction or the SignedTransaction, so we've already checked
+        // it for unknown fields either way; only still need to check the body
         usesUnknownFields |= hasUnknownFields(txn);
         memo = txn.getMemo();
         txnId = txn.getTransactionID();

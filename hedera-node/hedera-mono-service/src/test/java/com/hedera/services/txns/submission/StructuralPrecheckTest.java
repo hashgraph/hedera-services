@@ -277,6 +277,44 @@ class StructuralPrecheckTest {
     }
 
     @Test
+    void cannotHaveUnknownFieldsInSignedTransactionSigMap() throws InvalidProtocolBufferException {
+        withVerifiableCounters();
+        final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
+        final var hostTxn =
+                TransactionBody.newBuilder()
+                        .setCryptoCreateAccount(
+                                CryptoCreateTransactionBody.newBuilder()
+                                        .setKey(reasonablyNestedKey));
+        final var wrapperSignedTxn =
+                SignedTransaction.newBuilder()
+                        .setBodyBytes(hostTxn.build().toByteString())
+                        .setSigMap(
+                                SignatureMap.newBuilder()
+                                        .setUnknownFields(
+                                                UnknownFieldSet.newBuilder()
+                                                        .addField(
+                                                                666,
+                                                                UnknownFieldSet.Field.newBuilder()
+                                                                        .addFixed32(42)
+                                                                        .build())
+                                                        .build()))
+                        .build();
+        final var signedTxn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(wrapperSignedTxn.toByteString())
+                        .build();
+        final var view = mock(StateView.class);
+
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+        given(viewFactory.latestSignedStateView()).willReturn(Optional.of(view));
+
+        final var assess = subject.assess(signedTxn);
+
+        assertExpectedFail(TRANSACTION_HAS_UNKNOWN_FIELDS, assess);
+    }
+
+    @Test
     void cannotHaveUnknownFieldsInTransactionBody() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
