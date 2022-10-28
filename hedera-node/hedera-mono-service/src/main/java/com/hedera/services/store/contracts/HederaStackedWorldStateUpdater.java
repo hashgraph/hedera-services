@@ -49,7 +49,6 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;

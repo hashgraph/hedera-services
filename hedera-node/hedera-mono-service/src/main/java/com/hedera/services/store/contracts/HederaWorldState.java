@@ -29,7 +29,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.ArrayList;
@@ -136,8 +135,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
     @Override
     public Updater updater() {
-        return new Updater(
-                this, entityAccess.worldLedgers().wrapped(), dynamicProperties);
+        return new Updater(this, entityAccess.worldLedgers().wrapped(), dynamicProperties);
     }
 
     @Override
@@ -356,11 +354,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
         @Override
         public WorldUpdater updater() {
-            return new HederaStackedWorldStateUpdater(
-                    this,
-                    wrappedWorldView(),
-                    trackingLedgers().wrapped(),
-                    dynamicProperties);
+            return new HederaStackedWorldStateUpdater(this, wrappedWorldView(), trackingLedgers().wrapped(), dynamicProperties);
         }
     }
 }

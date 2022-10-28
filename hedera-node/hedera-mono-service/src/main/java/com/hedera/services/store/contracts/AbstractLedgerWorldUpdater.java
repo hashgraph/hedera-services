@@ -307,7 +307,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     private void onAccountPropertyChange(
             final AccountID id, final AccountProperty property, final Object newValue) {
         /* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
-        if (property == BALANCE) {
+        if (property == BALANCE || property == ALIAS) {
             final var address = EntityIdUtils.asTypedEvmAddress(id);
             /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
             if (deletedAccounts.contains(address)) {

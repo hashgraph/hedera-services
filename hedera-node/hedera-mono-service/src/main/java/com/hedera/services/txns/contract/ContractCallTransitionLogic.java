@@ -19,7 +19,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -27,7 +26,6 @@ import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -66,7 +64,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     private final AliasManager aliasManager;
     private final SigImpactHistorian sigImpactHistorian;
     private final EntityAccess entityAccess;
-    private final RecordsHistorian recordsHistorian;
 
     @Inject
     public ContractCallTransitionLogic(
@@ -79,8 +76,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             final CodeCache codeCache,
             final SigImpactHistorian sigImpactHistorian,
             final AliasManager aliasManager,
-            final EntityAccess entityAccess,
-            final RecordsHistorian recordsHistorian) {
+            final EntityAccess entityAccess) {
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
         this.worldState = worldState;
@@ -91,7 +87,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         this.codeCache = codeCache;
         this.sigImpactHistorian = sigImpactHistorian;
         this.entityAccess = entityAccess;
-        this.recordsHistorian = recordsHistorian;
     }
 
     @Override
@@ -161,14 +156,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         txnCtx.setTargetedContract(target.toGrpcContractID());
         for (final var createdContract : createdContracts) {
             sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
-        }
-        for (final var precedingRecord : recordsHistorian.getPrecedingChildRecords()) {
-            final var expirableTxnRecord = precedingRecord.getExpirableTransactionRecord();
-            if (!expirableTxnRecord.getEnumStatus().equals(REVERTED_SUCCESS)) {
-                sigImpactHistorian.markAliasChanged(expirableTxnRecord.getAlias());
-                sigImpactHistorian.markEntityChanged(
-                        expirableTxnRecord.getReceipt().getAccountId().num());
-            }
         }
         recordService.externaliseEvmCallTransaction(result);
     }
