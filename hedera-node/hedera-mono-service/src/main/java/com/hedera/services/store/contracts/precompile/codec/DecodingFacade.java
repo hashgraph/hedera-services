@@ -222,10 +222,8 @@ public class DecodingFacade {
     @NotNull
     private static AccountID getAsAliasedAccountID(AccountID accountID) {
         return AccountID.newBuilder()
-            .setAlias(
-                ByteStringUtils.wrapUnsafely(
-                    EntityIdUtils.asEvmAddress(accountID)))
-            .build();
+                .setAlias(ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(accountID)))
+                .build();
     }
 
     public static List<SyntheticTxnFactory.HbarTransfer> bindHBarTransfersFrom(

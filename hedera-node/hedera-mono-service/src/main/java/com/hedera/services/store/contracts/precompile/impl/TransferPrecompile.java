@@ -306,35 +306,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         transferLogic.doZeroSum(changes);
     }
 
-    private void executeLazyCreate(
-            final MessageFrame frame,
-            final List<BalanceChange> changes,
-            final BalanceChange change) {
-        final var lazyCreateResult = autoCreationLogic.create(change, ledgers.accounts(), changes);
-        if (lazyCreateResult.getLeft() != OK) {
-            throw new InvalidTransactionException(lazyCreateResult.getLeft());
-        } else {
-            final var creationFeeInTinybars = lazyCreateResult.getRight();
-            final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
-            frame.decrementRemainingGas(creationFeeInGas);
-            // track auto-creation preceding child record
-            final var pendingCreations = autoCreationLogic.getPendingCreations();
-            final var lastRecord = pendingCreations.get(pendingCreations.size() - 1);
-            final var recordSoFar = lastRecord.recordBuilder();
-            recordSoFar.onlyExternalizeIfSuccessful();
-            updater.manageInProgressPrecedingRecord(
-                    recordsHistorian, recordSoFar, lastRecord.syntheticBody());
-            // track the lazy account, so it is accessible to the EVM
-            updater.trackLazilyCreatedAccount(EntityIdUtils.asTypedEvmAddress(change.accountId()));
-        }
-    }
-
     // rename this
     private void replaceChangeAliasToId(
-           final MessageFrame frame,
-           final List<BalanceChange> changes,
-           final Map<ByteString, EntityNum> completedLazyCreates,
-           final BalanceChange change) {
+            final MessageFrame frame,
+            final List<BalanceChange> changes,
+            final Map<ByteString, EntityNum> completedLazyCreates,
+            final BalanceChange change) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
@@ -347,6 +324,27 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     ? change.accountId()
                                     : change.counterPartyAccountId()));
         }
+    }
+
+    private void executeLazyCreate(
+            final MessageFrame frame,
+            final List<BalanceChange> changes,
+            final BalanceChange change) {
+        final var lazyCreateResult = autoCreationLogic.create(change, ledgers.accounts(), changes);
+        validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
+
+        final var creationFeeInTinybars = lazyCreateResult.getRight();
+        final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
+        frame.decrementRemainingGas(creationFeeInGas);
+        // track auto-creation preceding child record
+        final var pendingCreations = autoCreationLogic.getPendingCreations();
+        final var lastRecord = pendingCreations.get(pendingCreations.size() - 1);
+        final var recordSoFar = lastRecord.recordBuilder();
+        recordSoFar.onlyExternalizeIfSuccessful();
+        updater.manageInProgressPrecedingRecord(
+                recordsHistorian, recordSoFar, lastRecord.syntheticBody());
+        // track the lazy account, so it is accessible to the EVM
+        updater.trackLazilyCreatedAccount(EntityIdUtils.asTypedEvmAddress(change.accountId()));
     }
 
     @Override

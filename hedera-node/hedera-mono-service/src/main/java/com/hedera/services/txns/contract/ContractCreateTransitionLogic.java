@@ -220,6 +220,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         for (final var createdContract : createdContracts) {
             sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
         }
+        // TODO: markEntityChanged for all lazy created accounts;
         if (result.isSuccessful()) {
             final var newEvmAddress = newContractAddress.toArrayUnsafe();
             final var newContractId = contractIdFromEvmAddress(newEvmAddress);
