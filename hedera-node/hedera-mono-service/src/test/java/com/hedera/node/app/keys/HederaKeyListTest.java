@@ -26,9 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.keys.impl.HederaEd25519Key;
 import com.hedera.node.app.keys.impl.HederaKeyList;
-import com.hedera.node.app.keys.impl.HederaThresholdKey;
 import com.hedera.node.app.spi.keys.HederaReplKey;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;

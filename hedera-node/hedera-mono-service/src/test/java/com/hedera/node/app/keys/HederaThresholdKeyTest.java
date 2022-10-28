@@ -15,16 +15,6 @@
  */
 package com.hedera.node.app.keys;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.keys.impl.HederaEd25519Key;
-import com.hedera.node.app.keys.impl.HederaKeyList;
-import com.hedera.node.app.keys.impl.HederaThresholdKey;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.keys.impl.HederaEd25519Key;
+import com.hedera.node.app.keys.impl.HederaKeyList;
+import com.hedera.node.app.keys.impl.HederaThresholdKey;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class HederaThresholdKeyTest {
     private static final int ED25519_BYTE_LENGTH = 32;

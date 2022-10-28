@@ -22,9 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-/**
- * Base implementations for all type of {@link HederaReplKey}s
- */
+/** Base implementations for all type of {@link HederaReplKey}s */
 public abstract class AbstractHederaKey implements HederaReplKey {
     @Override
     public void serialize(final ByteBuffer buf) throws IOException {
