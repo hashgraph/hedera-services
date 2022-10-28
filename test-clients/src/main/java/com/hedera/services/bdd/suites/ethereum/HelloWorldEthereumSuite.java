@@ -37,6 +37,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContrac
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -59,10 +61,10 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -76,6 +78,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
     private static final String OC_TOKEN_CONTRACT = "OcToken";
     private static final String CALLDATA_SIZE_CONTRACT = "CalldataSize";
+    private static final String CHAIN_ID_PROP = "contracts.chainId";
+    private static final String DEPOSIT = "deposit";
 
     public static void main(String... args) {
         new HelloWorldEthereumSuite().runSuiteSync();
@@ -83,7 +87,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(Stream.of(setChainId()).toList(), ethereumCalls(), ethereumCreates());
+        return allOf(setChainId(), ethereumCalls(), ethereumCreates());
     }
 
     List<HapiApiSpec> ethereumCalls() {
@@ -103,8 +107,12 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 });
     }
 
-    HapiApiSpec setChainId() {
-        return defaultHapiSpec("SetChainId").given().when().then(overriding(CHAIN_ID_PROP, "298"));
+    List<HapiApiSpec> setChainId() {
+        return List.of(
+                defaultHapiSpec("SetChainId")
+                        .given()
+                        .when()
+                        .then(overriding(CHAIN_ID_PROP, "298")));
     }
 
     HapiApiSpec badRelayClient() {
@@ -175,8 +183,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                         ethereumCall(
                                                         exploitContract,
                                                         "stealFrom",
-                                                        relayerEvmAddress.get(),
-                                                        exploitTokenEvmAddress.get())
+                                                        asHeadlongAddress(relayerEvmAddress.get()),
+                                                        asHeadlongAddress(
+                                                                exploitTokenEvmAddress.get()))
                                                 .type(EthTxData.EthTransactionType.EIP1559)
                                                 .signingWith(maliciousEOA)
                                                 .payingWith(RELAYER)
@@ -224,7 +233,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .when(
                         // The cost to the relayer to transmit a simple call with sufficient gas
                         // allowance is ≈ $0.0001
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -259,7 +271,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
                         // EIP1559 Ethereum Calls Work
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -271,7 +286,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         // Legacy Ethereum Calls Work
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -283,7 +301,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         // Ethereum Call with FileID callData works
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -526,7 +547,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         uploadInitCodeWithConstructorArguments(
                                 OC_TOKEN_CONTRACT,
                                 getABIFor(CONSTRUCTOR, EMPTY, OC_TOKEN_CONTRACT),
-                                1_000_000L,
+                                BigInteger.valueOf(1_000_000L),
                                 "OpenCrowd Token",
                                 "OCT"))
                 .when(

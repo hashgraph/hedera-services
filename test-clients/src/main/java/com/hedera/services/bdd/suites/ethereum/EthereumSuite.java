@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.ethereum;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -51,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
@@ -61,17 +61,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.io.File;
 import java.math.BigInteger;
@@ -262,7 +265,7 @@ public class EthereumSuite extends HapiApiSuite {
                                             ethereumCall(
                                                             PAY_RECEIVABLE_CONTRACT,
                                                             "deposit",
-                                                            depositAmount)
+                                                            BigInteger.valueOf(depositAmount))
                                                     .type(EthTxData.EthTransactionType.EIP1559)
                                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                                     .payingWith(RELAYER)
@@ -412,7 +415,10 @@ public class EthereumSuite extends HapiApiSuite {
                 .when(
                         balanceSnapshot(relayerSnapshot, RELAYER),
                         balanceSnapshot(senderSnapshot, SECP_256K1_SOURCE_KEY).accountIsAlias(),
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        "deposit",
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -470,7 +476,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
         return defaultHapiSpec("ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn")
@@ -488,13 +494,15 @@ public class EthereumSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .adminKey(SECP_256K1_SOURCE_KEY)
                                 .supplyKey(SECP_256K1_SOURCE_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])))
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
                 .when(
                         sourcing(
-                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
-                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", 5)
+                                () ->
+                                        contractCreate(
+                                                HELLO_WORLD_MINT_CONTRACT,
+                                                HapiParserUtil.asHeadlongAddress(
+                                                        asAddress(fungible.get())))),
+                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -534,7 +542,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn() {
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
         final String MULTI_KEY = "MULTI_KEY";
@@ -554,13 +562,15 @@ public class EthereumSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])))
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
                 .when(
                         sourcing(
-                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
-                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", 5)
+                                () ->
+                                        contractCreate(
+                                                HELLO_WORLD_MINT_CONTRACT,
+                                                HapiParserUtil.asHeadlongAddress(
+                                                        asAddress(fungible.get())))),
+                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -601,7 +611,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
-        final AtomicLong fungibleNum = new AtomicLong();
+        final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
         final String MULTI_KEY = "MULTI_KEY";
@@ -622,13 +632,15 @@ public class EthereumSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                fungibleNum.set(asDotDelimitedLongArray(idLit)[2])))
+                                .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
                 .when(
                         sourcing(
-                                () -> contractCreate(HELLO_WORLD_MINT_CONTRACT, fungibleNum.get())),
-                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", 5)
+                                () ->
+                                        contractCreate(
+                                                HELLO_WORLD_MINT_CONTRACT,
+                                                HapiParserUtil.asHeadlongAddress(
+                                                        asAddress(fungible.get())))),
+                        ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .nonce(0)
                                 .via(mintTxn)
@@ -858,18 +870,21 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                 SECP_256K1_SOURCE_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RELAYER)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RELAYER))),
                                                                 8_000_000L)
                                                         .via(firstTxn)
                                                         .gasLimit(GAS_LIMIT)
@@ -881,9 +896,9 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                     + " is {}",
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createdTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }))))
                 .then(

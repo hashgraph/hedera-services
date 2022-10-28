@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Longs;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -50,7 +51,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.core.CallTransaction;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
 public class CreateOperationSuite extends HapiApiSuite {
@@ -389,15 +390,15 @@ public class CreateOperationSuite extends HapiApiSuite {
                                     var resultBytes =
                                             spec.registry()
                                                     .getBytes("contractCallContractResultBytes");
-                                    CallTransaction.Function function =
-                                            CallTransaction.Function.fromJsonInterface(
+                                    com.esaulpaugh.headlong.abi.Function function =
+                                            com.esaulpaugh.headlong.abi.Function.fromJson(
                                                     getABIFor(FUNCTION, "getIndirect", contract));
 
                                     var contractCallReturnVal = 0;
                                     if (resultBytes != null && resultBytes.length > 0) {
-                                        final var retResults = function.decodeResult(resultBytes);
-                                        if (retResults != null && retResults.length > 0) {
-                                            final var retBi = (BigInteger) retResults[0];
+                                        final var retResults = function.decodeReturn(resultBytes);
+                                        if (retResults != null && retResults.size() > 0) {
+                                            final var retBi = (BigInteger) retResults.get(0);
                                             contractCallReturnVal = retBi.intValue();
                                         }
                                     }
@@ -422,13 +423,15 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                     .getBytes("getCreatedContractInfoResultBytes");
 
                                     function =
-                                            CallTransaction.Function.fromJsonInterface(
+                                            com.esaulpaugh.headlong.abi.Function.fromJson(
                                                     getABIFor(FUNCTION, "getAddress", contract));
 
-                                    final var retResults = function.decodeResult(resultBytes);
+                                    final var retResults = function.decodeReturn(resultBytes);
                                     String contractIDString = null;
-                                    if (retResults != null && retResults.length > 0) {
-                                        final var retVal = (byte[]) retResults[0];
+                                    if (retResults != null && retResults.size() > 0) {
+                                        final var retValHex =
+                                                ((Address) retResults.get(0)).toString();
+                                        final var retVal = Bytes.fromHexString(retValHex).toArray();
 
                                         final var realm =
                                                 Longs.fromByteArray(
