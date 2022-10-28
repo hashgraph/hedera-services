@@ -102,12 +102,13 @@ public class StackedContractAliases extends AbstractContractAliases {
 
     @Override
     public boolean maybeLinkEvmAddress(@Nullable JKey key, EntityNum num) {
+        //todo: implement or put implementation in superclass
         return false;
     }
 
     @Override
     public void forgetEvmAddress(ByteString alias) {
-
+        //todo: implement or put implementation in superclass
     }
 
     @Override

@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -68,6 +69,7 @@ import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -104,6 +106,7 @@ class InfrastructureFactoryTest {
     @Mock private TransactionContext txnCtx;
     @Mock private AliasManager aliasManager;
     @Mock private FeeDistribution feeDistribution;
+    @Mock private Provider<FeeCalculator> feeCalculator;
 
     private InfrastructureFactory subject;
 
@@ -121,7 +124,8 @@ class InfrastructureFactoryTest {
                         dynamicProperties,
                         txnCtx,
                         aliasManager,
-                        feeDistribution);
+                        feeDistribution,
+                        feeCalculator);
     }
 
     @Test

@@ -39,6 +39,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -64,7 +65,11 @@ import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,6 +78,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -178,9 +184,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         transferOp =
                 switch (functionId) {
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(
-                            input, aliasResolver);
+                            input, aliasResolver, ledgers.accounts()::contains);
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(
-                            input, aliasResolver);
+                            input, aliasResolver, ledgers.accounts()::contains);
+                        // TODO: add existing check for all
                     case AbiConstants.ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(
                             input, aliasResolver);
                     case AbiConstants.ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(
@@ -241,7 +248,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                         ledgers.accounts(),
                         ledgers.tokenRels());
 
-        final Map<AccountID, List<BalanceChange>> lazyCreatesBalanceChanges = new HashMap<>();
+        final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
             final var units = change.getAggregatedUnits();
@@ -249,7 +256,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 if (change.isApprovedAllowance()) {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
-                    prepareReceiverForLazyCreateIfNeeded(change, lazyCreatesBalanceChanges);
+                    if (change.hasAlias()) {
+                        replaceChangeAliasToId(frame, changes, completedLazyCreates, change);
+                    }
                     continue;
                 }
                 final var hasSenderSig =
@@ -263,6 +272,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             }
             if (i < numExplicitChanges) {
                 /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT exchanges) */
+                if (change.hasAlias()) {
+                    replaceChangeAliasToId(frame, changes, completedLazyCreates, change);
+                    continue;
+                }
                 var hasReceiverSigIfReq = true;
                 if (change.isForNft()) {
                     final var counterPartyAddress =
@@ -283,7 +296,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     ledgers,
                                     updater.aliases());
                 }
-                prepareReceiverForLazyCreateIfNeeded(change, lazyCreatesBalanceChanges);
                 validateTrue(
                         hasReceiverSigIfReq,
                         INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
@@ -291,23 +303,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             }
         }
 
-        if (!lazyCreatesBalanceChanges.isEmpty()) {
-            for (final var entry : lazyCreatesBalanceChanges.entrySet()) {
-                final var balanceChanges = entry.getValue();
-                final var firstBalanceChangeForAlias = balanceChanges.get(0);
-                executeLazyCreate(frame, changes, firstBalanceChangeForAlias);
-                // substitute the alias for the new id for the
-                // rest of the balance changes to the same evmAddress
-                for (int i = 1; i < balanceChanges.size(); i++) {
-                    balanceChanges
-                            .get(i)
-                            .replaceNonEmptyAliasWith(
-                                    EntityNum.fromAccountId(
-                                        firstBalanceChangeForAlias.counterPartyAccountId() == null ?
-                                            firstBalanceChangeForAlias.accountId() : firstBalanceChangeForAlias.counterPartyAccountId()));
-                }
-            }
-        }
         transferLogic.doZeroSum(changes);
     }
 
@@ -334,19 +329,23 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         }
     }
 
-    private void prepareReceiverForLazyCreateIfNeeded(
-        final BalanceChange change,
-        final Map<AccountID, List<BalanceChange>> lazyCreatesBalanceChanges) {
-        final var accountID =
-            change.counterPartyAccountId() == null
-                ? change.getAccount().asGrpcAccount()
-                : change.counterPartyAccountId();
-        if (impliedLazyCreates.contains(accountID)) {
-            change.changeReceiverToAlias();
-            final var balanceChanges =
-                lazyCreatesBalanceChanges.getOrDefault(accountID, new ArrayList<>());
-            balanceChanges.add(change);
-            lazyCreatesBalanceChanges.put(accountID, balanceChanges);
+    // rename this
+    private void replaceChangeAliasToId(
+           final MessageFrame frame,
+           final List<BalanceChange> changes,
+           final Map<ByteString, EntityNum> completedLazyCreates,
+           final BalanceChange change) {
+        final var receiverAlias = change.getNonEmptyAliasIfPresent();
+        if (completedLazyCreates.containsKey(receiverAlias)) {
+            change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
+        } else {
+            executeLazyCreate(frame, changes, change);
+            completedLazyCreates.put(
+                    receiverAlias,
+                    EntityNum.fromAccountId(
+                            change.counterPartyAccountId() == null
+                                    ? change.accountId()
+                                    : change.counterPartyAccountId()));
         }
     }
 
@@ -410,15 +409,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         for (var transfer : transferOp.tokenTransferWrappers()) {
             accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
             accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
-            for (final var s : transfer.fungibleTransfers()) {
-                final var receiver = s.receiver();
-                if (receiver != null && isNonExistingAndNotAccountedFor(receiver)) {
+            for (final var ft : transfer.fungibleTransfers()) {
+                if (isNonAccountedForLazyCreate(ft.receiver())) {
                     accumulatedCost += lazyCreationFee;
                 }
             }
-            for (final var s : transfer.nftExchanges()) {
-                final var receiver = s.asGrpc().getReceiverAccountID();
-                if (isNonExistingAndNotAccountedFor(receiver)) {
+            for (final var nft : transfer.nftExchanges()) {
+                if (isNonAccountedForLazyCreate(nft.asGrpc().getReceiverAccountID())) {
                     accumulatedCost += lazyCreationFee;
                 }
             }
@@ -432,17 +429,17 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                         / 2;
         accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
         for (final var s : transferOp.transferWrapper().hbarTransfers()) {
-            final var receiver = s.receiver();
-            if (receiver != null && isNonExistingAndNotAccountedFor(receiver)) {
+            if (isNonAccountedForLazyCreate(s.receiver())) {
                 accumulatedCost += lazyCreationFee;
             }
         }
         return accumulatedCost;
     }
 
-    public boolean isNonExistingAndNotAccountedFor(final AccountID accountID) {
-        if (!ledgers.accounts().contains(accountID)
-                && updater.get(EntityIdUtils.asTypedEvmAddress(accountID)) == null) {
+    public boolean isNonAccountedForLazyCreate(final AccountID accountID) {
+        if (accountID != null
+                && !accountID.getAlias().isEmpty()
+                && !impliedLazyCreates.contains(accountID)) {
             return impliedLazyCreates.add(accountID);
         }
         return false;
@@ -460,7 +457,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      * @return CryptoTransferWrapper codec
      */
     public static CryptoTransferWrapper decodeCryptoTransfer(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input,
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> isExisting) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedTuples =
                 decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
@@ -468,7 +467,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
         for (final var tuple : decodedTuples) {
-            decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tuple);
+            decodeTokenTransfer(aliasResolver, isExisting, tokenTransferWrappers, (Tuple[]) tuple);
         }
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
@@ -487,7 +486,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      * @return CryptoTransferWrapper codec
      */
     public static CryptoTransferWrapper decodeCryptoTransferV2(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input,
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> isExisting) {
         final Tuple decodedTuples =
                 decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR_V2, CRYPTO_TRANSFER_DECODER_V2);
         List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
@@ -498,7 +499,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         hbarTransfers = decodeHbarTransfers(aliasResolver, hbarTransfers, hbarTransferTuples);
 
-        decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tokenTransferTuples);
+        decodeTokenTransfer(
+                aliasResolver, isExisting, tokenTransferWrappers, (Tuple[]) tokenTransferTuples);
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
@@ -515,6 +517,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     public static void decodeTokenTransfer(
             UnaryOperator<byte[]> aliasResolver,
+            Predicate<AccountID> isExisting,
             List<TokenTransferWrapper> tokenTransferWrappers,
             Tuple[] tokenTransferTuples) {
         for (final var tupleNested : tokenTransferTuples) {
@@ -526,11 +529,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var abiAdjustments = (Tuple[]) tupleNested.get(1);
             if (abiAdjustments.length > 0) {
                 fungibleTransfers =
-                        bindFungibleTransfersFrom(tokenType, abiAdjustments, aliasResolver);
+                        bindFungibleTransfersFrom(
+                                tokenType, abiAdjustments, aliasResolver, isExisting);
             }
             final var abiNftExchanges = (Tuple[]) tupleNested.get(2);
             if (abiNftExchanges.length > 0) {
-                nftExchanges = bindNftExchangesFrom(tokenType, abiNftExchanges, aliasResolver);
+                nftExchanges =
+                        bindNftExchangesFrom(tokenType, abiNftExchanges, aliasResolver, isExisting);
             }
 
             tokenTransferWrappers.add(new TokenTransferWrapper(nftExchanges, fungibleTransfers));

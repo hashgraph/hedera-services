@@ -355,7 +355,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         @Override
         public WorldUpdater updater() {
             return new HederaStackedWorldStateUpdater(
-                this, wrappedWorldView(), trackingLedgers().wrapped(), dynamicProperties);
+                    this, wrappedWorldView(), trackingLedgers().wrapped(), dynamicProperties);
         }
     }
 }

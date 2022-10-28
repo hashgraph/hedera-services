@@ -125,20 +125,22 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-//                    nonNestedCryptoTransferForFungibleToken(),
-//                    nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-//                    nonNestedCryptoTransferForNonFungibleToken(),
-//                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-//                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-//                    nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-//                    repeatedTokenIdsAreAutomaticallyConsolidated(),
-//                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
-//                    hapiTransferFromForFungibleToken(),
-//                    hapiTransferFromForNFT(),
-                    transferFungibleToEVMAddress()
-//                    transferNFTToEVMAddress(),
-//                    transferFromForFungibleTokenToEVMAddressAlias(),
-//                    transferFromForNFTToEVMAddressAlias()
+                    //                    nonNestedCryptoTransferForFungibleToken(),
+                    //
+                    // nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+                    //                    nonNestedCryptoTransferForNonFungibleToken(),
+                    //                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+                    //                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+                    //
+                    // nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+                    //                    repeatedTokenIdsAreAutomaticallyConsolidated(),
+                    //                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
+                    //                    hapiTransferFromForFungibleToken(),
+                    //                    hapiTransferFromForNFT(),
+                    //                    transferFungibleToEVMAddress()
+                    transferNFTToEVMAddress(),
+                    //                    transferFromForFungibleTokenToEVMAddressAlias(),
+                    //                    transferFromForNFTToEVMAddressAlias()
                 });
     }
 
@@ -1861,7 +1863,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                             .getAccountID(OWNER)),
                                                             addressBytes,
                                                             allowance / 2)
-                                                .gas(GAS_TO_OFFER)
+                                                    .gas(GAS_TO_OFFER)
                                                     .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS));
                                 }))
@@ -1945,9 +1947,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                             .getAccountID(OWNER)),
                                                             addressBytes,
                                                             2L)
-                                                .gas(GAS_TO_OFFER)
-
-                                                .via(successfulTransferFromTxn)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS));
                                 }))
                 .then(

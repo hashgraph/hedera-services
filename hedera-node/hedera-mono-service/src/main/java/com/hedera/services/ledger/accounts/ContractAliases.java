@@ -18,17 +18,14 @@ package com.hedera.services.ledger.accounts;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-public interface ContractAliases extends HederaAliasManager{
+public interface ContractAliases extends HederaAliasManager {
     void revert();
 
     void filterPendingChanges(Predicate<Address> filter);

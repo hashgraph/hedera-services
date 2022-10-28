@@ -22,6 +22,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -175,12 +177,15 @@ public class DecodingFacade {
     public static List<SyntheticTxnFactory.NftExchange> bindNftExchangesFrom(
             final TokenID tokenType,
             @NotNull final Tuple[] abiExchanges,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> existingCheck) {
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
         for (final var exchange : abiExchanges) {
             final var sender = convertLeftPaddedAddressToAccountId(exchange.get(0), aliasResolver);
-            final var receiver =
-                    convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver);
+            var receiver = convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver);
+            if (!existingCheck.test(receiver)) {
+                receiver = getAsAliasedAccountID(receiver);
+            }
             final var serialNo = (long) exchange.get(2);
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
@@ -196,12 +201,15 @@ public class DecodingFacade {
     public static List<SyntheticTxnFactory.FungibleTokenTransfer> bindFungibleTransfersFrom(
             final TokenID tokenType,
             @NotNull final Tuple[] abiTransfers,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> isExisting) {
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
-            final AccountID accountID =
-                    convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
+            var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
+            if (amount > 0 && !isExisting.test(accountID)) {
+                accountID = getAsAliasedAccountID(accountID);
+            }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
             // The isApproval parameter only exists in the new form of cryptoTransfer
@@ -209,6 +217,15 @@ public class DecodingFacade {
             addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, isApproval);
         }
         return fungibleTransfers;
+    }
+
+    @NotNull
+    private static AccountID getAsAliasedAccountID(AccountID accountID) {
+        return AccountID.newBuilder()
+            .setAlias(
+                ByteStringUtils.wrapUnsafely(
+                    EntityIdUtils.asEvmAddress(accountID)))
+            .build();
     }
 
     public static List<SyntheticTxnFactory.HbarTransfer> bindHBarTransfersFrom(

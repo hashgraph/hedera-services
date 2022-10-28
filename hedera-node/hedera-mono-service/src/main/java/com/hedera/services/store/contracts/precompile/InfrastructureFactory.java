@@ -21,6 +21,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -72,6 +73,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -90,6 +92,7 @@ public class InfrastructureFactory {
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
     private final FeeDistribution feeDistribution;
+    private final Provider<FeeCalculator> feeCalculator;
 
     @Inject
     public InfrastructureFactory(
@@ -103,7 +106,8 @@ public class InfrastructureFactory {
             final GlobalDynamicProperties dynamicProperties,
             final TransactionContext txnCtx,
             final AliasManager aliasManager,
-            final FeeDistribution feeDistribution) {
+            final FeeDistribution feeDistribution,
+            final Provider<FeeCalculator> feeCalculator) {
         this.ids = ids;
         this.encoder = encoder;
         this.validator = validator;
@@ -115,6 +119,7 @@ public class InfrastructureFactory {
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
         this.feeDistribution = feeDistribution;
+        this.feeCalculator = feeCalculator;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -190,19 +195,24 @@ public class InfrastructureFactory {
                 validator);
     }
 
-    public AutoCreationLogic newAutoCreationLogic(SyntheticTxnFactory syntheticTxnFactory, EntityCreator entityCreator,
-        StateView view, HederaAliasManager aliasManager) {
-        return new AutoCreationLogic(
-            usageLimits,
-            syntheticTxnFactory,
-            entityCreator,
-            ids,
-            aliasManager, //TODO: change
-            sigImpactHistorian,
-            () -> view,
-            txnCtx,
-            dynamicProperties
-        );
+    public AutoCreationLogic newAutoCreationLogic(
+            SyntheticTxnFactory syntheticTxnFactory,
+            EntityCreator entityCreator,
+            StateView view,
+            HederaAliasManager aliasManager) {
+        final var autoCreationLogic =
+                new AutoCreationLogic(
+                        usageLimits,
+                        syntheticTxnFactory,
+                        entityCreator,
+                        ids,
+                        aliasManager,
+                        sigImpactHistorian,
+                        () -> view,
+                        txnCtx,
+                        dynamicProperties);
+        autoCreationLogic.setFeeCalculator(feeCalculator.get());
+        return autoCreationLogic;
     }
 
     public TransferLogic newTransferLogic(

@@ -33,7 +33,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -103,9 +102,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     protected Set<Address> deletedAccounts = new HashSet<>();
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
-    protected AbstractLedgerWorldUpdater(
-            final W world,
-            final WorldLedgers trackingLedgers) {
+    protected AbstractLedgerWorldUpdater(final W world, final WorldLedgers trackingLedgers) {
         this.world = world;
         this.trackingLedgers = trackingLedgers;
     }
@@ -307,7 +304,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     private void onAccountPropertyChange(
             final AccountID id, final AccountProperty property, final Object newValue) {
         /* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
-        if (property == BALANCE || property == ALIAS) {
+        if (property == BALANCE) {
             final var address = EntityIdUtils.asTypedEvmAddress(id);
             /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
             if (deletedAccounts.contains(address)) {

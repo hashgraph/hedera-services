@@ -34,7 +34,6 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
@@ -93,7 +92,6 @@ import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecom
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -282,7 +280,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             senderAddress,
                             impliedTransfersMarshal,
                             recordsHistorian,
-                        infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
+                            infrastructureFactory.newAutoCreationLogic(
+                                    syntheticTxnFactory, creator, currentView, ledgers.aliases()),
                             dynamicProperties.isAutoCreationEnabled()
                                     && dynamicProperties.isLazyCreationEnabled());
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
@@ -300,7 +299,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             senderAddress,
                                             impliedTransfersMarshal,
                                             recordsHistorian,
-                                            infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
+                                            infrastructureFactory.newAutoCreationLogic(
+                                                    syntheticTxnFactory,
+                                                    creator,
+                                                    currentView,
+                                                    ledgers.aliases()),
                                             dynamicProperties.isAutoCreationEnabled()
                                                     && dynamicProperties.isLazyCreationEnabled()));
                     case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
@@ -605,7 +608,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     functionId,
                                                     impliedTransfersMarshal,
                                                     recordsHistorian,
-                                                infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
+                                                    infrastructureFactory.newAutoCreationLogic(
+                                                            syntheticTxnFactory,
+                                                            creator,
+                                                            currentView,
+                                                            ledgers.aliases()),
                                                     dynamicProperties.isAutoCreationEnabled()
                                                             && dynamicProperties
                                                                     .isLazyCreationEnabled()));
@@ -628,7 +635,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     functionId,
                                                     impliedTransfersMarshal,
                                                     recordsHistorian,
-                                                infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
+                                                    infrastructureFactory.newAutoCreationLogic(
+                                                            syntheticTxnFactory,
+                                                            creator,
+                                                            currentView,
+                                                            ledgers.aliases()),
                                                     dynamicProperties.isAutoCreationEnabled()
                                                             && dynamicProperties
                                                                     .isLazyCreationEnabled()));
@@ -792,7 +803,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             functionId,
                                             impliedTransfersMarshal,
                                             recordsHistorian,
-                                        infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
+                                            infrastructureFactory.newAutoCreationLogic(
+                                                    syntheticTxnFactory,
+                                                    creator,
+                                                    currentView,
+                                                    ledgers.aliases()),
                                             dynamicProperties.isAutoCreationEnabled()
                                                     && dynamicProperties.isLazyCreationEnabled()));
                     case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
@@ -812,7 +827,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             functionId,
                                             impliedTransfersMarshal,
                                             recordsHistorian,
-                                        infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
+                                            infrastructureFactory.newAutoCreationLogic(
+                                                    syntheticTxnFactory,
+                                                    creator,
+                                                    currentView,
+                                                    ledgers.aliases()),
                                             dynamicProperties.isAutoCreationEnabled()
                                                     && dynamicProperties.isLazyCreationEnabled()));
                     default -> null;
