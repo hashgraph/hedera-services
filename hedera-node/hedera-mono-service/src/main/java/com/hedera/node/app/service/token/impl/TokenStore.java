@@ -56,7 +56,8 @@ public class TokenStore {
             boolean hasRoyaltyWithFallback,
             EntityId treasury) {}
 
-    public record TokenMetaOrLookUpFailureReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
+    public record TokenMetaOrLookUpFailureReason(
+            TokenMetadata metadata, ResponseCodeEnum failureReason) {
         public boolean failed() {
             return failureReason != null;
         }
