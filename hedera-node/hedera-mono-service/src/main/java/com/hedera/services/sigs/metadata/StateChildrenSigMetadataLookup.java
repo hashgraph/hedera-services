@@ -231,7 +231,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
                 }
 
                 final var accountAlias = account.getAlias();
-                if (accountAlias.isEmpty()) {
+                if (accountAlias == null || accountAlias.isEmpty()) {
                     return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
                 } else {
                     return new SafeLookupResult<>(

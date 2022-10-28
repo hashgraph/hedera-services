@@ -24,6 +24,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -248,7 +249,7 @@ class StateChildrenSigMetadataLookupTest {
     }
 
     @Test
-    void recognizesImmutableAccountWithEmptyKeyAndEmptyAlias() {
+    void recognizesImmutableAccountWithEmptyKey() {
         given(stateChildren.accounts()).willReturn(accounts);
         given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
         given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
@@ -261,7 +262,7 @@ class StateChildrenSigMetadataLookupTest {
     }
 
     @Test
-    void recognizesImmutableAccountWithUnexpectedNullKeyAndEmptyAlias() {
+    void recognizesImmutableAccountWithUnexpectedNullKey() {
         given(stateChildren.accounts()).willReturn(accounts);
         given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
 
@@ -270,6 +271,84 @@ class StateChildrenSigMetadataLookupTest {
 
         assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
         assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
+    }
+
+    @Test
+    void recognizesImmutableAccountWithUnexpectedNullKeyAndNullAliasWhenLazyCreationEnabled() {
+        given(stateChildren.accounts()).willReturn(accounts);
+        given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        final var linkedRefs = new LinkedRefs();
+        final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
+
+        assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+        assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
+    }
+
+    @Test
+    void recognizesImmutableAccountWithUnexpectedNullKeyAndEmptyAliasWhenLazyCreationEnabled() {
+        given(stateChildren.accounts()).willReturn(accounts);
+        given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+        given(account.getAlias()).willReturn(ByteString.EMPTY);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        final var linkedRefs = new LinkedRefs();
+        final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
+
+        assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+        assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
+    }
+
+    @Test
+    void recognizesImmutableAccountWithEmptyKeyAndNullAliasWhenLazyCreationEnabled() {
+        given(stateChildren.accounts()).willReturn(accounts);
+        given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+        given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        final var linkedRefs = new LinkedRefs();
+        final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
+
+        assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+        assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
+    }
+
+    @Test
+    void recognizesImmutableAccountWithEmptyKeyAndEmptyAliasWhenLazyCreationEnabled() {
+        given(stateChildren.accounts()).willReturn(accounts);
+        given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+        given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
+        given(account.getAlias()).willReturn(ByteString.EMPTY);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        final var linkedRefs = new LinkedRefs();
+        final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
+
+        assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+        assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
+    }
+
+    @Test
+    void recognizesHollowAccountWhenLazyCreationEnabled() {
+        var evmAddressBytes = ByteString.copyFromUtf8("evmAddress");
+
+        given(stateChildren.accounts()).willReturn(accounts);
+        given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+        given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
+        given(account.getAlias()).willReturn(evmAddressBytes);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        final var linkedRefs = new LinkedRefs();
+        final var result = subject.accountSigningMetaFor(knownAccount, linkedRefs);
+
+        assertTrue(result.succeeded());
+        assertTrue(linkedRefs.linkedAliases().isEmpty());
+        assertFalse(result.metadata().receiverSigRequired());
+        assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+        assertArrayEquals(
+                evmAddressBytes.toByteArray(),
+                result.metadata().key().getHollowKey().getEvmAddress());
     }
 
     @Test

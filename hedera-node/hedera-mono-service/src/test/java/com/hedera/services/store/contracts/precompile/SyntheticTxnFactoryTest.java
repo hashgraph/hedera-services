@@ -55,6 +55,7 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
 import com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns;
@@ -85,6 +86,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -471,6 +473,27 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
         assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+    }
+
+    @Test
+    void createsExpectedHollowAccountUpdate() {
+        final var edcsaSecp256K1Bytes =
+                ByteString.copyFrom(new byte[] {0x02})
+                        .concat(
+                                TxnUtils.randomUtf8ByteString(
+                                        JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
+                                                - 1));
+        final var aKey = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
+
+        final var result = subject.updateHollowAccount(accountNum, aKey);
+        final var txnBody = result.build();
+
+        assertTrue(txnBody.hasCryptoUpdateAccount());
+        assertEquals(aKey, txnBody.getCryptoUpdateAccount().getKey());
+        assertEquals(
+                accountNum.toGrpcAccountId(),
+                txnBody.getCryptoUpdateAccount().getAccountIDToUpdate());
+        //        assertEquals(LAZY_MEMO, txnBody.getCryptoUpdateAccount().getMemo());
     }
 
     @Test
