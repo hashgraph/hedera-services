@@ -315,7 +315,6 @@ public class EthereumSuite extends HapiApiSuite {
     HapiApiSpec invalidTxData() {
         return defaultHapiSpec("InvalidTxData")
                 .given(
-                        overriding(CHAIN_ID_PROP, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -454,6 +453,8 @@ public class EthereumSuite extends HapiApiSuite {
         return defaultHapiSpec(
                         "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
+                        overriding(AUTO_CREATION_ENABLED, "true"),
+                        overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(
