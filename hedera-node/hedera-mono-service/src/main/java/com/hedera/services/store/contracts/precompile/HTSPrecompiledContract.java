@@ -149,7 +149,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final InfrastructureFactory infrastructureFactory;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
-    private final AutoCreationLogic autoCreationLogic;
 
     private Precompile precompile;
     private TransactionBody.Builder transactionBody;
@@ -175,8 +174,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final Provider<FeeCalculator> feeCalculator,
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
-            final InfrastructureFactory infrastructureFactory,
-            final AutoCreationLogic autoCreationLogic) {
+            final InfrastructureFactory infrastructureFactory) {
         super("HTS", gasCalculator);
         this.encoder = encoder;
         this.sigsVerifier = sigsVerifier;
@@ -189,7 +187,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.currentView = currentView;
         this.precompilePricingUtils = precompilePricingUtils;
         this.infrastructureFactory = infrastructureFactory;
-        this.autoCreationLogic = autoCreationLogic;
     }
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -285,7 +282,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             senderAddress,
                             impliedTransfersMarshal,
                             recordsHistorian,
-                            autoCreationLogic,
+                        infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
                             dynamicProperties.isAutoCreationEnabled()
                                     && dynamicProperties.isLazyCreationEnabled());
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
@@ -303,7 +300,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             senderAddress,
                                             impliedTransfersMarshal,
                                             recordsHistorian,
-                                            autoCreationLogic,
+                                            infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
                                             dynamicProperties.isAutoCreationEnabled()
                                                     && dynamicProperties.isLazyCreationEnabled()));
                     case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
@@ -608,7 +605,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     functionId,
                                                     impliedTransfersMarshal,
                                                     recordsHistorian,
-                                                    autoCreationLogic,
+                                                infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
                                                     dynamicProperties.isAutoCreationEnabled()
                                                             && dynamicProperties
                                                                     .isLazyCreationEnabled()));
@@ -631,7 +628,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     functionId,
                                                     impliedTransfersMarshal,
                                                     recordsHistorian,
-                                                    autoCreationLogic,
+                                                infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
                                                     dynamicProperties.isAutoCreationEnabled()
                                                             && dynamicProperties
                                                                     .isLazyCreationEnabled()));
@@ -795,7 +792,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             functionId,
                                             impliedTransfersMarshal,
                                             recordsHistorian,
-                                            autoCreationLogic,
+                                        infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
                                             dynamicProperties.isAutoCreationEnabled()
                                                     && dynamicProperties.isLazyCreationEnabled()));
                     case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
@@ -815,7 +812,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             functionId,
                                             impliedTransfersMarshal,
                                             recordsHistorian,
-                                            autoCreationLogic,
+                                        infrastructureFactory.newAutoCreationLogic(syntheticTxnFactory, creator, currentView, ledgers.aliases()),
                                             dynamicProperties.isAutoCreationEnabled()
                                                     && dynamicProperties.isLazyCreationEnabled()));
                     default -> null;

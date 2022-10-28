@@ -26,12 +26,14 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.HederaAliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
@@ -47,6 +49,7 @@ import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
@@ -185,6 +188,21 @@ public class InfrastructureFactory {
                 sigImpactHistorian,
                 ids,
                 validator);
+    }
+
+    public AutoCreationLogic newAutoCreationLogic(SyntheticTxnFactory syntheticTxnFactory, EntityCreator entityCreator,
+        StateView view, HederaAliasManager aliasManager) {
+        return new AutoCreationLogic(
+            usageLimits,
+            syntheticTxnFactory,
+            entityCreator,
+            ids,
+            aliasManager, //TODO: change
+            sigImpactHistorian,
+            () -> view,
+            txnCtx,
+            dynamicProperties
+        );
     }
 
     public TransferLogic newTransferLogic(

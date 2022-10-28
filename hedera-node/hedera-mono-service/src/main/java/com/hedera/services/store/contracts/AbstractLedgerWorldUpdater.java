@@ -99,18 +99,15 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     protected int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
     protected List<Integer> committedRecordSourceIds = Collections.emptyList();
     protected RecordsHistorian recordsHistorian = null;
-    protected AutoCreationLogic autoCreationLogic = null;
 
     protected Set<Address> deletedAccounts = new HashSet<>();
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
     protected AbstractLedgerWorldUpdater(
             final W world,
-            final WorldLedgers trackingLedgers,
-            final AutoCreationLogic autoCreationLogic) {
+            final WorldLedgers trackingLedgers) {
         this.world = world;
         this.trackingLedgers = trackingLedgers;
-        this.autoCreationLogic = autoCreationLogic;
     }
 
     /**
@@ -236,10 +233,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         getDeletedAccounts().clear();
         getUpdatedAccounts().clear();
         trackingLedgers().revert();
-
-        if (autoCreationLogic != null) {
-            autoCreationLogic.reclaimPendingAliases();
-        }
 
         if (recordsHistorian != null) {
             recordsHistorian.revertChildRecordsFromSource(thisRecordSourceId);

@@ -58,7 +58,6 @@ import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -94,7 +93,6 @@ class HederaStackedWorldStateUpdaterTest {
     @Mock private ContractCustomizer customizer;
     @Mock private HederaAccountCustomizer accountCustomizer;
     @Mock private GlobalDynamicProperties globalDynamicProperties;
-    @Mock private AutoCreationLogic autoCreationLogic;
 
     private HederaStackedWorldStateUpdater subject;
 
@@ -102,11 +100,7 @@ class HederaStackedWorldStateUpdaterTest {
     void setUp() {
         subject =
                 new HederaStackedWorldStateUpdater(
-                        updater,
-                        worldState,
-                        trackingLedgers,
-                        globalDynamicProperties,
-                        autoCreationLogic);
+                        updater, worldState, trackingLedgers, globalDynamicProperties);
     }
 
     @Test

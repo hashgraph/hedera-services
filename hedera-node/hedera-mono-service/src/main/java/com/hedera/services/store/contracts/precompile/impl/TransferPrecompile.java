@@ -308,7 +308,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 }
             }
         }
-
         transferLogic.doZeroSum(changes);
     }
 

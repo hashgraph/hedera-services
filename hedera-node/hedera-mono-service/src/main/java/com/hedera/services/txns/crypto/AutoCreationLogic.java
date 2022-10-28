@@ -36,6 +36,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.accounts.HederaAliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -82,7 +83,7 @@ public class AutoCreationLogic {
     private final EntityIdSource ids;
     private final EntityCreator creator;
     private final TransactionContext txnCtx;
-    private final AliasManager aliasManager;
+    private final HederaAliasManager aliasManager;
     private final SigImpactHistorian sigImpactHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
@@ -101,7 +102,7 @@ public class AutoCreationLogic {
             final SyntheticTxnFactory syntheticTxnFactory,
             final EntityCreator creator,
             final EntityIdSource ids,
-            final AliasManager aliasManager,
+            final HederaAliasManager aliasManager,
             final SigImpactHistorian sigImpactHistorian,
             final Supplier<StateView> currentView,
             final TransactionContext txnCtx,

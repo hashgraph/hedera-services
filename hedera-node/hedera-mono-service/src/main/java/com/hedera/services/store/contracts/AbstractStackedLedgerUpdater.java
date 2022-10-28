@@ -38,9 +38,8 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 
     protected AbstractStackedLedgerUpdater(
             final AbstractLedgerWorldUpdater<W, A> world,
-            final WorldLedgers trackingLedgers,
-            final AutoCreationLogic autoCreationLogic) {
-        super(world, trackingLedgers, autoCreationLogic);
+            final WorldLedgers trackingLedgers) {
+        super(world, trackingLedgers);
     }
 
     /** {@inheritDoc} */

@@ -79,9 +79,8 @@ public class HederaStackedWorldStateUpdater
             final AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater,
             final HederaMutableWorldState worldState,
             final WorldLedgers trackingLedgers,
-            final GlobalDynamicProperties dynamicProperties,
-            final AutoCreationLogic autoCreationLogic) {
-        super(updater, trackingLedgers, autoCreationLogic);
+            final GlobalDynamicProperties dynamicProperties) {
+        super(updater, trackingLedgers);
         this.worldState = worldState;
         this.dynamicProperties = dynamicProperties;
     }
@@ -260,8 +259,7 @@ public class HederaStackedWorldStateUpdater
                 (AbstractLedgerWorldUpdater) this,
                 worldState,
                 trackingLedgers().wrapped(),
-                dynamicProperties,
-                autoCreationLogic);
+                dynamicProperties);
     }
 
     // --- Internal helpers

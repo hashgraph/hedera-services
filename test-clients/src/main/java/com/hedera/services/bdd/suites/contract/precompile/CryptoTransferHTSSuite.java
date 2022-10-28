@@ -135,8 +135,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 //                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
 //                    hapiTransferFromForFungibleToken(),
 //                    hapiTransferFromForNFT(),
-//                    transferFungibleToEVMAddress(),
-                    transferNFTToEVMAddress(),
+                    transferFungibleToEVMAddress()
+//                    transferNFTToEVMAddress(),
 //                    transferFromForFungibleTokenToEVMAddressAlias(),
 //                    transferFromForNFTToEVMAddressAlias()
                 });

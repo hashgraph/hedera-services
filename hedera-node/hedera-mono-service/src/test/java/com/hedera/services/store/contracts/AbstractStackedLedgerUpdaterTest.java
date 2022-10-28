@@ -45,7 +45,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -70,7 +69,6 @@ class AbstractStackedLedgerUpdaterTest {
     @Mock private HederaWorldState worldState;
     @Mock private ContractCustomizer customizer;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private AutoCreationLogic autoCreationLogic;
 
     private WorldLedgers ledgers;
     private MockLedgerWorldUpdater wrapped;
@@ -82,9 +80,7 @@ class AbstractStackedLedgerUpdaterTest {
     void setUp() {
         setupLedgers();
 
-        wrapped =
-                new MockLedgerWorldUpdater(
-                        worldState, ledgers.wrapped(), customizer, autoCreationLogic);
+        wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped(), customizer);
 
         subject = (AbstractStackedLedgerUpdater<HederaWorldState, Account>) wrapped.updater();
     }

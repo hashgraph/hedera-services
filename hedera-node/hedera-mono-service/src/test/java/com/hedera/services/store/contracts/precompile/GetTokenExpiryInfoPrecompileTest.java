@@ -53,7 +53,6 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -112,7 +111,6 @@ class GetTokenExpiryInfoPrecompileTest {
     private MockedStatic<EntityIdUtils> entityIdUtils;
     private MockedStatic<GetTokenExpiryInfoPrecompile> getTokenExpiryInfoPrecompile;
     private final EntityId treasury = senderId;
-    @Mock private AutoCreationLogic autoCreationLogic;
 
     @BeforeEach
     void setUp() {
@@ -143,8 +141,7 @@ class GetTokenExpiryInfoPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        autoCreationLogic);
+                        infrastructureFactory);
 
         getTokenExpiryInfoPrecompile = Mockito.mockStatic(GetTokenExpiryInfoPrecompile.class);
     }
