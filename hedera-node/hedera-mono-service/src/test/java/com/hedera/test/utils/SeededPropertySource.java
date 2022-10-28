@@ -421,7 +421,7 @@ public class SeededPropertySource {
         return new HederaThresholdKey(1, nextHederaKeyList());
     }
 
-    public HederaKeyList nextHederaKeyList(){
+    public HederaKeyList nextHederaKeyList() {
         return new HederaKeyList(List.of(nextHederaEd25519Key(), nextHederaEd25519Key()));
     }
 

@@ -212,7 +212,7 @@ class JKeyTest {
     }
 
     @Test
-    void checksIfPrimitive(){
+    void checksIfPrimitive() {
         ByteString edcsaSecp256K1Bytes =
                 ByteString.copyFrom(new byte[] {0x02})
                         .concat(

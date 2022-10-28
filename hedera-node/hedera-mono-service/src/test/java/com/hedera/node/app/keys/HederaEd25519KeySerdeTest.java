@@ -20,20 +20,20 @@ import com.hedera.test.serde.VirtualValueDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
 public class HederaEd25519KeySerdeTest extends VirtualValueDataTest<HederaEd25519Key> {
-	public static final int NUM_TEST_CASES = 3 * MIN_TEST_CASES_PER_VERSION;
+    public static final int NUM_TEST_CASES = 3 * MIN_TEST_CASES_PER_VERSION;
 
-	@Override
-	protected Class<HederaEd25519Key> getType() {
-		return HederaEd25519Key.class;
-	}
+    @Override
+    protected Class<HederaEd25519Key> getType() {
+        return HederaEd25519Key.class;
+    }
 
-	@Override
-	protected int getNumTestCasesFor(final int version) {
-		return NUM_TEST_CASES;
-	}
+    @Override
+    protected int getNumTestCasesFor(final int version) {
+        return NUM_TEST_CASES;
+    }
 
-	@Override
-	protected HederaEd25519Key getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextHederaEd25519Key();
-	}
+    @Override
+    protected HederaEd25519Key getExpectedObject(final SeededPropertySource propertySource) {
+        return propertySource.nextHederaEd25519Key();
+    }
 }

@@ -15,20 +15,19 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.keys.impl.HederaKeys.asHederaKey;
+
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.keys.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.NotImplementedException;
-
-import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.hedera.node.app.keys.impl.HederaKeys.asHederaKey;
+import javax.annotation.Nonnull;
+import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys

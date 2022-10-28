@@ -15,25 +15,25 @@
  */
 package com.hedera.node.app.keys;
 
+import static com.hedera.node.app.keys.HederaEd25519KeySerdeTest.NUM_TEST_CASES;
+
 import com.hedera.node.app.keys.impl.HederaKeyList;
 import com.hedera.test.serde.VirtualValueDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
-import static com.hedera.node.app.keys.HederaEd25519KeySerdeTest.NUM_TEST_CASES;
-
 public class HederaKeyListSerdeTest extends VirtualValueDataTest<HederaKeyList> {
-	@Override
-	protected Class<HederaKeyList> getType() {
-		return HederaKeyList.class;
-	}
+    @Override
+    protected Class<HederaKeyList> getType() {
+        return HederaKeyList.class;
+    }
 
-	@Override
-	protected int getNumTestCasesFor(final int version) {
-		return  NUM_TEST_CASES;
-	}
+    @Override
+    protected int getNumTestCasesFor(final int version) {
+        return NUM_TEST_CASES;
+    }
 
-	@Override
-	protected HederaKeyList getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextHederaKeyList();
-	}
+    @Override
+    protected HederaKeyList getExpectedObject(final SeededPropertySource propertySource) {
+        return propertySource.nextHederaKeyList();
+    }
 }

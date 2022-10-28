@@ -15,6 +15,7 @@
  */
 package com.hedera.test.serde;
 
+import static com.hedera.node.app.keys.HederaEd25519KeySerdeTest.NUM_TEST_CASES;
 import static com.hedera.services.state.virtual.entities.OnDiskAccountSerdeTest.NUM_ON_DISK_ACCOUNT_TEST_CASES;
 import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
@@ -295,15 +296,15 @@ public class SerializedForms {
                     entry(
                             HederaEd25519Key.class,
                             SeededPropertySource::nextHederaEd25519Key,
-                            MIN_TEST_CASES_PER_VERSION),
+                            NUM_TEST_CASES),
                     entry(
                             HederaThresholdKey.class,
                             SeededPropertySource::nextHederaThresholdKey,
-                            MIN_TEST_CASES_PER_VERSION),
+                            NUM_TEST_CASES),
                     entry(
                             HederaKeyList.class,
                             SeededPropertySource::nextHederaKeyList,
-                            MIN_TEST_CASES_PER_VERSION));
+                            NUM_TEST_CASES));
 
     private static <T extends SelfSerializable> void saveForCurrentVersion(
             final Class<T> type,

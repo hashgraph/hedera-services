@@ -20,7 +20,6 @@ import com.hedera.node.app.spi.keys.HederaKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
-
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -59,7 +58,7 @@ public class KeyTree {
         return JKey.mapKey(asKey());
     }
 
-    public Optional<HederaKey> asHederaKey(){
+    public Optional<HederaKey> asHederaKey() {
         return HederaKeys.asHederaKey(asKey());
     }
 
