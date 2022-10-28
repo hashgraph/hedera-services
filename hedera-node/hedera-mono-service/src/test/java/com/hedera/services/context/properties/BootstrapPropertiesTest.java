@@ -36,8 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.stream.proto.SidecarType;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -107,6 +108,7 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
                     entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
                     entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
+                    entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
                     entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
                     entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
                     entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
@@ -140,6 +142,9 @@ class BootstrapPropertiesTest {
                     entry(
                             FEES_PERCENT_CONGESTION_MULTIPLIERS,
                             CongestionMultipliers.from("90,10x,95,25x,99,100x")),
+                    entry(
+                            FEES_PERCENT_UTILIZATION_SCALE_FACTORS,
+                            EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)")),
                     entry(FEES_MIN_CONGESTION_PERIOD, 60),
                     entry(FILES_ADDRESS_BOOK, 101L),
                     entry(FILES_NETWORK_PROPERTIES, 121L),
@@ -261,9 +266,7 @@ class BootstrapPropertiesTest {
                     entry(TOKENS_NFTS_MAX_BATCH_SIZE_BURN, 10),
                     entry(TOKENS_NFTS_MAX_METADATA_BYTES, 100),
                     entry(TOKENS_NFTS_MAX_ALLOWED_MINTS, 5000000L),
-                    entry(
-                            TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR,
-                            ThrottleReqOpsScaleFactor.from("5:2")),
+                    entry(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR, ScaleFactor.from("5:2")),
                     entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, false),
                     entry(
                             UPGRADE_ARTIFACTS_PATH,
