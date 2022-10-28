@@ -137,7 +137,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private List<BalanceChange> explicitChanges;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
-    private final Set<AccountID> impliedLazyCreates;
+    private boolean areLazyCreatesRequested;
     private final boolean isLazyCreationEnabled;
 
     public TransferPrecompile(
@@ -163,7 +163,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         this.recordsHistorian = recordsHistorian;
         this.autoCreationLogic = autoCreationLogic;
         this.isLazyCreationEnabled = isLazyCreationEnabled;
-        this.impliedLazyCreates = new HashSet<>();
     }
 
     protected void initializeHederaTokenStore() {
@@ -228,7 +227,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (impliedValidity != ResponseCodeEnum.OK) {
             throw new InvalidTransactionException(impliedValidity);
         }
-        if (impliedLazyCreates.size() > 0) {
+        if (areLazyCreatesRequested) {
             validateTrueOrRevert(isLazyCreationEnabled, NOT_SUPPORTED);
         }
 
@@ -405,17 +404,21 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_CREATE, consensusTime)
                         + pricingUtils.getMinimumPriceInTinybars(
                                 GasCostType.CRYPTO_UPDATE, consensusTime);
+        final Set<AccountID> requestedLazyCreates = new HashSet<>();
         for (var transfer : transferOp.tokenTransferWrappers()) {
             accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
             accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
             for (final var ft : transfer.fungibleTransfers()) {
-                if (isNonAccountedForLazyCreate(ft.receiver())) {
+                if (isNonAccountedForLazyCreate(ft.receiver(), requestedLazyCreates)) {
                     accumulatedCost += lazyCreationFee;
+                    areLazyCreatesRequested = true;
                 }
             }
             for (final var nft : transfer.nftExchanges()) {
-                if (isNonAccountedForLazyCreate(nft.asGrpc().getReceiverAccountID())) {
+                if (isNonAccountedForLazyCreate(
+                        nft.asGrpc().getReceiverAccountID(), requestedLazyCreates)) {
                     accumulatedCost += lazyCreationFee;
+                    areLazyCreatesRequested = true;
                 }
             }
         }
@@ -428,18 +431,20 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                         / 2;
         accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
         for (final var s : transferOp.transferWrapper().hbarTransfers()) {
-            if (isNonAccountedForLazyCreate(s.receiver())) {
+            if (isNonAccountedForLazyCreate(s.receiver(), requestedLazyCreates)) {
                 accumulatedCost += lazyCreationFee;
+                areLazyCreatesRequested = true;
             }
         }
         return accumulatedCost;
     }
 
-    public boolean isNonAccountedForLazyCreate(final AccountID accountID) {
+    public boolean isNonAccountedForLazyCreate(
+            final AccountID accountID, final Set<AccountID> requestedLazyCreates) {
         if (accountID != null
                 && !accountID.getAlias().isEmpty()
-                && !impliedLazyCreates.contains(accountID)) {
-            return impliedLazyCreates.add(accountID);
+                && !requestedLazyCreates.contains(accountID)) {
+            return requestedLazyCreates.add(accountID);
         }
         return false;
     }
