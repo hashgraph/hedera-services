@@ -15,24 +15,23 @@
  */
 package com.hedera.node.app.keys.impl;
 
-import static com.swirlds.common.utility.CommonUtils.hex;
-
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.spi.keys.ReplHederaKey;
 import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.util.Objects;
+
+import static com.swirlds.common.utility.CommonUtils.hex;
+
 /** A HederaKey that is an Ed25519 Key. */
-public class HederaEd25519Key implements ReplHederaKey {
+public class HederaEd25519Key extends AbstractHederaKey {
     private static final int ED25519_BYTE_LENGTH = 32;
     private static final long CLASS_ID = 15528682L;
     private static final int VERSION = 1;

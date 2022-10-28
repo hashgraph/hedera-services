@@ -17,22 +17,22 @@ package com.hedera.node.app.keys.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.keys.HederaKey;
-import com.hedera.node.app.spi.keys.ReplHederaKey;
 import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.function.Consumer;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+import java.util.function.Consumer;
+
 /** A HederaKey that is a threshold key. */
-public class HederaThresholdKey implements ReplHederaKey {
+public class HederaThresholdKey extends AbstractHederaKey {
     private static final long CLASS_ID = 15520365L;
     private static final int VERSION = 1;
     int threshold;

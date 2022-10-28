@@ -16,14 +16,12 @@
 package com.hedera.node.app.keys.impl;
 
 import com.hedera.node.app.spi.keys.HederaKey;
-import com.hedera.node.app.spi.keys.ReplHederaKey;
+import com.hedera.node.app.spi.keys.HederaReplKey;
 import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -35,17 +33,17 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /** A HederaKey that is a list of HederaKeys. */
-public class HederaKeyList implements ReplHederaKey {
+public class HederaKeyList extends AbstractHederaKey {
     private static final long CLASS_ID = 15512048L;
     private static final int VERSION = 1;
-    private List<ReplHederaKey> keys;
+    private List<HederaReplKey> keys;
     private boolean immutable = false;
 
     public HederaKeyList() {
         this.keys = new LinkedList<>();
     }
 
-    public HederaKeyList(@Nonnull List<ReplHederaKey> keys) {
+    public HederaKeyList(@Nonnull List<HederaReplKey> keys) {
         Objects.requireNonNull(keys);
         this.keys = keys;
     }
@@ -112,7 +110,7 @@ public class HederaKeyList implements ReplHederaKey {
             throws IOException {
         final var len = in.readInt();
         for (int i = 0; i < len; i++) {
-            final ReplHederaKey childKey = in.readSerializable();
+            final HederaReplKey childKey = in.readSerializable();
             keys.add(childKey);
         }
     }
@@ -163,12 +161,12 @@ public class HederaKeyList implements ReplHederaKey {
 
     /* ------- Object's setters and getters --------- */
 
-    public List<ReplHederaKey> getKeys() {
+    public List<HederaReplKey> getKeys() {
         return keys;
     }
 
     @StateSetter
-    public void setKeys(final List<ReplHederaKey> keys) {
+    public void setKeys(final List<HederaReplKey> keys) {
         throwIfImmutable("Tried to set the keys on an immutable HederaKeyList");
         this.keys = keys;
     }

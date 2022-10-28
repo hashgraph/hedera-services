@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.keys.impl.HederaEd25519Key;
-import com.hedera.node.app.spi.keys.ReplHederaKey;
+import com.hedera.node.app.spi.keys.HederaReplKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.virtual.annotations.StateSetter;
@@ -335,7 +335,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
             return Collections.emptyMap();
         } else if (List.class.equals(type)) {
             return new LinkedList<>();
-        } else if (ReplHederaKey.class.equals(type)) {
+        } else if (HederaReplKey.class.equals(type)) {
             return new HederaEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
         } else if (type.isArray()) {
             final var innerType = type.componentType();
