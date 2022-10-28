@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.keys.impl;
 
+import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import com.hedera.node.app.spi.keys.HederaReplKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -22,7 +23,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-/** Base implementations for all type of {@link HederaReplKey}s */
+/**
+ * Default implementations needed for all types of {@link HederaReplKey}s. Contains serialization
+ * and deserialization methods needed using {@link ByteBuffer}s.
+ */
 public abstract class AbstractHederaKey implements HederaReplKey {
     @Override
     public void serialize(final ByteBuffer buf) throws IOException {
