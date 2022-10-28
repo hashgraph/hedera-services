@@ -56,7 +56,7 @@ public class TokenStore {
             boolean hasRoyaltyWithFallback,
             EntityId treasury) {}
 
-    public record TokenMetaOrLookUpFailureReason(
+    public record TokenMetaOrLookupFailureReason(
             TokenMetadata metadata, ResponseCodeEnum failureReason) {
         public boolean failed() {
             return failureReason != null;
@@ -70,13 +70,13 @@ public class TokenStore {
      * @param id token id being looked up
      * @return token's metadata
      */
-    public TokenMetaOrLookUpFailureReason getTokenMeta(final TokenID id) {
+    public TokenMetaOrLookupFailureReason getTokenMeta(final TokenID id) {
         final var token = getTokenLeaf(id);
 
         if (token.isEmpty()) {
-            return new TokenMetaOrLookUpFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID);
+            return new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID);
         }
-        return new TokenMetaOrLookUpFailureReason(tokenMetaFrom(token.get()), null);
+        return new TokenMetaOrLookupFailureReason(tokenMetaFrom(token.get()), null);
     }
 
     private TokenMetadata tokenMetaFrom(final MerkleToken token) {
