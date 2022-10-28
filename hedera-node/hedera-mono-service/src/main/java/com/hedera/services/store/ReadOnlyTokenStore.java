@@ -26,7 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Account;
@@ -67,13 +67,13 @@ public class ReadOnlyTokenStore {
     protected final AccountStore accountStore;
     protected final BackingStore<TokenID, MerkleToken> tokens;
     protected final BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
-    protected final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
+    protected final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels;
 
     public ReadOnlyTokenStore(
             final AccountStore accountStore,
             final BackingStore<TokenID, MerkleToken> tokens,
             final BackingStore<NftId, UniqueTokenAdapter> uniqueTokens,
-            final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels) {
+            final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels) {
         this.tokens = tokens;
         this.tokenRels = tokenRels;
         this.uniqueTokens = uniqueTokens;
@@ -153,7 +153,7 @@ public class ReadOnlyTokenStore {
                 Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
     }
 
-    public MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
+    public HederaTokenRel getMerkleTokenRelationship(Token token, Account account) {
         return tokenRels.getImmutableRef(
                 Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
     }
@@ -280,7 +280,7 @@ public class ReadOnlyTokenStore {
         return token;
     }
 
-    private void validateUsable(MerkleTokenRelStatus merkleTokenRelStatus) {
+    private void validateUsable(HederaTokenRel merkleTokenRelStatus) {
         validateTrue(merkleTokenRelStatus != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
     }
 
@@ -349,7 +349,7 @@ public class ReadOnlyTokenStore {
     }
 
     private TokenRelationship buildTokenRelationship(
-            final Token token, final Account account, final MerkleTokenRelStatus merkleTokenRel) {
+            final Token token, final Account account, final HederaTokenRel merkleTokenRel) {
         final var tokenRelationship = new TokenRelationship(token, account);
         tokenRelationship.initBalance(merkleTokenRel.getBalance());
         tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());

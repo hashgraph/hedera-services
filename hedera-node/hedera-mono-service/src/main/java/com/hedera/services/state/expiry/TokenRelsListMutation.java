@@ -17,21 +17,19 @@ package com.hedera.services.state.expiry;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaTokenRel;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MapValueListMutation;
-import com.swirlds.merkle.map.MerkleMap;
 import org.jetbrains.annotations.Nullable;
 
-public class TokenRelsListMutation
-        implements MapValueListMutation<EntityNumPair, MerkleTokenRelStatus> {
+public class TokenRelsListMutation implements MapValueListMutation<EntityNumPair, HederaTokenRel> {
     private static final long MISSING_KEY = MISSING_NUM.longValue();
 
     final long accountNum;
-    final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    final TokenRelStorageAdapter tokenRels;
 
-    public TokenRelsListMutation(
-            final long accountNum, final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels) {
+    public TokenRelsListMutation(final long accountNum, final TokenRelStorageAdapter tokenRels) {
         this.tokenRels = tokenRels;
         this.accountNum = accountNum;
     }
@@ -39,20 +37,20 @@ public class TokenRelsListMutation
     /** {@inheritDoc} */
     @Nullable
     @Override
-    public MerkleTokenRelStatus get(final EntityNumPair key) {
+    public HederaTokenRel get(final EntityNumPair key) {
         return tokenRels.get(key);
     }
 
     /** {@inheritDoc} */
     @Nullable
     @Override
-    public MerkleTokenRelStatus getForModify(final EntityNumPair key) {
+    public HederaTokenRel getForModify(final EntityNumPair key) {
         return tokenRels.getForModify(key);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void put(final EntityNumPair key, final MerkleTokenRelStatus value) {
+    public void put(final EntityNumPair key, final HederaTokenRel value) {
         tokenRels.put(key, value);
     }
 
@@ -64,41 +62,41 @@ public class TokenRelsListMutation
 
     /** {@inheritDoc} */
     @Override
-    public void markAsHead(final MerkleTokenRelStatus node) {
+    public void markAsHead(final HederaTokenRel node) {
         node.setPrev(MISSING_NUM.longValue());
     }
 
     /** {@inheritDoc} */
     @Override
-    public void markAsTail(final MerkleTokenRelStatus node) {
+    public void markAsTail(final HederaTokenRel node) {
         node.setNext(MISSING_NUM.longValue());
     }
 
     /** {@inheritDoc} */
     @Override
-    public void updatePrev(final MerkleTokenRelStatus node, final EntityNumPair prevKey) {
+    public void updatePrev(final HederaTokenRel node, final EntityNumPair prevKey) {
         node.setPrev(prevKey.getLowOrderAsLong());
     }
 
     /** {@inheritDoc} */
     @Override
-    public void updateNext(final MerkleTokenRelStatus node, final EntityNumPair nextKey) {
+    public void updateNext(final HederaTokenRel node, final EntityNumPair nextKey) {
         node.setNext(nextKey.getLowOrderAsLong());
     }
 
     /** {@inheritDoc} */
     @Nullable
     @Override
-    public EntityNumPair prev(final MerkleTokenRelStatus node) {
-        final var prevKey = node.prevKey();
+    public EntityNumPair prev(final HederaTokenRel node) {
+        final var prevKey = node.getPrev();
         return prevKey == MISSING_KEY ? null : EntityNumPair.fromLongs(accountNum, prevKey);
     }
 
     /** {@inheritDoc} */
     @Nullable
     @Override
-    public EntityNumPair next(final MerkleTokenRelStatus node) {
-        final var nextKey = node.nextKey();
+    public EntityNumPair next(final HederaTokenRel node) {
+        final var nextKey = node.getNext();
         return nextKey == MISSING_KEY ? null : EntityNumPair.fromLongs(accountNum, nextKey);
     }
 }

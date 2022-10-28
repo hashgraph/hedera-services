@@ -15,8 +15,10 @@
  */
 package com.hedera.services.state.migration;
 
-import static com.hedera.services.state.migration.ReleaseThirtyMigrationTest.registerForMerkleMap;
+import static com.hedera.services.state.migration.ReleaseThirtyMigrationTest.registerForAccountsMerkleMap;
+import static com.hedera.services.state.migration.ReleaseThirtyMigrationTest.registerForTokenRelsMerkleMap;
 import static com.hedera.services.state.migration.StateChildIndices.ACCOUNTS;
+import static com.hedera.services.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.eq;
@@ -25,14 +27,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerklePayerRecords;
+import com.hedera.services.state.merkle.*;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcqueue.FCQueue;
@@ -52,17 +54,22 @@ class MapMigrationToDiskTest {
 
     private final EntityNum aNum = EntityNum.fromInt(666);
     private final EntityNum bNum = EntityNum.fromInt(777);
+    private final EntityNumPair aNumPair = new EntityNumPair(666L);
+    private final EntityNumPair bNumPair = new EntityNumPair(777L);
 
     @Mock private ServicesState mutableState;
     @Mock private VirtualMapFactory virtualMapFactory;
     @Mock private VirtualMap<EntityNumVirtualKey, OnDiskAccount> accountStore;
+    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelStore;
     @Mock private Function<MerkleAccountState, OnDiskAccount> accountMigrator;
+    @Mock private Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator;
 
     @Test
     @SuppressWarnings("unchecked")
     void migratesAccountsAsExpected() throws ConstructableRegistryException {
-        registerForMerkleMap();
+        registerForAccountsMerkleMap();
 
+        final var accountsOnly = new ToDiskMigrations(true, false);
         final var aAccount = nextAccount(false);
         final var bAccount = nextAccount(true);
         final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
@@ -81,7 +88,12 @@ class MapMigrationToDiskTest {
         given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
 
         MapMigrationToDisk.migrateToDiskAsApropos(
-                1, mutableState, virtualMapFactory, accountMigrator);
+                1,
+                mutableState,
+                accountsOnly,
+                virtualMapFactory,
+                accountMigrator,
+                tokenRelMigrator);
 
         verify(mutableState).setChild(ACCOUNTS, accountStore);
         verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS), captor.capture());
@@ -99,10 +111,52 @@ class MapMigrationToDiskTest {
         verify(accountStore, times(2)).copy();
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void migratesTokenRelsAsExpected() throws ConstructableRegistryException {
+        registerForTokenRelsMerkleMap();
+
+        final var relsOnly = new ToDiskMigrations(false, true);
+        final var aRel = nextRelStats(false);
+        final var bRel = nextRelStats(true);
+        final MerkleMap<EntityNumPair, MerkleTokenRelStatus> liveRels = new MerkleMap<>();
+        liveRels.put(aNumPair, aRel);
+        liveRels.put(bNumPair, bRel);
+
+        final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor =
+                forClass(MerkleMap.class);
+        final var aPretendOnDiskRel = new OnDiskTokenRel();
+        final var bPretendOnDiskRel = new OnDiskTokenRel();
+
+        given(virtualMapFactory.newOnDiskTokenRels()).willReturn(tokenRelStore);
+        given(tokenRelStore.copy()).willReturn(tokenRelStore);
+        given(mutableState.getChild(TOKEN_ASSOCIATIONS)).willReturn(liveRels);
+        given(tokenRelMigrator.apply(aRel)).willReturn(aPretendOnDiskRel);
+        given(tokenRelMigrator.apply(bRel)).willReturn(bPretendOnDiskRel);
+
+        MapMigrationToDisk.migrateToDiskAsApropos(
+                1, mutableState, relsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
+
+        verify(mutableState).setChild(TOKEN_ASSOCIATIONS, tokenRelStore);
+        // and:
+        verify(tokenRelStore).put(EntityNumVirtualKey.fromPair(aNumPair), aPretendOnDiskRel);
+        verify(tokenRelStore).put(EntityNumVirtualKey.fromPair(bNumPair), bPretendOnDiskRel);
+        // and:
+        verify(tokenRelStore, times(2)).copy();
+    }
+
     private MerkleAccount nextAccount(final boolean withRecords) {
         return withRecords
                 ? new MerkleAccount(List.of(source.nextAccountState(), twoRecords()))
                 : new MerkleAccount(List.of(source.nextAccountState(), new FCQueue<>()));
+    }
+
+    private MerkleTokenRelStatus nextRelStats(final boolean withBalance) {
+        final var someRel = new MerkleTokenRelStatus();
+        if (withBalance) {
+            someRel.setBalance(123_456L);
+        }
+        return someRel;
     }
 
     private FCQueue<ExpirableTxnRecord> twoRecords() {

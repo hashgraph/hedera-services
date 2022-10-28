@@ -36,6 +36,7 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
@@ -1148,6 +1149,18 @@ public class SeededPropertySource {
         seeded.setPrev(nextUnsignedLong());
         seeded.setNext(nextUnsignedLong());
         return seeded;
+    }
+
+    public OnDiskTokenRel nextOnDiskTokenRel() {
+        final var rel = new OnDiskTokenRel();
+        rel.setPrev(nextLong());
+        rel.setNext(nextLong());
+        rel.setNumbers(nextLong());
+        rel.setBalance(nextUnsignedLong());
+        rel.setFrozen(nextBoolean());
+        rel.setKycGranted(nextBoolean());
+        rel.setAutomaticAssociation(nextBoolean());
+        return rel;
     }
 
     public SerializableSemVers nextSerializableSemVers() {

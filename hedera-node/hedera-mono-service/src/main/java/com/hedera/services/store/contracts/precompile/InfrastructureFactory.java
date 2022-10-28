@@ -33,8 +33,8 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
@@ -128,7 +128,7 @@ public class InfrastructureFactory {
             final SideEffectsTracker sideEffects,
             final BackingStore<TokenID, MerkleToken> tokens,
             final BackingStore<NftId, UniqueTokenAdapter> uniqueTokens,
-            final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels) {
+            final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels) {
         return new TypedTokenStore(accountStore, tokens, uniqueTokens, tokenRels, sideEffects);
     }
 
@@ -136,8 +136,7 @@ public class InfrastructureFactory {
             final SideEffectsTracker sideEffects,
             final BackingStore<TokenID, MerkleToken> backingTokens,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
-            final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger) {
         return new HederaTokenStore(
                 NOOP_ID_SOURCE,
@@ -192,8 +191,7 @@ public class InfrastructureFactory {
             final SideEffectsTracker sideEffects,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
-            final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger) {
         return new TransferLogic(
                 accountsLedger,

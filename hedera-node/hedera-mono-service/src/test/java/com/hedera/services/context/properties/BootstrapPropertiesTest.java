@@ -204,6 +204,7 @@ class BootstrapPropertiesTest {
                     entry(QUERIES_BLOB_LOOK_UP_RETRIES, 3),
                     entry(TOKENS_MAX_RELS_PER_INFO_QUERY, 1_000),
                     entry(TOKENS_MAX_PER_ACCOUNT, 1_000),
+                    entry(TOKENS_STORE_RELS_ON_DISK, true),
                     entry(TOKENS_MAX_SYMBOL_UTF8_BYTES, 100),
                     entry(TOKENS_MAX_TOKEN_NAME_UTF8_BYTES, 100),
                     entry(TOKENS_MAX_CUSTOM_FEES_ALLOWED, 10),
