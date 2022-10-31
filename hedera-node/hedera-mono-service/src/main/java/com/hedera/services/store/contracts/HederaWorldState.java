@@ -15,11 +15,13 @@
  */
 package com.hedera.services.store.contracts;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateResourceLimit;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -29,8 +31,11 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -58,6 +63,7 @@ public class HederaWorldState implements HederaMutableWorldState {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EntityAccess entityAccess;
+    private final FunctionalityThrottling handleThrottling;
     private final SigImpactHistorian sigImpactHistorian;
     private final List<ContractID> provisionalContractCreations = new LinkedList<>();
     private final CodeCache codeCache;
@@ -73,13 +79,15 @@ public class HederaWorldState implements HederaMutableWorldState {
             final EntityAccess entityAccess,
             final CodeCache codeCache,
             final SigImpactHistorian sigImpactHistorian,
-            final GlobalDynamicProperties dynamicProperties) {
+            final GlobalDynamicProperties dynamicProperties,
+            final @HandleThrottle FunctionalityThrottling handleThrottling) {
         this.ids = ids;
         this.usageLimits = usageLimits;
         this.entityAccess = entityAccess;
         this.codeCache = codeCache;
         this.sigImpactHistorian = sigImpactHistorian;
         this.dynamicProperties = dynamicProperties;
+        this.handleThrottling = handleThrottling;
     }
 
     /* Used to manage static calls. */
@@ -92,6 +100,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         this.entityAccess = entityAccess;
         this.codeCache = codeCache;
         this.usageLimits = null;
+        this.handleThrottling = null;
         this.sigImpactHistorian = null;
         this.dynamicProperties = dynamicProperties;
     }
@@ -281,8 +290,14 @@ public class HederaWorldState implements HederaMutableWorldState {
                     getDeletedAccountAddresses(),
                     updatedAccounts);
             if (!wrapped.provisionalContractCreations.isEmpty()) {
-                Objects.requireNonNull(wrapped.usageLimits)
-                        .assertCreatableContracts(wrapped.provisionalContractCreations.size());
+                final var n = wrapped.provisionalContractCreations.size();
+                Objects.requireNonNull(wrapped.usageLimits).assertCreatableContracts(n);
+                if (dynamicProperties.shouldEnforceAccountCreationThrottleForContracts()) {
+                    final var creationCapacity =
+                            !Objects.requireNonNull(wrapped.handleThrottling)
+                                    .shouldThrottleNOfUnscaled(n, HederaFunctionality.CryptoCreate);
+                    validateResourceLimit(creationCapacity, CONSENSUS_GAS_EXHAUSTED);
+                }
             }
             // Throws an ITE if any storage limit is exceeded, or if storage fees cannot be paid
             commitSizeLimitedStorageTo(entityAccess, updatedAccounts);

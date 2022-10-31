@@ -16,13 +16,13 @@
 package com.hedera.services.context.init;
 
 import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.stream.RecordStreamManager;
@@ -81,7 +81,7 @@ public class StateInitializationFlow {
         void configureNumbers(HederaNumbers numbers, long lastThrottleExempt);
     }
 
-    private static NumberConfigurer numberConfigurer = STATIC_PROPERTIES::configureNumbers;
+    private static NumberConfigurer numberConfigurer = StaticPropertiesHolder::configureNumbers;
 
     /* --- Only used by unit tests --- */
     @VisibleForTesting

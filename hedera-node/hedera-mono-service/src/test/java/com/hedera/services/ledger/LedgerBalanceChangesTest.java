@@ -65,6 +65,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
@@ -97,12 +98,12 @@ class LedgerBalanceChangesTest {
     private final BackingStore<AccountID, HederaAccount> backingAccounts =
             new HashMapBackingAccounts();
     private final BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
-    private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
+    private final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingRels =
             new HashMapBackingTokenRels();
     private HederaTokenStore tokenStore;
     private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private TransferLogic transferLogic;

@@ -20,9 +20,10 @@ import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -72,8 +73,9 @@ public interface PropertySource {
     Function<String, Object> AS_FUNCTIONS =
             s -> Arrays.stream(s.split(",")).map(HederaFunctionality::valueOf).collect(toSet());
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
+    Function<String, Object> AS_ENTITY_SCALE_FACTORS = EntityScaleFactors::from;
     Function<String, Object> AS_KNOWN_BLOCK_VALUES = KnownBlockValues::from;
-    Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
+    Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ScaleFactor::from;
     Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
     Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
     Function<String, Object> AS_ACCESS_LIST = MapAccessType::csvAccessList;
@@ -128,12 +130,16 @@ public interface PropertySource {
         return getTypedProperty(CongestionMultipliers.class, name);
     }
 
+    default EntityScaleFactors getEntityScaleFactorsProperty(String name) {
+        return getTypedProperty(EntityScaleFactors.class, name);
+    }
+
     default Map<Long, Long> getNodeStakeRatiosProperty(String name) {
         return getTypedProperty(Map.class, name);
     }
 
-    default ThrottleReqOpsScaleFactor getThrottleScaleFactor(String name) {
-        return getTypedProperty(ThrottleReqOpsScaleFactor.class, name);
+    default ScaleFactor getThrottleScaleFactor(String name) {
+        return getTypedProperty(ScaleFactor.class, name);
     }
 
     @SuppressWarnings("unchecked")

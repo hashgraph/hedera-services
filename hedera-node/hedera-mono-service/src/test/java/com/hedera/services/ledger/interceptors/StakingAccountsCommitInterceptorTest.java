@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -888,6 +889,34 @@ class StakingAccountsCommitInterceptorTest {
 
         assertEquals(2 * HBARS_TO_TINYBARS, stakedToMeUpdates[0]);
         assertEquals(counterpartyBalance + 2 * HBARS_TO_TINYBARS, stakedToMeUpdates[1]);
+    }
+
+    @Test
+    void rewardAccountStakePeriodStartAlwaysReset() {
+        given(dynamicProperties.isStakingEnabled()).willReturn(true);
+
+        final var changes = buildChanges();
+        final var rewardPayment = 1L;
+        final var expectedFundingI = 2;
+        counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+        given(networkCtx.areRewardsActivated()).willReturn(true);
+        given(rewardCalculator.computePendingReward(counterparty)).willReturn(rewardPayment);
+        given(rewardCalculator.applyReward(rewardPayment, counterparty, changes.changes(1)))
+                .willReturn(true);
+        given(rewardCalculator.rewardsPaidInThisTxn()).willReturn(rewardPayment);
+        given(stakePeriodManager.startUpdateFor(anyLong(), anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(NA);
+        given(stakeChangeManager.findOrAdd(anyLong(), any()))
+                .willAnswer(
+                        invocation -> {
+                            changes.include(stakingFundId, new MerkleAccount(), new HashMap<>());
+                            return expectedFundingI;
+                        });
+        subject.getStakePeriodStartUpdates()[expectedFundingI] = 666L;
+
+        subject.preview(changes);
+        assertEquals(NA, subject.getStakePeriodStartUpdates()[expectedFundingI]);
     }
 
     public EntityChangeSet<AccountID, HederaAccount, AccountProperty>

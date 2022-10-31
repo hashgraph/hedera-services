@@ -49,6 +49,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -89,7 +90,7 @@ class StaticEntityAccessTest {
     @Mock private AccountStorageAdapter accounts;
     @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
 
     private StaticEntityAccess subject;

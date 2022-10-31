@@ -69,12 +69,14 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -179,57 +181,66 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 htsTransferFrom,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECEIVER)),
-                                                                allowance + 1)
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(allowance + 1))
                                                         .via(revertingTransferFromTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 // transfer allowance/2 amount
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 htsTransferFrom,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECEIVER)),
-                                                                allowance / 2)
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(allowance / 2))
                                                         .via(successfulTransferFromTxn)
                                                         .hasKnownStatus(SUCCESS),
                                                 // transfer the rest of the allowance
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 htsTransferFrom,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECEIVER)),
-                                                                allowance / 2)
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(allowance / 2))
                                                         .via(successfulTransferFromTxn2)
                                                         .hasKnownStatus(SUCCESS),
                                                 getAccountDetails(OWNER)
@@ -239,19 +250,22 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 htsTransferFrom,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECEIVER)),
-                                                                1)
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.ONE)
                                                         .via(revertingTransferFromTxn2)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
@@ -436,38 +450,44 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 htsTransferFromNFT,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NFT_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECEIVER)),
-                                                                1L)
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.ONE)
                                                         .via(revertingTransferFromTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 // transfer allowed NFT
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 htsTransferFromNFT,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        NFT_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECEIVER)),
-                                                                2L)
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.TWO)
                                                         .via(successfulTransferFromTxn)
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
@@ -581,11 +601,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            Tuple.singleton(
+                                                            (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
                                                                                 .forToken(token)
-                                                                                .isSingleList(false)
                                                                                 .withAccountAmounts(
                                                                                         accountAmount(
                                                                                                 sender,
@@ -596,7 +615,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build(),
                                                                         tokenTransferList()
                                                                                 .forToken(token)
-                                                                                .isSingleList(false)
                                                                                 .withAccountAmounts(
                                                                                         accountAmount(
                                                                                                 sender,
@@ -605,7 +623,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 receiver,
                                                                                                 toSendEachTuple))
                                                                                 .build()
-                                                                    }))
+                                                                    })
                                                     .payingWith(GENESIS)
                                                     .via(repeatedIdsPrecompileXferTxn)
                                                     .gas(GAS_TO_OFFER));
@@ -682,16 +700,19 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            tokenTransferList()
-                                                                    .forToken(token)
-                                                                    .withAccountAmounts(
-                                                                            accountAmount(
-                                                                                    sender,
-                                                                                    -amountToBeSent),
-                                                                            accountAmount(
-                                                                                    receiver,
-                                                                                    amountToBeSent))
-                                                                    .build())
+                                                            (Object)
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .withAccountAmounts(
+                                                                                        accountAmount(
+                                                                                                sender,
+                                                                                                -amountToBeSent),
+                                                                                        accountAmount(
+                                                                                                receiver,
+                                                                                                amountToBeSent))
+                                                                                .build()
+                                                                    })
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER));
@@ -762,16 +783,22 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            tokenTransferList()
-                                                                    .forToken(token)
-                                                                    .withAccountAmounts(
-                                                                            accountAmount(
-                                                                                    sender, -50L),
-                                                                            accountAmount(
-                                                                                    receiver, 30L),
-                                                                            accountAmount(
-                                                                                    receiver2, 20L))
-                                                                    .build())
+                                                            (Object)
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .withAccountAmounts(
+                                                                                        accountAmount(
+                                                                                                sender,
+                                                                                                -50L),
+                                                                                        accountAmount(
+                                                                                                receiver,
+                                                                                                30L),
+                                                                                        accountAmount(
+                                                                                                receiver2,
+                                                                                                20L))
+                                                                                .build()
+                                                                    })
                                                     .gas(GAS_TO_OFFER)
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn));
@@ -845,13 +872,17 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            tokenTransferList()
-                                                                    .forToken(token)
-                                                                    .withNftTransfers(
-                                                                            nftTransfer(
-                                                                                    sender,
-                                                                                    receiver, 1L))
-                                                                    .build())
+                                                            (Object)
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .withNftTransfers(
+                                                                                        nftTransfer(
+                                                                                                sender,
+                                                                                                receiver,
+                                                                                                1L))
+                                                                                .build()
+                                                                    })
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER));
@@ -934,16 +965,21 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            tokenTransferList()
-                                                                    .forToken(token)
-                                                                    .withNftTransfers(
-                                                                            nftTransfer(
-                                                                                    sender,
-                                                                                    receiver, 1L),
-                                                                            nftTransfer(
-                                                                                    sender2,
-                                                                                    receiver2, 2L))
-                                                                    .build())
+                                                            (Object)
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .withNftTransfers(
+                                                                                        nftTransfer(
+                                                                                                sender,
+                                                                                                receiver,
+                                                                                                1L),
+                                                                                        nftTransfer(
+                                                                                                sender2,
+                                                                                                receiver2,
+                                                                                                2L))
+                                                                                .build()
+                                                                    })
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER));
@@ -1046,8 +1082,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
-                                                                                    .isSingleList(
-                                                                                            false)
                                                                                     .forToken(
                                                                                             fungibleToken)
                                                                                     .withAccountAmounts(
@@ -1059,8 +1093,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                     45L))
                                                                                     .build(),
                                                                             tokenTransferList()
-                                                                                    .isSingleList(
-                                                                                            false)
                                                                                     .forToken(
                                                                                             nonFungibleToken)
                                                                                     .withNftTransfers(
@@ -1179,8 +1211,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
-                                                                                    .isSingleList(
-                                                                                            false)
                                                                                     .forToken(
                                                                                             fungibleToken)
                                                                                     .withAccountAmounts(
@@ -1198,8 +1228,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                     32L))
                                                                                     .build(),
                                                                             tokenTransferList()
-                                                                                    .isSingleList(
-                                                                                            false)
                                                                                     .forToken(
                                                                                             nonFungibleToken)
                                                                                     .withNftTransfers(
@@ -1321,11 +1349,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            Tuple.singleton(
+                                                            (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
                                                                                 .forToken(token)
-                                                                                .isSingleList(false)
                                                                                 .withAccountAmounts(
                                                                                         accountAmount(
                                                                                                 contractId,
@@ -1336,7 +1363,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build(),
                                                                         tokenTransferList()
                                                                                 .forToken(token)
-                                                                                .isSingleList(false)
                                                                                 .withAccountAmounts(
                                                                                         accountAmount(
                                                                                                 sender,
@@ -1345,7 +1371,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 receiver,
                                                                                                 toSendEachTuple))
                                                                                 .build()
-                                                                    }))
+                                                                    })
                                                     .payingWith(GENESIS)
                                                     .via(revertedFungibleTransferTxn)
                                                     .gas(GAS_TO_OFFER)
@@ -1353,11 +1379,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            Tuple.singleton(
+                                                            (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
                                                                                 .forToken(token)
-                                                                                .isSingleList(false)
                                                                                 .withAccountAmounts(
                                                                                         accountAmount(
                                                                                                 contractId,
@@ -1368,7 +1393,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build(),
                                                                         tokenTransferList()
                                                                                 .forToken(token)
-                                                                                .isSingleList(false)
                                                                                 .withAccountAmounts(
                                                                                         accountAmount(
                                                                                                 sender,
@@ -1377,7 +1401,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 receiver,
                                                                                                 toSendEachTuple))
                                                                                 .build()
-                                                                    }))
+                                                                    })
                                                     .payingWith(GENESIS)
                                                     .alsoSigningWithFullPrefix(senderKey)
                                                     .via(successfulFungibleTransferTxn)
@@ -1386,11 +1410,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            Tuple.singleton(
+                                                            (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
                                                                                 .forToken(nftToken)
-                                                                                .isSingleList(false)
                                                                                 .withNftTransfers(
                                                                                         nftTransfer(
                                                                                                 contractId,
@@ -1399,14 +1422,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build(),
                                                                         tokenTransferList()
                                                                                 .forToken(nftToken)
-                                                                                .isSingleList(false)
                                                                                 .withNftTransfers(
                                                                                         nftTransfer(
                                                                                                 sender,
                                                                                                 receiver,
                                                                                                 1L))
                                                                                 .build()
-                                                                    }))
+                                                                    })
                                                     .payingWith(GENESIS)
                                                     .via(revertedNftTransferTxn)
                                                     .gas(GAS_TO_OFFER)
@@ -1414,11 +1436,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            Tuple.singleton(
+                                                            (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
                                                                                 .forToken(nftToken)
-                                                                                .isSingleList(false)
                                                                                 .withNftTransfers(
                                                                                         nftTransfer(
                                                                                                 contractId,
@@ -1427,14 +1448,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build(),
                                                                         tokenTransferList()
                                                                                 .forToken(nftToken)
-                                                                                .isSingleList(false)
                                                                                 .withNftTransfers(
                                                                                         nftTransfer(
                                                                                                 sender,
                                                                                                 receiver,
                                                                                                 1L))
                                                                                 .build()
-                                                                    }))
+                                                                    })
                                                     .payingWith(GENESIS)
                                                     .via(successfulNftTransferTxn)
                                                     .alsoSigningWithFullPrefix(senderKey)

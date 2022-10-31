@@ -18,11 +18,11 @@ package com.hedera.services.ledger.backing;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaTokenRel;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,11 +32,10 @@ import org.apache.commons.lang3.tuple.Pair;
  * indexed by ({@code AccountID}, {@code TokenID}) pairs. This class is <b>not</b> thread-safe, and
  * should never be used by any thread other than the {@code handleTransaction} thread.
  */
-public class BackingTokenRels
-        implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
-    private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> delegate;
+public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> {
+    private final Supplier<TokenRelStorageAdapter> delegate;
 
-    public BackingTokenRels(Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> delegate) {
+    public BackingTokenRels(Supplier<TokenRelStorageAdapter> delegate) {
         this.delegate = delegate;
     }
 
@@ -46,12 +45,12 @@ public class BackingTokenRels
     }
 
     @Override
-    public MerkleTokenRelStatus getRef(Pair<AccountID, TokenID> key) {
+    public HederaTokenRel getRef(Pair<AccountID, TokenID> key) {
         return delegate.get().getForModify(fromAccountTokenRel(key.getLeft(), key.getRight()));
     }
 
     @Override
-    public void put(Pair<AccountID, TokenID> key, MerkleTokenRelStatus status) {
+    public void put(Pair<AccountID, TokenID> key, HederaTokenRel status) {
         final var curTokenRels = delegate.get();
         final var merkleKey = forMerkleMap(key);
         if (!curTokenRels.containsKey(merkleKey)) {
@@ -65,7 +64,7 @@ public class BackingTokenRels
     }
 
     @Override
-    public MerkleTokenRelStatus getImmutableRef(Pair<AccountID, TokenID> key) {
+    public HederaTokenRel getImmutableRef(Pair<AccountID, TokenID> key) {
         return delegate.get().get(fromAccountTokenRel(key));
     }
 
@@ -92,7 +91,7 @@ public class BackingTokenRels
     }
 
     /* -- only for unit tests */
-    public Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> getDelegate() {
+    public Supplier<TokenRelStorageAdapter> getDelegate() {
         return delegate;
     }
 }
