@@ -19,9 +19,10 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -49,19 +51,22 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
     // Map from touched account number to all dissociated token numbers in this transaction
     private final Map<EntityNum, List<EntityNum>> removedNums = new TreeMap<>();
     // Map from touched account number to all new relationships created in this transaction
-    private final Map<EntityNum, List<MerkleTokenRelStatus>> addedRels = new TreeMap<>();
+    private final Map<EntityNum, List<HederaTokenRel>> addedRels = new TreeMap<>();
 
     private final UsageLimits usageLimits;
     private final TokenRelsLinkManager relsLinkManager;
+    private final Supplier<HederaTokenRel> tokenRelSupplier;
 
     public LinkAwareTokenRelsCommitInterceptor(
             final UsageLimits usageLimits,
             final TransactionContext txnCtx,
             final SideEffectsTracker sideEffectsTracker,
-            final TokenRelsLinkManager relsLinkManager) {
+            final TokenRelsLinkManager relsLinkManager,
+            final Supplier<HederaTokenRel> tokenRelSupplier) {
         super(txnCtx, sideEffectsTracker);
         this.usageLimits = usageLimits;
         this.relsLinkManager = relsLinkManager;
+        this.tokenRelSupplier = tokenRelSupplier;
     }
 
     @Override
@@ -71,7 +76,7 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
 
     @Override
     public void preview(
-            final EntityChangeSet<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty>
+            final EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>
                     pendingChanges) {
         addsOrRemoves = false;
         final var n = pendingChanges.size();
@@ -97,7 +102,8 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
                 // relationship
                 // with the number initialized so the TokenRelsLinkManager has all needed
                 // information
-                final var newRel = new MerkleTokenRelStatus(id);
+                final var newRel = tokenRelSupplier.get();
+                newRel.setKey(EntityNumPair.fromAccountTokenRel(id));
                 pendingChanges.cacheEntity(i, newRel);
                 addedRels.computeIfAbsent(accountNum, ignore -> new ArrayList<>()).add(newRel);
             } else {

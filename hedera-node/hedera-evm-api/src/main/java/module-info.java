@@ -6,6 +6,7 @@ module com.hedera.services.evm {
     requires tuweni.bytes;
     requires javax.inject;
     requires com.swirlds.common;
+    requires com.google.common;
     requires tuweni.units;
 
     exports com.hedera.services.evm.contracts.execution;

@@ -65,6 +65,7 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
@@ -161,6 +162,10 @@ public class SerializedForms {
                             OnDiskAccount.class,
                             SeededPropertySource::nextOnDiskAccount,
                             NUM_ON_DISK_ACCOUNT_TEST_CASES),
+                    entry(
+                            OnDiskTokenRel.class,
+                            SeededPropertySource::nextOnDiskTokenRel,
+                            MIN_TEST_CASES_PER_VERSION),
                     entry(
                             CurrencyAdjustments.class,
                             SeededPropertySource::nextCurrencyAdjustments,
