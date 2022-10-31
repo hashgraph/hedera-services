@@ -194,7 +194,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(ERC_20());
+        return allOf(ERC_20(), ERC_721());
     }
 
     List<HapiApiSpec> ERC_20() {
@@ -5167,6 +5167,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private HapiApiSpec erc721TransferFromWithApprovalToEVMAddressAlias() {
         return defaultHapiSpec("erc721TransferFromWithApprovalToEVMAddressAlias")
                 .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -5194,7 +5195,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
+                                    final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
                                     allRunFor(
                                             spec,
                                             cryptoApproveAllowance()
@@ -5224,15 +5225,31 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                             addressBytes,
                                                             1)
                                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
-                                                    .hasKnownStatus(SUCCESS));
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(SUCCESS),
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .has(
+                                                            AccountInfoAsserts.accountWith()
+                                                                    .key(EMPTY_KEY)
+                                                                    .evmAddressAlias(alias)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(LAZY_MEMO)),
+                                            getAliasedAccountBalance(alias)
+                                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1)
+                                                    .logged(),
+                                            childRecordsCheck(
+                                                    TRANSFER_FROM_ACCOUNT_TXN,
+                                                    SUCCESS,
+                                                    recordWith()
+                                                            .status(SUCCESS)
+                                                            .alias(
+                                                                    ByteStringUtils.wrapUnsafely(
+                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS)));
                                 }))
-                .then(
-                        getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).andAllChildRecords().logged(),
-                        childRecordsCheck(
-                                TRANSFER_FROM_ACCOUNT_TXN,
-                                SUCCESS,
-                                recordWith().status(SUCCESS).memo(LAZY_MEMO),
-                                recordWith().status(SUCCESS)));
+                .then(resetToDefault(LAZY_CREATION_ENABLED));
     }
 
     private HapiApiSpec erc721TransferFromWithApproveForAll() {
