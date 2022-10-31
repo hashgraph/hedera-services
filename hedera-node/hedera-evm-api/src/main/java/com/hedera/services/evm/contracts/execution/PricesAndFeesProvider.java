@@ -15,14 +15,12 @@
  */
 package com.hedera.services.evm.contracts.execution;
 
-import static com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils.currentPrice;
 import static com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils.gasPriceInTinybars;
 import static com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils.pricesGiven;
 import static com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils.rateAt;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
 import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -37,13 +35,13 @@ public interface PricesAndFeesProvider {
         return rateAt(now.getSeconds());
     }
 
-    default long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
+    static long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
         var rates = rate(at);
         var prices = defaultPricesGiven(function, at);
         return gasPriceInTinybars(prices, rates);
     }
 
-    static long currentGasPrice(Instant now, HederaFunctionality function) {
-        return currentPrice(now, function, FeeComponents::getGas);
+    default long currentGasPrice(Instant now, HederaFunctionality function) {
+        return 0;
     }
 }

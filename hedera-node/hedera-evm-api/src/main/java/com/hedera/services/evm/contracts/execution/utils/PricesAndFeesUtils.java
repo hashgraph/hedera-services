@@ -17,7 +17,6 @@ package com.hedera.services.evm.contracts.execution.utils;
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
-import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.evm.contracts.execution.RequiredPriceTypes;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -36,7 +35,6 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.ToLongFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -136,31 +134,6 @@ public class PricesAndFeesUtils {
         long priceInTinyCents = prices.getServicedata().getGas() / FEE_DIVISOR_FACTOR;
         long priceInTinyBars = getTinybarsFromTinyCents(rates, priceInTinyCents);
         return Math.max(priceInTinyBars, 1L);
-    }
-
-    public static long currentPrice(
-            final Instant now,
-            final HederaFunctionality function,
-            final ToLongFunction<FeeComponents> resourcePriceFn) {
-        final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
-        long feeInTinyCents = currentFeeInTinycents(now, function, resourcePriceFn);
-        long feeInTinyBars =
-                getTinybarsFromTinyCents(PricesAndFeesProvider.rate(timestamp), feeInTinyCents);
-        final var unscaledPrice = Math.max(1L, feeInTinyBars);
-        final var curMultiplier = 1L;
-
-        return unscaledPrice * curMultiplier;
-    }
-
-    private static long currentFeeInTinycents(
-            final Instant now,
-            final HederaFunctionality function,
-            final ToLongFunction<FeeComponents> resourcePriceFn) {
-        final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
-        final var prices = PricesAndFeesProvider.defaultPricesGiven(function, timestamp);
-
-        /* Fee schedule prices are set in thousandths of a tinycent */
-        return resourcePriceFn.applyAsLong(prices.getServicedata()) / 1000;
     }
 
     EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(
