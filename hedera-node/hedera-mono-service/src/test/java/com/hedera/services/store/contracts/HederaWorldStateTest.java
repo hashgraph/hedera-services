@@ -17,7 +17,9 @@ package com.hedera.services.store.contracts;
 
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,12 +46,14 @@ import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayDeque;
 import java.util.Map;
@@ -78,6 +82,7 @@ class HederaWorldStateTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private ContractCustomizer customizer;
     @Mock private UsageLimits usageLimits;
+    @Mock private FunctionalityThrottling handleThrottling;
 
     private CodeCache codeCache;
 
@@ -85,7 +90,6 @@ class HederaWorldStateTest {
     final Id sponsor = new Id(0, 0, 1);
     final Id contract = new Id(0, 0, 2);
     final EntityNum tokenNum = EntityNum.fromLong(1234);
-    final AccountID accountId = IdUtils.asAccount("0.0.12345");
     final Bytes code = Bytes.of("0x60606060".getBytes());
     private static final Bytes TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS =
             Bytes.fromHexString(
@@ -102,7 +106,8 @@ class HederaWorldStateTest {
                         entityAccess,
                         codeCache,
                         sigImpactHistorian,
-                        dynamicProperties);
+                        dynamicProperties,
+                        handleThrottling);
     }
 
     @Test
@@ -463,6 +468,45 @@ class HederaWorldStateTest {
         verify(usageLimits).assertCreatableContracts(1);
         verify(worldLedgers).commit(sigImpactHistorian);
         verify(entityAccess).recordNewKvUsageTo(any());
+    }
+
+    @Test
+    void updaterCreatesDeletedAccountUponCommitIfDontNeedToThrottle() {
+        givenNonNullWorldLedgers();
+        final var tbdAddress = contract.asEvmAddress();
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
+        given(dynamicProperties.shouldEnforceAccountCreationThrottleForContracts())
+                .willReturn(true);
+
+        final var updater = subject.updater();
+        updater.deleteAccount(tbdAddress);
+
+        // when:
+        updater.commit();
+
+        // then:
+        verify(entityAccess).flushStorage(any());
+        verify(usageLimits).assertCreatableContracts(1);
+        verify(worldLedgers).commit(sigImpactHistorian);
+        verify(entityAccess).recordNewKvUsageTo(any());
+    }
+
+    @Test
+    void updaterThrottlesOnCreationIfRequested() {
+        givenNonNullWorldLedgers();
+        given(dynamicProperties.shouldEnforceAccountCreationThrottleForContracts())
+                .willReturn(true);
+        final var tbdAddress = contract.asEvmAddress();
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
+        given(handleThrottling.shouldThrottleNOfUnscaled(1, HederaFunctionality.CryptoCreate))
+                .willReturn(true);
+
+        final var updater = subject.updater();
+        updater.deleteAccount(tbdAddress);
+
+        assertExhaustsResourceLimit(updater::commit, CONSENSUS_GAS_EXHAUSTED);
     }
 
     @Test

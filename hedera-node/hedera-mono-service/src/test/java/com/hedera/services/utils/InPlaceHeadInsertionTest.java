@@ -21,11 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 class InPlaceHeadInsertionTest {
-    private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+    private TokenRelStorageAdapter tokenRels =
+            TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
     @Test
     void canInsertToEmptyList() {
@@ -48,9 +50,9 @@ class InPlaceHeadInsertionTest {
 
         assertSame(aRelKey, newRoot);
         final var newRootValue = tokenRels.get(aRelKey);
-        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.nextKey());
+        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.getNext());
         final var newNextValue = tokenRels.get(bRelKey);
-        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.prevKey());
+        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.getPrev());
     }
 
     @Test
@@ -63,9 +65,9 @@ class InPlaceHeadInsertionTest {
 
         assertSame(aRelKey, newRoot);
         final var newRootValue = tokenRels.get(aRelKey);
-        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.nextKey());
+        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.getNext());
         final var newNextValue = tokenRels.get(bRelKey);
-        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.prevKey());
+        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.getPrev());
     }
 
     private static final EntityNum accountNum = EntityNum.fromLong(2);

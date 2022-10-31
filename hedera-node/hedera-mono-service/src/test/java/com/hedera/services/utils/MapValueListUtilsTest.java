@@ -26,11 +26,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 class MapValueListUtilsTest {
-    private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+    private TokenRelStorageAdapter tokenRels =
+            TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
     @Test
     void sequentialRemovalWorksAsExpected() {
@@ -48,7 +50,7 @@ class MapValueListUtilsTest {
 
         final var k3 = removeFromMapValueList(k2, k2, relsListRemoval);
         assertNull(k3);
-        assertTrue(tokenRels.isEmpty());
+        assertEquals(0L, tokenRels.size());
     }
 
     @Test
@@ -82,14 +84,14 @@ class MapValueListUtilsTest {
         final var newRoot = unlinkInPlaceFromMapValueList(bRelKey, aRelKey, relsListRemoval);
         assertSame(aRelKey, newRoot);
         final var unlinkedValue = tokenRels.get(bRelKey);
-        assertEquals(0, unlinkedValue.prevKey());
-        assertEquals(0, unlinkedValue.nextKey());
+        assertEquals(0, unlinkedValue.getPrev());
+        assertEquals(0, unlinkedValue.getNext());
         // and:
         final var newRootValue = tokenRels.get(aRelKey);
-        assertEquals(c.longValue(), newRootValue.nextKey());
+        assertEquals(c.longValue(), newRootValue.getNext());
         // and:
         final var newTailValue = tokenRels.get(cRelKey);
-        assertEquals(a.longValue(), newTailValue.prevKey());
+        assertEquals(a.longValue(), newTailValue.getPrev());
         // and:
         assertTrue(tokenRels.containsKey(bRelKey));
     }
@@ -105,14 +107,14 @@ class MapValueListUtilsTest {
                         bRelKey, aRelKey, relsListRemoval, false, false, true);
         assertSame(aRelKey, newRoot);
         final var unlinkedValue = tokenRels.get(bRelKey);
-        assertEquals(0, unlinkedValue.prevKey());
-        assertEquals(0, unlinkedValue.nextKey());
+        assertEquals(0, unlinkedValue.getPrev());
+        assertEquals(0, unlinkedValue.getNext());
         // and:
         final var newRootValue = tokenRels.get(aRelKey);
-        assertEquals(c.longValue(), newRootValue.nextKey());
+        assertEquals(c.longValue(), newRootValue.getNext());
         // and:
         final var newTailValue = tokenRels.get(cRelKey);
-        assertEquals(a.longValue(), newTailValue.prevKey());
+        assertEquals(a.longValue(), newTailValue.getPrev());
         // and:
         assertTrue(tokenRels.containsKey(bRelKey));
     }
