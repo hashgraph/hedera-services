@@ -170,11 +170,9 @@ public class DecodingFacade {
             final byte[] leftPaddedAddress,
             @NotNull final UnaryOperator<byte[]> aliasResolver,
             final Predicate<AccountID> exists) {
-        final var addressOrAlias =
-                Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
-        var accountID = accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
+        var accountID = convertLeftPaddedAddressToAccountId(leftPaddedAddress, aliasResolver);
         if (!exists.test(accountID)) {
-            accountID = accountIDWithAliasOnlyFrom(accountID);
+            accountID = accountIDWithAliasCalculatedFrom(accountID);
         }
         return accountID;
     }
@@ -220,7 +218,7 @@ public class DecodingFacade {
             var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
             if (amount > 0 && !isExisting.test(accountID)) {
-                accountID = accountIDWithAliasOnlyFrom(accountID);
+                accountID = accountIDWithAliasCalculatedFrom(accountID);
             }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
@@ -233,19 +231,26 @@ public class DecodingFacade {
 
     // TODO: add comment
     @NotNull
-    public static AccountID accountIDWithAliasOnlyFrom(final AccountID accountID) {
+    public static AccountID accountIDWithAliasCalculatedFrom(final AccountID accountID) {
         return AccountID.newBuilder()
                 .setAlias(ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(accountID)))
                 .build();
     }
 
     public static List<SyntheticTxnFactory.HbarTransfer> bindHBarTransfersFrom(
-            @NotNull final Tuple[] abiTransfers, final UnaryOperator<byte[]> aliasResolver) {
+            @NotNull final Tuple[] abiTransfers,
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
-            final AccountID accountID =
-                    convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
+            AccountID accountID;
+            if (amount > 0) {
+                accountID =
+                        convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver, exists);
+            } else {
+                accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
+            }
             final boolean isApproval = transfer.get(2);
             addSignedHBarAdjustment(hbarTransfers, accountID, amount, isApproval);
         }

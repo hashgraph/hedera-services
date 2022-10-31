@@ -18,7 +18,6 @@ package com.hedera.services.store.contracts;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -34,7 +33,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -319,9 +317,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         if (updatedAccount == null) {
             final var origin = getForMutation(address);
             updatedAccount =
-                origin == null ? new UpdateTrackingLedgerAccount<>(address,
-                    trackingLedgers.accounts())
-                    : new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
+                    origin == null
+                            ? new UpdateTrackingLedgerAccount<>(address, trackingLedgers.accounts())
+                            : new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
             track(updatedAccount);
         }
         /* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
