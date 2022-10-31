@@ -92,7 +92,6 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.CRYPTO_CRE
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
@@ -1993,8 +1992,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-        final var hbarXfer = "hbarXfer";
-
         return defaultHapiSpec("TransferHbarsToEVMAddressAlias")
                 .given(
                         overriding(LAZY_CREATION_ENABLED, TRUE),
@@ -2028,9 +2025,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                 counterAlias.get(),
                                                                                 +2))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(hbarXfer))
+                                .via(HBAR_XFER))
                 .then(
-                        getTxnRecord(hbarXfer)
+                        getTxnRecord(HBAR_XFER)
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
@@ -2042,8 +2039,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-        final var ftXfer = "ftXfer";
-
         return defaultHapiSpec("TransferFungibleToEVMAddressAlias")
                 .given(
                         overriding(LAZY_CREATION_ENABLED, TRUE),
@@ -2080,9 +2075,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                 counterAlias.get(),
                                                                                 +500))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(ftXfer))
+                                .via(FT_XFER))
                 .then(
-                        getTxnRecord(ftXfer)
+                        getTxnRecord(FT_XFER)
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
@@ -2094,8 +2089,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-        final var nftXfer = "nftXfer";
-
         return defaultHapiSpec("TransferNonFungibleToEVMAddressAlias")
                 .given(
                         overriding(LAZY_CREATION_ENABLED, TRUE),
@@ -2141,9 +2134,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                                                                 .get()),
                                                                                 1L))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(nftXfer))
+                                .via(NFT_XFER))
                 .then(
-                        getTxnRecord(nftXfer)
+                        getTxnRecord(NFT_XFER)
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
