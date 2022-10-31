@@ -1,0 +1,254 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "pauseToken",
+        "outputs": [
+            {
+                "internalType": "int256",
+                "name": "responseCode",
+                "type": "int256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
+            },
+            {
+                "internalType": "int64",
+                "name": "serialNum",
+                "type": "int64"
+            }
+        ],
+        "name": "transferNFTCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
+            },
+            {
+                "internalType": "int64",
+                "name": "serialNum",
+                "type": "int64"
+            }
+        ],
+        "name": "transferNFTThanRevertCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address[]",
+                "name": "sender",
+                "type": "address[]"
+            },
+            {
+                "internalType": "address[]",
+                "name": "receiver",
+                "type": "address[]"
+            },
+            {
+                "internalType": "int64[]",
+                "name": "serialNumber",
+                "type": "int64[]"
+            }
+        ],
+        "name": "transferNFTsCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address[]",
+                "name": "sender",
+                "type": "address[]"
+            },
+            {
+                "internalType": "address[]",
+                "name": "receiver",
+                "type": "address[]"
+            },
+            {
+                "internalType": "int64[]",
+                "name": "serialNumber",
+                "type": "int64[]"
+            }
+        ],
+        "name": "transferNFTsThanRevertCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
+            },
+            {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+            }
+        ],
+        "name": "transferTokenCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
+            },
+            {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+            }
+        ],
+        "name": "transferTokenThanRevertCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address[]",
+                "name": "accountIds",
+                "type": "address[]"
+            },
+            {
+                "internalType": "int64[]",
+                "name": "amounts",
+                "type": "int64[]"
+            }
+        ],
+        "name": "transferTokensCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address[]",
+                "name": "accountIds",
+                "type": "address[]"
+            },
+            {
+                "internalType": "int64[]",
+                "name": "amounts",
+                "type": "int64[]"
+            }
+        ],
+        "name": "transferTokensThanRevertCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "unpauseToken",
+        "outputs": [
+            {
+                "internalType": "int256",
+                "name": "responseCode",
+                "type": "int256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
