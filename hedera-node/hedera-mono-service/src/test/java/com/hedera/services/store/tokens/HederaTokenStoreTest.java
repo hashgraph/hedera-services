@@ -97,8 +97,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
@@ -192,7 +192,7 @@ class HederaTokenStoreTest {
     private GlobalDynamicProperties properties;
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
     private BackingTokens backingTokens;
     private HederaLedger hederaLedger;

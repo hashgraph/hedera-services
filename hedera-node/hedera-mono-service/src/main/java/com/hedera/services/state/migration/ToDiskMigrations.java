@@ -13,19 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.state.migration;
 
-import com.hedera.node.app.service.token.util.AliasUtils;
-import org.hyperledger.besu.datatypes.Address;
-
-public abstract class AbstractContractAliases implements ContractAliases {
-    public static final int EVM_ADDRESS_LEN = 20;
-
-    public boolean isMirror(final Address address) {
-        return isMirror(address.toArrayUnsafe());
-    }
-
-    public boolean isMirror(final byte[] address) {
-        return AliasUtils.isMirror(address);
-    }
-}
+public record ToDiskMigrations(boolean doAccounts, boolean doTokenRels) {}

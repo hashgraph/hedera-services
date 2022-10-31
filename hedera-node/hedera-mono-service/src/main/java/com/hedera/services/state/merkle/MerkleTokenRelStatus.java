@@ -19,6 +19,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums
 import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -32,7 +33,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class MerkleTokenRelStatus extends PartialMerkleLeaf
-        implements Keyed<EntityNumPair>, MerkleLeaf {
+        implements Keyed<EntityNumPair>, MerkleLeaf, HederaTokenRel {
     static final int RELEASE_090_VERSION = 1;
     static final int RELEASE_0180_PRE_SDK_VERSION = 2;
     static final int RELEASE_0180_VERSION = 3;
@@ -239,11 +240,11 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
         this.numbers = numbers.value();
     }
 
-    public long prevKey() {
+    public long getPrev() {
         return prev;
     }
 
-    public long nextKey() {
+    public long getNext() {
         return next;
     }
 

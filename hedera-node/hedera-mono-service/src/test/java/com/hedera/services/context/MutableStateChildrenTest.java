@@ -27,9 +27,9 @@ import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -37,7 +37,6 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
@@ -56,7 +55,7 @@ class MutableStateChildrenTest {
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleScheduledTransactions scheduleTxs;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private AddressBook addressBook;
@@ -96,7 +95,7 @@ class MutableStateChildrenTest {
         given(contractStorage.size()).willReturn(3L);
         given(scheduleTxs.getNumSchedules()).willReturn(4L);
         given(tokens.size()).willReturn(5);
-        given(tokenAssociations.size()).willReturn(6);
+        given(tokenAssociations.size()).willReturn(6L);
         given(topics.size()).willReturn(7);
         given(uniqueTokens.size()).willReturn(8L);
 

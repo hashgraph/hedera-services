@@ -19,8 +19,8 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummary
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForCall;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -29,7 +29,6 @@ import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -46,7 +45,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.core.CallTransaction;
 
 public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     private static final Logger LOG = LogManager.getLogger(HapiContractCallLocal.class);
@@ -156,9 +154,13 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
                 response.getContractCallLocal().getFunctionResult().getContractCallResult();
         saveResultToEntry.ifPresent(s -> spec.registry().saveBytes(s, rawResult));
         if (typedResultsObs.isPresent()) {
-            final var function = CallTransaction.Function.fromJsonInterface(abi);
-            final var typedResult = function.decodeResult(rawResult.toByteArray());
-            typedResultsObs.get().accept(typedResult);
+            final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+            if (rawResult.size() > 0) {
+                final var typedResult = function.decodeReturn(rawResult.toByteArray());
+                typedResultsObs.get().accept(typedResult.toList().toArray());
+            } else {
+                typedResultsObs.get().accept(new Object[1]);
+            }
         }
     }
 
@@ -183,18 +185,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
             params = paramsFn.get().apply(spec);
         }
 
-        byte[] callData;
-        final var paramsList = Arrays.asList(params);
-        final var tupleExist =
-                paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
-        if (tupleExist) {
-            callData = HapiParserUtil.encodeParametersWithTuple(params, abi);
-        } else {
-            callData =
-                    (!FALLBACK_ABI.equals(abi))
-                            ? CallTransaction.Function.fromJsonInterface(abi).encode(params)
-                            : new byte[] {};
-        }
+        byte[] callData = encodeParametersForCall(params, abi);
 
         @SuppressWarnings("java:S1874")
         final var opBuilder =

@@ -114,7 +114,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
                         numPayerKeys);
     }
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) throws Throwable {
+    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
         UsageAccumulator accumulator = new UsageAccumulator();
 
         long lifetime = 0L;
@@ -123,10 +123,10 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
                     info.getExpiry().getSeconds()
                             - txn.getTransactionID().getTransactionValidStart().getSeconds();
         }
-        final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, subType, lifetime);
+        final var tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, subType, lifetime);
         final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-        tokenOpsUsage.tokenMintUsage(suFrom(svo), baseTransactionMeta, tokenBurnMeta, accumulator);
+        tokenOpsUsage.tokenMintUsage(suFrom(svo), baseTransactionMeta, tokenMintMeta, accumulator);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 

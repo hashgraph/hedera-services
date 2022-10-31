@@ -620,6 +620,20 @@ class SignedTxnAccessorTest {
     }
 
     @Test
+    void noMetadataEvenWithFungibleTokenMint() {
+        final var txn = signedFungibleMint();
+        final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+        assertFalse(accessor.mintsWithMetadata());
+    }
+
+    @Test
+    void metadataWithNonFungibleTokenMint() {
+        final var txn = signedNftMint();
+        final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+        assertTrue(accessor.mintsWithMetadata());
+    }
+
+    @Test
     void recreatesOpEthTxDataEveryRequest() {
         final var accessor = SignedTxnAccessor.uncheckedFrom(signedEthereumTxn());
 
@@ -680,7 +694,8 @@ class SignedTxnAccessorTest {
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
 
         assertEquals(false, accessor.supportsPrecheck());
-        assertThrows(UnsupportedOperationException.class, () -> accessor.doPrecheck());
+        assertFalse(accessor.mintsWithMetadata());
+        assertThrows(UnsupportedOperationException.class, accessor::doPrecheck);
 
         var trueOp =
                 TokenWipeAccountTransactionBody.newBuilder()
@@ -951,6 +966,14 @@ class SignedTxnAccessorTest {
 
     private Transaction signedEthereumTxn() {
         return buildTransactionFrom(TxnUtils.ethereumTransactionOp());
+    }
+
+    private Transaction signedFungibleMint() {
+        return buildTransactionFrom(TxnUtils.fungibleMintOp());
+    }
+
+    private Transaction signedNftMint() {
+        return buildTransactionFrom(TxnUtils.nonFungibleMintOp());
     }
 
     private TransactionBody cryptoCreateOp() {

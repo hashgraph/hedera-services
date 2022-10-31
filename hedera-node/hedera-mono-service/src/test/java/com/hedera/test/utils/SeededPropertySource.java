@@ -15,6 +15,7 @@
  */
 package com.hedera.test.utils;
 
+import static com.hedera.services.context.properties.EntityType.*;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -36,6 +37,7 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
@@ -55,6 +57,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class SeededPropertySource {
     private static final long BASE_SEED = 4_242_424L;
+    private static final EntityType[] BACKWARD_COMPATIBLE_TYPES =
+            new EntityType[] {ACCOUNT, CONTRACT, FILE, SCHEDULE, TOKEN, TOPIC};
 
     private final SplittableRandom SEEDED_RANDOM;
 
@@ -870,8 +874,7 @@ public class SeededPropertySource {
     }
 
     public EntityType nextEntityType(final int range) {
-        final var choices = EntityType.class.getEnumConstants();
-        return choices[SEEDED_RANDOM.nextInt(range)];
+        return BACKWARD_COMPATIBLE_TYPES[SEEDED_RANDOM.nextInt(range)];
     }
 
     public Map<EntityNum, Map<FcTokenAllowanceId, Long>> nextFungibleAllowances(
@@ -1148,6 +1151,18 @@ public class SeededPropertySource {
         seeded.setPrev(nextUnsignedLong());
         seeded.setNext(nextUnsignedLong());
         return seeded;
+    }
+
+    public OnDiskTokenRel nextOnDiskTokenRel() {
+        final var rel = new OnDiskTokenRel();
+        rel.setPrev(nextLong());
+        rel.setNext(nextLong());
+        rel.setNumbers(nextLong());
+        rel.setBalance(nextUnsignedLong());
+        rel.setFrozen(nextBoolean());
+        rel.setKycGranted(nextBoolean());
+        rel.setAutomaticAssociation(nextBoolean());
+        return rel;
     }
 
     public SerializableSemVers nextSerializableSemVers() {

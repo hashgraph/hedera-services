@@ -18,8 +18,10 @@ package com.hedera.services.sysfiles.domain.throttling;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.sysfiles.ParsingUtils;
 
-public record ThrottleReqOpsScaleFactor(int numerator, int denominator) {
-    public static ThrottleReqOpsScaleFactor from(String literal) {
+public record ScaleFactor(int numerator, int denominator) implements Comparable<ScaleFactor> {
+    public static ScaleFactor ONE_TO_ONE = new ScaleFactor(1, 1);
+
+    public static ScaleFactor from(String literal) {
         return ParsingUtils.fromTwoPartDelimited(
                 literal,
                 ":",
@@ -35,7 +37,7 @@ public record ThrottleReqOpsScaleFactor(int numerator, int denominator) {
                 },
                 Integer::parseInt,
                 Integer::parseInt,
-                ThrottleReqOpsScaleFactor::new);
+                ScaleFactor::new);
     }
 
     public int scaling(int nominalOps) {
@@ -47,8 +49,14 @@ public record ThrottleReqOpsScaleFactor(int numerator, int denominator) {
     }
 
     @Override
+    public int compareTo(final ScaleFactor that) {
+        return Integer.compare(
+                this.numerator * that.denominator, that.numerator * this.denominator);
+    }
+
+    @Override
     public String toString() {
-        return MoreObjects.toStringHelper(ThrottleReqOpsScaleFactor.class)
+        return MoreObjects.toStringHelper(ScaleFactor.class)
                 .add("scale", numerator + ":" + denominator)
                 .toString();
     }

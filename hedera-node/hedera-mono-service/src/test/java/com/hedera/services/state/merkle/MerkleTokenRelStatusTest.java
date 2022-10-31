@@ -235,8 +235,8 @@ class MerkleTokenRelStatusTest {
         assertEquals(kycGranted, subject.isKycGranted());
         assertEquals(automaticAssociation, subject.isAutomaticAssociation());
         assertEquals(numbers, subject.getKey().value());
-        assertEquals(nextTokenNum, subject.nextKey());
-        assertEquals(prevTokenNum, subject.prevKey());
+        assertEquals(nextTokenNum, subject.getNext());
+        assertEquals(prevTokenNum, subject.getPrev());
     }
 
     @Test

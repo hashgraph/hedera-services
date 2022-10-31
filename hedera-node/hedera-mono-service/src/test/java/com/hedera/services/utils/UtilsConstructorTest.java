@@ -31,6 +31,7 @@ import com.hedera.services.fees.calculation.file.FileFeesModule;
 import com.hedera.services.fees.calculation.meta.FixedUsageEstimates;
 import com.hedera.services.fees.calculation.schedule.ScheduleFeesModule;
 import com.hedera.services.fees.calculation.token.TokenFeesModule;
+import com.hedera.services.fees.calculation.utils.TriggeredValuesParser;
 import com.hedera.services.files.HFileMetaSerde;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.grpc.marshalling.AdjustmentUtils;
@@ -138,6 +139,7 @@ class UtilsConstructorTest {
                             TokenTypesMapper.class,
                             UnzipUtility.class,
                             MiscUtils.class,
+                            TriggeredValuesParser.class,
                             MetadataMapFactory.class,
                             TokenOpsValidator.class,
                             SubmissionModule.class,
