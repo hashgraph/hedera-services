@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -33,6 +34,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -303,7 +305,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
     private void onAccountPropertyChange(
             final AccountID id, final AccountProperty property, final Object newValue) {
-        // TODO: clean this
         final var address = EntityIdUtils.asTypedEvmAddress(id);
         /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
         if (deletedAccounts.contains(address)) {
@@ -317,16 +318,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         var updatedAccount = updatedAccounts.get(address);
         if (updatedAccount == null) {
             final var origin = getForMutation(address);
-            // TODO: fix comments here
-            /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as
-             * non-existent, and none of the HTS precompiles should be creating accounts */
-            if (origin == null) {
-                updatedAccount =
-                        new UpdateTrackingLedgerAccount<A>(address, trackingLedgers.accounts());
-            } else {
-                updatedAccount =
-                        new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
-            }
+            updatedAccount =
+                origin == null ? new UpdateTrackingLedgerAccount<>(address,
+                    trackingLedgers.accounts())
+                    : new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
             track(updatedAccount);
         }
         /* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
@@ -345,11 +340,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         updatedAccounts.put(address, account);
         deletedAccounts.remove(address);
         return account;
-    }
-
-    public void trackLazilyCreatedAccount(final Address address) {
-        final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingAccounts());
-        track(newMutable);
     }
 
     protected W wrappedWorldView() {
