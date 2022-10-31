@@ -157,7 +157,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         for (final var createdContract : createdContracts) {
             sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
         }
-        // TODO: markEntityChanged for all lazy created accounts
         recordService.externaliseEvmCallTransaction(result);
     }
 
