@@ -37,12 +37,15 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -88,12 +91,14 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                tokenAllowance(),
-                tokenApprove(),
-                nftApprove(),
-                nftIsApprovedForAll(),
-                nftGetApproved(),
-                nftSetApprovalForAll());
+//                tokenAllowance(),
+//                tokenApprove(),
+                tokenApproveTestCopyButLongOverflown()
+//                nftApprove(),
+//                nftIsApprovedForAll(),
+//                nftGetApproved(),
+//                nftSetApprovalForAll()
+        );
     }
 
     private HapiApiSpec tokenAllowance() {
@@ -256,6 +261,55 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                     .logged();
                                     allRunFor(spec, txnRecord);
                                 }));
+    }
+
+    private HapiApiSpec tokenApproveTestCopyButLongOverflown() {
+        final var approveTxn = "approveTxn";
+        final var theSpender = SPENDER;
+
+        return defaultHapiSpec("HTS_TOKEN_APPROVE")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(theSpender),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(10L)
+                                .maxSupply(1000L)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                        tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, FUNGIBLE_TOKEN))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                        "htsApprove",
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        FUNGIBLE_TOKEN))),
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        theSpender))),
+                                                        new BigInteger("92233720368547758070")) // Long max value x 10
+                                                        .payingWith(OWNER)
+                                                        .gas(4_000_000L)
+                                                        .via(approveTxn)
+                                                        .hasKnownStatus(SUCCESS))))
+                .then(
+                        emptyChildRecordsCheck(approveTxn, SUCCESS));
     }
 
     private HapiApiSpec nftApprove() {
