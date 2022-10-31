@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -49,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  * reconnect. Entries from the map are removed when the entity expires
  */
 @Singleton
-public class AliasManager extends AbstractContractAliases implements ContractAliases {
+public class AliasManager extends HederaEvmContractAliases implements ContractAliases {
     private static final Logger log = LogManager.getLogger(AliasManager.class);
 
     private static final String NON_TRANSACTIONAL_MSG =

@@ -55,7 +55,6 @@ import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.*;
 import com.hedera.services.state.submerkle.EntityId;
@@ -135,7 +134,7 @@ public class StateView {
     private BackingStore<TokenID, MerkleToken> backingTokens = null;
     private BackingStore<AccountID, HederaAccount> backingAccounts = null;
     private BackingStore<NftId, UniqueTokenAdapter> backingNfts = null;
-    private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = null;
+    private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingRels = null;
 
     public StateView(
             final ScheduleStore scheduleStore,
@@ -673,7 +672,7 @@ public class StateView {
         return Objects.requireNonNull(stateChildren).accounts();
     }
 
-    public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
+    public TokenRelStorageAdapter tokenAssociations() {
         return Objects.requireNonNull(stateChildren).tokenAssociations();
     }
 
@@ -715,8 +714,7 @@ public class StateView {
         return backingNfts;
     }
 
-    public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus>
-            asReadOnlyAssociationStore() {
+    public BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> asReadOnlyAssociationStore() {
         if (backingRels == null) {
             backingRels = new BackingTokenRels(stateChildren::tokenAssociations);
         }
@@ -781,10 +779,10 @@ public class StateView {
      * @param visitor a consumer of token and token relationship information
      */
     public static void doBoundedIteration(
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
+            final TokenRelStorageAdapter tokenRels,
             final MerkleMap<EntityNum, MerkleToken> tokens,
             final HederaAccount account,
-            final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor) {
+            final BiConsumer<MerkleToken, HederaTokenRel> visitor) {
         final var maxRels = account.getNumAssociations();
         final var firstRel = account.getLatestAssociation();
         doBoundedIteration(tokenRels, tokens, firstRel, maxRels, visitor);
@@ -803,11 +801,11 @@ public class StateView {
      * @param visitor a consumer of token and token relationship information
      */
     public static void doBoundedIteration(
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
+            final TokenRelStorageAdapter tokenRels,
             final MerkleMap<EntityNum, MerkleToken> tokens,
             final EntityNumPair firstRel,
             final int maxRels,
-            final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor) {
+            final BiConsumer<MerkleToken, HederaTokenRel> visitor) {
         final var accountNum = firstRel.getHiOrderAsLong();
         var tokenNum = firstRel.getLowOrderAsLong();
         var key = firstRel;
@@ -816,7 +814,7 @@ public class StateView {
             final var rel = tokenRels.get(key);
             final var token = tokens.getOrDefault(key.getLowOrderAsNum(), REMOVED_TOKEN);
             visitor.accept(token, rel);
-            tokenNum = rel.nextKey();
+            tokenNum = rel.getNext();
             key = EntityNumPair.fromLongs(accountNum, tokenNum);
             counter++;
         }

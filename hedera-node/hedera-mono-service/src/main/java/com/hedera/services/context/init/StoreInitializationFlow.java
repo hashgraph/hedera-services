@@ -19,8 +19,8 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
@@ -42,7 +42,7 @@ public class StoreInitializationFlow {
     private final BackingStore<AccountID, HederaAccount> backingAccounts;
     private final BackingStore<TokenID, MerkleToken> backingTokens;
     private final BackingStore<NftId, UniqueTokenAdapter> backingNfts;
-    private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
+    private final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingTokenRels;
 
     @Inject
     public StoreInitializationFlow(
@@ -52,7 +52,7 @@ public class StoreInitializationFlow {
             final BackingStore<AccountID, HederaAccount> backingAccounts,
             final BackingStore<TokenID, MerkleToken> backingTokens,
             final BackingStore<NftId, UniqueTokenAdapter> backingNfts,
-            final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels) {
+            final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingTokenRels) {
         this.usageLimits = usageLimits;
         this.backingAccounts = backingAccounts;
         this.backingTokens = backingTokens;

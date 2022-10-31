@@ -58,10 +58,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.hedera.services.state.migration.MapMigrationToDisk;
-import com.hedera.services.state.migration.StakingInfoMapBuilder;
-import com.hedera.services.state.migration.StateChildIndices;
-import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.migration.*;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -426,6 +423,8 @@ class ServicesStateTest {
         subject = new ServicesState(bootstrapProperties);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
+                .willReturn(false);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
                 .willReturn(false);
         ServicesState.setAppBuilder(() -> appBuilder);
@@ -626,6 +625,8 @@ class ServicesStateTest {
                 .willReturn(true);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
                 .willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
+                .willReturn(false);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
         given(vmf.apply(any())).willReturn(virtualMapFactory);
@@ -655,8 +656,56 @@ class ServicesStateTest {
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
                         subject,
+                        new ToDiskMigrations(true, false),
                         virtualMapFactory,
-                        ServicesState.accountMigrator);
+                        ServicesState.accountMigrator,
+                        ServicesState.tokenRelMigrator);
+
+        ServicesState.setVmFactory(VirtualMapFactory::new);
+        ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
+    }
+
+    @Test
+    void nonGenesisInitHandlesTokenRelMigrationToDisk() {
+        subject = new ServicesState(bootstrapProperties);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
+                .willReturn(true);
+        ServicesState.setMapToDiskMigration(mapToDiskMigration);
+        ServicesState.setVmFactory(vmf);
+        given(vmf.apply(any())).willReturn(virtualMapFactory);
+
+        final var vmap = mock(VirtualMap.class);
+        setAllMmsTo(mock(MerkleMap.class));
+        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+        subject.setChild(StateChildIndices.STORAGE, vmap);
+        subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
+
+        final var when = Instant.ofEpochSecond(1_234_567L, 890);
+        given(dualState.getFreezeTime()).willReturn(when);
+        given(dualState.getLastFrozenTime()).willReturn(when);
+
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+        // and:
+        APPS.save(selfId.getId(), app);
+
+        // when:
+        subject.init(platform, addressBook, dualState, RESTART, currentVersion);
+        verify(mapToDiskMigration)
+                .migrateToDiskAsApropos(
+                        INSERTIONS_PER_COPY,
+                        subject,
+                        new ToDiskMigrations(false, true),
+                        virtualMapFactory,
+                        ServicesState.accountMigrator,
+                        ServicesState.tokenRelMigrator);
 
         ServicesState.setVmFactory(VirtualMapFactory::new);
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
@@ -868,6 +917,7 @@ class ServicesStateTest {
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
         ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
+        ServicesState.setMapToDiskMigration(mapToDiskMigration);
     }
 
     private void unmockMigrators() {

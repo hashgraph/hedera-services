@@ -98,6 +98,8 @@ public class PropertyNames {
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
     public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS =
             "contracts.allowAutoAssociations";
+    public static final String CONTRACTS_ENFORCE_CREATION_THROTTLE =
+            "contracts.enforceCreationThrottle";
     public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     public static final String CONTRACTS_MAX_KV_PAIRS_AGGREGATE = "contracts.maxKvPairs.aggregate";
     public static final String CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL =
@@ -131,6 +133,8 @@ public class PropertyNames {
     public static final String FEES_MIN_CONGESTION_PERIOD = "fees.minCongestionPeriod";
     public static final String FEES_PERCENT_CONGESTION_MULTIPLIERS =
             "fees.percentCongestionMultipliers";
+    public static final String FEES_PERCENT_UTILIZATION_SCALE_FACTORS =
+            "fees.percentUtilizationScaleFactors";
     public static final String FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER =
             "fees.tokenTransferUsageMultiplier";
     public static final String HEDERA_TXN_MAX_MEMO_UTF8_BYTES =
@@ -192,6 +196,7 @@ public class PropertyNames {
     public static final String STAKING_REWARD_RATE = "staking.rewardRate";
     public static final String STAKING_START_THRESH = "staking.startThreshold";
     public static final String TOKENS_MAX_AGGREGATE_RELS = "tokens.maxAggregateRels";
+    public static final String TOKENS_STORE_RELS_ON_DISK = "tokens.storeRelsOnDisk";
     public static final String TOKENS_MAX_NUM = "tokens.maxNumber";
     public static final String TOKENS_MAX_RELS_PER_INFO_QUERY = "tokens.maxRelsPerInfoQuery";
     public static final String TOKENS_MAX_PER_ACCOUNT = "tokens.maxPerAccount";
