@@ -282,8 +282,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             recordsHistorian,
                             infrastructureFactory.newAutoCreationLogic(
                                     syntheticTxnFactory, creator, currentView, ledgers.aliases()),
-                            dynamicProperties.isAutoCreationEnabled()
-                                    && dynamicProperties.isLazyCreationEnabled());
+                            dynamicProperties.isImplicitCreationEnabled());
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
                             dynamicProperties.isAtomicCryptoTransferEnabled(),
                             () ->
@@ -304,8 +303,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     creator,
                                                     currentView,
                                                     ledgers.aliases()),
-                                            dynamicProperties.isAutoCreationEnabled()
-                                                    && dynamicProperties.isLazyCreationEnabled()));
+                                            dynamicProperties.isImplicitCreationEnabled()));
                     case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
                             ledgers,
                             encoder,
@@ -613,9 +611,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                             creator,
                                                             currentView,
                                                             ledgers.aliases()),
-                                                    dynamicProperties.isAutoCreationEnabled()
-                                                            && dynamicProperties
-                                                                    .isLazyCreationEnabled()));
+                                                    dynamicProperties.isImplicitCreationEnabled()));
 
                             case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
@@ -640,9 +636,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                             creator,
                                                             currentView,
                                                             ledgers.aliases()),
-                                                    dynamicProperties.isAutoCreationEnabled()
-                                                            && dynamicProperties
-                                                                    .isLazyCreationEnabled()));
+                                                    dynamicProperties.isImplicitCreationEnabled()));
                             case AbiConstants.ABI_ID_ERC_ALLOWANCE -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
                                     () ->
@@ -808,8 +802,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     creator,
                                                     currentView,
                                                     ledgers.aliases()),
-                                            dynamicProperties.isAutoCreationEnabled()
-                                                    && dynamicProperties.isLazyCreationEnabled()));
+                                            dynamicProperties.isImplicitCreationEnabled()));
                     case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
                             dynamicProperties.areAllowancesEnabled(),
                             () ->
@@ -832,8 +825,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     creator,
                                                     currentView,
                                                     ledgers.aliases()),
-                                            dynamicProperties.isAutoCreationEnabled()
-                                                    && dynamicProperties.isLazyCreationEnabled()));
+                                            dynamicProperties.isImplicitCreationEnabled()));
                     default -> null;
                 };
         if (precompile != null) {

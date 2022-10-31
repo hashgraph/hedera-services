@@ -172,7 +172,7 @@ public class DecodingFacade {
             final Predicate<AccountID> exists) {
         var accountID = convertLeftPaddedAddressToAccountId(leftPaddedAddress, aliasResolver);
         if (!exists.test(accountID)) {
-            accountID = accountIDWithAliasCalculatedFrom(accountID);
+            accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
         }
         return accountID;
     }
@@ -189,13 +189,12 @@ public class DecodingFacade {
             final TokenID tokenType,
             @NotNull final Tuple[] abiExchanges,
             final UnaryOperator<byte[]> aliasResolver,
-            final Predicate<AccountID> existingCheck) {
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
         for (final var exchange : abiExchanges) {
             final var sender = convertLeftPaddedAddressToAccountId(exchange.get(0), aliasResolver);
             final var receiver =
-                    convertLeftPaddedAddressToAccountId(
-                            exchange.get(1), aliasResolver, existingCheck);
+                    convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver, exists);
             final var serialNo = (long) exchange.get(2);
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
@@ -218,7 +217,7 @@ public class DecodingFacade {
             var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
             if (amount > 0 && !isExisting.test(accountID)) {
-                accountID = accountIDWithAliasCalculatedFrom(accountID);
+                accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
@@ -229,9 +228,8 @@ public class DecodingFacade {
         return fungibleTransfers;
     }
 
-    // TODO: add comment
     @NotNull
-    public static AccountID accountIDWithAliasCalculatedFrom(final AccountID accountID) {
+    public static AccountID generateAccountIDWithAliasCalculatedFrom(final AccountID accountID) {
         return AccountID.newBuilder()
                 .setAlias(ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(accountID)))
                 .build();

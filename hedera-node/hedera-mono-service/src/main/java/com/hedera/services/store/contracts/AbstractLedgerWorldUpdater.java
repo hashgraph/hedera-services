@@ -322,7 +322,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
                             : new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
             track(updatedAccount);
         }
-        /* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
         if (property == BALANCE) {
             final var newBalance = (long) newValue;
             updatedAccount.setBalanceFromPropertyChangeObserver(Wei.of(newBalance));

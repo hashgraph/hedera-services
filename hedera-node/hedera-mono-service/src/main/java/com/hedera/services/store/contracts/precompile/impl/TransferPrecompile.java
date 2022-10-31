@@ -21,7 +21,6 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRever
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.accountIDWithAliasCalculatedFrom;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.addSignedAdjustment;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.bindFungibleTransfersFrom;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.bindHBarTransfersFrom;
@@ -30,6 +29,7 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeAccountIds;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -133,13 +133,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
     private final AutoCreationLogic autoCreationLogic;
     private final RecordsHistorian recordsHistorian;
+    private final boolean isLazyCreationEnabled;
     private ResponseCodeEnum impliedValidity;
     private ImpliedTransfers impliedTransfers;
     private List<BalanceChange> explicitChanges;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
     private boolean areLazyCreatesRequested;
-    private final boolean isLazyCreationEnabled;
 
     public TransferPrecompile(
             final WorldLedgers ledgers,
@@ -256,7 +256,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
                     if (change.hasAlias()) {
-                        replaceChangeAliasToId(frame, changes, completedLazyCreates, change);
+                        replaceAliasWithId(change, changes, frame, completedLazyCreates);
                     }
                     continue;
                 }
@@ -272,7 +272,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             if (i < numExplicitChanges) {
                 /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT exchanges) */
                 if (change.hasAlias()) {
-                    replaceChangeAliasToId(frame, changes, completedLazyCreates, change);
+                    replaceAliasWithId(change, changes, frame, completedLazyCreates);
                     continue;
                 }
                 var hasReceiverSigIfReq = true;
@@ -305,12 +305,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         transferLogic.doZeroSum(changes);
     }
 
-    // rename this
-    private void replaceChangeAliasToId(
-            final MessageFrame frame,
+    private void replaceAliasWithId(
+            final BalanceChange change,
             final List<BalanceChange> changes,
-            final Map<ByteString, EntityNum> completedLazyCreates,
-            final BalanceChange change) {
+            final MessageFrame frame,
+            final Map<ByteString, EntityNum> completedLazyCreates) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
@@ -342,9 +341,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         recordSoFar.onlyExternalizeIfSuccessful();
         updater.manageInProgressPrecedingRecord(
                 recordsHistorian, recordSoFar, lastRecord.syntheticBody());
-        // track the lazy account, so it is accessible to the EVM
-        //
-        // updater.trackLazilyCreatedAccount(EntityIdUtils.asTypedEvmAddress(change.accountId()));
     }
 
     @Override
@@ -404,7 +400,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_CREATE, consensusTime)
                         + pricingUtils.getMinimumPriceInTinybars(
                                 GasCostType.CRYPTO_UPDATE, consensusTime);
-        final Set<AccountID> requestedLazyCreates = new HashSet<>();
+        final var requestedLazyCreates = new HashSet<AccountID>();
         for (var transfer : transferOp.tokenTransferWrappers()) {
             accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
             accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
@@ -564,7 +560,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var amount = amounts[i];
             var accountID = accountIDs.get(i);
             if (amount > 0 && !exists.test(accountID)) {
-                accountID = accountIDWithAliasCalculatedFrom(accountID);
+                accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
             addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, false);
         }
@@ -618,7 +614,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         for (var i = 0; i < senders.size(); i++) {
             var receiver = receivers.get(i);
             if (!exists.test(receiver)) {
-                receiver = accountIDWithAliasCalculatedFrom(receiver);
+                receiver = generateAccountIDWithAliasCalculatedFrom(receiver);
             }
             final var nftExchange =
                     new SyntheticTxnFactory.NftExchange(

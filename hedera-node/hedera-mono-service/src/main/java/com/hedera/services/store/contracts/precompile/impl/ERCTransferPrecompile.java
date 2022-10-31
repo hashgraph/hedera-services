@@ -109,7 +109,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final ImpliedTransfersMarshal impliedTransfersMarshal,
-            RecordsHistorian recordsHistorian,
+            final RecordsHistorian recordsHistorian,
             final AutoCreationLogic autoCreationLogic,
             final boolean isLazyCreationEnabled) {
         super(
@@ -145,7 +145,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final ImpliedTransfersMarshal impliedTransfersMarshal,
-            RecordsHistorian recordsHistorian,
+            final RecordsHistorian recordsHistorian,
             final AutoCreationLogic autoCreationLogic,
             final boolean isLazyCreationEnabled) {
         this(
@@ -285,7 +285,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
         final var from =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
-        var to =
+        final var to =
                 convertLeftPaddedAddressToAccountId(
                         decodedArguments.get(offset + 1), aliasResolver, exists);
 

@@ -776,4 +776,8 @@ public class GlobalDynamicProperties implements EvmProperties {
     public boolean isCryptoCreateWithAliasEnabled() {
         return cryptoCreateWithAliasEnabled;
     }
+
+    public boolean isImplicitCreationEnabled() {
+        return autoCreationEnabled && lazyCreationEnabled;
+    }
 }

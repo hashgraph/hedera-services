@@ -339,6 +339,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         }
     }
 
+    @VisibleForTesting
     List<InProgressChildRecord> precedingChildRecords() {
         return precedingChildRecords;
     }
