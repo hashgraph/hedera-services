@@ -232,6 +232,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
         if (!result.isSuccessful()) {
             worldState.reclaimContractId();
+
+            // Unlink unneeded alias from the alias map to free memory
+            if (aliasManager.isInUse(newContractAddress)) {
+                aliasManager.unlink(newContractAddress);
+            }
         }
 
         // --- Externalise changes
