@@ -41,15 +41,14 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.evm.contracts.operations.HederaEvmCallCodeOperation;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.state.merkle.MerkleAccount;
+import java.util.Map;
+import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallCodeOperation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-
-import java.util.Map;
-import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link CallCodeOperation}.

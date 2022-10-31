@@ -37,13 +37,12 @@ package com.hedera.services.evm.contracts.operations;
  *
  */
 
+import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.DelegateCallOperation;
-
-import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link DelegateCallOperation}.

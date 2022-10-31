@@ -38,19 +38,9 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.evm.contracts.operations.HederaEvmOperationsUtil;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -58,6 +48,13 @@ import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /** Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation} */
 public final class HederaOperationUtil {

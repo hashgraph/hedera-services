@@ -41,6 +41,9 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.stream.proto.SidecarType;
+import java.util.Optional;
+import java.util.OptionalLong;
+import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -51,10 +54,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack.OverflowException;
 import org.hyperledger.besu.evm.internal.FixedStack.UnderflowException;
-
-import javax.inject.Inject;
-import java.util.Optional;
-import java.util.OptionalLong;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SLoadOperation}. No

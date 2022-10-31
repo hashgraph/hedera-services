@@ -20,12 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.services.evm.contracts.operations.HederaExtCodeSizeOperation;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiPredicate;
-
-import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.services.evm.contracts.operations.HederaExtCodeSizeOperation;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;

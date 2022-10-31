@@ -49,8 +49,8 @@ public class HederaExceptionalHaltReason {
     public static final ExceptionalHaltReason INVALID_SOLIDITY_ADDRESS =
             HederaExceptionalHalt.INVALID_SOLIDITY_ADDRESS;
     /**
-     * Used when { HederaSelfDestructOperation} is used and the beneficiary is specified to be
-     * the same as the destructed account
+     * Used when { HederaSelfDestructOperation} is used and the beneficiary is specified to be the
+     * same as the destructed account
      */
     public static final ExceptionalHaltReason SELF_DESTRUCT_TO_SELF =
             HederaExceptionalHalt.SELF_DESTRUCT_TO_SELF;

@@ -9,7 +9,7 @@ module com.hedera.services.evm {
     requires com.google.common;
     requires tuweni.units;
 
-	exports com.hedera.services.evm.contracts.execution;
+    exports com.hedera.services.evm.contracts.execution;
     exports com.hedera.services.evm.store.contracts;
     exports com.hedera.services.evm.store.models;
     exports com.hedera.services.evm;

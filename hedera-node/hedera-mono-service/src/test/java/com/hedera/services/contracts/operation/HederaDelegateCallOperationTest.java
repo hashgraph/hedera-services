@@ -46,11 +46,10 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
-import java.util.Optional;
-import java.util.function.BiPredicate;
-
 import com.hedera.services.evm.contracts.operations.HederaDelegateCallOperation;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
+import java.util.Optional;
+import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;

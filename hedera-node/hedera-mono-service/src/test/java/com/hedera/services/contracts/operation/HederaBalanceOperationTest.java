@@ -26,9 +26,8 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
-import java.util.function.BiPredicate;
-
 import com.hedera.services.evm.contracts.operations.HederaBalanceOperation;
+import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;

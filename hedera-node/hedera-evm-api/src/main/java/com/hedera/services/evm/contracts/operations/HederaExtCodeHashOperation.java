@@ -37,6 +37,9 @@ package com.hedera.services.evm.contracts.operations;
  *
  */
 
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.function.BiPredicate;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -46,10 +49,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
-
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link ExtCodeHashOperation}.

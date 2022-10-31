@@ -70,7 +70,7 @@ public class HederaCallOperation extends HederaEvmCallOperation {
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        super(gasCalculator,addressValidator);
+        super(gasCalculator, addressValidator);
         this.sigsVerifier = sigsVerifier;
         this.precompiledContractMap = precompiledContractMap;
     }
