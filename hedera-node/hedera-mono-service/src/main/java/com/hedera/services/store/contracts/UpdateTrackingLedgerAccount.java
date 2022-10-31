@@ -19,6 +19,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import com.google.common.base.Preconditions;
+import com.hedera.services.evm.store.models.UpdatedHederaEvmAccount;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
@@ -40,17 +41,15 @@ import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAccount, EvmAccount {
+public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount
+        implements MutableAccount, EvmAccount {
     private final Hash addressHash;
-    private final Address address;
     private final AccountID accountId;
     private final NavigableMap<UInt256, UInt256> updatedStorage;
 
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
     @Nullable private A account;
-    private long nonce;
-    private Wei balance;
     @Nullable private Bytes updatedCode;
     @Nullable private Hash updatedCodeHash;
     private boolean storageWasCleared = false;
@@ -60,13 +59,11 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
             @Nullable
                     final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
                             trackingAccounts) {
+        super(address, 0L, Wei.ZERO);
         Preconditions.checkNotNull(address);
-        this.address = address;
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
-        this.addressHash = Hash.hash(this.address);
+        this.addressHash = Hash.hash(super.getAddress());
         this.account = null;
-        this.nonce = 0L;
-        this.balance = Wei.ZERO;
         this.updatedCode = Bytes.EMPTY;
         this.updatedStorage = new TreeMap<>();
         this.trackingAccounts = trackingAccounts;
@@ -78,16 +75,14 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
             @Nullable
                     final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
                             trackingAccounts) {
+        super(account.getAddress(), account.getNonce(), account.getBalance());
         Preconditions.checkNotNull(account);
-        this.address = account.getAddress();
-        this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
+        this.accountId = EntityIdUtils.accountIdFromEvmAddress(account.getAddress());
         this.addressHash =
                 account instanceof UpdateTrackingLedgerAccount
                         ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
-                        : Hash.hash(this.address);
+                        : Hash.hash(account.getAddress());
         this.account = account;
-        this.nonce = account.getNonce();
-        this.balance = account.getBalance();
         this.updatedStorage = new TreeMap<>();
         this.trackingAccounts = trackingAccounts;
     }
@@ -123,23 +118,8 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
     }
 
     @Override
-    public Address getAddress() {
-        return address;
-    }
-
-    @Override
     public Hash getAddressHash() {
         return addressHash;
-    }
-
-    @Override
-    public long getNonce() {
-        return nonce;
-    }
-
-    @Override
-    public void setNonce(final long value) {
-        this.nonce = value;
     }
 
     public boolean wrappedAccountIsTokenProxy() {
@@ -147,20 +127,15 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
     }
 
     @Override
-    public Wei getBalance() {
-        return balance;
-    }
-
-    @Override
     public void setBalance(final Wei value) {
-        this.balance = value;
+        super.setBalance(value);
         if (trackingAccounts != null) {
             trackingAccounts.set(accountId, BALANCE, value.toLong());
         }
     }
 
     public void setBalanceFromPropertyChangeObserver(final Wei value) {
-        this.balance = value;
+        super.setBalance(value);
     }
 
     @Override
@@ -246,9 +221,9 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
         }
         return String.format(
                 "%s -> {nonce:%s, balance:%s, code:%s, storage:%s }",
-                address,
-                nonce,
-                balance,
+                super.getAddress(),
+                super.getNonce(),
+                super.getBalance(),
                 updatedCode == null ? "[not updated]" : updatedCode,
                 storage);
     }
