@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.operation;
+package com.hedera.services.evm.contracts.operations;
 
 /*
  * -
@@ -46,8 +46,7 @@ import org.hyperledger.besu.evm.operation.BalanceOperation;
 
 /**
  * Hedera adapted version of the {@link BalanceOperation}. Performs an existence check on the
- * requested {@link Address} Halts the execution of the EVM transaction with {@link
- * HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does not exist or it is
+ * requested {@link Address} Halts the execution of the EVM transaction with  if the account does not exist or it is
  * deleted.
  */
 public class HederaBalanceOperation extends BalanceOperation {
@@ -62,7 +61,7 @@ public class HederaBalanceOperation extends BalanceOperation {
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
-        return HederaOperationUtil.addressCheckExecution(
+        return HederaEvmOperationsUtil.addressCheckExecution(
                 frame,
                 () -> frame.getStackItem(0),
                 () -> cost(true),

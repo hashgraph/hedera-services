@@ -27,7 +27,7 @@ import com.hedera.services.contracts.operation.HederaCallOperation;
 import com.hedera.services.contracts.operation.HederaChainIdOperation;
 import com.hedera.services.contracts.operation.HederaCreate2Operation;
 import com.hedera.services.contracts.operation.HederaCreateOperation;
-import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
+import com.hedera.services.evm.contracts.operations.HederaDelegateCallOperation;
 import com.hedera.services.contracts.operation.HederaLogOperation;
 import com.hedera.services.contracts.operation.HederaPrngSeedOperator;
 import com.hedera.services.contracts.operation.HederaSLoadOperation;

@@ -38,6 +38,8 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.evm.contracts.operations.HederaEvmCallOperation;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.state.merkle.MerkleAccount;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -59,9 +61,8 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * verification of the provided signature is performed. If the signature is not active, the
  * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
-public class HederaCallOperation extends CallOperation {
+public class HederaCallOperation extends HederaEvmCallOperation {
     private final EvmSigsVerifier sigsVerifier;
-    private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Map<String, PrecompiledContract> precompiledContractMap;
 
     public HederaCallOperation(
@@ -69,9 +70,8 @@ public class HederaCallOperation extends CallOperation {
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        super(gasCalculator);
+        super(gasCalculator,addressValidator);
         this.sigsVerifier = sigsVerifier;
-        this.addressValidator = addressValidator;
         this.precompiledContractMap = precompiledContractMap;
     }
 

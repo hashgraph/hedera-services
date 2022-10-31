@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.operation;
+package com.hedera.services.evm.contracts.operations;
 
 /*
  * -
@@ -37,12 +37,13 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.ExtCodeSizeOperation;
+
+import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link ExtCodeSizeOperation}.
@@ -62,7 +63,7 @@ public class HederaExtCodeSizeOperation extends ExtCodeSizeOperation {
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
-        return HederaOperationUtil.addressCheckExecution(
+        return HederaEvmOperationsUtil.addressCheckExecution(
                 frame,
                 () -> frame.getStackItem(0),
                 () -> cost(true),

@@ -38,11 +38,9 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.stream.proto.SidecarType;
-import java.util.Optional;
-import java.util.OptionalLong;
-import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -53,31 +51,22 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack.OverflowException;
 import org.hyperledger.besu.evm.internal.FixedStack.UnderflowException;
-import org.hyperledger.besu.evm.operation.AbstractOperation;
+
+import javax.inject.Inject;
+import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SLoadOperation}. No
  * externally visible changes, the result of sload is stored for the benefit of ther record stream.
  */
-public class HederaSLoadOperation extends AbstractOperation {
-
-    private final OptionalLong warmCost;
-    private final OptionalLong coldCost;
-
-    private final OperationResult warmSuccess;
-    private final OperationResult coldSuccess;
+public class HederaSLoadOperation extends HederaEvmSLoadOperation {
     private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public HederaSLoadOperation(
             final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
-        super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
-        final long baseCost = gasCalculator.getSloadOperationGasCost();
-        warmCost = OptionalLong.of(baseCost + gasCalculator.getWarmStorageReadCost());
-        coldCost = OptionalLong.of(baseCost + gasCalculator.getColdSloadCost());
-
-        warmSuccess = new OperationResult(warmCost, Optional.empty());
-        coldSuccess = new OperationResult(coldCost, Optional.empty());
+        super(gasCalculator);
         this.dynamicProperties = dynamicProperties;
     }
 

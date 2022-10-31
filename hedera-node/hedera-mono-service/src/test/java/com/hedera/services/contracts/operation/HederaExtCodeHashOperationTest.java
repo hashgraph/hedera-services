@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.services.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Optional;
 import java.util.OptionalLong;

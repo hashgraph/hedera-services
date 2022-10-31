@@ -38,15 +38,18 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.evm.contracts.operations.HederaEvmCallCodeOperation;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.state.merkle.MerkleAccount;
-import java.util.Map;
-import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallCodeOperation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+
+import java.util.Map;
+import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link CallCodeOperation}.
@@ -59,9 +62,8 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * verification of the provided signature is performed. If the signature is not active, the
  * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
-public class HederaCallCodeOperation extends CallCodeOperation {
+public class HederaCallCodeOperation extends HederaEvmCallCodeOperation {
     private final EvmSigsVerifier sigsVerifier;
-    private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Map<String, PrecompiledContract> precompiledContractMap;
 
     public HederaCallCodeOperation(
@@ -69,9 +71,8 @@ public class HederaCallCodeOperation extends CallCodeOperation {
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        super(gasCalculator);
+        super(gasCalculator, addressValidator);
         this.sigsVerifier = sigsVerifier;
-        this.addressValidator = addressValidator;
         this.precompiledContractMap = precompiledContractMap;
     }
 
