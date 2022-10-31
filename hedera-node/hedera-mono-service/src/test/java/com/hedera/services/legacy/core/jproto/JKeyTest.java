@@ -191,6 +191,7 @@ class JKeyTest {
                                         JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
                                                 - 1));
         JKey jkey = new JECDSASecp256k1Key(edcsaSecp256K1Bytes.toByteArray());
+        assertNull(jkey.getHollowKey());
         var key = assertDoesNotThrow(() -> JKey.convertJKeyBasic(jkey));
         assertFalse(key.getECDSASecp256K1().isEmpty());
     }
