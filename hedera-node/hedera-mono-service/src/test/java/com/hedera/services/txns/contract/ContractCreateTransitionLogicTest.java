@@ -610,6 +610,63 @@ class ContractCreateTransitionLogicTest {
     }
 
     @Test
+    void successfullyUnlinkUnusedCreate1ContractAddress() {
+        // setup:
+        givenValidTxnCtx();
+        List<ContractID> expectedCreatedContracts =
+                List.of(contractAccount.getId().asGrpcContract());
+
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+                .willReturn(contractAccount.getId().asEvmAddress());
+
+        given(worldState.getCreatedContractIds()).willReturn(expectedCreatedContracts);
+        given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+        given(txnCtx.consensusTime()).willReturn(consensusTime);
+        given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+        given(aliasManager.isInUse(create1ContractAddress)).willReturn(true);
+
+        var result =
+                TransactionProcessingResult.failed(
+                        1234L,
+                        0L,
+                        124L,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Map.of(),
+                        new ArrayList<>());
+        given(
+                        evmTxProcessor.executeEth(
+                                senderAccount,
+                                create1ContractAddress,
+                                gas,
+                                balance,
+                                Bytes.fromHexString(new String(bytecode)),
+                                txnCtx.consensusTime(),
+                                relayerAccount,
+                                biOfferedGasPrice,
+                                maxGas))
+                .willReturn(result);
+
+        // when:
+        subject.doStateTransitionOperation(
+                contractCreateTxn,
+                senderAccount.getId(),
+                true,
+                relayerAccount.getId(),
+                maxGas,
+                biOfferedGasPrice);
+
+        // then:
+        verify(worldState).reclaimContractId();
+        verify(worldState).getCreatedContractIds();
+        verify(aliasManager).unlink(create1ContractAddress);
+        verify(txnCtx, never()).setTargetedContract(contractAccount.getId().asGrpcContract());
+        verify(recordServices).externalizeUnsuccessfulEvmCreate(result);
+    }
+
+    @Test
     void capturesUnsuccessfulCreateWithSidecars() {
         // setup:
         givenValidTxnCtx();
