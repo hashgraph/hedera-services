@@ -5246,18 +5246,18 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(SUCCESS),
-                                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                            .has(
-                                                AccountInfoAsserts.accountWith()
-                                                    .key(EMPTY_KEY)
-                                                    .evmAddressAlias(alias)
-                                                    .autoRenew(
-                                                        THREE_MONTHS_IN_SECONDS)
-                                                    .receiverSigReq(false)
-                                                    .memo(LAZY_MEMO)),
-                                        getAliasedAccountBalance(alias)
-                                            .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1)
-                                            .logged(),
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .has(
+                                                            AccountInfoAsserts.accountWith()
+                                                                    .key(EMPTY_KEY)
+                                                                    .evmAddressAlias(alias)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(LAZY_MEMO)),
+                                            getAliasedAccountBalance(alias)
+                                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1)
+                                                    .logged(),
                                             childRecordsCheck(
                                                     TRANSFER_FROM_ACCOUNT_REVERT_TXN,
                                                     CONTRACT_REVERT_EXECUTED,
