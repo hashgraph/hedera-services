@@ -91,24 +91,30 @@ public class StackedContractAliases extends AbstractContractAliases {
     }
 
     @Override
-    public void unlink(ByteString alias) {
-        unlink(Address.wrap(Bytes.of(alias.toByteArray())));
-    }
-
-    @Override
     public void link(ByteString alias, EntityNum num) {
+        if (alias.size() != EVM_ADDRESS_LEN) {
+            throw new UnsupportedOperationException(
+                    "EVM alias manager cannot link alias that is not an evm address");
+        }
         link(Address.wrap(Bytes.of(alias.toByteArray())), num.toEvmAddress());
     }
 
     @Override
-    public boolean maybeLinkEvmAddress(@Nullable JKey key, EntityNum num) {
-        // todo: implement or put implementation in superclass
-        return false;
+    public void unlink(ByteString alias) {
+        throw new UnsupportedOperationException(
+                "EVM alias manager cannot perform unlink outside EVM");
     }
 
     @Override
     public void forgetEvmAddress(ByteString alias) {
-        // todo: implement or put implementation in superclass
+        throw new UnsupportedOperationException(
+                "EVM alias manager cannot perform unlink outside EVM");
+    }
+
+    @Override
+    public boolean maybeLinkEvmAddress(@Nullable JKey key, EntityNum num) {
+        throw new UnsupportedOperationException(
+                "EVM alias manager cannot perform address link through key");
     }
 
     @Override
