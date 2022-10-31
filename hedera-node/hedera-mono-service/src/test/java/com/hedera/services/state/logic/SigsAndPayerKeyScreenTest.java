@@ -15,31 +15,45 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.txns.span.EthTxExpansion;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -60,13 +74,18 @@ class SigsAndPayerKeyScreenTest {
     @Mock private BiPredicate<JKey, TransactionSignature> validityTest;
     @Mock private PlatformTxnAccessor accessor;
     @Mock private Supplier<AccountStorageAdapter> accounts;
+    @Mock private AccountStorageAdapter accountStorage;
+    @Mock private MerkleAccount account;
     @Mock private EntityCreator creator;
+    @Mock private ExpirableTxnRecord.Builder childRecordBuilder;
+    @Mock private TxnReceipt.Builder txnReceiptBuilder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
     @Mock private AliasManager aliasManager;
     @Mock private GlobalDynamicProperties properties;
+    @Mock private RationalizedSigMeta sigMeta;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private SigsAndPayerKeyScreen subject;
@@ -114,6 +133,59 @@ class SigsAndPayerKeyScreenTest {
 
         // then:
         verify(txnCtx).payerSigIsKnownActive();
+        // and:
+        Assertions.assertEquals(OK, result);
+    }
+
+    @Test
+    void hollowAccountCompletionSucceeds() {
+        givenOkRationalization();
+        given(accessor.getSigMeta()).willReturn(sigMeta);
+        given(accessor.getSigMap()).willReturn(SignatureMap.getDefaultInstance());
+        given(payerSigValidity.test(accessor, validityTest)).willReturn(true);
+        given(sigMeta.hasReplacedHollowKey()).willReturn(true);
+        given(accounts.get()).willReturn(accountStorage);
+        given(txnCtx.activePayer()).willReturn(AccountID.getDefaultInstance());
+        given(accountStorage.getForModify(any())).willReturn(account);
+        given(sigMeta.payerKey())
+                .willReturn(
+                        new JECDSASecp256k1Key(ByteString.copyFromUtf8("payerKey").toByteArray()));
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any()))
+                .willReturn(childRecordBuilder);
+        given(childRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
+        given(txnReceiptBuilder.getAccountId()).willReturn(EntityId.fromNum(1));
+
+        // when:
+        final var result = subject.applyTo(accessor);
+
+        // then:
+        verify(account).setAccountKey(sigMeta.payerKey());
+        // and:
+        Assertions.assertEquals(OK, result);
+    }
+
+    @Test
+    void hollowAccountCompletionForEthereumTxnSucceeds() {
+        givenOkRationalization();
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+        given(spanMapAccessor.getEthTxExpansion(accessor)).willReturn(new EthTxExpansion(null, OK));
+        var key = new JECDSASecp256k1Key(ByteString.copyFromUtf8("publicKey").toByteArray());
+        given(spanMapAccessor.getEthTxSigsMeta(accessor))
+                .willReturn(new EthTxSigs(key.getECDSASecp256k1Key(), new byte[0]));
+        given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromInt(1));
+        given(accounts.get()).willReturn(accountStorage);
+        given(accountStorage.getForModify(any())).willReturn(account);
+        given(account.getAccountKey()).willReturn(EMPTY_KEY);
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any()))
+                .willReturn(childRecordBuilder);
+        given(childRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
+        given(txnReceiptBuilder.getAccountId()).willReturn(EntityId.fromNum(1));
+
+        // when:
+        final var result = subject.applyTo(accessor);
+
+        // then:
+        verify(account).setAccountKey(key);
         // and:
         Assertions.assertEquals(OK, result);
     }
