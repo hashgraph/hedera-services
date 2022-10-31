@@ -58,6 +58,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -350,7 +351,7 @@ class AbstractLedgerWorldUpdaterTest {
     }
 
     @Test
-    void commitsToWrappedTrackingAccountsRejectChangesToMissingAccountBalances() {
+    void commitsToWrappedTrackingAccountsAllowsChangesToMissingAccountBalances() {
         /* Get the wrapped accounts for the updater */
         final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
         final var wrappedAccounts = wrappedLedgers.accounts();
@@ -358,14 +359,16 @@ class AbstractLedgerWorldUpdaterTest {
         final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
         backingAccounts.put(aAccount, aAccountMock);
         wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
+        final var alias = ByteStringUtils.wrapUnsafely("alias".getBytes());
+        given(aAccountMock.getAlias()).willReturn(alias);
 
-        /* Make an illegal change to them...well-behaved HTS precompiles should not create accounts! */
         wrappedAccounts.create(aAccount);
         wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);
         wrappedAccounts.put(aAccount, aAccountMock);
 
-        /* Verify we cannot commit the illegal change */
-        assertThrows(IllegalArgumentException.class, wrappedLedgers::commit);
+        /* Verify we can commit the change */
+        assertDoesNotThrow(() -> wrappedLedgers.commit());
+        assertTrue(subject.updatedAccounts.containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
     }
 
     @Test
