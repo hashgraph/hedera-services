@@ -166,10 +166,18 @@ public class DecodingFacade {
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
     }
 
+    /**
+     * Existence-aware conversion of Solidity address to AccountID, where if the address converted
+     * into `shard.real.num` format of an AccountID does not exist in the current ledgers, we return
+     * an AccountID with alias == non-existing address, in order to support lazy creations, *NOTE*
+     * that evm addresses that map to an existing AccountID in the `shard.realm.format` *will not*
+     * trigger a lazy creation; Existing addresses are converted in the usual to `shard.real.num`
+     * AccountID format
+     */
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress,
             @NotNull final UnaryOperator<byte[]> aliasResolver,
-            final Predicate<AccountID> exists) {
+            @NotNull final Predicate<AccountID> exists) {
         var accountID = convertLeftPaddedAddressToAccountId(leftPaddedAddress, aliasResolver);
         if (!exists.test(accountID)) {
             accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
@@ -242,13 +250,11 @@ public class DecodingFacade {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
             final long amount = transfer.get(1);
-            AccountID accountID;
-            if (amount > 0) {
-                accountID =
-                        convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver, exists);
-            } else {
-                accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
-            }
+            final AccountID accountID =
+                    amount > 0
+                            ? convertLeftPaddedAddressToAccountId(
+                                    transfer.get(0), aliasResolver, exists)
+                            : convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final boolean isApproval = transfer.get(2);
             addSignedHBarAdjustment(hbarTransfers, accountID, amount, isApproval);
         }

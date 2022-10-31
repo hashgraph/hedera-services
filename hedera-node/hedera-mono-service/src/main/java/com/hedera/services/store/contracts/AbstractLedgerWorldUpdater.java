@@ -316,10 +316,16 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         var updatedAccount = updatedAccounts.get(address);
         if (updatedAccount == null) {
             final var origin = getForMutation(address);
-            updatedAccount =
-                    origin == null
-                            ? new UpdateTrackingLedgerAccount<>(address, trackingLedgers.accounts())
-                            : new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
+            if (origin == null) {
+                // we are observing property change for a freshly
+                // created lazy account through the HTS precompiled contract,
+                // which can occur with any transfer precompile function
+                updatedAccount =
+                        new UpdateTrackingLedgerAccount<>(address, trackingLedgers.accounts());
+            } else {
+                updatedAccount =
+                        new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
+            }
             track(updatedAccount);
         }
         if (property == BALANCE) {

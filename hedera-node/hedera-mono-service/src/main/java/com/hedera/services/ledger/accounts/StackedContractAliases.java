@@ -94,7 +94,7 @@ public class StackedContractAliases extends AbstractContractAliases {
     public void link(ByteString alias, EntityNum num) {
         if (alias.size() != EVM_ADDRESS_LEN) {
             throw new UnsupportedOperationException(
-                    "EVM alias manager cannot link alias that is not an evm address");
+                    "Stacked alias manager cannot link aliases with size > 20.");
         }
         link(Address.wrap(Bytes.of(alias.toByteArray())), num.toEvmAddress());
     }
@@ -102,19 +102,19 @@ public class StackedContractAliases extends AbstractContractAliases {
     @Override
     public void unlink(ByteString alias) {
         throw new UnsupportedOperationException(
-                "EVM alias manager cannot perform unlink outside EVM");
+                "Stacked alias manager cannot perform unlink outside EVM");
     }
 
     @Override
     public void forgetEvmAddress(ByteString alias) {
         throw new UnsupportedOperationException(
-                "EVM alias manager cannot perform unlink outside EVM");
+                "Stacked alias manager cannot perform unlink outside EVM");
     }
 
     @Override
     public boolean maybeLinkEvmAddress(@Nullable JKey key, EntityNum num) {
         throw new UnsupportedOperationException(
-                "EVM alias manager cannot perform address link through key");
+                "Stacked alias manager cannot perform address link through key");
     }
 
     @Override

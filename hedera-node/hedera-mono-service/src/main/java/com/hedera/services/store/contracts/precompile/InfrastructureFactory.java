@@ -195,26 +195,6 @@ public class InfrastructureFactory {
                 validator);
     }
 
-    public AutoCreationLogic newAutoCreationLogic(
-            SyntheticTxnFactory syntheticTxnFactory,
-            EntityCreator entityCreator,
-            StateView view,
-            HederaAliasManager aliasManager) {
-        final var autoCreationLogic =
-                new AutoCreationLogic(
-                        usageLimits,
-                        syntheticTxnFactory,
-                        entityCreator,
-                        ids,
-                        aliasManager,
-                        sigImpactHistorian,
-                        () -> view,
-                        txnCtx,
-                        dynamicProperties);
-        autoCreationLogic.setFeeCalculator(feeCalculator.get());
-        return autoCreationLogic;
-    }
-
     public TransferLogic newTransferLogic(
             final HederaTokenStore tokenStore,
             final SideEffectsTracker sideEffects,
@@ -317,5 +297,25 @@ public class InfrastructureFactory {
                 ledgers,
                 sideEffects,
                 sigImpactHistorian);
+    }
+
+    public AutoCreationLogic newAutoCreationLogic(
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EntityCreator entityCreator,
+            final StateView view,
+            final HederaAliasManager aliasManager) {
+        final var autoCreationLogic =
+                new AutoCreationLogic(
+                        usageLimits,
+                        syntheticTxnFactory,
+                        entityCreator,
+                        ids,
+                        aliasManager,
+                        sigImpactHistorian,
+                        () -> view,
+                        txnCtx,
+                        dynamicProperties);
+        autoCreationLogic.setFeeCalculator(feeCalculator.get());
+        return autoCreationLogic;
     }
 }
