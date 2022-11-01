@@ -898,7 +898,10 @@ class StakingAccountsCommitInterceptorTest {
         given(stakeChangeManager.findOrAdd(anyLong(), any()))
                 .willAnswer(
                         invocation -> {
-                            changes.include(stakingFundId, new MerkleAccount(), new HashMap<>());
+                            changes.include(
+                                    stakingFundId,
+                                    MerkleAccountFactory.newAccount().balance(123).get(),
+                                    new HashMap<>());
                             return expectedFundingI;
                         });
         subject.getStakePeriodStartUpdates()[expectedFundingI] = 666L;

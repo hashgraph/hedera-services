@@ -110,9 +110,10 @@ public class TransferLogic {
     }
 
     public void doZeroSum(final List<BalanceChange> changes) {
+        final var topLevelPayer = txnCtx.activePayer();
         var validity = OK;
         var autoCreationFee = 0L;
-
+        var updatedPayerBalance = Long.MIN_VALUE;
         for (var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
@@ -136,6 +137,9 @@ public class TransferLogic {
                 validity =
                         accountsLedger.validate(
                                 change.accountId(), scopedCheck.setBalanceChange(change));
+                if (change.affectsAccount(topLevelPayer)) {
+                    updatedPayerBalance = change.getNewBalance();
+                }
             } else {
                 validity =
                         accountsLedger.validate(
@@ -150,10 +154,14 @@ public class TransferLogic {
             }
         }
 
-        if (validity == OK
-                && (autoCreationFee > 0)
-                && (autoCreationFee > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE))) {
-            validity = INSUFFICIENT_PAYER_BALANCE;
+        if (validity == OK && autoCreationFee > 0) {
+            updatedPayerBalance =
+                    (updatedPayerBalance == Long.MIN_VALUE)
+                            ? (long) accountsLedger.get(topLevelPayer, BALANCE)
+                            : updatedPayerBalance;
+            if (autoCreationFee > updatedPayerBalance) {
+                validity = INSUFFICIENT_PAYER_BALANCE;
+            }
         }
 
         if (validity == OK) {
