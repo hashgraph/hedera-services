@@ -16,8 +16,6 @@
 package com.hedera.services.evm.contracts.operations;
 
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -28,6 +26,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
+
+import java.util.Optional;
+import java.util.OptionalLong;
 
 public class HederaEvmSLoadOperation extends AbstractOperation {
     protected final OptionalLong warmCost;
@@ -62,6 +63,8 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
             } else {
                 UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
 
+                SLoadOPSpecificLogic(frame, address, key, storageValue);
+
                 frame.pushStackItem(storageValue);
                 return slotIsWarm ? warmSuccess : coldSuccess;
             }
@@ -73,4 +76,10 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
                     warmCost, Optional.of(ExceptionalHaltReason.TOO_MANY_STACK_ITEMS));
         }
     }
+
+    /**
+     * A placeholder logic method to be overridden by {@link HederaEvmSLoadOperation} descendants.
+     */
+    protected void SLoadOPSpecificLogic(
+            MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {}
 }
