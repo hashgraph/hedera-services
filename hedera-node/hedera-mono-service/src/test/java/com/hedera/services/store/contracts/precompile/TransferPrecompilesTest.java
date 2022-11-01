@@ -24,11 +24,13 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_EMPTY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER_2_ALIASES;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFTS_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_RECEIVER_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_SENDER_WRAPPER;
@@ -45,15 +47,19 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.hbarOn
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferChanges;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferList;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferChangesAliased;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferListAliasReceiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChangesAliased2x;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChangesSenderOnly;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferList;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListAliasedX2;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeCryptoTransfer;
@@ -65,6 +71,7 @@ import static com.hedera.services.store.contracts.precompile.impl.TransferPrecom
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferToken;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferTokens;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
@@ -81,7 +88,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -106,6 +115,7 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.pricing.AssetsLoader;
+import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -122,7 +132,9 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -134,6 +146,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.*;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
@@ -173,6 +186,7 @@ class TransferPrecompilesTest {
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private AutoCreationLogic autoCreationLogic;
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
@@ -1046,6 +1060,418 @@ class TransferPrecompilesTest {
         // and:
         verify(transferLogic).doZeroSum(hbarAndTokenChanges);
         verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void nftTransferToLazyCreateHappyPathWorks() throws InvalidProtocolBufferException {
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        givenMinimalFrameContext();
+        givenLedgers();
+        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(exchangeRate.getCentEquiv()).willReturn(1);
+        given(exchangeRate.getHbarEquiv()).willReturn(1);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(nftsTransferListAliasReceiver)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                        infrastructureFactory.newTransferLogic(
+                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+                .willReturn(transferLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChangesAliased);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
+        given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+        given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
+                .willReturn(autoCreationLogic);
+        final var lazyCreationFee = 500L;
+        given(
+                        autoCreationLogic.create(
+                                nftsTransferChangesAliased.get(0),
+                                accounts,
+                                nftsTransferChangesAliased))
+                .willAnswer(
+                        invocation -> {
+                            nftsTransferChangesAliased
+                                    .get(0)
+                                    .replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
+                            return Pair.of(OK, lazyCreationFee);
+                        });
+        final var gasPrice = 50L;
+        given(frame.getGasPrice()).willReturn(Wei.of(gasPrice));
+        final var inProgressChildRecord = mock(InProgressChildRecord.class);
+        final var builder = mock(ExpirableTxnRecord.Builder.class);
+        given(inProgressChildRecord.recordBuilder()).willReturn(builder);
+        final var syntheticBodyMock = mock(TransactionBody.Builder.class);
+        given(inProgressChildRecord.syntheticBody()).willReturn(syntheticBodyMock);
+        given(autoCreationLogic.getPendingCreations()).willReturn(List.of(inProgressChildRecord));
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        final long gasRequirement = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+
+        // 2x NFT transfer + lazy create (CryptoCreate + CryptoUpdate)
+        final var expected = 4 * 1_000_000L * 10_000_000_000L;
+        assertEquals(expected + (expected / 5), gasRequirement);
+        verify(autoCreationLogic)
+                .create(nftsTransferChangesAliased.get(0), accounts, nftsTransferChangesAliased);
+        verify(autoCreationLogic, never())
+                .create(nftsTransferChangesAliased.get(1), accounts, nftsTransferChangesAliased);
+        verify(worldUpdater)
+                .manageInProgressPrecedingRecord(recordsHistorian, builder, syntheticBodyMock);
+        verify(frame).decrementRemainingGas(lazyCreationFee / gasPrice);
+        verify(builder).onlyExternalizeIfSuccessful();
+        verify(transferLogic).doZeroSum(nftsTransferChangesAliased);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void ftTransferRequestingTwoLazyCreatesHappyPathWorks() throws IOException {
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        givenMinimalFrameContext();
+        givenLedgers();
+        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(exchangeRate.getCentEquiv()).willReturn(1);
+        given(exchangeRate.getHbarEquiv()).willReturn(1);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(tokensTransferListAliasedX2)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER_2_ALIASES);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                        infrastructureFactory.newTransferLogic(
+                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+                .willReturn(transferLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesAliased2x);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
+        given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+        given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
+                .willReturn(autoCreationLogic);
+        final var lazyCreationFee = 500L;
+        given(
+                        autoCreationLogic.create(
+                                tokensTransferChangesAliased2x.get(1),
+                                accounts,
+                                tokensTransferChangesAliased2x))
+                .willAnswer(
+                        invocation -> {
+                            tokensTransferChangesAliased2x
+                                    .get(1)
+                                    .replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
+                            return Pair.of(OK, lazyCreationFee);
+                        });
+        given(
+                        autoCreationLogic.create(
+                                tokensTransferChangesAliased2x.get(2),
+                                accounts,
+                                tokensTransferChangesAliased2x))
+                .willAnswer(
+                        invocation -> {
+                            tokensTransferChangesAliased2x
+                                    .get(2)
+                                    .replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
+                            return Pair.of(OK, lazyCreationFee);
+                        });
+        final var gasPrice = 50L;
+        given(frame.getGasPrice()).willReturn(Wei.of(gasPrice));
+        final var inProgressChildRecord = mock(InProgressChildRecord.class);
+        final var builder = mock(ExpirableTxnRecord.Builder.class);
+        given(inProgressChildRecord.recordBuilder()).willReturn(builder);
+        final var syntheticBodyMock = mock(TransactionBody.Builder.class);
+        given(inProgressChildRecord.syntheticBody()).willReturn(syntheticBodyMock);
+        given(autoCreationLogic.getPendingCreations()).willReturn(List.of(inProgressChildRecord));
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        final long gasRequirement = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        // 2x FT transfer + 2x lazy create (CryptoCreate + CryptoUpdate); each is defaultCost
+        final long defaultCost = 1_000_000L * 10_000_000_000L;
+        final var expected = 6 * defaultCost;
+        assertEquals(expected + (expected / 5), gasRequirement);
+        verify(autoCreationLogic, times(2)).create(any(), any(), any());
+        verify(worldUpdater, times(2))
+                .manageInProgressPrecedingRecord(recordsHistorian, builder, syntheticBodyMock);
+        verify(frame, times(2)).decrementRemainingGas(lazyCreationFee / gasPrice);
+        verify(builder, times(2)).onlyExternalizeIfSuccessful();
+        verify(transferLogic).doZeroSum(tokensTransferChangesAliased2x);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void nftTransferToLazyCreateFailsWhenAutoCreationLogicReturnsNonOk()
+            throws InvalidProtocolBufferException {
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(300L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.parentUpdater()).willReturn(parent);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        givenLedgers();
+        givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(nftsTransferListAliasReceiver)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                        infrastructureFactory.newTransferLogic(
+                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+                .willReturn(transferLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChangesAliased);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
+        given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+        given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
+                .willReturn(autoCreationLogic);
+        final var lazyCreationFee = 500L;
+        given(
+                        autoCreationLogic.create(
+                                nftsTransferChangesAliased.get(0),
+                                accounts,
+                                nftsTransferChangesAliased))
+                .willAnswer(
+                        invocation -> {
+                            nftsTransferChangesAliased
+                                    .get(0)
+                                    .replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
+                            return Pair.of(
+                                    MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED,
+                                    lazyCreationFee);
+                        });
+        given(
+                        creator.createUnsuccessfulSyntheticRecord(
+                                ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED))
+                .willReturn(mockRecordBuilder);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(
+                UInt256.valueOf(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED.getNumber()),
+                result);
+        // and:
+        verify(frame, never()).getGasPrice();
+        verify(autoCreationLogic, never()).getPendingCreations();
+        verify(autoCreationLogic)
+                .create(nftsTransferChangesAliased.get(0), accounts, nftsTransferChangesAliased);
+        verify(autoCreationLogic, never())
+                .create(nftsTransferChangesAliased.get(1), accounts, nftsTransferChangesAliased);
+        verify(worldUpdater, never()).manageInProgressPrecedingRecord(any(), any(), any());
+        verify(frame, never()).decrementRemainingGas(anyLong());
+        verify(transferLogic, never()).doZeroSum(any());
+        verify(wrappedLedgers, never()).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void lazyCreateFailsWithNonSupportedIfFlagTurnedOff() throws InvalidProtocolBufferException {
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(300L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.parentUpdater()).willReturn(parent);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        givenLedgers();
+        givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(nftsTransferListAliasReceiver)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
+        given(dynamicProperties.isImplicitCreationEnabled()).willReturn(false);
+        given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
+                .willReturn(autoCreationLogic);
+        given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.NOT_SUPPORTED))
+                .willReturn(mockRecordBuilder);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(UInt256.valueOf(ResponseCodeEnum.NOT_SUPPORTED.getNumber()), result);
+        // and:
+        verify(autoCreationLogic, never()).create(any(), any(), any());
+        verify(worldUpdater, never()).manageInProgressPrecedingRecord(any(), any(), any());
+        verify(frame, never()).decrementRemainingGas(anyLong());
+        verify(transferLogic, never()).doZeroSum(any());
+        verify(wrappedLedgers, never()).commit();
+        verify(creator).createUnsuccessfulSyntheticRecord(ResponseCodeEnum.NOT_SUPPORTED);
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }

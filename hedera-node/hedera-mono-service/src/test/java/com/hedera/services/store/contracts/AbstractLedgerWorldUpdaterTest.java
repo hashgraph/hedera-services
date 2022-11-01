@@ -80,6 +80,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -351,7 +352,7 @@ class AbstractLedgerWorldUpdaterTest {
     }
 
     @Test
-    void commitsToWrappedTrackingAccountsAllowsChangesToMissingAccountBalances() {
+    void commitsToWrappedTrackingAccountsAllowsBalanceChangesToMissingAccount() {
         /* Get the wrapped accounts for the updater */
         final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
         final var wrappedAccounts = wrappedLedgers.accounts();
@@ -361,6 +362,30 @@ class AbstractLedgerWorldUpdaterTest {
         wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
         final var alias = ByteStringUtils.wrapUnsafely("alias".getBytes());
         given(aAccountMock.getAlias()).willReturn(alias);
+
+        wrappedAccounts.create(aAccount);
+        wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);
+        wrappedAccounts.put(aAccount, aAccountMock);
+
+        /* Verify we can commit the change */
+        assertDoesNotThrow(() -> wrappedLedgers.commit());
+        assertTrue(subject.updatedAccounts.containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
+    }
+
+    @Test
+    void commitsToWrappedTrackingAccountsAllowsBalanceChangesToNonUpdatedAccount() {
+        /* Get the wrapped accounts for the updater */
+        final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
+        final var wrappedAccounts = wrappedLedgers.accounts();
+        final var aAccountMock = mock(MerkleAccount.class);
+        final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
+        backingAccounts.put(aAccount, aAccountMock);
+        wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
+        final var alias = ByteStringUtils.wrapUnsafely("alias".getBytes());
+        given(aAccountMock.getAlias()).willReturn(alias);
+        final var accountMock = mock(Account.class);
+        given(worldState.get(aAddress)).willReturn(accountMock);
+        given(accountMock.getAddress()).willReturn(aAddress);
 
         wrappedAccounts.create(aAccount);
         wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);

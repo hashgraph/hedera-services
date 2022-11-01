@@ -15,6 +15,7 @@
  */
 package com.hedera.services.ledger.accounts;
 
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,6 +31,8 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Map;
@@ -119,9 +122,26 @@ class StackedContractAliasesTest {
     }
 
     @Test
-    void refusesToLinkFromMirrorAddress() {
+    void refusesToUnLinkFromByteString() {
         assertThrows(
-                IllegalArgumentException.class, () -> subject.link(mirrorAddress, mirrorAddress));
+                UnsupportedOperationException.class,
+                () -> subject.unlink(ByteStringUtils.wrapUnsafely("bytes".getBytes())));
+    }
+
+    @Test
+    void refusesToForgetEvmAddressFromByteString() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.forgetEvmAddress(ByteStringUtils.wrapUnsafely("bytes".getBytes())));
+    }
+
+    @Test
+    void refusesToMaybeLinkEvmAddress() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () ->
+                        subject.maybeLinkEvmAddress(
+                                new JECDSASecp256k1Key("bytes".getBytes()), EntityNum.MISSING_NUM));
     }
 
     @Test
@@ -151,6 +171,24 @@ class StackedContractAliasesTest {
     void linkingAddsToMap() {
         subject.link(nonMirrorAddress, mirrorAddress);
         assertSame(mirrorAddress, subject.changedLinks().get(nonMirrorAddress));
+    }
+
+    @Test
+    void linkingWithByteStringAddsToMap() {
+        subject.link(
+                ByteStringUtils.wrapUnsafely(nonMirrorAddress.toArrayUnsafe()),
+                EntityNum.fromEvmAddress(mirrorAddress));
+        assertEquals(mirrorAddress, subject.changedLinks().get(nonMirrorAddress));
+    }
+
+    @Test
+    void linkingWithByteStringWithSizeBiggerThanEvmAddressThrows() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () ->
+                        subject.link(
+                                ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE + 1]),
+                                EntityNum.fromEvmAddress(mirrorAddress)));
     }
 
     @Test
