@@ -1445,7 +1445,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     SUCCESS,
                                                     recordWith()
                                                             .status(SUCCESS)
-                                                            .memo("lazy-created account")
+                                                            .memo(LAZY_MEMO)
                                                             .alias(aliasAsByteString));
 
                                     allRunFor(spec, payTxn, childRecordsCheck);
