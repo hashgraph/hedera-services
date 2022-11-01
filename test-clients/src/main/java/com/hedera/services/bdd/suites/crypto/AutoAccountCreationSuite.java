@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
@@ -24,12 +25,7 @@ import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTo
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
@@ -51,13 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -173,7 +163,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 autoCreateWithNftFallBackFeeFails(),
                 repeatedAliasInSameTransferListFails(),
                 tokenTransfersFailWhenFeatureFlagDisabled(),
-                canAutoCreateWithHbarAndTokenTransfers());
+                canAutoCreateWithHbarAndTokenTransfers(),
+                payerBalanceIsReflectsAllChangesBeforeFeeCharging());
     }
 
     private HapiApiSpec canAutoCreateWithHbarAndTokenTransfers() {
@@ -632,6 +623,63 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .hasToken(relationshipWith(A_TOKEN).balance(10))
                                 .hasToken(relationshipWith(B_TOKEN).balance(20)));
+    }
+
+    private HapiApiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
+        final var secondAliasKey = "secondAlias";
+        final var secondPayer = "secondPayer";
+        final AtomicLong totalAutoCreationFees = new AtomicLong();
+
+        return onlyDefaultHapiSpec("PayerBalanceIsReflectsAllChangesBeforeFeeCharging")
+                .given(
+                        overriding(FEATURE_FLAG, "true"),
+                        newKeyNamed(VALID_ALIAS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(1000)
+                                .treasury(TOKEN_TREASURY),
+                        cryptoCreate(CIVILIAN)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(1),
+                        cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
+                        cryptoTransfer(
+                                        moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
+                                        movingHbar(1).between(CIVILIAN, FUNDING))
+                                .fee(50 * ONE_HBAR)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN),
+                        getAccountBalance(CIVILIAN)
+                                .exposingBalanceTo(
+                                        balance ->
+                                                totalAutoCreationFees.set(
+                                                        ONE_HUNDRED_HBARS - balance - 1)))
+                .when(
+                        logIt(
+                                spec ->
+                                        String.format(
+                                                "Total auto-creation fees: %d",
+                                                totalAutoCreationFees.get())),
+                        sourcing(
+                                () ->
+                                        cryptoCreate(secondPayer)
+                                                .maxAutomaticTokenAssociations(1)
+                                                .balance(totalAutoCreationFees.get())),
+                        cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, secondPayer)))
+                .then(
+                        newKeyNamed(secondAliasKey),
+                        sourcing(
+                                () ->
+                                        cryptoTransfer(
+                                                        moving(10, A_TOKEN)
+                                                                .between(
+                                                                        secondPayer,
+                                                                        secondAliasKey),
+                                                        movingHbar(1).between(secondPayer, FUNDING))
+                                                .fee(totalAutoCreationFees.get() - 2)
+                                                .payingWith(secondPayer)
+                                                .signedBy(secondPayer)),
+                        getAccountBalance(secondPayer).logged());
     }
 
     private HapiApiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
