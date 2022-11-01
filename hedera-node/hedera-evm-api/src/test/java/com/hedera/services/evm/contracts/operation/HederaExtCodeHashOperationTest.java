@@ -15,9 +15,17 @@
  */
 package com.hedera.services.evm.contracts.operation;
 
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -32,15 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.function.BiPredicate;
-
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeHashOperationTest {
