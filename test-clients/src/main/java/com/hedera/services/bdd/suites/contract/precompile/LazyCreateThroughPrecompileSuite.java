@@ -356,8 +356,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                                                     spec.registry()
                                                                             .getAccountID(OWNER)),
                                                             addressBytes,
-                                                            1)
+                                                            1L)
                                                     .via(TRANSFER_NFT_REVERT_TXN)
+                                                    .alsoSigningWithFullPrefix(OWNER)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
@@ -371,8 +372,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                                                     spec.registry()
                                                                             .getAccountID(OWNER)),
                                                             addressBytes,
-                                                            1)
+                                                            1L)
                                                     .via(TRANSFER_NFT_TXN)
+                                                    .alsoSigningWithFullPrefix(OWNER)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(SUCCESS),
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
@@ -450,11 +452,12 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                                                             asAddress(
                                                                                     spec.registry()
                                                                                             .getAccountID(
-                                                                                                    OWNER)),
-                                                                            addressBytes)
+                                                                                                    OWNER)))
                                                                     .toArray(),
+                                                            List.of(addressBytes).toArray(),
                                                             List.of(1L).toArray())
                                                     .via(TRANSFER_NFTS_REVERT_TXN)
+                                                    .alsoSigningWithFullPrefix(OWNER)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
@@ -468,11 +471,12 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                                                             asAddress(
                                                                                     spec.registry()
                                                                                             .getAccountID(
-                                                                                                    OWNER)),
-                                                                            addressBytes)
+                                                                                                    OWNER)))
                                                                     .toArray(),
+                                                            List.of(addressBytes).toArray(),
                                                             List.of(1L).toArray())
                                                     .via(TRANSFER_NFTS_TXN)
+                                                    .alsoSigningWithFullPrefix(OWNER)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(SUCCESS),
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
