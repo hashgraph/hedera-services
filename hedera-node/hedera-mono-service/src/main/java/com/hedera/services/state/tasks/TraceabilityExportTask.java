@@ -15,8 +15,12 @@
  */
 package com.hedera.services.state.tasks;
 
-import static com.hedera.services.state.tasks.SystemTaskResult.*;
-import static com.hedera.services.throttling.MapAccessType.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.DONE;
+import static com.hedera.services.state.tasks.SystemTaskResult.NEEDS_DIFFERENT_CONTEXT;
+import static com.hedera.services.state.tasks.SystemTaskResult.NOTHING_TO_DO;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.services.throttling.MapAccessType.BLOBS_GET;
+import static com.hedera.services.throttling.MapAccessType.STORAGE_GET;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -192,7 +196,7 @@ public class TraceabilityExportTask implements SystemTask {
             final ContractID contractId) {
         expiryThrottle.allowOne(BLOBS_GET);
         final var runtimeCode =
-                entityAccess.fetchCodeIfPresent(EntityIdUtils.asAccount(contractId));
+                entityAccess.fetchCodeIfPresent(EntityIdUtils.asTypedEvmAddress(contractId));
         if (runtimeCode == null) {
             return null;
         }

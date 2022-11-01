@@ -27,6 +27,7 @@ dependencies {
         exclude("com.google.code.findbugs", "jsr305")
     }
     api(libs.swirlds.common)
+    implementation(libs.caffeine)
     implementation(libs.hapi) {
         exclude("com.google.code.findbugs", "jsr305")
     }

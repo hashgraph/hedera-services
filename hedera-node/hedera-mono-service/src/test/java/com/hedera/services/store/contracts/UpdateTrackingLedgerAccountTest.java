@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
@@ -50,12 +52,13 @@ class UpdateTrackingLedgerAccountTest {
 
     @Mock private EntityAccess entityAccess;
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
+    @Mock NodeLocalProperties properties;
 
     private CodeCache codeCache;
 
     @BeforeEach
     void setUp() {
-        codeCache = new CodeCache(0, entityAccess);
+        codeCache = new CodeCache(properties, entityAccess);
     }
 
     @Test
@@ -80,7 +83,7 @@ class UpdateTrackingLedgerAccountTest {
 
     @Test
     void wrappedTokenProxyIsRecognized() {
-        final var tokenProxyAccount = new WorldStateTokenAccount(targetAddress);
+        final var tokenProxyAccount = new HederaEvmWorldStateTokenAccount(targetAddress);
 
         final var subject = new UpdateTrackingLedgerAccount<>(tokenProxyAccount, null);
 
@@ -128,7 +131,7 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void getsWrappedCodeHashIfConstructedWithAccount() {
         final var mockCode = Bytes.minimalBytes(4321L);
-        given(entityAccess.fetchCodeIfPresent(targetId)).willReturn(mockCode);
+        given(entityAccess.fetchCodeIfPresent(targetAddress)).willReturn(mockCode);
 
         final var account =
                 new WorldStateAccount(
@@ -158,7 +161,7 @@ class UpdateTrackingLedgerAccountTest {
 
     @Test
     void hasCodeDelegatesToWrappedIfNotUpdated() {
-        given(entityAccess.fetchCodeIfPresent(targetId)).willReturn(Bytes.EMPTY);
+        given(entityAccess.fetchCodeIfPresent(targetAddress)).willReturn(Bytes.EMPTY);
 
         final var account =
                 new WorldStateAccount(
@@ -262,7 +265,7 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void trackingAccountDelegatesToNonUpdatedStorage() {
         final var mockValue = UInt256.valueOf(1_234_567L);
-        given(entityAccess.getStorage(targetId, UInt256.ONE)).willReturn(mockValue);
+        given(entityAccess.getStorage(targetAddress, UInt256.ONE)).willReturn(mockValue);
 
         final var account =
                 new WorldStateAccount(
@@ -275,7 +278,7 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void trackingAccountDelegatesToGetOriginalStorage() {
         final var mockValue = UInt256.valueOf(1_234_567L);
-        given(entityAccess.getStorage(targetId, UInt256.ONE)).willReturn(mockValue);
+        given(entityAccess.getStorage(targetAddress, UInt256.ONE)).willReturn(mockValue);
 
         final var account =
                 new WorldStateAccount(
