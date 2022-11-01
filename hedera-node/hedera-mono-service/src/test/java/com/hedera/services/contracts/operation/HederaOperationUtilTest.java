@@ -37,20 +37,26 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.verify;
-
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.evm.contracts.operations.HederaEvmOperationsUtil;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.WorldStateAccount;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Optional;
@@ -58,21 +64,13 @@ import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.internal.FixedStack;
-import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HederaOperationUtilTest {
@@ -111,83 +109,6 @@ class HederaOperationUtilTest {
                         precompiledContractMap);
 
         assertSame(degenerateResult, result);
-    }
-
-    @Test
-    void throwsUnderflowExceptionWhenGettingAddress() {
-        // given:
-        given(messageFrame.getStackItem(0)).willThrow(new FixedStack.UnderflowException());
-        given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
-
-        // when:
-        final var result =
-                HederaEvmOperationsUtil.addressCheckExecution(
-                        messageFrame,
-                        () -> messageFrame.getStackItem(0),
-                        gasSupplier,
-                        executionSupplier,
-                        (a, b) -> true);
-
-        // then:
-        assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason().get());
-        assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
-        // and:
-        verify(messageFrame).getStackItem(0);
-        verify(messageFrame, never()).getWorldUpdater();
-        verify(gasSupplier).getAsLong();
-        verify(executionSupplier, never()).get();
-    }
-
-    @Test
-    void haltsWithInvalidSolidityAddressWhenAccountCheckExecution() {
-        // given:
-        given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
-        given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
-
-        // when:
-        final var result =
-                HederaEvmOperationsUtil.addressCheckExecution(
-                        messageFrame,
-                        () -> messageFrame.getStackItem(0),
-                        gasSupplier,
-                        executionSupplier,
-                        (a, b) -> false);
-
-        // then:
-        assertEquals(
-                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason().get());
-        assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
-        // and:
-        verify(messageFrame).getStackItem(0);
-        verify(gasSupplier).getAsLong();
-        verify(executionSupplier, never()).get();
-    }
-
-    @Test
-    void successfulWhenAddressCheckExecution() {
-        // given:
-        given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
-        given(executionSupplier.get())
-                .willReturn(
-                        new Operation.OperationResult(
-                                OptionalLong.of(expectedSuccessfulGas), Optional.empty()));
-
-        // when:
-        final var result =
-                HederaEvmOperationsUtil.addressCheckExecution(
-                        messageFrame,
-                        () -> messageFrame.getStackItem(0),
-                        gasSupplier,
-                        executionSupplier,
-                        (a, b) -> true);
-
-        // when:
-        assertTrue(result.getHaltReason().isEmpty());
-        assertEquals(expectedSuccessfulGas, result.getGasCost().getAsLong());
-        // and:
-        verify(messageFrame).getStackItem(0);
-        verify(gasSupplier, never()).getAsLong();
-        verify(executionSupplier).get();
     }
 
     @Test
