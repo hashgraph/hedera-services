@@ -15,6 +15,7 @@
  */
 package com.hedera.services.evm.store.models;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -59,5 +60,11 @@ class AbstractLedgerEvmWorldUpdaterTest {
     void updaterTest() {
         assertEquals(Optional.empty(), abstractLedgerEvmWorldUpdater.parentUpdater());
         assertNull(abstractLedgerEvmWorldUpdater.updater());
+    }
+
+    @Test
+    void namedelegatesTokenAccountTest() {
+        final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
+        assertFalse(abstractLedgerEvmWorldUpdater.isTokenAddress(someAddress));
     }
 }

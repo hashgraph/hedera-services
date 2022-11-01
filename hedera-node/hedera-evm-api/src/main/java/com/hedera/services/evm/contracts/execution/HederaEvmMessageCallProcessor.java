@@ -37,7 +37,6 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /** Overrides Besu precompiler handling, so we can break model layers in Precompile execution */
 public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
-    private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
     private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
             Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
 

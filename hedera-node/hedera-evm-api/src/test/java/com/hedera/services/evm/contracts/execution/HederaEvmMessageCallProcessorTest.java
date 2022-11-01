@@ -17,9 +17,9 @@ package com.hedera.services.evm.contracts.execution;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -39,7 +39,6 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.fluent.SimpleAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.AltBN128AddPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -163,21 +162,6 @@ class HederaEvmMessageCallProcessorTest {
     }
 
     @Test
-    void callsParentWithPrecompile() {
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(frame.getValue()).willReturn(Wei.ZERO);
-        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
-        given(frame.getSenderAddress()).willReturn(SENDER_ADDRESS);
-        final var precompile = Address.fromHexString("0x1");
-        given(frame.getContractAddress()).willReturn(precompile);
-        given(precompiles.get(precompile))
-                .willReturn(AltBN128AddPrecompiledContract.byzantium(null));
-        given(frame.getState()).willReturn(CODE_SUCCESS);
-
-        subject.start(frame, hederaEvmOperationTracer);
-    }
-
-    @Test
     void insufficientGasReverts() {
         given(frame.getRemainingGas()).willReturn(GAS_ONE_K);
         given(frame.getInputData()).willReturn(Bytes.EMPTY);
@@ -206,6 +190,19 @@ class HederaEvmMessageCallProcessorTest {
         subject.executeHederaPrecompile(nonHtsPrecompile, frame, hederaEvmOperationTracer);
 
         verify(frame).setState(EXCEPTIONAL_HALT);
+        verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
+        verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
+    }
+
+    @Test
+    void precompileRevert() {
+        given(frame.getInputData()).willReturn(Bytes.EMPTY);
+        given(frame.getState()).willReturn(REVERT);
+        given(nonHtsPrecompile.gasRequirement(any())).willReturn(GAS_ONE);
+        given(nonHtsPrecompile.computePrecompile(any(), any())).willReturn(NO_RESULT);
+
+        subject.executeHederaPrecompile(nonHtsPrecompile, frame, hederaEvmOperationTracer);
+
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }

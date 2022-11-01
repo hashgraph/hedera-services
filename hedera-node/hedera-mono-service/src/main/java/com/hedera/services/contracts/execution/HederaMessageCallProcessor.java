@@ -25,11 +25,9 @@ import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -37,8 +35,6 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
-    private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
-            Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
     public static final Bytes INVALID_TRANSFER =
             Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
