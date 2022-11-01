@@ -17,7 +17,6 @@ package com.hedera.services.txns.contract;
 
 import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.services.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
-import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -75,6 +74,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ContractCallTransitionLogicTest {
     private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+    private final ByteString alias =
+            ByteStringUtils.wrapUnsafely(
+                    new byte[] {1, 2, 3, 5, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12});
     private long gas = 1_234;
     private long sent = 1_234L;
     private static final long maxGas = 666_666L;
@@ -229,7 +231,6 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyExternaliseContractResultCallSuccessfulLazyCreate() {
         // setup:
-        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
         var op =
                 TransactionBody.newBuilder()
                         .setContractCall(
@@ -292,7 +293,6 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyExternaliseFailedContractResultCallLazyCreate() {
         // setup:
-        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
         var op =
                 TransactionBody.newBuilder()
                         .setContractCall(
@@ -353,7 +353,6 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyEthLazyCreateThrowsWhenAmountIsZero() {
         // setup:
-        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
         var op =
                 TransactionBody.newBuilder()
                         .setContractCall(
@@ -389,7 +388,6 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyEthLazyCreateThrowsWhenRelayerNull() {
         // setup:
-        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
         var op =
                 TransactionBody.newBuilder()
                         .setContractCall(
@@ -420,7 +418,6 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyEthLazyCreateThrowsWhenEvmVersion030() {
         // setup:
-        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
         var op =
                 TransactionBody.newBuilder()
                         .setContractCall(
@@ -455,7 +452,6 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyEthLazyCreateThrowsWhenAutoCreationNotEnabled() {
         // setup:
-        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
         var op =
                 TransactionBody.newBuilder()
                         .setContractCall(
@@ -491,7 +487,6 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyEthLazyCreateThrowsWhenLazyCreationNotEnabled() {
         // setup:
-        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
         var op =
                 TransactionBody.newBuilder()
                         .setContractCall(
