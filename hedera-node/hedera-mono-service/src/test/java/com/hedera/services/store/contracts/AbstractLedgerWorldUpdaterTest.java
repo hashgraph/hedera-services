@@ -194,6 +194,20 @@ class AbstractLedgerWorldUpdaterTest {
     }
 
     @Test
+    void revertsSourceIdIfCreated() {
+        final var sourceId = 123;
+        final var aRecord = ExpirableTxnRecord.newBuilder();
+
+        given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
+
+        subject.manageInProgressPrecedingRecord(
+                recordsHistorian, aRecord, TransactionBody.newBuilder());
+        subject.revert();
+
+        verify(recordsHistorian).revertChildRecordsFromSource(sourceId);
+    }
+
+    @Test
     void revertsCommittedChildIdsSourceIdsIfCreated() {
         final var firstChildSourceId = 123;
         final var mySourceId = 666;
@@ -204,6 +218,26 @@ class AbstractLedgerWorldUpdaterTest {
 
         subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
         subject.manageInProgressRecord(recordsHistorian, aRecord, TransactionBody.newBuilder());
+        subject.addCommittedRecordSourceId(secondChildSourceId, recordsHistorian);
+        subject.revert();
+
+        verify(recordsHistorian).revertChildRecordsFromSource(mySourceId);
+        verify(recordsHistorian).revertChildRecordsFromSource(firstChildSourceId);
+        verify(recordsHistorian).revertChildRecordsFromSource(secondChildSourceId);
+    }
+
+    @Test
+    void revertsCommittedChildIdSourceIdsIfCreated() {
+        final var firstChildSourceId = 123;
+        final var mySourceId = 666;
+        final var secondChildSourceId = 456;
+        final var aRecord = ExpirableTxnRecord.newBuilder();
+
+        given(recordsHistorian.nextChildRecordSourceId()).willReturn(mySourceId);
+
+        subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
+        subject.manageInProgressPrecedingRecord(
+                recordsHistorian, aRecord, TransactionBody.newBuilder());
         subject.addCommittedRecordSourceId(secondChildSourceId, recordsHistorian);
         subject.revert();
 
