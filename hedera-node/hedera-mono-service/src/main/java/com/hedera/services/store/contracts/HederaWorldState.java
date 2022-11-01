@@ -65,7 +65,6 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
     private final FunctionalityThrottling handleThrottling;
     private final SigImpactHistorian sigImpactHistorian;
     private final List<ContractID> provisionalContractCreations = new LinkedList<>();
-    private final CodeCache codeCache;
     private final GlobalDynamicProperties dynamicProperties;
 
     // If non-null, the new contract customizations requested by the HAPI contractCreate sender
@@ -84,7 +83,6 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
         this.ids = ids;
         this.usageLimits = usageLimits;
         this.entityAccess = entityAccess;
-        this.codeCache = codeCache;
         this.sigImpactHistorian = sigImpactHistorian;
         this.dynamicProperties = dynamicProperties;
         this.handleThrottling = handleThrottling;
@@ -99,7 +97,6 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
         super(entityAccess, dynamicProperties, codeCache);
         this.ids = ids;
         this.entityAccess = entityAccess;
-        this.codeCache = codeCache;
         this.usageLimits = null;
         this.handleThrottling = null;
         this.sigImpactHistorian = null;
