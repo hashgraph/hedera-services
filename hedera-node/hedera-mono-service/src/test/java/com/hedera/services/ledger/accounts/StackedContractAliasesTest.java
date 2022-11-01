@@ -123,25 +123,25 @@ class StackedContractAliasesTest {
 
     @Test
     void refusesToUnLinkFromByteString() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.unlink(ByteStringUtils.wrapUnsafely("bytes".getBytes())));
+        final var bytes = "bytes".getBytes();
+        final var alias = ByteStringUtils.wrapUnsafely(bytes);
+        assertThrows(UnsupportedOperationException.class, () -> subject.unlink(alias));
     }
 
     @Test
     void refusesToForgetEvmAddressFromByteString() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.forgetEvmAddress(ByteStringUtils.wrapUnsafely("bytes".getBytes())));
+        final var bytes = "bytes".getBytes();
+        final var alias = ByteStringUtils.wrapUnsafely(bytes);
+        assertThrows(UnsupportedOperationException.class, () -> subject.forgetEvmAddress(alias));
     }
 
     @Test
     void refusesToMaybeLinkEvmAddress() {
+        final var bytes = "bytes".getBytes();
+        final var key = new JECDSASecp256k1Key(bytes);
         assertThrows(
                 UnsupportedOperationException.class,
-                () ->
-                        subject.maybeLinkEvmAddress(
-                                new JECDSASecp256k1Key("bytes".getBytes()), EntityNum.MISSING_NUM));
+                () -> subject.maybeLinkEvmAddress(key, EntityNum.MISSING_NUM));
     }
 
     @Test
@@ -183,12 +183,10 @@ class StackedContractAliasesTest {
 
     @Test
     void linkingWithByteStringWithSizeBiggerThanEvmAddressThrows() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () ->
-                        subject.link(
-                                ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE + 1]),
-                                EntityNum.fromEvmAddress(mirrorAddress)));
+        final var bytes = new byte[EVM_ADDRESS_SIZE + 1];
+        final var alias = ByteStringUtils.wrapUnsafely(bytes);
+        final var entityNum = EntityNum.fromEvmAddress(mirrorAddress);
+        assertThrows(UnsupportedOperationException.class, () -> subject.link(alias, entityNum));
     }
 
     @Test
