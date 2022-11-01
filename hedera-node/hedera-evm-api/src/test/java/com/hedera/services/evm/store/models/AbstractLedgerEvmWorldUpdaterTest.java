@@ -58,6 +58,5 @@ class AbstractLedgerEvmWorldUpdaterTest {
     @Test
     void updaterTest() {
         assertEquals(Optional.empty(), abstractLedgerEvmWorldUpdater.parentUpdater());
-        assertNull(abstractLedgerEvmWorldUpdater.updater());
     }
 }

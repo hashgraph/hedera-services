@@ -76,7 +76,7 @@ public class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
 
     @Override
     public WorldUpdater updater() {
-        return null;
+        return this;
     }
 
     @Override
