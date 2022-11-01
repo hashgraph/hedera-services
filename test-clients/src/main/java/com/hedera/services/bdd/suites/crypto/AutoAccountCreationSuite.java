@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
@@ -1201,7 +1200,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private HapiApiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
-        return onlyDefaultHapiSpec("AutoAccountCreationsHappyPath")
+        return defaultHapiSpec("AutoAccountCreationsHappyPath")
                 .given(
                         overridingAllOf(
                                 Map.of(

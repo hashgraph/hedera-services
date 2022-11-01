@@ -56,6 +56,12 @@ public final class AwareNodeDiligenceScreen {
 
     public boolean nodeIgnoredDueDiligence(final DuplicateClassification duplicity) {
         final var accessor = txnCtx.accessor();
+        // We don't want a transaction with unknown protobuf fields to resolve to
+        // SUCCESS, because it may contain fields (e.g. staking elections) that the
+        // mirror nodes already support, leading them to become confused about the
+        // actual state of the world; note that a well-behaved node will always
+        // reject such transactions in precheck, so we charge the submitting node
+        // a penalty here for lack of due diligence
         if (accessor.hasConsequentialUnknownFields()) {
             txnCtx.setStatus(TRANSACTION_HAS_UNKNOWN_FIELDS);
             return true;
