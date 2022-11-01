@@ -21,7 +21,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -41,8 +40,6 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
     private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
             Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
-    public static final Bytes INVALID_TRANSFER =
-            Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
     private final Map<Address, PrecompiledContract> hederaPrecompiles;
     protected long gasRequirement;

@@ -71,6 +71,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
         }
     }
 
+    @Override
     protected void executeHederaPrecompile(
             final PrecompiledContract contract,
             final MessageFrame frame,
