@@ -15,6 +15,8 @@
  */
 package com.hedera.services.legacy.core.jproto;
 
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 
@@ -22,6 +24,8 @@ import java.util.Arrays;
 public class JECDSASecp256k1Key extends JKey {
     private byte[] ecdsaSecp256k1Key;
 
+    private static final byte ODD_PARITY = (byte) 0x03;
+    private static final byte EVEN_PARITY = (byte) 0x02;
     public static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
 
     public JECDSASecp256k1Key(final byte[] ecdsaSecp256k1Key) {
@@ -38,6 +42,15 @@ public class JECDSASecp256k1Key extends JKey {
         return !(isEmpty()
                 || (ecdsaSecp256k1Key.length != ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH)
                 || (ecdsaSecp256k1Key[0] != 0x02 && ecdsaSecp256k1Key[0] != 0x03));
+    }
+
+    public static boolean isValidProto(final Key secp256k1Key) {
+        if (secp256k1Key.getECDSASecp256K1().size() != ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
+            return false;
+        }
+        final var parityByte =
+                ByteStringUtils.unwrapUnsafelyIfPossible(secp256k1Key.getECDSASecp256K1())[0];
+        return parityByte == ODD_PARITY || parityByte == EVEN_PARITY;
     }
 
     @Override

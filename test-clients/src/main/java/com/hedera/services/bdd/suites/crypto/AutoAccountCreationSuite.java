@@ -50,13 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -79,6 +73,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.tuple.Pair;
@@ -630,7 +625,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         final var secondPayer = "secondPayer";
         final AtomicLong totalAutoCreationFees = new AtomicLong();
 
-        return onlyDefaultHapiSpec("PayerBalanceIsReflectsAllChangesBeforeFeeCharging")
+        return defaultHapiSpec("PayerBalanceIsReflectsAllChangesBeforeFeeCharging")
                 .given(
                         overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
@@ -678,8 +673,20 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                         movingHbar(1).between(secondPayer, FUNDING))
                                                 .fee(totalAutoCreationFees.get() - 2)
                                                 .payingWith(secondPayer)
-                                                .signedBy(secondPayer)),
-                        getAccountBalance(secondPayer).logged());
+                                                .signedBy(secondPayer)
+                                                .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)),
+                        getAccountBalance(secondPayer)
+                                .hasTinyBars(
+                                        spec ->
+                                                // Should only be charged a few hundred thousand
+                                                // tinybar at most
+                                                balance ->
+                                                        ((totalAutoCreationFees.get() - balance)
+                                                                        > 500_000L)
+                                                                ? Optional.empty()
+                                                                : Optional.of(
+                                                                        "Payer was"
+                                                                            + " over-charged!")));
     }
 
     private HapiApiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
@@ -1194,7 +1201,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private HapiApiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
-        return defaultHapiSpec("AutoAccountCreationsHappyPath")
+        return onlyDefaultHapiSpec("AutoAccountCreationsHappyPath")
                 .given(
                         overridingAllOf(
                                 Map.of(

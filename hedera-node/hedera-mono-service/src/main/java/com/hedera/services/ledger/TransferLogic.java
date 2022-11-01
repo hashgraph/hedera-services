@@ -136,7 +136,7 @@ public class TransferLogic {
                         accountsLedger.validate(
                                 change.accountId(), scopedCheck.setBalanceChange(change));
                 if (change.affectsAccount(topLevelPayer)) {
-                   updatedPayerBalance = change.getNewBalance();
+                    updatedPayerBalance = change.getNewBalance();
                 }
             } else {
                 validity =
@@ -153,13 +153,12 @@ public class TransferLogic {
         }
 
         if (validity == OK && autoCreationFee > 0) {
-            updatedPayerBalance = (updatedPayerBalance == Long.MIN_VALUE)
-                    ? (long) accountsLedger.get(txnCtx.activePayer(), BALANCE)
-                    : updatedPayerBalance;
+            updatedPayerBalance =
+                    (updatedPayerBalance == Long.MIN_VALUE)
+                            ? (long) accountsLedger.get(topLevelPayer, BALANCE)
+                            : updatedPayerBalance;
             if (autoCreationFee > updatedPayerBalance) {
                 validity = INSUFFICIENT_PAYER_BALANCE;
-            } else {
-                System.out.println("BOOP");
             }
         }
 
