@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class HederaEvmOperationsUtilTest {
+class HederaEvmOperationsUtilTest {
     @Mock private MessageFrame messageFrame;
     @Mock private LongSupplier gasSupplier;
     @Mock private Supplier<Operation.OperationResult> executionSupplier;

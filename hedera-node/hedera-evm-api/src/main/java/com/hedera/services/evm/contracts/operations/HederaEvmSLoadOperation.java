@@ -62,7 +62,7 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
             } else {
                 UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
 
-                SLoadOPSpecificLogic(frame, address, key, storageValue);
+                sLoadOPSpecificLogic(frame, address, key, storageValue);
 
                 frame.pushStackItem(storageValue);
                 return slotIsWarm ? warmSuccess : coldSuccess;
@@ -79,6 +79,8 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
     /**
      * A placeholder logic method to be overridden by {@link HederaEvmSLoadOperation} descendants.
      */
-    protected void SLoadOPSpecificLogic(
-            MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {}
+    protected void sLoadOPSpecificLogic(
+            MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {
+        // The method is an intentionally-blank
+    }
 }

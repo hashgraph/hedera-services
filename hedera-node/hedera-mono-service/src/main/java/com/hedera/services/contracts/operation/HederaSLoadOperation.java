@@ -62,7 +62,7 @@ public class HederaSLoadOperation extends HederaEvmSLoadOperation {
     }
 
     @Override
-    protected void SLoadOPSpecificLogic(
+    protected void sLoadOPSpecificLogic(
             MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {
         if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
             HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
