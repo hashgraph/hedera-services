@@ -64,7 +64,6 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -135,9 +134,17 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
             long balance = op.getInitialBalance();
             final var customizer = asCustomizer(op);
+            final var isLazyCreation = op.getAlias().size() == EVM_ADDRESS_SIZE && !op.hasKey();
+            final var lazyCreationFinalizationFee =
+                    autoCreationLogic.getLazyCreationFinalizationFee();
+            final var minPayerBalanceRequired =
+                    balance + (isLazyCreation ? lazyCreationFinalizationFee : 0);
+            if (minPayerBalanceRequired > (long) ledger.getAccountsLedger().get(sponsor, BALANCE)) {
+                throw new InsufficientFundsException(txnCtx.activePayer(), minPayerBalanceRequired);
+            }
             final var created = ledger.create(sponsor, balance, customizer);
-            if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
-                preChargeLazyCreateFinalizationFee();
+            if (isLazyCreation) {
+                transferLogic.payAutoCreationFee(lazyCreationFinalizationFee);
             }
             sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
@@ -167,18 +174,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             log.warn("Avoidable exception!", e);
             txnCtx.setStatus(FAIL_INVALID);
         }
-    }
-
-    private void preChargeLazyCreateFinalizationFee() {
-        final var lazyCreationFinalizationFee = autoCreationLogic.getLazyCreationFinalizationFee();
-        final var accountsLedger = ledger.getAccountsLedger();
-        if (lazyCreationFinalizationFee
-                > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE)) {
-            accountsLedger.undoCreations();
-            accountsLedger.undoChangesOfType(List.of(BALANCE));
-            throw new InsufficientFundsException(txnCtx.activePayer(), lazyCreationFinalizationFee);
-        }
-        transferLogic.payAutoCreationFee(lazyCreationFinalizationFee);
     }
 
     private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {

@@ -112,7 +112,7 @@ public class TransferLogic {
         var autoCreationFee = 0L;
 
         final var payer = txnCtx.activePayer();
-        var payerBalanceAfterAdjustments = (long) accountsLedger.get(payer, BALANCE);
+        var payerBalanceAfterAdjustments = Long.MIN_VALUE;
         for (var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
@@ -153,10 +153,14 @@ public class TransferLogic {
             }
         }
 
-        if (validity == OK
-                && (autoCreationFee > 0)
-                && (autoCreationFee > payerBalanceAfterAdjustments)) {
-            validity = INSUFFICIENT_PAYER_BALANCE;
+        if (validity == OK && (autoCreationFee > 0)) {
+            payerBalanceAfterAdjustments =
+                    (payerBalanceAfterAdjustments != Long.MIN_VALUE)
+                            ? payerBalanceAfterAdjustments
+                            : (long) accountsLedger.get(txnCtx.activePayer(), BALANCE);
+            if (autoCreationFee > payerBalanceAfterAdjustments) {
+                validity = INSUFFICIENT_PAYER_BALANCE;
+            }
         }
 
         if (validity == OK) {

@@ -93,7 +93,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
-import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -453,6 +452,8 @@ class CryptoCreateTransitionLogicTest {
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
@@ -544,6 +545,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
@@ -615,7 +618,6 @@ class CryptoCreateTransitionLogicTest {
 
     @Test
     void followsEVMAddressAsAliasInsufficientBalanceForFinalizationFee() {
-        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
                         .setMemo(MEMO)
@@ -640,17 +642,17 @@ class CryptoCreateTransitionLogicTest {
                 .willReturn(lazyCreationFinalizationFee);
         given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
                 .willReturn(lazyCreationFinalizationFee - 1);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
+                .willReturn(lazyCreationFinalizationFee - 5);
 
         subject.doStateTransition();
 
-        verify(ledger)
-                .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
+        verify(ledger, never()).create(any(), anyLong(), any());
         verify(txnCtx, never()).setCreated(CREATED);
         verify(txnCtx).setStatus(INSUFFICIENT_PAYER_BALANCE);
         verify(sigImpactHistorian, never()).markEntityChanged(CREATED.getAccountNum());
         verify(transferLogic, never()).payAutoCreationFee(lazyCreationFinalizationFee);
-        verify(accountsLedger).undoCreations();
-        verify(accountsLedger).undoChangesOfType(List.of(AccountProperty.BALANCE));
     }
 
     @Test
@@ -675,6 +677,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
@@ -716,6 +720,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
@@ -762,6 +768,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
@@ -804,6 +812,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
@@ -844,6 +854,7 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
@@ -884,6 +895,7 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
@@ -921,6 +933,7 @@ class CryptoCreateTransitionLogicTest {
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
@@ -957,6 +970,8 @@ class CryptoCreateTransitionLogicTest {
         givenValidTxnCtx();
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(ledger.create(any(), anyLong(), any())).willThrow(InsufficientFundsException.class);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
 
         subject.doStateTransition();
 
