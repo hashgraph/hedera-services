@@ -176,6 +176,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -1060,6 +1061,109 @@ class MiscUtilsTest {
                                 .build()
                                 .toByteString()));
         assertFalse(MiscUtils.isSerializedProtoKey(ByteString.copyFromUtf8("NONSENSE")));
+    }
+
+    @Test
+    void rejectsInvalidEd25519Keys() {
+        // 32 bytes is ok
+        assertTrue(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setEd25519(
+                                        ByteString.copyFromUtf8("01234567890123456789012345678901"))
+                                .build()
+                                .toByteString()));
+        // But not 31
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setEd25519(
+                                        ByteString.copyFromUtf8("0123456789012345678901234567890"))
+                                .build()
+                                .toByteString()));
+        // And not 33
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setEd25519(
+                                        ByteString.copyFromUtf8(
+                                                "012345678901234567890123456789012"))
+                                .build()
+                                .toByteString()));
+    }
+
+    @Test
+    void rejectsInvalidEcdsaKeys() {
+        // 33 bytes is ok if starting with 0x02
+        assertTrue(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x02),
+                                                                Bytes.of(
+                                                                        "01234567890123456789012345678901"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
+        // 33 bytes is ok if starting with 0x03
+        assertTrue(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x03),
+                                                                Bytes.of(
+                                                                        "01234567890123456789012345678901"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
+        // But not if starting with 0x04
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x04),
+                                                                Bytes.of(
+                                                                        "01234567890123456789012345678901"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
+        // And starting with 0x03 is not enough if not followed by 32 bytes
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x03),
+                                                                Bytes.of(
+                                                                        "0123456789012345678901234567890"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
+        // And starting with 0x02 is not enough if not followed by 32 bytes
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x02),
+                                                                Bytes.of(
+                                                                        "012345678901234567890123456789012"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
     }
 
     @Test
