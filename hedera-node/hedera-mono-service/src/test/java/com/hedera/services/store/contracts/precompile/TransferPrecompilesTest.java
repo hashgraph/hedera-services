@@ -38,6 +38,8 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.balanceChangesForLazyCreateFailing;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.balanceChangesForLazyCreateHappyPath;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
@@ -47,7 +49,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.hbarOn
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferChanges;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferList;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferChangesAliased;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferListAliasReceiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
@@ -1118,7 +1119,8 @@ class TransferPrecompilesTest {
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
                                 anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
-        given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChangesAliased);
+        given(impliedTransfers.getAllBalanceChanges())
+                .willReturn(balanceChangesForLazyCreateHappyPath);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
         given(aliases.resolveForEvm(any()))
@@ -1132,14 +1134,13 @@ class TransferPrecompilesTest {
         given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
                 .willReturn(autoCreationLogic);
         final var lazyCreationFee = 500L;
-        given(
-                        autoCreationLogic.create(
-                                nftsTransferChangesAliased.get(0),
-                                accounts,
-                                nftsTransferChangesAliased))
-                .willAnswer(
+        when(autoCreationLogic.create(
+                        balanceChangesForLazyCreateHappyPath.get(0),
+                        accounts,
+                        balanceChangesForLazyCreateHappyPath))
+                .then(
                         invocation -> {
-                            nftsTransferChangesAliased
+                            balanceChangesForLazyCreateHappyPath
                                     .get(0)
                                     .replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
                             return Pair.of(OK, lazyCreationFee);
@@ -1167,14 +1168,20 @@ class TransferPrecompilesTest {
         final var expected = 4 * 1_000_000L * 10_000_000_000L;
         assertEquals(expected + (expected / 5), gasRequirement);
         verify(autoCreationLogic)
-                .create(nftsTransferChangesAliased.get(0), accounts, nftsTransferChangesAliased);
+                .create(
+                        balanceChangesForLazyCreateHappyPath.get(0),
+                        accounts,
+                        balanceChangesForLazyCreateHappyPath);
         verify(autoCreationLogic, never())
-                .create(nftsTransferChangesAliased.get(1), accounts, nftsTransferChangesAliased);
+                .create(
+                        balanceChangesForLazyCreateHappyPath.get(1),
+                        accounts,
+                        balanceChangesForLazyCreateHappyPath);
         verify(worldUpdater)
                 .manageInProgressPrecedingRecord(recordsHistorian, builder, syntheticBodyMock);
         verify(frame).decrementRemainingGas(lazyCreationFee / gasPrice);
         verify(builder).onlyExternalizeIfSuccessful();
-        verify(transferLogic).doZeroSum(nftsTransferChangesAliased);
+        verify(transferLogic).doZeroSum(balanceChangesForLazyCreateHappyPath);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -1353,7 +1360,8 @@ class TransferPrecompilesTest {
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
                                 anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
-        given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChangesAliased);
+        given(impliedTransfers.getAllBalanceChanges())
+                .willReturn(balanceChangesForLazyCreateFailing);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
         given(frame.getSenderAddress()).willReturn(contractAddress);
@@ -1364,14 +1372,13 @@ class TransferPrecompilesTest {
         given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
                 .willReturn(autoCreationLogic);
         final var lazyCreationFee = 500L;
-        given(
-                        autoCreationLogic.create(
-                                nftsTransferChangesAliased.get(0),
-                                accounts,
-                                nftsTransferChangesAliased))
-                .willAnswer(
+        when(autoCreationLogic.create(
+                        balanceChangesForLazyCreateFailing.get(0),
+                        accounts,
+                        balanceChangesForLazyCreateFailing))
+                .then(
                         invocation -> {
-                            nftsTransferChangesAliased
+                            balanceChangesForLazyCreateFailing
                                     .get(0)
                                     .replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
                             return Pair.of(
@@ -1397,9 +1404,15 @@ class TransferPrecompilesTest {
         verify(frame, never()).getGasPrice();
         verify(autoCreationLogic, never()).getPendingCreations();
         verify(autoCreationLogic)
-                .create(nftsTransferChangesAliased.get(0), accounts, nftsTransferChangesAliased);
+                .create(
+                        balanceChangesForLazyCreateFailing.get(0),
+                        accounts,
+                        balanceChangesForLazyCreateFailing);
         verify(autoCreationLogic, never())
-                .create(nftsTransferChangesAliased.get(1), accounts, nftsTransferChangesAliased);
+                .create(
+                        balanceChangesForLazyCreateFailing.get(1),
+                        accounts,
+                        balanceChangesForLazyCreateFailing);
         verify(worldUpdater, never()).manageInProgressPrecedingRecord(any(), any(), any());
         verify(frame, never()).decrementRemainingGas(anyLong());
         verify(transferLogic, never()).doZeroSum(any());

@@ -520,7 +520,7 @@ public class HTSTestsUtil {
                                     .setSerialNumber(2L)
                                     .build(),
                             payer));
-    public static final List<BalanceChange> nftsTransferChangesAliased =
+    public static final List<BalanceChange> balanceChangesForLazyCreateFailing =
             List.of(
                     BalanceChange.changingNftOwnership(
                             Id.fromGrpcToken(token),
@@ -540,6 +540,28 @@ public class HTSTestsUtil {
                                     .setSerialNumber(2L)
                                     .build(),
                             payer));
+
+    public static final List<BalanceChange> balanceChangesForLazyCreateHappyPath =
+            List.of(
+                    BalanceChange.changingNftOwnership(
+                            Id.fromGrpcToken(token),
+                            token,
+                            NftTransfer.newBuilder()
+                                    .setSenderAccountID(sender)
+                                    .setReceiverAccountID(receiverAliased)
+                                    .setSerialNumber(1L)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingNftOwnership(
+                            Id.fromGrpcToken(token),
+                            token,
+                            NftTransfer.newBuilder()
+                                    .setSenderAccountID(sender)
+                                    .setReceiverAccountID(receiverAliased)
+                                    .setSerialNumber(2L)
+                                    .build(),
+                            payer));
+
     public static final List<BalanceChange> hbarOnlyChanges =
             List.of(
                     BalanceChange.changingHbar(
