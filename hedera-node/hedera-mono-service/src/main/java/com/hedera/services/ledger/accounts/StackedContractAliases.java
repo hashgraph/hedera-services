@@ -16,6 +16,7 @@
 package com.hedera.services.ledger.accounts;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.evm.accounts.HederaEvmContractAliases;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -32,7 +33,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 
-public class StackedContractAliases extends AbstractContractAliases {
+public class StackedContractAliases extends HederaEvmContractAliases implements ContractAliases {
     private static final Logger log = LogManager.getLogger(StackedContractAliases.class);
 
     private final ContractAliases wrappedAliases;

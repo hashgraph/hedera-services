@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -47,11 +48,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -131,8 +134,9 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        getNestedContractAddress(
-                                                                NESTED_CONTRACT, spec)),
+                                                        asHeadlongAddress(
+                                                                getNestedContractAddress(
+                                                                        NESTED_CONTRACT, spec))),
                                                 tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
                                                 newKeyNamed(SIMPLE_AND_DELEGATE_KEY_NAME)
                                                         .shape(
@@ -146,10 +150,15 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "transferDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                asAddress(accountID.get()),
-                                                                asAddress(receiverID.get()),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(accountID.get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                receiverID.get())),
                                                                 1L)
                                                         .payingWith(GENESIS)
                                                         .via(
@@ -195,8 +204,9 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        getNestedContractAddress(
-                                                                NESTED_CONTRACT, spec)),
+                                                        asHeadlongAddress(
+                                                                getNestedContractAddress(
+                                                                        NESTED_CONTRACT, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT_KEY_SHAPE
@@ -207,10 +217,12 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "burnDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                0,
-                                                                List.of(1L))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ZERO,
+                                                                new long[] {1L})
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateBurnCallWithDelegateContractKeyTxn")
@@ -257,8 +269,9 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        getNestedContractAddress(
-                                                                NESTED_CONTRACT, spec)),
+                                                        asHeadlongAddress(
+                                                                getNestedContractAddress(
+                                                                        NESTED_CONTRACT, spec))),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT_KEY_SHAPE
@@ -269,9 +282,11 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "mintDelegateCall",
-                                                                asAddress(
-                                                                        vanillaTokenTokenID.get()),
-                                                                1)
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenTokenID
+                                                                                        .get())),
+                                                                BigInteger.ONE)
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateBurnCallWithDelegateContractKeyTxn")

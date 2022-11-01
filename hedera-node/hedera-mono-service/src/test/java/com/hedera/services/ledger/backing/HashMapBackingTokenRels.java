@@ -15,7 +15,7 @@
  */
 package com.hedera.services.ledger.backing;
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.HashMap;
@@ -24,16 +24,16 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class HashMapBackingTokenRels
-        implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
-    private Map<Pair<AccountID, TokenID>, MerkleTokenRelStatus> rels = new HashMap<>();
+        implements BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> {
+    private Map<Pair<AccountID, TokenID>, HederaTokenRel> rels = new HashMap<>();
 
     @Override
-    public MerkleTokenRelStatus getRef(Pair<AccountID, TokenID> id) {
+    public HederaTokenRel getRef(Pair<AccountID, TokenID> id) {
         return rels.get(id);
     }
 
     @Override
-    public void put(Pair<AccountID, TokenID> id, MerkleTokenRelStatus rel) {
+    public void put(Pair<AccountID, TokenID> id, HederaTokenRel rel) {
         rels.put(id, rel);
     }
 
@@ -58,7 +58,7 @@ public class HashMapBackingTokenRels
     }
 
     @Override
-    public MerkleTokenRelStatus getImmutableRef(Pair<AccountID, TokenID> id) {
+    public HederaTokenRel getImmutableRef(Pair<AccountID, TokenID> id) {
         return rels.get(id);
     }
 }

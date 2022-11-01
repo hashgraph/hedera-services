@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.doGasLookup;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForConstructor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
@@ -50,7 +51,6 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
-import org.ethereum.core.CallTransaction;
 
 public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreate> {
     static final Key DEPRECATED_CID_ADMIN_KEY =
@@ -295,9 +295,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         } else {
             params =
                     abi.isPresent()
-                            ? Optional.of(
-                                    CallTransaction.Function.fromJsonInterface(abi.get())
-                                            .encodeArguments(args.get()))
+                            ? Optional.of(encodeParametersForConstructor(args.get(), abi.get()))
                             : Optional.empty();
         }
         ContractCreateTransactionBody opBody =

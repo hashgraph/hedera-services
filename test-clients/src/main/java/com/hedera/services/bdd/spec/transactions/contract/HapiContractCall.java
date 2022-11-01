@@ -46,7 +46,6 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
-import org.ethereum.core.CallTransaction;
 
 public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     protected List<String> otherSigs = Collections.emptyList();
@@ -285,14 +284,14 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
                     spec,
                     txnSubmitted,
                     txnRecord -> {
-                        final var function = CallTransaction.Function.fromJsonInterface(abi);
+                        final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
                         final var result =
-                                function.decodeResult(
+                                function.decodeReturn(
                                         txnRecord
                                                 .getContractCallResult()
                                                 .getContractCallResult()
                                                 .toByteArray());
-                        resultObserver.accept(result);
+                        resultObserver.accept(result.toList().toArray());
                     });
         }
     }

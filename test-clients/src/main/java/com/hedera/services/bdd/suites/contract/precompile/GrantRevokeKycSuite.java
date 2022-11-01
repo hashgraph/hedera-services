@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -126,8 +127,14 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("GrantKycAccountWithoutKeyTx")
                                                         .gas(GAS_TO_OFFER)
@@ -135,8 +142,14 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("RevokeKycAccountWithoutKeyTx")
                                                         .gas(GAS_TO_OFFER)
@@ -145,8 +158,14 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via(
                                                                 "GrantKycAccountKeyNotMatchingTokenKeyTx")
@@ -155,8 +174,14 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via(
                                                                 "RevokeKycAccountKeyNotMatchingTokenKeyTx")
@@ -166,8 +191,14 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                asAddress(tokenWithoutKeyID.get()),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                tokenWithoutKeyID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("GrantKycTokenWithoutKeyTx")
                                                         .gas(GAS_TO_OFFER)
@@ -175,8 +206,14 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                asAddress(tokenWithoutKeyID.get()),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                tokenWithoutKeyID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("RevokeKycTokenWithoutKeyTx")
                                                         .gas(GAS_TO_OFFER)
@@ -184,8 +221,12 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                asAddress(invalidTokenID),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(invalidTokenID)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("RevokeKycWrongTokenTx")
                                                         .gas(GAS_TO_OFFER)
@@ -193,8 +234,12 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                asAddress(invalidTokenID),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(invalidTokenID)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("GrantKycWrongTokenTx")
                                                         .gas(GAS_TO_OFFER)
@@ -322,8 +367,14 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("GrantKycTx")
                                                         .gas(GAS_TO_OFFER),
@@ -337,21 +388,35 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                         GRANT_REVOKE_KYC_CONTRACT,
                                                         IS_KYC_GRANTED,
-                                                        asAddress(vanillaTokenID.get()),
-                                                        asAddress(secondAccountID.get())),
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(vanillaTokenID.get())),
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(secondAccountID.get()))),
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("RevokeKycTx")
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 IS_KYC_GRANTED,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(secondAccountID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .via("IsKycTx")
                                                         .gas(GAS_TO_OFFER))))

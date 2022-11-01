@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -46,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -191,7 +191,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                                                         isLiteralResult(
                                                                                                 new Object
                                                                                                         [] {
-                                                                                                    unhex(
+                                                                                                    asHeadlongAddress(
                                                                                                             childEip1014
                                                                                                                     .get())
                                                                                                 }))))),
@@ -212,7 +212,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                                                         isLiteralResult(
                                                                                                 new Object
                                                                                                         [] {
-                                                                                                    unhex(
+                                                                                                    asHeadlongAddress(
                                                                                                             childEip1014
                                                                                                                     .get())
                                                                                                 }))))),
@@ -233,7 +233,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                                                         isLiteralResult(
                                                                                                 new Object
                                                                                                         [] {
-                                                                                                    unhex(
+                                                                                                    asHeadlongAddress(
                                                                                                             childEip1014
                                                                                                                     .get())
                                                                                                 }))))),
@@ -254,7 +254,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                                                         isLiteralResult(
                                                                                                 new Object
                                                                                                         [] {
-                                                                                                    unhex(
+                                                                                                    asHeadlongAddress(
                                                                                                             childEip1014
                                                                                                                     .get())
                                                                                                 }))))));

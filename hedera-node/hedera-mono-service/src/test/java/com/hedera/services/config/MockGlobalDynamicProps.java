@@ -17,15 +17,10 @@ package com.hedera.services.config;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
-import com.hedera.test.utils.TestFileUtils;
+import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Assertions;
 
 public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private final CongestionMultipliers defaultMultipliers =
@@ -41,18 +36,13 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private boolean schedulingLongTermEnabled = false;
     private boolean exportBalances = true;
     private CongestionMultipliers currentMultipliers = defaultMultipliers;
+    private EntityScaleFactors scaleFactors =
+            EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)");
     private boolean throttleByGas;
     private boolean shouldCompressAccountFiles;
-    private Path tempDir;
 
     public MockGlobalDynamicProps() {
         super(null, null);
-        try {
-            // We can't use junit's @TempDir because this isn't a unit test class
-            this.tempDir = Files.createTempDirectory(StringUtils.EMPTY);
-        } catch (IOException e) {
-            Assertions.fail(e.getMessage());
-        }
     }
 
     @Override
@@ -114,7 +104,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     @Override
     public String pathToBalancesExportDir() {
-        return TestFileUtils.toPath(tempDir, "resources");
+        return "src/test/resources";
     }
 
     @Override
@@ -292,5 +282,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     public void setAccountBalanceCompression(final boolean isEnabled) {
         this.shouldCompressAccountFiles = isEnabled;
+    }
+
+    @Override
+    public EntityScaleFactors entityScaleFactors() {
+        return scaleFactors;
+    }
+
+    public void setScaleFactors(final EntityScaleFactors scaleFactors) {
+        this.scaleFactors = scaleFactors;
     }
 }
