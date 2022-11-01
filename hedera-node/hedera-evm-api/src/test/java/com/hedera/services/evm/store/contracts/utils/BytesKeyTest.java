@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.util;
+package com.hedera.services.evm.store.contracts.utils;
 
-import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
+import static org.junit.jupiter.api.Assertions.*;
 
-/** Utility class needed for resolving aliases */
-public final class AliasUtils {
-    public static final Long MISSING_NUM = 0L;
+import com.swirlds.common.utility.CommonUtils;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.jupiter.api.Test;
 
-    private AliasUtils() {
-        throw new UnsupportedOperationException("Utility class");
-    }
+class BytesKeyTest {
+    @Test
+    void toStringIncorporatesArrayContents() {
+        final var literal = Hex.decode("abcdef");
+        final var desired = "BytesKey[array=" + CommonUtils.hex(literal) + "]";
 
-    public static Long fromMirror(final byte[] evmAddress) {
-        return numFromEvmAddress(evmAddress);
+        final var subject = new BytesKey(literal);
+
+        assertEquals(desired, subject.toString());
     }
 }

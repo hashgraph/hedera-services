@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.util;
+package com.hedera.services.evm.contracts.execution;
 
-import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
+@SuppressWarnings("java:S1118") // Add a private constructor to hide the implicit public one.
+public abstract class StaticProperties {
 
-/** Utility class needed for resolving aliases */
-public final class AliasUtils {
-    public static final Long MISSING_NUM = 0L;
+    protected static long shard = 0;
+    protected static long realm = 0;
 
-    private AliasUtils() {
-        throw new UnsupportedOperationException("Utility class");
+    public static long getShard() {
+        return shard;
     }
 
-    public static Long fromMirror(final byte[] evmAddress) {
-        return numFromEvmAddress(evmAddress);
+    public static long getRealm() {
+        return realm;
     }
 }

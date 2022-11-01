@@ -151,7 +151,6 @@ class AliasResolverTest {
                                 TransferList.newBuilder().addAccountAmounts(mirrorAdjust).build())
                         .build();
         assertTrue(AliasResolver.usesAliases(op));
-        given(aliasManager.isMirror(evmAddress)).willReturn(true);
 
         final var resolvedOp = subject.resolve(op, aliasManager);
         assertEquals(
@@ -261,7 +260,6 @@ class AliasResolverTest {
                                                         .setSerialNumber(1L)))
                         .build();
         assertTrue(AliasResolver.usesAliases(op));
-        given(aliasManager.isMirror(evmAddress)).willReturn(true);
 
         final var resolvedOp = subject.resolve(op, aliasManager);
         assertEquals(

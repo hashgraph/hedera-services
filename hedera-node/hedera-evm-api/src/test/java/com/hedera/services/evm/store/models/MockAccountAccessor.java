@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.util;
+package com.hedera.services.evm.store.models;
 
-import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
+import com.hedera.services.evm.accounts.AccountAccessor;
+import org.hyperledger.besu.datatypes.Address;
 
-/** Utility class needed for resolving aliases */
-public final class AliasUtils {
-    public static final Long MISSING_NUM = 0L;
+public class MockAccountAccessor implements AccountAccessor {
+    private final Address address =
+            Address.fromHexString("0x000000000000000000000000000000000000077e");
 
-    private AliasUtils() {
-        throw new UnsupportedOperationException("Utility class");
-    }
-
-    public static Long fromMirror(final byte[] evmAddress) {
-        return numFromEvmAddress(evmAddress);
+    @Override
+    public Address canonicalAddress(Address addressOrAlias) {
+        return address;
     }
 }

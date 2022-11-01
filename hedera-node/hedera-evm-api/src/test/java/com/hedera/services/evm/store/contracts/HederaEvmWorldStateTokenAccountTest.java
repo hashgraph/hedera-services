@@ -13,31 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts;
+package com.hedera.services.evm.store.contracts;
 
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_BYTECODE_PATTERN;
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_CALL_REDIRECT_CONTRACT_BINARY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.proxyBytecodeFor;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-class WorldStateTokenAccountTest {
+@ExtendWith(MockitoExtension.class)
+class HederaEvmWorldStateTokenAccountTest {
     private static final Address pretendTokenAddr = Address.BLS12_G1MULTIEXP;
 
-    private WorldStateTokenAccount subject = new WorldStateTokenAccount(pretendTokenAddr);
+    private HederaEvmWorldStateTokenAccount subject =
+            new HederaEvmWorldStateTokenAccount(pretendTokenAddr);
 
     @Test
     void getsExpectedCode() {
-        final var expected = expectedCodeBytes();
+        final var expected = proxyBytecodeFor(pretendTokenAddr);
         final var firstActual = subject.getCode();
         final var secondActual = subject.getCode();
         assertEquals(expected, firstActual);
@@ -56,7 +55,7 @@ class WorldStateTokenAccountTest {
 
     @Test
     void hasTokenNonce() {
-        assertEquals(WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE, subject.getNonce());
+        assertEquals(HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE, subject.getNonce());
     }
 
     @Test
@@ -72,7 +71,7 @@ class WorldStateTokenAccountTest {
 
     @Test
     void expectedCodeHash() {
-        final var bytecode = expectedCodeBytes();
+        final var bytecode = proxyBytecodeFor(pretendTokenAddr);
         final var expected = Hash.hash(bytecode);
         final var actual = subject.getCodeHash();
         assertEquals(expected, actual);
@@ -90,11 +89,5 @@ class WorldStateTokenAccountTest {
     void storageEntriesStreamStillNotSupported() {
         Assertions.assertThrows(
                 UnsupportedOperationException.class, () -> subject.storageEntriesFrom(null, 0));
-    }
-
-    private Bytes expectedCodeBytes() {
-        return Bytes.fromHexString(
-                TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(
-                        TOKEN_BYTECODE_PATTERN, pretendTokenAddr.toUnprefixedHexString()));
     }
 }

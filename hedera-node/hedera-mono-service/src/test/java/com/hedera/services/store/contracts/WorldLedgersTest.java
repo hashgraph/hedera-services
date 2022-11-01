@@ -311,9 +311,8 @@ class WorldLedgersTest {
     @Test
     void mirrorNoAliasIsCanonicalSourceWithStaticAccess() {
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
-        given(staticEntityAccess.isExtant(id)).willReturn(true);
-        given(staticEntityAccess.alias(id)).willReturn(ByteString.EMPTY);
+        given(staticEntityAccess.isExtant(sponsor)).willReturn(true);
+        given(staticEntityAccess.alias(sponsor)).willReturn(ByteString.EMPTY);
 
         assertSame(sponsor, subject.canonicalAddress(sponsor));
     }
