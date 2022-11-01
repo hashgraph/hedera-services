@@ -16,7 +16,6 @@
 package com.hedera.services.context.init;
 
 import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -27,6 +26,7 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.stream.RecordStreamManager;
@@ -118,6 +118,6 @@ class StateInitializationFlowTest {
     }
 
     private void cleanupMockNumInitialization() {
-        StateInitializationFlow.setNumberConfigurer(STATIC_PROPERTIES::configureNumbers);
+        StateInitializationFlow.setNumberConfigurer(StaticPropertiesHolder::configureNumbers);
     }
 }

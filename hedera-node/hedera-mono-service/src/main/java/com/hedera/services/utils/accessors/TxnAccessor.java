@@ -113,19 +113,22 @@ public interface TxnAccessor {
     // Used only for CryptoTransfer
     CryptoTransferMeta availXferUsageMeta();
 
-    void setNumAutoCreations(int numAutoCreations);
+    void setNumImplicitCreations(int numImplicitCreations);
 
-    int getNumAutoCreations();
+    int getNumImplicitCreations();
 
-    boolean areAutoCreationsCounted();
+    boolean areImplicitCreationsCounted();
 
-    void countAutoCreationsWith(final AliasManager aliasManager);
+    void countImplicitCreationsWith(final AliasManager aliasManager);
 
     // Used only for EthereumTransaction
     EthTxData opEthTxData();
 
     // Used only for SubmitMessage
     SubmitMessageMeta availSubmitUsageMeta();
+
+    // Used only for TokenMint
+    boolean mintsWithMetadata();
 
     // Used only for ScheduleCreate/Sign, to find valid signatures that apply to a scheduled
     // transaction

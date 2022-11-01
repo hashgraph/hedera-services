@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -55,7 +56,7 @@ class TreasuryReturnsTest {
     @Mock private RelRemover relRemover;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
     @Mock private UniqueTokenMapAdapter nfts;
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    @Mock private TokenRelStorageAdapter tokenRels;
 
     private TreasuryReturns subject;
 

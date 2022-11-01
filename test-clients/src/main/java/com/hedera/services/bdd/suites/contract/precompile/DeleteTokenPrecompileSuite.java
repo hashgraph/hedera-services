@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -109,8 +110,10 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 DELETE_TOKEN_CONTRACT,
                                                                 TOKEN_DELETE_FUNCTION,
-                                                                asHexedAddress(
-                                                                        vanillaTokenID.get()))
+                                                                asHeadlongAddress(
+                                                                        asHexedAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via(DELETE_TXN),
@@ -124,8 +127,10 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 DELETE_TOKEN_CONTRACT,
                                                                 TOKEN_DELETE_FUNCTION,
-                                                                asHexedAddress(
-                                                                        vanillaTokenID.get()))
+                                                                asHeadlongAddress(
+                                                                        asHexedAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via(tokenAlreadyDeletedTxn)
@@ -176,8 +181,10 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 DELETE_TOKEN_CONTRACT,
                                                                 TOKEN_DELETE_FUNCTION,
-                                                                asHexedAddress(
-                                                                        vanillaTokenID.get()))
+                                                                asHeadlongAddress(
+                                                                        asHexedAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via(notAnAdminTxn)
@@ -186,8 +193,10 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 DELETE_TOKEN_CONTRACT,
                                                                 TOKEN_DELETE_FUNCTION,
-                                                                asHexedAddress(
-                                                                        vanillaTokenID.get()))
+                                                                asHeadlongAddress(
+                                                                        asHexedAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 getTokenInfo(VANILLA_TOKEN).isDeleted().logged())))

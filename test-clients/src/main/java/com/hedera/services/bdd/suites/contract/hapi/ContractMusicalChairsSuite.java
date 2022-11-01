@@ -24,16 +24,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.util.ArrayList;
@@ -81,7 +82,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
                                         spec,
                                         contractCreate(
                                                         contract,
-                                                        unhex(
+                                                        asHeadlongAddress(
                                                                 spec.registry()
                                                                         .getAccountInfo(
                                                                                 DEFAULT_CONTRACT_SENDER)
@@ -126,10 +127,12 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
                                                                                 contract),
                                                                         isLiteralResult(
                                                                                 new Object[] {
-                                                                                    asAddress(
-                                                                                            spec.registry()
-                                                                                                    .getAccountID(
-                                                                                                            "Player13"))
+                                                                                    HapiParserUtil
+                                                                                            .asHeadlongAddress(
+                                                                                                    asAddress(
+                                                                                                            spec.registry()
+                                                                                                                    .getAccountID(
+                                                                                                                            "Player13")))
                                                                                 }))))));
         then.add(UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
 

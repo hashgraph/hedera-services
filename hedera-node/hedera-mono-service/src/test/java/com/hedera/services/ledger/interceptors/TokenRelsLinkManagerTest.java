@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
@@ -39,7 +40,8 @@ class TokenRelsLinkManagerTest {
     void setUp() {
         subject =
                 new TokenRelsLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts), () -> tokenRels);
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> TokenRelStorageAdapter.fromInMemory(tokenRels));
     }
 
     @Test
@@ -55,16 +57,16 @@ class TokenRelsLinkManagerTest {
 
         final var updatedRoot = tokenRels.get(dRelKey);
         assertNotNull(updatedRoot);
-        assertEquals(eRelKey.getLowOrderAsLong(), updatedRoot.nextKey());
-        assertEquals(0, updatedRoot.prevKey());
+        assertEquals(eRelKey.getLowOrderAsLong(), updatedRoot.getNext());
+        assertEquals(0, updatedRoot.getPrev());
         final var updatedTail = tokenRels.get(bRelKey);
         assertNotNull(updatedTail);
-        assertEquals(eRelKey.getLowOrderAsLong(), updatedTail.prevKey());
-        assertEquals(0, updatedTail.nextKey());
+        assertEquals(eRelKey.getLowOrderAsLong(), updatedTail.getPrev());
+        assertEquals(0, updatedTail.getNext());
         final var updatedMiddle = tokenRels.get(eRelKey);
         assertNotNull(updatedMiddle);
-        assertEquals(dRelKey.getLowOrderAsLong(), updatedMiddle.prevKey());
-        assertEquals(bRelKey.getLowOrderAsLong(), updatedMiddle.nextKey());
+        assertEquals(dRelKey.getLowOrderAsLong(), updatedMiddle.getPrev());
+        assertEquals(bRelKey.getLowOrderAsLong(), updatedMiddle.getNext());
     }
 
     @Test

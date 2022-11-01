@@ -205,6 +205,7 @@ public class AutoCreationLogic {
         final var isAliasEVMAddress = alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE;
         if (isAliasEVMAddress) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
+            customizer.key(EMPTY_KEY);
             memo = LAZY_MEMO;
         } else {
             // checks tokenAliasMap if the change consists an alias that is already used in previous

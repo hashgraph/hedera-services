@@ -148,7 +148,6 @@ class AliasResolverTest {
                                 TransferList.newBuilder().addAccountAmounts(mirrorAdjust).build())
                         .build();
         assertTrue(AliasResolver.usesAliases(op));
-        given(aliasManager.isMirror(evmAddress)).willReturn(true);
 
         final var resolvedOp = subject.resolve(op, aliasManager);
         assertEquals(
@@ -173,7 +172,6 @@ class AliasResolverTest {
                                                         .setSerialNumber(1L)))
                         .build();
         assertTrue(AliasResolver.usesAliases(op));
-        given(aliasManager.isMirror(evmAddress)).willReturn(true);
 
         final var resolvedOp = subject.resolve(op, aliasManager);
         assertEquals(
@@ -215,6 +213,48 @@ class AliasResolverTest {
                         .build();
 
         given(aliasManager.lookupIdBy(create2Alias)).willReturn(MISSING_NUM);
+        subject.resolve(op, aliasManager);
+        assertEquals(1, subject.perceivedLazyCreations());
+    }
+
+    @Test
+    void resolvesRepeatedEvmAddressesInHbarList() {
+        final var create2Adjust = aaAlias(create2Alias, +100);
+        final var otherCreate2Adjust = aaAlias(create2Alias, -100);
+        final var op =
+                CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(
+                                TransferList.newBuilder()
+                                        .addAccountAmounts(create2Adjust)
+                                        .addAccountAmounts(otherCreate2Adjust)
+                                        .build())
+                        .build();
+
+        given(aliasManager.lookupIdBy(create2Alias)).willReturn(MISSING_NUM);
+        subject.resolve(op, aliasManager);
+        assertEquals(1, subject.perceivedLazyCreations());
+        assertEquals(1, subject.perceivedInvalidCreations());
+    }
+
+    @Test
+    void resolvesRepeatedEvmAddressesInHbarTransferListAndTokenTransferList() {
+        final var op =
+                CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(
+                                TransferList.newBuilder()
+                                        .addAccountAmounts(aaAlias(create2Alias, 10L))
+                                        .addAccountAmounts(aaAlias(anotherValidAlias, -10L))
+                                        .build())
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .setToken(someToken)
+                                        .addTransfers(aaAlias(create2Alias, 20L))
+                                        .addTransfers(aaAlias(anotherValidAlias, -20L))
+                                        .build())
+                        .build();
+
+        given(aliasManager.lookupIdBy(create2Alias)).willReturn(MISSING_NUM);
+        given(aliasManager.lookupIdBy(anotherValidAlias)).willReturn(aNum);
         subject.resolve(op, aliasManager);
         assertEquals(1, subject.perceivedLazyCreations());
     }

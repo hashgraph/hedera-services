@@ -53,7 +53,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
@@ -107,7 +107,7 @@ class DeterministicThrottlingTest {
     private final int n = 2;
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
     private static final ScheduleID scheduleID = IdUtils.asSchedule("0.0.333333");
-    private final ThrottleReqOpsScaleFactor nftScaleFactor = ThrottleReqOpsScaleFactor.from("5:2");
+    private final ScaleFactor nftScaleFactor = ScaleFactor.from("5:2");
 
     @Mock private TxnAccessor accessor;
     @Mock private ThrottleReqsManager manager;
@@ -756,7 +756,7 @@ class DeterministicThrottlingTest {
         subject.applyGasConfig();
 
         // then:
-        assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
+        assertEquals(0L, gasLimitDeterministicThrottle.capacity());
         assertThat(
                 logCaptor.warnLogs(),
                 contains("Consensus gas throttling enabled, but limited to 0 gas/sec"));
@@ -772,7 +772,7 @@ class DeterministicThrottlingTest {
         subject.applyGasConfig();
 
         // then:
-        assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
+        assertEquals(0L, gasLimitDeterministicThrottle.capacity());
         assertThat(
                 logCaptor.warnLogs(),
                 contains("Frontend gas throttling enabled, but limited to 0 gas/sec"));
@@ -788,7 +788,7 @@ class DeterministicThrottlingTest {
         subject.applyGasConfig();
 
         // then:
-        assertEquals(0L, gasLimitDeterministicThrottle.getCapacity());
+        assertEquals(0L, gasLimitDeterministicThrottle.capacity());
         assertThat(
                 logCaptor.warnLogs(),
                 contains("Schedule gas throttling enabled, but limited to 0 gas/sec"));
@@ -898,43 +898,76 @@ class DeterministicThrottlingTest {
     }
 
     @Test
-    void computesNumAutoCreationsIfNotAlreadyKnown() throws IOException {
+    void alwaysThrottleNOfUnmanaged() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        assertTrue(subject.shouldThrottleNOfUnscaled(2, TokenBurn, consensusNow));
+    }
+
+    @Test
+    void canThrottleNOfManaged() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        assertFalse(subject.shouldThrottleNOfUnscaled(1, TokenMint, consensusNow));
+        final var oneUsed = subject.activeThrottlesFor(TokenMint).get(0).used();
+        assertFalse(subject.shouldThrottleNOfUnscaled(41, TokenMint, consensusNow));
+        final var fortyTwoUsed = subject.activeThrottlesFor(TokenMint).get(0).used();
+        assertEquals(42 * oneUsed, fortyTwoUsed);
+    }
+
+    @Test
+    void whenThrottlesUsesNoCapacity() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        assertTrue(subject.shouldThrottleNOfUnscaled(11, ContractCall, consensusNow));
+        final var used = subject.activeThrottlesFor(ContractCall).get(0).used();
+        assertEquals(0, used);
+    }
+
+    @Test
+    void computesNumImplicitCreationsIfNotAlreadyKnown() throws IOException {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(CryptoTransfer);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
-        given(accessor.getNumAutoCreations()).willReturn(0);
+        given(accessor.getNumImplicitCreations()).willReturn(0);
         subject.rebuildFor(defs);
 
         var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 
-        verify(accessor).countAutoCreationsWith(aliasManager);
+        verify(accessor).countImplicitCreationsWith(aliasManager);
         assertFalse(ans);
     }
 
     @Test
-    void ifLazyCreationEnabledComputesNumAutoCreationsIfNotAlreadyKnown() throws IOException {
+    void ifLazyCreationEnabledComputesNumImplicitCreationsIfNotAlreadyKnown() throws IOException {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(CryptoTransfer);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
-        given(accessor.getNumAutoCreations()).willReturn(0);
+        given(accessor.getNumImplicitCreations()).willReturn(0);
         subject.rebuildFor(defs);
 
         var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 
-        verify(accessor).countAutoCreationsWith(aliasManager);
+        verify(accessor).countImplicitCreationsWith(aliasManager);
         assertFalse(ans);
     }
 
     @Test
-    void reusesNumAutoCreationsIfNotCounted() throws IOException {
+    void reusesNumImplicitCreationsIfNotCounted() throws IOException {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(CryptoTransfer);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
-        given(accessor.areAutoCreationsCounted()).willReturn(true);
-        given(accessor.getNumAutoCreations()).willReturn(0);
+        given(accessor.areImplicitCreationsCounted()).willReturn(true);
+        given(accessor.getNumImplicitCreations()).willReturn(0);
         subject.rebuildFor(defs);
 
         var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
@@ -943,7 +976,7 @@ class DeterministicThrottlingTest {
             subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
         }
 
-        verify(accessor, never()).countAutoCreationsWith(aliasManager);
+        verify(accessor, never()).countImplicitCreationsWith(aliasManager);
         assertFalse(firstAns);
         assertTrue(subsequentAns);
     }
@@ -965,7 +998,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(CryptoTransfer);
-        given(accessor.getNumAutoCreations()).willReturn(1);
+        given(accessor.getNumImplicitCreations()).willReturn(1);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         subject.rebuildFor(defs);
 
@@ -979,7 +1012,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(CryptoTransfer);
-        given(accessor.getNumAutoCreations()).willReturn(10);
+        given(accessor.getNumImplicitCreations()).willReturn(10);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         subject.rebuildFor(defs);
 
@@ -993,7 +1026,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles-sans-creation.json");
 
         givenFunction(CryptoTransfer);
-        given(accessor.getNumAutoCreations()).willReturn(1);
+        given(accessor.getNumImplicitCreations()).willReturn(1);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         subject.rebuildFor(defs);
 
@@ -1112,7 +1145,7 @@ class DeterministicThrottlingTest {
         subject.setMode(CONSENSUS);
         subject.applyGasConfig();
         // expect:
-        assertEquals(capacity, subject.gasLimitThrottle().getCapacity());
+        assertEquals(capacity, subject.gasLimitThrottle().capacity());
     }
 
     @Test
@@ -1122,7 +1155,7 @@ class DeterministicThrottlingTest {
         subject.setMode(HAPI);
         subject.applyGasConfig();
         // expect:
-        assertEquals(capacity, subject.gasLimitThrottle().getCapacity());
+        assertEquals(capacity, subject.gasLimitThrottle().capacity());
     }
 
     @Test
@@ -1132,7 +1165,7 @@ class DeterministicThrottlingTest {
         subject.setMode(SCHEDULE);
         subject.applyGasConfig();
         // expect:
-        assertEquals(capacity, subject.gasLimitThrottle().getCapacity());
+        assertEquals(capacity, subject.gasLimitThrottle().capacity());
     }
 
     @Test
@@ -1563,12 +1596,12 @@ class DeterministicThrottlingTest {
         assertTrue(subject.shouldThrottleQuery(ContractCallLocal, now, query));
 
         assertEquals(1000000000000L, subject.activeThrottlesFor(ContractCallLocal).get(0).used());
-        assertEquals(3L, subject.gasLimitThrottle().getUsed());
+        assertEquals(3L, subject.gasLimitThrottle().used());
 
         subject.resetUsage();
 
         assertEquals(0L, subject.activeThrottlesFor(ContractCallLocal).get(0).used());
-        assertEquals(0L, subject.gasLimitThrottle().getUsed());
+        assertEquals(0L, subject.gasLimitThrottle().used());
     }
 
     @Test

@@ -48,10 +48,10 @@ import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -65,12 +65,12 @@ import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.SystemExits;
+import com.swirlds.common.Console;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
@@ -84,7 +84,6 @@ import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
@@ -97,10 +96,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import javax.inject.Singleton;
 
 @Module(includes = HandleLogicModule.class)
 public interface StateModule {
+    interface ConsoleCreator {
+        @Nullable
+        Console createConsole(Platform platform, boolean visible);
+    }
+
     @Binds
     @Singleton
     IssListener bindIssListener(ServicesIssListener servicesIssListener);
@@ -197,9 +202,9 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Optional<PrintStream> providePrintStream(Platform platform) {
-        final var console = SwirldsGui.createConsole(platform, true);
-        return Optional.ofNullable(console).map(c -> c.out);
+    static Optional<PrintStream> providePrintStream(
+            final ConsoleCreator consoleCreator, final Platform platform) {
+        return Optional.ofNullable(consoleCreator.createConsole(platform, true)).map(c -> c.out);
     }
 
     @Provides
@@ -282,7 +287,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
+    static Supplier<TokenRelStorageAdapter> provideWorkingTokenAssociations(
             final MutableStateChildren workingState) {
         return workingState::tokenAssociations;
     }

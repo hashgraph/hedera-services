@@ -200,6 +200,9 @@ public interface ServicesApp {
         Builder platform(Platform platform);
 
         @BindsInstance
+        Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
+
+        @BindsInstance
         Builder selfId(long selfId);
 
         @BindsInstance

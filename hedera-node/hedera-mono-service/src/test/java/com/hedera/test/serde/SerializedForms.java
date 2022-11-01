@@ -23,20 +23,56 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
-import com.hedera.services.state.merkle.*;
+import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
+import com.hedera.services.state.merkle.MerklePayerRecords;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduleSerdeTest;
+import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
+import com.hedera.services.state.merkle.MerkleScheduledTransactionsStateSerdeTest;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.merkle.MerkleStakingInfoSerdeTest;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTokenSerdeTest;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleTopicSerdeTest;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BytesElement;
-import com.hedera.services.state.submerkle.*;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.services.state.submerkle.EvmFnResultSerdeTest;
+import com.hedera.services.state.submerkle.EvmLog;
+import com.hedera.services.state.submerkle.EvmLogSerdeTest;
+import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.state.submerkle.NftAdjustments;
+import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.submerkle.TxnIdSerdeTest;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -98,7 +134,7 @@ public class SerializedForms {
     }
 
     private static void generateSerializedData() {
-        GENERATOR_MAPPING.get(OnDiskAccount.class).run();
+        GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
         //        for (var entry : GENERATOR_MAPPING.entrySet()) {
         //            entry.getValue().run();
         //        }
@@ -126,6 +162,10 @@ public class SerializedForms {
                             OnDiskAccount.class,
                             SeededPropertySource::nextOnDiskAccount,
                             NUM_ON_DISK_ACCOUNT_TEST_CASES),
+                    entry(
+                            OnDiskTokenRel.class,
+                            SeededPropertySource::nextOnDiskTokenRel,
+                            MIN_TEST_CASES_PER_VERSION),
                     entry(
                             CurrencyAdjustments.class,
                             SeededPropertySource::nextCurrencyAdjustments,
@@ -184,7 +224,7 @@ public class SerializedForms {
                             MIN_TEST_CASES_PER_VERSION),
                     entry(
                             MerkleNetworkContext.class,
-                            SeededPropertySource::next0310NetworkContext,
+                            SeededPropertySource::next0320NetworkContext,
                             MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
                     entry(
                             MerkleScheduledTransactionsState.class,
@@ -284,7 +324,7 @@ public class SerializedForms {
             final Class<T> type, final int version, final int testCaseNo) {
         return Paths.get(
                 SERIALIZED_FORMS_LOC
-                        + "/"
+                        + File.separator
                         + String.format(FORM_TPL, type.getSimpleName(), version, testCaseNo));
     }
 }

@@ -25,7 +25,8 @@ class EntityTypeTest {
     void worksWithSomeValidTypes() {
         assertEquals(
                 EnumSet.allOf(EntityType.class),
-                EntityType.csvTypeSet("ACCOUNT,CONTRACT, FILE,SCHEDULE,TOKEN, TOPIC"));
+                EntityType.csvTypeSet(
+                        "ACCOUNT,CONTRACT, FILE,SCHEDULE,TOKEN, TOPIC,NFT,TOKEN_ASSOCIATION"));
     }
 
     @Test

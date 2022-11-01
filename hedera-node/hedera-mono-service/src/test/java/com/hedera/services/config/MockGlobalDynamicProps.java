@@ -17,6 +17,7 @@ package com.hedera.services.config;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Set;
@@ -35,6 +36,8 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private boolean schedulingLongTermEnabled = false;
     private boolean exportBalances = true;
     private CongestionMultipliers currentMultipliers = defaultMultipliers;
+    private EntityScaleFactors scaleFactors =
+            EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)");
     private boolean throttleByGas;
     private boolean shouldCompressAccountFiles;
 
@@ -279,5 +282,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     public void setAccountBalanceCompression(final boolean isEnabled) {
         this.shouldCompressAccountFiles = isEnabled;
+    }
+
+    @Override
+    public EntityScaleFactors entityScaleFactors() {
+        return scaleFactors;
+    }
+
+    public void setScaleFactors(final EntityScaleFactors scaleFactors) {
+        this.scaleFactors = scaleFactors;
     }
 }

@@ -360,7 +360,7 @@ class PlatformTxnAccessorTest {
 
         assertEquals(delegate.getSignedTxnWrapperBytes(), subject.getSignedTxnWrapperBytes());
         assertEquals(delegate.getGasLimitForContractTx(), subject.getGasLimitForContractTx());
-        assertEquals(delegate.areAutoCreationsCounted(), subject.areAutoCreationsCounted());
+        assertEquals(delegate.areImplicitCreationsCounted(), subject.areImplicitCreationsCounted());
 
         final var sigMeta = mock(RationalizedSigMeta.class);
         final var refs = mock(LinkedRefs.class);
@@ -368,7 +368,7 @@ class PlatformTxnAccessorTest {
 
         subject.setExpandedSigStatus(OK);
         subject.setScheduleRef(scheduleRef);
-        subject.setNumAutoCreations(2);
+        subject.setNumImplicitCreations(2);
         subject.setPayer(payer);
         subject.setLinkedRefs(refs);
         subject.setSigMeta(sigMeta);
@@ -377,7 +377,7 @@ class PlatformTxnAccessorTest {
         assertTrue(delegate.isTriggeredTxn());
         assertTrue(subject.isTriggeredTxn());
         assertEquals(OK, subject.getExpandedSigStatus());
-        assertEquals(2, subject.getNumAutoCreations());
+        assertEquals(2, subject.getNumImplicitCreations());
         assertEquals(scheduleRef, subject.getScheduleRef());
         assertEquals(payer, subject.getPayer());
         assertEquals(refs, subject.getLinkedRefs());
@@ -399,7 +399,7 @@ class PlatformTxnAccessorTest {
 
         assertEquals(delegate, subject.getDelegate());
 
-        subject.countAutoCreationsWith(aliasManager);
+        subject.countImplicitCreationsWith(aliasManager);
 
         subject.markCongestionExempt();
         subject.markThrottleExempt();
@@ -448,12 +448,12 @@ class PlatformTxnAccessorTest {
                         SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
         final var expectedString =
                 "PlatformTxnAccessor{delegate=SignedTxnAccessor{sigMapSize=71, numSigPairs=1,"
-                    + " numAutoCreations=-1, hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76,"
-                    + " -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18, -101, -108, -51,"
-                    + " 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100,"
-                    + " -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10,"
-                    + " 50, 3, 72, 105, 33, -38, 1, 4, 10, 2, 24, 10], utf8MemoBytes=[72, 105, 33],"
-                    + " memo=Hi!, memoHasZeroByte=false, signedTxnWrapper=sigMap {\n"
+                    + " numImplicitCreations=-1, hash=[111, -123, -70, 79, 75, -80, -114, -49, 88,"
+                    + " -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18, -101, -108,"
+                    + " -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56,"
+                    + " 100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2,"
+                    + " 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, 2, 24, 10], utf8MemoBytes=[72,"
+                    + " 105, 33], memo=Hi!, memoHasZeroByte=false, signedTxnWrapper=sigMap {\n"
                     + "  sigPair {\n"
                     + "    pubKeyPrefix: \"a\"\n"
                     + "    ed25519:"

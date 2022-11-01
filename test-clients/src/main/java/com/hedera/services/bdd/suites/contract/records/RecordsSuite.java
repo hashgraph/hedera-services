@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -48,7 +49,7 @@ public class RecordsSuite extends HapiApiSuite {
 
     HapiApiSpec bigCall() {
         final var contract = "BigBig";
-        final int byteArraySize = (int) (87.5 * 1_024);
+        final long byteArraySize = (long) (87.5 * 1_024);
 
         return defaultHapiSpec("BigRecord")
                 .given(
@@ -70,7 +71,9 @@ public class RecordsSuite extends HapiApiSuite {
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).balance(10_000L).via("createTx"))
-                .when(contractCall(contract, "transferToChild", 10_000).via("transferTx"))
+                .when(
+                        contractCall(contract, "transferToChild", BigInteger.valueOf(10_000))
+                                .via("transferTx"))
                 .then(
                         assertionsHold(
                                 (spec, ctxLog) -> {
