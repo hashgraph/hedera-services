@@ -19,43 +19,7 @@ import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.f
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.services.throttling.MapAccessType.STORAGE_REMOVE;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
-import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
-import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.SCHEDULE_DELETE_METRIC;
-import static com.hedera.services.utils.MiscUtils.SCHEDULE_SIGN_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_ASSOCIATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_BURN_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_CREATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_DELETE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_DISSOCIATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_FEE_SCHEDULE_UPDATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_FREEZE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_GRANT_KYC_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_MINT_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_PAUSE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_REVOKE_KYC_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_UNFREEZE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_UNPAUSE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_UPDATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_WIPE_ACCOUNT_METRIC;
-import static com.hedera.services.utils.MiscUtils.UTIL_PRNG_METRIC;
-import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
-import static com.hedera.services.utils.MiscUtils.asOrdinary;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-import static com.hedera.services.utils.MiscUtils.baseStatNameOf;
-import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
-import static com.hedera.services.utils.MiscUtils.canonicalRepr;
-import static com.hedera.services.utils.MiscUtils.describe;
-import static com.hedera.services.utils.MiscUtils.functionOf;
-import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
-import static com.hedera.services.utils.MiscUtils.getTxnStat;
-import static com.hedera.services.utils.MiscUtils.isGasThrottled;
-import static com.hedera.services.utils.MiscUtils.isSchedulable;
-import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
-import static com.hedera.services.utils.MiscUtils.perm64;
-import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
-import static com.hedera.services.utils.MiscUtils.readableProperty;
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.services.utils.MiscUtils.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -129,11 +93,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -405,9 +365,7 @@ class MiscUtilsTest {
     void throwsOnUnexpectedFunctionality() {
         assertThrows(
                 UnknownHederaFunctionality.class,
-                () -> {
-                    functionOf(TransactionBody.getDefaultInstance());
-                });
+                () -> functionOf(TransactionBody.getDefaultInstance()));
     }
 
     @Test
@@ -983,7 +941,8 @@ class MiscUtilsTest {
                     final var txn = TransactionBody.newBuilder();
                     setter.setDefaultInstanceFor(txn);
                     try {
-                        assertEquals(function, functionOf(txn.build()));
+                        final var input = txn.build();
+                        assertEquals(function, functionOf(input));
                     } catch (UnknownHederaFunctionality uhf) {
                         throw new IllegalStateException(uhf);
                     }

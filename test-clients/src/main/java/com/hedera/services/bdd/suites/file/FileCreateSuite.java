@@ -122,7 +122,7 @@ public class FileCreateSuite extends HapiApiSuite {
                 .when()
                 .then(
                         fileCreate("test")
-                                .withLegacyProtoStructure()
+                                .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
                                 .waclShape(shape)
                                 .sigControl(forKey("test", validSig))
                                 .scrambleTxnBody(FileCreateSuite::replaceTxnNodeAccount)
