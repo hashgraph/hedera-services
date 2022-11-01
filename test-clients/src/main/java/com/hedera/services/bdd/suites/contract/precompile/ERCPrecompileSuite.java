@@ -2763,18 +2763,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         TRANSFER_FROM,
                                                         tokenMirrorAddr.get(),
                                                         contractMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        1L)
-                                                .payingWith(GENESIS)
-                                                .via(MISSING_TO)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        SOME_ERC_721_SCENARIOS,
-                                                        TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
                                                         bCivilianMirrorAddr.get(),
                                                         1L)
                                                 .payingWith(GENESIS)
@@ -2817,10 +2805,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                 .then(
                         childRecordsCheck(
                                 MISSING_FROM,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_ACCOUNT_ID)),
-                        childRecordsCheck(
-                                MISSING_TO,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_ACCOUNT_ID)),
                         childRecordsCheck(
