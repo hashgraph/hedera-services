@@ -42,10 +42,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -148,32 +150,38 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
                                                             TRANSFER_TOKEN_THAN_REVERT,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    FUNGIBLE_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getContractId(
-                                                                                    TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT)),
-                                                            addressBytes,
-                                                            2)
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FUNGIBLE_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
+                                                            2L)
                                                     .via(TRANSFER_TOKEN_REVERT_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
                                                             TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
                                                             TRANSFER_TOKEN,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    FUNGIBLE_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getContractId(
-                                                                                    TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT)),
-                                                            addressBytes,
-                                                            2)
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FUNGIBLE_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
+                                                            2L)
                                                     .via(TRANSFER_TOKEN_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(SUCCESS),
@@ -249,36 +257,42 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
                                                             TRANSFER_TOKENS_THAN_REVERT,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    FUNGIBLE_TOKEN)),
-                                                            List.of(
-                                                                            asAddress(
-                                                                                    spec.registry()
-                                                                                            .getContractId(
-                                                                                                    TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT)),
-                                                                            addressBytes)
-                                                                    .toArray(),
-                                                            List.of(-2L, 2L).toArray())
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FUNGIBLE_TOKEN))),
+                                                            new Address[] {
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        addressBytes)
+                                                            },
+                                                            new long[] {-2L, 2L})
                                                     .via(TRANSFER_TOKENS_REVERT_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
                                                             TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
                                                             TRANSFER_TOKENS,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    FUNGIBLE_TOKEN)),
-                                                            List.of(
-                                                                            asAddress(
-                                                                                    spec.registry()
-                                                                                            .getContractId(
-                                                                                                    TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT)),
-                                                                            addressBytes)
-                                                                    .toArray(),
-                                                            List.of(-2L, 2L).toArray())
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FUNGIBLE_TOKEN))),
+                                                            new Address[] {
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        addressBytes)
+                                                            },
+                                                            new long[] {-2L, 2L})
                                                     .via(TRANSFER_TOKENS_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(SUCCESS),
@@ -348,14 +362,18 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
                                                             TRANSFER_NFT_THAN_REVERT,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    NON_FUNGIBLE_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(OWNER)),
-                                                            addressBytes,
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            NON_FUNGIBLE_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            OWNER))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
                                                             1L)
                                                     .via(TRANSFER_NFT_REVERT_TXN)
                                                     .alsoSigningWithFullPrefix(OWNER)
@@ -364,14 +382,18 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
                                                             TRANSFER_NFT,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    NON_FUNGIBLE_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(OWNER)),
-                                                            addressBytes,
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            NON_FUNGIBLE_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            OWNER))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
                                                             1L)
                                                     .via(TRANSFER_NFT_TXN)
                                                     .alsoSigningWithFullPrefix(OWNER)
@@ -444,18 +466,23 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
                                                             TRANSFER_NFTS_THAN_REVERT,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    NON_FUNGIBLE_TOKEN)),
-                                                            List.of(
-                                                                            asAddress(
-                                                                                    spec.registry()
-                                                                                            .getAccountID(
-                                                                                                    OWNER)))
-                                                                    .toArray(),
-                                                            List.of(addressBytes).toArray(),
-                                                            List.of(1L).toArray())
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            NON_FUNGIBLE_TOKEN))),
+                                                            new Address[] {
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER)))
+                                                            },
+                                                            new Address[] {
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        addressBytes)
+                                                            },
+                                                            new long[] {1L})
                                                     .via(TRANSFER_NFTS_REVERT_TXN)
                                                     .alsoSigningWithFullPrefix(OWNER)
                                                     .gas(GAS_TO_OFFER)
@@ -463,18 +490,23 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
                                                             TRANSFER_NFTS,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    NON_FUNGIBLE_TOKEN)),
-                                                            List.of(
-                                                                            asAddress(
-                                                                                    spec.registry()
-                                                                                            .getAccountID(
-                                                                                                    OWNER)))
-                                                                    .toArray(),
-                                                            List.of(addressBytes).toArray(),
-                                                            List.of(1L).toArray())
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            NON_FUNGIBLE_TOKEN))),
+                                                            new Address[] {
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER)))
+                                                            },
+                                                            new Address[] {
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        addressBytes)
+                                                            },
+                                                            new long[] {1L})
                                                     .via(TRANSFER_NFTS_TXN)
                                                     .alsoSigningWithFullPrefix(OWNER)
                                                     .gas(GAS_TO_OFFER)

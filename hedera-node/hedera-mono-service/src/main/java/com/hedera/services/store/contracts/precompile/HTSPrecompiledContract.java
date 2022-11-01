@@ -296,14 +296,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             precompilePricingUtils,
                                             functionId,
                                             senderAddress,
-                                            impliedTransfersMarshal),
-                        recordsHistorian,
-                        infrastructureFactory.newAutoCreationLogic(
-                            syntheticTxnFactory,
-                            creator,
-                            currentView,
-                            ledgers.aliases()),
-                        dynamicProperties.isImplicitCreationEnabled()));
+                                            impliedTransfersMarshal,
+                                            recordsHistorian,
+                                            infrastructureFactory.newAutoCreationLogic(
+                                                    syntheticTxnFactory,
+                                                    creator,
+                                                    currentView,
+                                                    ledgers.aliases()),
+                                            dynamicProperties.isImplicitCreationEnabled()));
                     case AbiConstants.ABI_ID_MINT_TOKEN,
                             AbiConstants.ABI_ID_MINT_TOKEN_V2 -> new MintPrecompile(
                             ledgers,

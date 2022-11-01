@@ -46,15 +46,16 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmountAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransferToAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
@@ -1607,16 +1608,18 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            tokenTransferList()
-                                                                    .forToken(token)
-                                                                    .withAccountAmounts(
-                                                                            accountAmount(
-                                                                                    sender,
-                                                                                    -amountToBeSent),
-                                                                            accountAmount(
-                                                                                    accountId(
-                                                                                            evmAddressBytes),
-                                                                                    amountToBeSent))
+                                                            tokenTransferLists()
+                                                                    .withTokenTransferList(
+                                                                            tokenTransferList()
+                                                                                    .forToken(token)
+                                                                                    .withAccountAmounts(
+                                                                                            accountAmount(
+                                                                                                    sender,
+                                                                                                    -amountToBeSent),
+                                                                                            accountAmountAlias(
+                                                                                                    addressBytes,
+                                                                                                    amountToBeSent))
+                                                                                    .build())
                                                                     .build())
                                                     .payingWith(GENESIS)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -1631,30 +1634,24 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
-                                                                                    .isSingleList(
-                                                                                            false)
                                                                                     .forToken(token)
                                                                                     .withAccountAmounts(
                                                                                             accountAmount(
                                                                                                     sender,
                                                                                                     -amountToBeSent),
-                                                                                            accountAmount(
-                                                                                                    accountId(
-                                                                                                            evmAddressBytes),
+                                                                                            accountAmountAlias(
+                                                                                                    addressBytes,
                                                                                                     amountToBeSent))
                                                                                     .build(),
                                                                             tokenTransferList()
-                                                                                    .isSingleList(
-                                                                                            false)
                                                                                     .forToken(
                                                                                             token2)
                                                                                     .withAccountAmounts(
                                                                                             accountAmount(
                                                                                                     sender,
                                                                                                     -amountToBeSent),
-                                                                                            accountAmount(
-                                                                                                    accountId(
-                                                                                                            evmAddressBytes),
+                                                                                            accountAmountAlias(
+                                                                                                    addressBytes,
                                                                                                     amountToBeSent))
                                                                                     .build())
                                                                     .build())
@@ -1664,15 +1661,18 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            tokenTransferList()
-                                                                    .forToken(token)
-                                                                    .withAccountAmounts(
-                                                                            accountAmount(
-                                                                                    sender, -1L),
-                                                                            accountAmount(
-                                                                                    accountId(
-                                                                                            evmAddressBytes),
-                                                                                    1L))
+                                                            tokenTransferLists()
+                                                                    .withTokenTransferList(
+                                                                            tokenTransferList()
+                                                                                    .forToken(token)
+                                                                                    .withAccountAmounts(
+                                                                                            accountAmount(
+                                                                                                    sender,
+                                                                                                    -1L),
+                                                                                            accountAmountAlias(
+                                                                                                    addressBytes,
+                                                                                                    1L))
+                                                                                    .build())
                                                                     .build())
                                                     .payingWith(GENESIS)
                                                     .via(TRANSFER_TXN2)
@@ -1775,14 +1775,16 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             CONTRACT,
                                                             "transferMultipleTokens",
-                                                            tokenTransferList()
-                                                                    .forToken(token)
-                                                                    .withNftTransfers(
-                                                                            nftTransfer(
-                                                                                    sender,
-                                                                                    accountId(
-                                                                                            evmAddressBytes),
-                                                                                    1L))
+                                                            tokenTransferLists()
+                                                                    .withTokenTransferList(
+                                                                            tokenTransferList()
+                                                                                    .forToken(token)
+                                                                                    .withNftTransfers(
+                                                                                            nftTransferToAlias(
+                                                                                                    sender,
+                                                                                                    addressBytes,
+                                                                                                    1L))
+                                                                                    .build())
                                                                     .build())
                                                     .payingWith(GENESIS)
                                                     .via(NOT_SUPPORTED_TXN)
@@ -1797,26 +1799,20 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
-                                                                                    .isSingleList(
-                                                                                            false)
                                                                                     .forToken(token)
                                                                                     .withNftTransfers(
-                                                                                            nftTransfer(
+                                                                                            nftTransferToAlias(
                                                                                                     sender,
-                                                                                                    accountId(
-                                                                                                            evmAddressBytes),
+                                                                                                    addressBytes,
                                                                                                     1L))
                                                                                     .build(),
                                                                             tokenTransferList()
-                                                                                    .isSingleList(
-                                                                                            false)
                                                                                     .forToken(
                                                                                             token2)
                                                                                     .withNftTransfers(
-                                                                                            nftTransfer(
+                                                                                            nftTransferToAlias(
                                                                                                     sender,
-                                                                                                    accountId(
-                                                                                                            evmAddressBytes),
+                                                                                                    addressBytes,
                                                                                                     1L))
                                                                                     .build())
                                                                     .build())
@@ -1908,15 +1904,19 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             HTS_TRANSFER_FROM_CONTRACT,
                                                             htsTransferFrom,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    FUNGIBLE_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(OWNER)),
-                                                            addressBytes,
-                                                            allowance / 2)
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FUNGIBLE_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            OWNER))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
+                                                            BigInteger.valueOf(allowance / 2))
                                                     .gas(GAS_TO_OFFER)
                                                     .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS),
@@ -2002,14 +2002,19 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             contractCall(
                                                             HTS_TRANSFER_FROM_CONTRACT,
                                                             htsTransferFromNFT,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(NFT_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(OWNER)),
-                                                            addressBytes,
-                                                            2L)
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            NFT_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            OWNER))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
+                                                            BigInteger.valueOf(2L))
                                                     .gas(GAS_TO_OFFER)
                                                     .via(TRANSFER_TXN)
                                                     .hasKnownStatus(SUCCESS),

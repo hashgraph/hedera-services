@@ -1314,31 +1314,28 @@ public class UtilVerbs {
     }
 
     public static Tuple accountAmount(final AccountID account, final Long amount) {
-//        return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount);
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount);
+    }
 
-        final byte[] account32 =
-                account.getAlias().isEmpty()
-                        ? getAddressWithFilledEmptyBytes(asAddress(account))
-                        : getAddressWithFilledEmptyBytes(account.getAlias().toByteArray());
-
-        return Tuple.of(account32, amount);
+    public static Tuple accountAmountAlias(final byte[] alias, final Long amount) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount);
     }
 
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
 
-//        return Tuple.of(
-//            HapiParserUtil.asHeadlongAddress(asAddress(sender)),
-//            HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
-//            serialNumber);
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
+                serialNumber);
+    }
 
-        final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(sender));
-        final byte[] receiver32 =
-                receiver.getAlias().isEmpty()
-                        ? getAddressWithFilledEmptyBytes(asAddress(receiver))
-                        : getAddressWithFilledEmptyBytes(receiver.getAlias().toByteArray());
-
-        return Tuple.of(account32, receiver32, serialNumber);
+    public static Tuple nftTransferToAlias(
+            final AccountID sender, final byte[] alias, final Long serialNumber) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(alias),
+                serialNumber);
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(

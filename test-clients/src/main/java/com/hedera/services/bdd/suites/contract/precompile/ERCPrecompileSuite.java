@@ -763,24 +763,28 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             ERC_20_CONTRACT,
                                                             TRANSFER_THEN_REVERT,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    FUNGIBLE_TOKEN)),
-                                                            addressBytes,
-                                                            2)
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FUNGIBLE_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
+                                                            BigInteger.valueOf(2))
                                                     .via(TRANSFER_THEN_REVERT_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
                                                             ERC_20_CONTRACT,
                                                             TRANSFER,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    FUNGIBLE_TOKEN)),
-                                                            addressBytes,
-                                                            2)
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FUNGIBLE_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
+                                                            BigInteger.valueOf(2))
                                                     .via(TRANSFER_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(SUCCESS),
@@ -5382,30 +5386,38 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             ERC_721_CONTRACT,
                                                             TRANSFER_FROM_THEN_REVERT,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    NON_FUNGIBLE_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(OWNER)),
-                                                            addressBytes,
-                                                            1)
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            NON_FUNGIBLE_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            OWNER))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
+                                                            BigInteger.valueOf(1))
                                                     .via(TRANSFER_FROM_ACCOUNT_REVERT_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
                                                             ERC_721_CONTRACT,
                                                             TRANSFER_FROM,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getTokenID(
-                                                                                    NON_FUNGIBLE_TOKEN)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(OWNER)),
-                                                            addressBytes,
-                                                            1)
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            NON_FUNGIBLE_TOKEN))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            OWNER))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    addressBytes),
+                                                            BigInteger.valueOf(1))
                                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(SUCCESS),
