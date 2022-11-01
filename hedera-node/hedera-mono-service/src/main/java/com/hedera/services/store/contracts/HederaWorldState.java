@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -59,7 +60,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 @Singleton
-public class HederaWorldState implements HederaMutableWorldState {
+public class HederaWorldState extends HederaEvmWorldState implements HederaMutableWorldState {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EntityAccess entityAccess;
@@ -81,6 +82,7 @@ public class HederaWorldState implements HederaMutableWorldState {
             final SigImpactHistorian sigImpactHistorian,
             final GlobalDynamicProperties dynamicProperties,
             final @HandleThrottle FunctionalityThrottling handleThrottling) {
+        super(entityAccess, dynamicProperties, codeCache);
         this.ids = ids;
         this.usageLimits = usageLimits;
         this.entityAccess = entityAccess;
@@ -96,6 +98,7 @@ public class HederaWorldState implements HederaMutableWorldState {
             final EntityAccess entityAccess,
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties) {
+        super(entityAccess, dynamicProperties, codeCache);
         this.ids = ids;
         this.entityAccess = entityAccess;
         this.codeCache = codeCache;
@@ -160,22 +163,6 @@ public class HederaWorldState implements HederaMutableWorldState {
     @Override
     public Stream<StreamableAccount> streamAccounts(final Bytes32 startKeyHash, final int limit) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Account get(final @Nullable Address address) {
-        if (address == null) {
-            return null;
-        }
-        if (entityAccess.isTokenAccount(address)
-                && dynamicProperties.isRedirectTokenCallsEnabled()) {
-            return new HederaEvmWorldStateTokenAccount(address);
-        }
-        if (!entityAccess.isUsable(address)) {
-            return null;
-        }
-        final long balance = entityAccess.getBalance(address);
-        return new WorldStateAccount(address, Wei.of(balance), codeCache, entityAccess);
     }
 
     public static class Updater extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>

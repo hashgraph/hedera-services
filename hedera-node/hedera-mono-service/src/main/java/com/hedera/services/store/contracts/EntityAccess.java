@@ -42,7 +42,7 @@ public interface EntityAccess extends HederaEvmEntityAccess {
     /* --- Account access --- */
     void customize(AccountID id, HederaAccountCustomizer customizer);
 
-    boolean isUsable(Address address);
+
 
     /* --- Storage access --- */
     void recordNewKvUsageTo(
