@@ -183,7 +183,7 @@ class AliasResolverTest {
 
         subject.perceiveEthTxn(lazyCreateData, aliasManager);
 
-        assertEquals(1, subject.perceivedAutoCreations());
+        assertEquals(1, subject.perceivedLazyCreations());
     }
 
     @Test

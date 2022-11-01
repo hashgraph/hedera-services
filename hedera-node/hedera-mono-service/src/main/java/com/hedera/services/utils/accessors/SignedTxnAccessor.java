@@ -168,7 +168,8 @@ public class SignedTxnAccessor implements TxnAccessor {
         } else {
             resolver.resolve(txn.getCryptoTransfer(), aliasManager);
         }
-        numImplicitCreations = resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();;
+        numImplicitCreations =
+                resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
     }
 
     @Override

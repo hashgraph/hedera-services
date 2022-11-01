@@ -651,9 +651,9 @@ class SignedTxnAccessorTest {
         given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(new byte[0])))
                 .willReturn(EntityNum.MISSING_NUM);
 
-        accessor.countAutoCreationsWith(aliasManager);
+        accessor.countImplicitCreationsWith(aliasManager);
 
-        assertEquals(1, accessor.getNumAutoCreations());
+        assertEquals(1, accessor.getNumImplicitCreations());
     }
 
     @Test

@@ -28,7 +28,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -80,7 +79,7 @@ public class AliasResolver {
                         .lookupIdBy(ByteStringUtils.wrapUnsafely(ethTxDataMeta.to()))
                         .equals(MISSING_NUM)
                 && ethTxDataMeta.value().compareTo(BigInteger.ZERO) > 0) {
-            perceivedCreations++;
+            perceivedLazyCreations++;
         }
     }
 

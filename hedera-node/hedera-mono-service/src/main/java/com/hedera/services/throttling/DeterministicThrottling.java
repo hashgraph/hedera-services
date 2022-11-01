@@ -317,7 +317,8 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
             case CryptoTransfer:
                 if (dynamicProperties.isAutoCreationEnabled()
                         || dynamicProperties.isLazyCreationEnabled()) {
-                    return shouldThrottleTransfer(manager, details.getNumImplicitCreations(), now);
+                    return shouldThrottleBasedOnAutoCreations(
+                            manager, details.getNumImplicitCreations(), now);
                 } else {
                     /* Since auto-creation is disabled, if this transfer does attempt one, it will
                     resolve to NOT_SUPPORTED right away; so we don't want to ask for capacity from the
@@ -328,7 +329,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
                 if (dynamicProperties.isAutoCreationEnabled()
                         && dynamicProperties.isLazyCreationEnabled()) {
                     return shouldThrottleBasedOnAutoCreations(
-                            manager, details.getNumAutoCreations(), now);
+                            manager, details.getNumImplicitCreations(), now);
                 } else {
                     return !manager.allReqsMetAt(now);
                 }
@@ -449,7 +450,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
     }
 
     private boolean shouldThrottleBasedOnAutoCreations(
-            final ThrottleReqsManager manager, final int numAutoCreations, final Instant now) {
+            final ThrottleReqsManager manager, final int numImplicitCreations, final Instant now) {
         return (numImplicitCreations == 0)
                 ? !manager.allReqsMetAt(now)
                 : shouldThrottleImplicitCreations(numImplicitCreations, now);

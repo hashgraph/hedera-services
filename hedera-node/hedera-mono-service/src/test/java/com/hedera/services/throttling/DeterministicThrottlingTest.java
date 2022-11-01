@@ -1066,7 +1066,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(EthereumTransaction);
-        given(accessor.getNumAutoCreations()).willReturn(1);
+        given(accessor.getNumImplicitCreations()).willReturn(1);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         subject.rebuildFor(defs);
@@ -1081,7 +1081,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(EthereumTransaction);
-        given(accessor.getNumAutoCreations()).willReturn(10);
+        given(accessor.getNumImplicitCreations()).willReturn(10);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         subject.rebuildFor(defs);
@@ -1096,7 +1096,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles-sans-creation.json");
 
         givenFunction(EthereumTransaction);
-        given(accessor.getNumAutoCreations()).willReturn(1);
+        given(accessor.getNumImplicitCreations()).willReturn(1);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         subject.rebuildFor(defs);
