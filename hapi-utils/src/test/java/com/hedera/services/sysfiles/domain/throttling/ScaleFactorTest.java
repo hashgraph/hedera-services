@@ -15,19 +15,18 @@
  */
 package com.hedera.services.sysfiles.domain.throttling;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-class ThrottleReqOpsScaleFactorTest {
+class ScaleFactorTest {
     @CsvSource({"3:2,3,2", "1:5,1,5", "100:100,100,100"})
     @ParameterizedTest
     void parsesValidAsExpected(String literal, int numerator, int denominator) {
-        final var subject = ThrottleReqOpsScaleFactor.from(literal);
+        final var subject = ScaleFactor.from(literal);
 
         assertEquals(numerator, subject.numerator());
         assertEquals(denominator, subject.denominator());
@@ -37,13 +36,12 @@ class ThrottleReqOpsScaleFactorTest {
     @ParameterizedTest
     void throwsIaeOnInvalid(String invalidLiteral) {
         Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> ThrottleReqOpsScaleFactor.from(invalidLiteral));
+                IllegalArgumentException.class, () -> ScaleFactor.from(invalidLiteral));
     }
 
     @Test
     void scalesUpModestlyAsExpected() {
-        final var subject = ThrottleReqOpsScaleFactor.from("3:2");
+        final var subject = ScaleFactor.from("3:2");
 
         // expect:
         assertEquals(15, subject.scaling(10));
@@ -51,31 +49,42 @@ class ThrottleReqOpsScaleFactorTest {
 
     @Test
     void scalingUpHitsTheCeiling() {
-        final var subject = ThrottleReqOpsScaleFactor.from("2147483647:3");
+        final var subject = ScaleFactor.from("2147483647:3");
 
         assertEquals(Integer.MAX_VALUE / 3, subject.scaling(2));
     }
 
     @Test
     void scalingDownHasFloor() {
-        final var subject = ThrottleReqOpsScaleFactor.from("1:3");
+        final var subject = ScaleFactor.from("1:3");
 
         assertEquals(1, subject.scaling(2));
     }
 
     @Test
     void toStringWorks() {
-        final var subject = ThrottleReqOpsScaleFactor.from("5:2");
+        final var subject = ScaleFactor.from("5:2");
 
-        assertEquals("ThrottleReqOpsScaleFactor{scale=5:2}", subject.toString());
+        assertEquals("ScaleFactor{scale=5:2}", subject.toString());
+    }
+
+    @Test
+    void comparabilityWorks() {
+        final var a = ScaleFactor.from("7:3");
+        final var b = ScaleFactor.from("9:4");
+        final var c = ScaleFactor.from("21:9");
+
+        assertTrue(a.compareTo(b) > 0);
+        assertTrue(b.compareTo(c) < 0);
+        assertEquals(0, a.compareTo(c));
     }
 
     @Test
     void objectContractWorks() {
-        final var subject = ThrottleReqOpsScaleFactor.from("3:2");
-        final var equalSubject = ThrottleReqOpsScaleFactor.from("3:2");
-        final var unequalNumSubject = ThrottleReqOpsScaleFactor.from("4:2");
-        final var unequalDenomSubject = ThrottleReqOpsScaleFactor.from("3:1");
+        final var subject = ScaleFactor.from("3:2");
+        final var equalSubject = ScaleFactor.from("3:2");
+        final var unequalNumSubject = ScaleFactor.from("4:2");
+        final var unequalDenomSubject = ScaleFactor.from("3:1");
         final var identicalSubject = subject;
 
         assertNotEquals(null, subject);

@@ -129,6 +129,9 @@ public interface TxnAccessor {
     // Used only for SubmitMessage
     SubmitMessageMeta availSubmitUsageMeta();
 
+    // Used only for TokenMint
+    boolean mintsWithMetadata();
+
     // Used only for ScheduleCreate/Sign, to find valid signatures that apply to a scheduled
     // transaction
     SignatureMap getSigMap();

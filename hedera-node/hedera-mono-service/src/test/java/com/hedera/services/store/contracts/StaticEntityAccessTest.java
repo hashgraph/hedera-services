@@ -19,9 +19,14 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsRevertingWith;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -156,7 +161,7 @@ class StaticEntityAccessTest {
     @Test
     void canGetAlias() {
         given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someContractAccount);
-        assertEquals(pretendAlias, subject.alias(id));
+        assertEquals(pretendAlias, subject.alias(asTypedEvmAddress(id)));
     }
 
     @Test
@@ -168,7 +173,7 @@ class StaticEntityAccessTest {
                                 someNonContractAccount.isSmartContract()))
                 .willReturn(OK);
         given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
-        assertTrue(subject.isUsable(id));
+        assertTrue(subject.isUsable(asTypedEvmAddress(id)));
     }
 
     @Test
@@ -197,29 +202,30 @@ class StaticEntityAccessTest {
         given(accounts.get(EntityNum.fromAccountId(nonExtantId))).willReturn(null);
         given(stateView.tokenExists(fungible)).willReturn(true);
 
-        assertEquals(someNonContractAccount.getBalance(), subject.getBalance(id));
-        assertTrue(subject.isExtant(id));
-        assertFalse(subject.isExtant(nonExtantId));
+        assertEquals(
+                someNonContractAccount.getBalance(), subject.getBalance(asTypedEvmAddress(id)));
+        assertTrue(subject.isExtant(asTypedEvmAddress(id)));
+        assertFalse(subject.isExtant(asTypedEvmAddress(nonExtantId)));
         assertTrue(subject.isTokenAccount(fungibleTokenAddr));
     }
 
     @Test
     void notUsableIfMissing() {
-        assertFalse(subject.isUsable(id));
+        assertFalse(subject.isUsable(asTypedEvmAddress(id)));
     }
 
     @Test
     void notUsableIfDeleted() {
         given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
         someNonContractAccount.setDeleted(true);
-        assertFalse(subject.isUsable(id));
+        assertFalse(subject.isUsable(asTypedEvmAddress(id)));
     }
 
     @Test
     void getWorks() {
         given(storage.get(contractKey)).willReturn(contractVal);
 
-        final var uint256Val = subject.getStorage(id, uint256Key);
+        final var uint256Val = subject.getStorage(asTypedEvmAddress(id), uint256Key);
 
         final var expectedVal = UInt256.fromBytes(Bytes.wrap(contractVal.getValue()));
         assertEquals(expectedVal, uint256Val);
@@ -227,7 +233,7 @@ class StaticEntityAccessTest {
 
     @Test
     void getForUnknownReturnsZero() {
-        final var unit256Val = subject.getStorage(id, UInt256.MAX_VALUE);
+        final var unit256Val = subject.getStorage(asTypedEvmAddress(id), UInt256.MAX_VALUE);
 
         assertEquals(UInt256.ZERO, unit256Val);
     }
@@ -236,7 +242,7 @@ class StaticEntityAccessTest {
     void fetchWithValueWorks() {
         given(blobs.get(blobKey)).willReturn(blobVal);
 
-        final var blobBytes = subject.fetchCodeIfPresent(id);
+        final var blobBytes = subject.fetchCodeIfPresent(asTypedEvmAddress(id));
 
         final var expectedVal = Bytes.of(blobVal.getData());
         assertEquals(expectedVal, blobBytes);
@@ -244,7 +250,7 @@ class StaticEntityAccessTest {
 
     @Test
     void fetchWithoutValueReturnsNull() {
-        assertNull(subject.fetchCodeIfPresent(id));
+        assertNull(subject.fetchCodeIfPresent(asTypedEvmAddress(id)));
     }
 
     @Test

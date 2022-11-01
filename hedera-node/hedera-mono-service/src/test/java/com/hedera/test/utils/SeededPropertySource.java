@@ -15,6 +15,7 @@
  */
 package com.hedera.test.utils;
 
+import static com.hedera.services.context.properties.EntityType.*;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -56,6 +57,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class SeededPropertySource {
     private static final long BASE_SEED = 4_242_424L;
+    private static final EntityType[] BACKWARD_COMPATIBLE_TYPES =
+            new EntityType[] {ACCOUNT, CONTRACT, FILE, SCHEDULE, TOKEN, TOPIC};
 
     private final SplittableRandom SEEDED_RANDOM;
 
@@ -871,8 +874,7 @@ public class SeededPropertySource {
     }
 
     public EntityType nextEntityType(final int range) {
-        final var choices = EntityType.class.getEnumConstants();
-        return choices[SEEDED_RANDOM.nextInt(range)];
+        return BACKWARD_COMPATIBLE_TYPES[SEEDED_RANDOM.nextInt(range)];
     }
 
     public Map<EntityNum, Map<FcTokenAllowanceId, Long>> nextFungibleAllowances(

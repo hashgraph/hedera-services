@@ -13,19 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.evm.store.contracts;
 
-import com.hedera.node.app.service.token.util.AliasUtils;
-import org.hyperledger.besu.datatypes.Address;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.hedera.services.evm.store.contracts.utils.BytesKey;
+import org.hyperledger.besu.evm.Code;
 
-public abstract class AbstractContractAliases implements ContractAliases {
-    public static final int EVM_ADDRESS_LEN = 20;
-
-    public boolean isMirror(final Address address) {
-        return isMirror(address.toArrayUnsafe());
+public class MockAbstractCodeCache extends AbstractCodeCache {
+    public MockAbstractCodeCache(int expirationCacheTime, HederaEvmEntityAccess entityAccess) {
+        super(expirationCacheTime, entityAccess);
     }
 
-    public boolean isMirror(final byte[] address) {
-        return AliasUtils.isMirror(address);
+    /* --- Only used by unit tests --- */
+    Cache<BytesKey, Code> getCache() {
+        return cache;
+    }
+
+    void cacheValue(BytesKey key, Code value) {
+        cache.put(key, value);
     }
 }

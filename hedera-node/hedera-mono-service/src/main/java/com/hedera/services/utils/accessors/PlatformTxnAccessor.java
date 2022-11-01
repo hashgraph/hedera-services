@@ -342,4 +342,9 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     public StateView getStateView() {
         return delegate.getStateView();
     }
+
+    @Override
+    public boolean mintsWithMetadata() {
+        return delegate.mintsWithMetadata();
+    }
 }

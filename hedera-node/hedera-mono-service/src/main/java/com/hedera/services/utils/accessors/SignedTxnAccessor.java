@@ -385,6 +385,11 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     @Override
+    public boolean mintsWithMetadata() {
+        return function == TokenMint && txn.getTokenMint().getMetadataCount() > 0;
+    }
+
+    @Override
     public Map<String, Object> getSpanMap() {
         return spanMap;
     }

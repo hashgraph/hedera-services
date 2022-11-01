@@ -163,6 +163,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -921,15 +923,21 @@ public final class MiscUtils {
 
     /**
      * Attempts to parse a {@code Key} from given alias {@code ByteString}. If the Key is of type
-     * Ed25519 or ECDSA(secp256k1), returns true and false otherwise.
+     * Ed25519 or ECDSA(secp256k1), returns true if it is a valid key; and false otherwise.
      *
      * @param alias given alias byte string
-     * @return whether it parses to a primitive key
+     * @return whether it parses to a valid primitive key
      */
     public static boolean isSerializedProtoKey(final ByteString alias) {
         try {
             final var key = Key.parseFrom(alias);
-            return !key.getECDSASecp256K1().isEmpty() || !key.getEd25519().isEmpty();
+            if (!key.getECDSASecp256K1().isEmpty()) {
+                return JECDSASecp256k1Key.isValidProto(key);
+            } else if (!key.getEd25519().isEmpty()) {
+                return JEd25519Key.isValidProto(key);
+            } else {
+                return false;
+            }
         } catch (InvalidProtocolBufferException ignore) {
             return false;
         }
