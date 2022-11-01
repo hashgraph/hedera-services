@@ -20,6 +20,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCES
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import java.util.HashMap;
 import java.util.Map;
@@ -97,5 +98,15 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         } else {
             frame.setState(EXCEPTIONAL_HALT);
         }
+    }
+
+    @VisibleForTesting
+    public void setGasRequirement(long gasRequirement) {
+        this.gasRequirement = gasRequirement;
+    }
+
+    @VisibleForTesting
+    public void setOutput(Bytes output) {
+        this.output = output;
     }
 }

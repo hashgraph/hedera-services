@@ -39,6 +39,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.fluent.SimpleAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -141,6 +142,21 @@ class HederaEvmMessageCallProcessorTest {
 
         verifyNoMoreInteractions(nonHtsPrecompile, frame);
         assertEquals(123, receiver.getBalance().getAsBigInteger().longValue());
+    }
+
+    @Test
+    void callsPrecompileWithLoadedEmptyOutputAndGasRequirementWorks() {
+        subject.setGasRequirement(123);
+        subject.setOutput(Bytes.fromHexString("0x00"));
+        given(frame.getRemainingGas()).willReturn(GAS_ONE_K);
+        final var precompile = Address.fromHexString("0x0000000000000000000000000000000000001337");
+        given(frame.getContractAddress()).willReturn(precompile);
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(hederaEvmOperationTracer)
+                .tracePrecompileCall(frame, 123, Bytes.fromHexString("0x00"));
+        verify(frame).setState(State.COMPLETED_SUCCESS);
     }
 
     @Test
