@@ -103,6 +103,15 @@ public class AccountsCommitInterceptor
             @NotNull final Map<AccountProperty, Object> accountChanges) {
         if (accountChanges.containsKey(AccountProperty.BALANCE)) {
             final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
+            if (newBalance < 0) {
+                throw new IllegalStateException(
+                        "Cannot set "
+                                + ((merkleAccount == null)
+                                        ? "<N/A>"
+                                        : merkleAccount.getEntityNum().toIdString())
+                                + " balance to "
+                                + newBalance);
+            }
             final long adjustment =
                     (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
             sideEffectsTracker.trackHbarChange(accountNum, adjustment);
