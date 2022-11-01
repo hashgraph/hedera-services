@@ -137,6 +137,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
     private static final String TRANSFER_THEN_REVERT_TXN = "transferThenRevertTxn";
     private static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
+    private static final String TRANSFER_FROM_ACCOUNT_REVERT_TXN = "transferFromAccountRevertTxn";
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
     private static final String IS_APPROVED_FOR_ALL = "isApprovedForAll";
     private static final String GET_ALLOWANCE = "getAllowance";
@@ -148,6 +149,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private static final String TRANSFER = "transfer";
 
     private static final String TRANSFER_THEN_REVERT = "transferThenRevert";
+    private static final String TRANSFER_FROM_THEN_REVERT = "transferFromThenRevert";
     private static final String APPROVE = "approve";
     private static final String OWNER_OF = "ownerOf";
     private static final String TOKEN_URI = "tokenURI";
@@ -242,7 +244,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                 someERC721IsApprovedForAllScenariosPass(),
                 getErc721IsApprovedForAll(),
                 someERC721SetApprovedForAllScenariosPass(),
-                erc721TransferFromWithApprovalToEVMAddressAlias());
+                erc721TransferFromWithApprovalToEVMAddressAliasRevertAndTransferFromAgainSuccessfully());
     }
 
     private HapiApiSpec getErc20TokenName() {
@@ -1096,7 +1098,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 .logged()),
                         getAccountBalance(ACCOUNT_B).hasTokenBalance(TOKEN_NAME, 1000),
                         getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_NAME, 8500),
-                        UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
+                        resetToDefault("contracts.throttle.throttleByGas"));
     }
 
     private HapiApiSpec transferErc20TokenFrom() {
@@ -4589,7 +4591,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER))))
                 .then(
                         getTxnRecord(NAME_TXN).andAllChildRecords().logged(),
-                        UtilVerbs.resetToDefault(
+                        resetToDefault(
                                 CONTRACTS_REDIRECT_TOKEN_CALLS,
                                 CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS));
     }
@@ -4669,7 +4671,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                                         .getAccountID(
                                                                                                                                 SPENDER)))))))),
                         getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged(),
-                        UtilVerbs.resetToDefault(
+                        resetToDefault(
                                 CONTRACTS_REDIRECT_TOKEN_CALLS,
                                 CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS));
     }
@@ -4727,7 +4729,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
                         getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged(),
-                        UtilVerbs.resetToDefault(
+                        resetToDefault(
                                 CONTRACTS_REDIRECT_TOKEN_CALLS,
                                 CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS));
     }
@@ -5164,8 +5166,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec erc721TransferFromWithApprovalToEVMAddressAlias() {
-        return defaultHapiSpec("erc721TransferFromWithApprovalToEVMAddressAlias")
+    private HapiApiSpec
+            erc721TransferFromWithApprovalToEVMAddressAliasRevertAndTransferFromAgainSuccessfully() {
+        return defaultHapiSpec(
+                        "erc721TransferFromWithApprovalToEVMAddressAliasRevertAndTransferFromAgainSuccessfully")
                 .given(
                         UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -5214,6 +5218,21 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                     .hasSpenderID(ERC_721_CONTRACT),
                                             contractCall(
                                                             ERC_721_CONTRACT,
+                                                            TRANSFER_FROM_THEN_REVERT,
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(
+                                                                                    NON_FUNGIBLE_TOKEN)),
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getAccountID(OWNER)),
+                                                            addressBytes,
+                                                            1)
+                                                    .via(TRANSFER_FROM_ACCOUNT_REVERT_TXN)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            ERC_721_CONTRACT,
                                                             TRANSFER_FROM,
                                                             asAddress(
                                                                     spec.registry()
@@ -5239,6 +5258,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             getAliasedAccountBalance(alias)
                                                     .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1)
                                                     .logged(),
+                                            childRecordsCheck(
+                                                    TRANSFER_FROM_ACCOUNT_REVERT_TXN,
+                                                    CONTRACT_REVERT_EXECUTED,
+                                                    recordWith().status(REVERTED_SUCCESS)),
                                             childRecordsCheck(
                                                     TRANSFER_FROM_ACCOUNT_TXN,
                                                     SUCCESS,

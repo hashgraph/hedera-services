@@ -36,6 +36,11 @@ contract ERC721Contract {
         IERC721(token).transferFrom(from, to, tokenId);
     }
 
+    function transferFromThenRevert(address token, address from, address to, uint256 tokenId) public {
+        IERC721(token).transferFrom(from, to, tokenId);
+        revert();
+    }
+
     function approve(address token, address to, uint256 tokenId) public {
         IERC721(token).approve(to, tokenId);
     }
