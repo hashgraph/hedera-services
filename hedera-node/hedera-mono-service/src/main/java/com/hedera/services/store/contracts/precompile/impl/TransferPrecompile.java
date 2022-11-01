@@ -288,6 +288,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 impliedTransfersMarshal.assessCustomFeesAndValidate(
                         hbarOnly,
                         0,
+                        0,
                         explicitChanges,
                         NO_ALIASES,
                         impliedTransfersMarshal.currentProps());

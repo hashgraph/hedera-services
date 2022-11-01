@@ -71,6 +71,7 @@ class SpanMapManagerTest {
     private final int maxFeeNesting = 4;
     private final int maxBalanceChanges = 5;
     private final boolean autoCreationEnabled = true;
+    private final boolean lazyCreationEnabled = true;
     private final boolean areAllowancesEnabled = true;
     private final ImpliedTransfersMeta.ValidationProps validationProps =
             new ImpliedTransfersMeta.ValidationProps(
@@ -81,6 +82,7 @@ class SpanMapManagerTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     autoCreationEnabled,
+                    lazyCreationEnabled,
                     areAllowancesEnabled);
     private final ImpliedTransfersMeta.ValidationProps otherValidationProps =
             new ImpliedTransfersMeta.ValidationProps(
@@ -91,6 +93,7 @@ class SpanMapManagerTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     autoCreationEnabled,
+                    lazyCreationEnabled,
                     areAllowancesEnabled);
     private final TransactionBody pretendXferTxn = TransactionBody.getDefaultInstance();
     private final ImpliedTransfers someImpliedXfers =
@@ -104,7 +107,8 @@ class SpanMapManagerTest {
                     NO_CUSTOM_FEE_META,
                     NO_CUSTOM_FEES,
                     NO_ALIASES,
-                    2);
+                    2,
+                    0);
 
     private final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
     private final Id treasury = new Id(0, 0, 2);
@@ -200,7 +204,7 @@ class SpanMapManagerTest {
     }
 
     @Test
-    void setsNumAutoCreationsOnExpanding() {
+    void setsNumImplicitCreationsOnExpanding() {
         given(accessor.getPayer()).willReturn(payer);
         given(accessor.getTxn()).willReturn(pretendXferTxn);
         given(accessor.getSpanMap()).willReturn(span);
@@ -211,7 +215,7 @@ class SpanMapManagerTest {
 
         subject.expandSpan(accessor);
 
-        verify(accessor).setNumAutoCreations(2);
+        verify(accessor).setNumImplicitCreations(2);
     }
 
     @Test
@@ -246,6 +250,7 @@ class SpanMapManagerTest {
         given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
         given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(lazyCreationEnabled);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
         spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
 

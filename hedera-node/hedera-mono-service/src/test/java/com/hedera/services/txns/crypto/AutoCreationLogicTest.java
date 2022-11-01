@@ -203,7 +203,6 @@ class AutoCreationLogicTest {
                                         .setAccountId(new EntityId(0, 0, createdNum.longValue())));
 
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
-        given(properties.isLazyCreationEnabled()).willReturn(true);
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L))
                 .willReturn(mockSyntheticCreation);
 

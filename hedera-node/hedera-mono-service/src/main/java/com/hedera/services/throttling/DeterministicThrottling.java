@@ -315,9 +315,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
             case TokenMint:
                 return shouldThrottleMint(manager, txn.getTokenMint(), now);
             case CryptoTransfer:
-                if (dynamicProperties.isAutoCreationEnabled()) {
-                    return shouldThrottleBasedOnAutoCreations(
-                            manager, details.getNumAutoCreations(), now);
+                if (dynamicProperties.isAutoCreationEnabled()
+                        || dynamicProperties.isLazyCreationEnabled()) {
+                    return shouldThrottleTransfer(manager, details.getNumImplicitCreations(), now);
                 } else {
                     /* Since auto-creation is disabled, if this transfer does attempt one, it will
                     resolve to NOT_SUPPORTED right away; so we don't want to ask for capacity from the
@@ -357,14 +357,17 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
         // maintain legacy behaviour
         if (!dynamicProperties.schedulingLongTermEnabled()) {
-            if (dynamicProperties.isAutoCreationEnabled() && scheduledFunction == CryptoTransfer) {
+            if ((dynamicProperties.isAutoCreationEnabled()
+                            || dynamicProperties.isLazyCreationEnabled())
+                    && scheduledFunction == CryptoTransfer) {
                 final var xfer = scheduled.getCryptoTransfer();
                 if (usesAliases(xfer)) {
                     final var resolver = new AliasResolver();
                     resolver.resolve(xfer, aliasManager);
-                    final var numAutoCreations = resolver.perceivedAutoCreations();
-                    if (numAutoCreations > 0) {
-                        return shouldThrottleAutoCreations(numAutoCreations, now);
+                    final var numImplicitCreations =
+                            resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
+                    if (numImplicitCreations > 0) {
+                        return shouldThrottleImplicitCreations(numImplicitCreations, now);
                     }
                 }
             }
@@ -447,12 +450,12 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
     private boolean shouldThrottleBasedOnAutoCreations(
             final ThrottleReqsManager manager, final int numAutoCreations, final Instant now) {
-        return (numAutoCreations == 0)
+        return (numImplicitCreations == 0)
                 ? !manager.allReqsMetAt(now)
-                : shouldThrottleAutoCreations(numAutoCreations, now);
+                : shouldThrottleImplicitCreations(numImplicitCreations, now);
     }
 
-    private boolean shouldThrottleAutoCreations(final int n, final Instant now) {
+    private boolean shouldThrottleImplicitCreations(final int n, final Instant now) {
         final var manager = functionReqs.get(CryptoCreate);
         return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE);
     }
@@ -665,7 +668,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
     }
 
     private interface TransactionDetails {
-        int getNumAutoCreations();
+        int getNumImplicitCreations();
 
         long getGasLimitForContractTx();
 
@@ -684,11 +687,11 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
         }
 
         @Override
-        public int getNumAutoCreations() {
-            if (!accessor.areAutoCreationsCounted()) {
-                accessor.countAutoCreationsWith(aliasManager);
+        public int getNumImplicitCreations() {
+            if (!accessor.areImplicitCreationsCounted()) {
+                accessor.countImplicitCreationsWith(aliasManager);
             }
-            return accessor.getNumAutoCreations();
+            return accessor.getNumImplicitCreations();
         }
 
         @Override
@@ -727,10 +730,10 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
         }
 
         @Override
-        public int getNumAutoCreations() {
+        public int getNumImplicitCreations() {
             final var resolver = new AliasResolver();
             resolver.resolve(txn.getCryptoTransfer(), aliasManager);
-            return resolver.perceivedAutoCreations();
+            return resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
         }
 
         @Override

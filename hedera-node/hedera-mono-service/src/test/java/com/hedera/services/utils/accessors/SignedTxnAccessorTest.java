@@ -201,7 +201,7 @@ class SignedTxnAccessorTest {
         final var body = CommonUtils.extractTransactionBody(xferNoAliases);
 
         var accessor = SignedTxnAccessor.uncheckedFrom(xferNoAliases);
-        accessor.countAutoCreationsWith(aliasManager);
+        accessor.countImplicitCreationsWith(aliasManager);
         final var txnUsageMeta = accessor.baseUsageMeta();
 
         assertEquals(xferNoAliases, accessor.getSignedTxnWrapper());
@@ -227,16 +227,16 @@ class SignedTxnAccessorTest {
         assertEquals(zeroByteMemo, accessor.getMemo());
         assertEquals(false, accessor.isTriggeredTxn());
         assertEquals(false, accessor.canTriggerTxn());
-        assertEquals(0, accessor.getNumAutoCreations());
+        assertEquals(0, accessor.getNumImplicitCreations());
         assertEquals(memoUtf8Bytes.length, txnUsageMeta.memoUtf8Bytes());
 
         accessor = SignedTxnAccessor.uncheckedFrom(xferWithAutoCreation);
-        accessor.countAutoCreationsWith(aliasManager);
-        assertEquals(1, accessor.getNumAutoCreations());
+        accessor.countImplicitCreationsWith(aliasManager);
+        assertEquals(1, accessor.getNumImplicitCreations());
 
         accessor = SignedTxnAccessor.uncheckedFrom(xferWithAliasesNoAutoCreation);
-        accessor.countAutoCreationsWith(aliasManager);
-        assertEquals(0, accessor.getNumAutoCreations());
+        accessor.countImplicitCreationsWith(aliasManager);
+        assertEquals(0, accessor.getNumImplicitCreations());
     }
 
     @Test
@@ -262,13 +262,13 @@ class SignedTxnAccessorTest {
     }
 
     @Test
-    void canGetSetNumAutoCreations() {
+    void canGetSetNumImplicitCreations() {
         final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
-        assertFalse(accessor.areAutoCreationsCounted());
-        accessor.setNumAutoCreations(2);
-        assertEquals(2, accessor.getNumAutoCreations());
-        assertTrue(accessor.areAutoCreationsCounted());
-        accessor.setNumAutoCreations(2);
+        assertFalse(accessor.areImplicitCreationsCounted());
+        accessor.setNumImplicitCreations(2);
+        assertEquals(2, accessor.getNumImplicitCreations());
+        assertTrue(accessor.areImplicitCreationsCounted());
+        accessor.setNumImplicitCreations(2);
     }
 
     @Test
@@ -874,12 +874,12 @@ class SignedTxnAccessorTest {
         SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContents());
 
         final var expectedString =
-                "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111,"
-                    + " -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52,"
-                    + " -31, -60, 98, -55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84,"
-                    + " -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, 87, -85, -33, -73,"
-                    + " -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1,"
-                    + " 4, 10, 2, 24, 10], utf8MemoBytes=[72, 105, 33], memo=Hi!,"
+                "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numImplicitCreations=-1,"
+                    + " hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103,"
+                    + " -21, 52, -31, -60, 98, -55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69,"
+                    + " 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, 87, -85,"
+                    + " -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33,"
+                    + " -38, 1, 4, 10, 2, 24, 10], utf8MemoBytes=[72, 105, 33], memo=Hi!,"
                     + " memoHasZeroByte=false, signedTxnWrapper=sigMap {\n"
                     + "  sigPair {\n"
                     + "    pubKeyPrefix: \"a\"\n"

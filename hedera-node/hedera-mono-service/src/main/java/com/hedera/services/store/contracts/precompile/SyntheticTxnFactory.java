@@ -15,12 +15,15 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
@@ -504,7 +507,7 @@ public class SyntheticTxnFactory {
     public TransactionBody.Builder createAccount(
             final Key alias, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
-        baseBuilder.setKey(alias);
+        baseBuilder.setKey(alias).setMemo(AUTO_MEMO);
 
         if (maxAutoAssociations > 0) {
             baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
@@ -515,13 +518,12 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
         final var baseBuilder = createAccountBase(balance);
-        baseBuilder.setAlias(alias);
+        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
     private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
         return CryptoCreateTransactionBody.newBuilder()
-                .setMemo(AUTO_MEMO)
                 .setInitialBalance(balance)
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
     }

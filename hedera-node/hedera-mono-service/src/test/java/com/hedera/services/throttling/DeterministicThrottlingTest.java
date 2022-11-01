@@ -299,9 +299,10 @@ class DeterministicThrottlingTest {
 
     @ParameterizedTest
     @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
-    void doesntUseCryptoCreateThrottleForCryptoTransferWithAutoCreationIfAutoCreationDisabled(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled)
-            throws IOException {
+    void
+            doesntUseCryptoCreateThrottleForCryptoTransferWithAutoCreationIfAutoAndLazyCreationDisabled(
+                    final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+                    throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
         final var alias = aPrimitiveKey.toByteString();
@@ -344,13 +345,25 @@ class DeterministicThrottlingTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CsvSource({
+        "HAPI,true,true",
+        "HAPI,false,true",
+        "CONSENSUS,true,true",
+        "CONSENSUS,false,true",
+        "HAPI,true,false",
+        "HAPI,false,false",
+        "CONSENSUS,true,false",
+        "CONSENSUS,false,false"
+    })
     void doesntUseCryptoCreateThrottleForCryptoTransferWithNoAliases(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+            final DeterministicThrottlingMode mode,
+            final boolean longTermEnabled,
+            final boolean autoOrLazyCreationEnabled)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
-        given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
+        given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoOrLazyCreationEnabled);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(!autoOrLazyCreationEnabled);
         final var scheduledXferWithAutoCreation =
                 SchedulableTransactionBody.newBuilder()
                         .setCryptoTransfer(
@@ -919,28 +932,43 @@ class DeterministicThrottlingTest {
     }
 
     @Test
-    void computesNumAutoCreationsIfNotAlreadyKnown() throws IOException {
+    void computesNumImplicitCreationsIfNotAlreadyKnown() throws IOException {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(CryptoTransfer);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
-        given(accessor.getNumAutoCreations()).willReturn(0);
+        given(accessor.getNumImplicitCreations()).willReturn(0);
         subject.rebuildFor(defs);
 
         var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 
-        verify(accessor).countAutoCreationsWith(aliasManager);
+        verify(accessor).countImplicitCreationsWith(aliasManager);
         assertFalse(ans);
     }
 
     @Test
-    void reusesNumAutoCreationsIfNotCounted() throws IOException {
+    void ifLazyCreationEnabledComputesNumImplicitCreationsIfNotAlreadyKnown() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        givenFunction(CryptoTransfer);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        given(accessor.getNumImplicitCreations()).willReturn(0);
+        subject.rebuildFor(defs);
+
+        var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+        verify(accessor).countImplicitCreationsWith(aliasManager);
+        assertFalse(ans);
+    }
+
+    @Test
+    void reusesNumImplicitCreationsIfNotCounted() throws IOException {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(CryptoTransfer);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
-        given(accessor.areAutoCreationsCounted()).willReturn(true);
-        given(accessor.getNumAutoCreations()).willReturn(0);
+        given(accessor.areImplicitCreationsCounted()).willReturn(true);
+        given(accessor.getNumImplicitCreations()).willReturn(0);
         subject.rebuildFor(defs);
 
         var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
@@ -949,7 +977,7 @@ class DeterministicThrottlingTest {
             subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
         }
 
-        verify(accessor, never()).countAutoCreationsWith(aliasManager);
+        verify(accessor, never()).countImplicitCreationsWith(aliasManager);
         assertFalse(firstAns);
         assertTrue(subsequentAns);
     }
@@ -971,7 +999,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(CryptoTransfer);
-        given(accessor.getNumAutoCreations()).willReturn(1);
+        given(accessor.getNumImplicitCreations()).willReturn(1);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         subject.rebuildFor(defs);
 
@@ -985,7 +1013,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         givenFunction(CryptoTransfer);
-        given(accessor.getNumAutoCreations()).willReturn(10);
+        given(accessor.getNumImplicitCreations()).willReturn(10);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         subject.rebuildFor(defs);
 
@@ -999,7 +1027,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles-sans-creation.json");
 
         givenFunction(CryptoTransfer);
-        given(accessor.getNumAutoCreations()).willReturn(1);
+        given(accessor.getNumImplicitCreations()).willReturn(1);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         subject.rebuildFor(defs);
 
