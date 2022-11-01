@@ -31,9 +31,6 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ContractCallLocalPerfSuite.class);
 
     public static void main(String... args) {
-        /* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-        new org.ethereum.crypto.HashUtil();
-
         new ContractCallLocalPerfSuite().runSuiteSync();
     }
 

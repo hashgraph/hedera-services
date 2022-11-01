@@ -82,6 +82,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
@@ -190,7 +191,7 @@ class StateViewTest {
     private MerkleMap<EntityNum, MerkleTopic> topics;
     private AccountStorageAdapter contracts;
     private UniqueTokenMapAdapter uniqueTokens;
-    private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    private TokenRelStorageAdapter tokenRels;
     private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
@@ -279,7 +280,7 @@ class StateViewTest {
         tokenAccountRel.setKey(nftAssociationId);
         tokenAccountRel.setPrev(tokenId.getTokenNum());
 
-        tokenRels = new MerkleMap<>();
+        tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
         tokenRels.put(tokenAssociationId, tokenAccountRel);
         tokenRels.put(nftAssociationId, nftAccountRel);
 

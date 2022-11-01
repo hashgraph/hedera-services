@@ -19,7 +19,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -28,7 +28,6 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -93,7 +92,7 @@ public class TreasuryReturnHelper {
             final MerkleToken token,
             final long balance,
             final List<CurrencyAdjustments> returnTransfers,
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> curRels) {
+            final TokenRelStorageAdapter curRels) {
         if (token.isDeleted() || !incrementTreasuryBalance(token, tokenNum, balance, curRels)) {
             final var burnTransfer =
                     new CurrencyAdjustments(
@@ -108,7 +107,7 @@ public class TreasuryReturnHelper {
             final MerkleToken token,
             final EntityNum tokenNum,
             final long balance,
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> curRels) {
+            final TokenRelStorageAdapter curRels) {
         try {
             final var treasuryNum = token.treasury().asNum();
             final var treasuryRelKey = EntityNumPair.fromNums(treasuryNum, tokenNum);

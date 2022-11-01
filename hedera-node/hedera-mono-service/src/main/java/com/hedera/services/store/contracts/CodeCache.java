@@ -15,19 +15,10 @@
  */
 package com.hedera.services.store.contracts;
 
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.utils.BytesKey;
-import java.util.concurrent.TimeUnit;
+import com.hedera.services.evm.store.contracts.AbstractCodeCache;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.evm.Code;
 
 /**
  * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used to store
@@ -40,63 +31,10 @@ import org.hyperledger.besu.evm.Code;
  * a value is stale is present.
  */
 @Singleton
-public class CodeCache {
-    private final EntityAccess entityAccess;
-    private final Cache<BytesKey, Code> cache;
+public class CodeCache extends AbstractCodeCache {
 
     @Inject
     public CodeCache(final NodeLocalProperties properties, final EntityAccess entityAccess) {
-        this(properties.prefetchCodeCacheTtlSecs(), entityAccess);
-    }
-
-    public CodeCache(final int cacheTTL, final EntityAccess entityAccess) {
-        this.entityAccess = entityAccess;
-        this.cache =
-                Caffeine.newBuilder()
-                        .expireAfterAccess(cacheTTL, TimeUnit.SECONDS)
-                        .softValues()
-                        .build();
-    }
-
-    public Code getIfPresent(final Address address) {
-        final var cacheKey = new BytesKey(address.toArray());
-
-        var code = cache.getIfPresent(cacheKey);
-
-        if (code != null) {
-            return code;
-        }
-
-        if (entityAccess.isTokenAccount(address)) {
-            final var interpolatedBytecode = proxyBytecodeFor(address);
-            code = Code.createLegacyCode(interpolatedBytecode, Hash.hash(interpolatedBytecode));
-            cache.put(cacheKey, code);
-            return code;
-        }
-
-        final var bytecode = entityAccess.fetchCodeIfPresent(accountIdFromEvmAddress(address));
-        if (bytecode != null) {
-            code = Code.createLegacyCode(bytecode, Hash.hash(bytecode));
-            cache.put(cacheKey, code);
-        }
-
-        return code;
-    }
-
-    public void invalidate(Address address) {
-        cache.invalidate(new BytesKey(address.toArray()));
-    }
-
-    public long size() {
-        return cache.estimatedSize();
-    }
-
-    /* --- Only used by unit tests --- */
-    Cache<BytesKey, Code> getCache() {
-        return cache;
-    }
-
-    void cacheValue(BytesKey key, Code value) {
-        cache.put(key, value);
+        super(properties.prefetchCodeCacheTtlSecs(), entityAccess);
     }
 }
