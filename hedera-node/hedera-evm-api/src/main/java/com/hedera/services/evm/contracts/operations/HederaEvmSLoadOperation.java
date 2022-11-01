@@ -16,6 +16,8 @@
 package com.hedera.services.evm.contracts.operations;
 
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import java.util.Optional;
+import java.util.OptionalLong;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -26,9 +28,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
-
-import java.util.Optional;
-import java.util.OptionalLong;
 
 public class HederaEvmSLoadOperation extends AbstractOperation {
     protected final OptionalLong warmCost;

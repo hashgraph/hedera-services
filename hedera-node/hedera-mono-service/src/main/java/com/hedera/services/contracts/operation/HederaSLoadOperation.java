@@ -40,13 +40,12 @@ package com.hedera.services.contracts.operation;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.services.stream.proto.SidecarType;
+import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-
-import javax.inject.Inject;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SLoadOperation}. No
@@ -63,7 +62,8 @@ public class HederaSLoadOperation extends HederaEvmSLoadOperation {
     }
 
     @Override
-    protected void SLoadOPSpecificLogic(MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {
+    protected void SLoadOPSpecificLogic(
+            MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {
         if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
             HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
         }
