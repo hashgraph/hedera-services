@@ -72,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -805,14 +806,19 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .payingWith(LAZY_CREATE_SPONSOR)
                                                     .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
                                                     .via(TRANSFER_TXN);
+                                    final var notExistingAccountInfo =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID);
                                     // transfer the needed balance for the finalization fee to the
-                                    // sponsor
+                                    // sponsor; we need + 2 * TOTAL_FEE, not 1, since we paid for
+                                    // the
+                                    // failed crypto transfer
                                     final var op2 =
                                             cryptoTransfer(
                                                     tinyBarsFromTo(
                                                             GENESIS,
                                                             LAZY_CREATE_SPONSOR,
-                                                            REDUCED_TOTAL_FEE));
+                                                            2 * REDUCED_TOTAL_FEE));
                                     // now the sponsor can successfully create the hollow account
                                     final var op3 =
                                             cryptoTransfer(
@@ -827,7 +833,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             accountWith()
-                                                                    .hasDefaultKey()
+                                                                    .hasEmptyKey()
                                                                     .alias(evmAddress)
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)
@@ -842,6 +848,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     allRunFor(
                                             spec,
                                             op,
+                                            notExistingAccountInfo,
                                             op2,
                                             op3,
                                             op4,

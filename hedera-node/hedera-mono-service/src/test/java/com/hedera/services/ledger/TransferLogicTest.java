@@ -164,6 +164,10 @@ class TransferLogicTest {
         final var inappropriateTrigger =
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(txnCtx.activePayer()).willReturn(payer);
+
+        accountsLedger.begin();
+        accountsLedger.create(payer);
 
         subject =
                 new TransferLogic(
@@ -192,7 +196,7 @@ class TransferLogicTest {
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         final var changes = List.of(failingTrigger);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
-
+        given(txnCtx.activePayer()).willReturn(mockCreation);
         given(autoCreationLogic.create(failingTrigger, accountsLedger, changes))
                 .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
         accountsLedger.begin();
@@ -300,6 +304,7 @@ class TransferLogicTest {
         final var changes = List.of(fungibleTransfer, nftTransfer);
 
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(payerNum);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         accountsLedger.begin();
         accountsLedger.create(mockCreation);
@@ -431,13 +436,13 @@ class TransferLogicTest {
     @Test
     void failsIfPayerDoesntHaveEnoughBalanceAfterTransfersFromHisAccount() {
         final var autoFee = 500L;
-        final var firstAmount = 1_000L;
+        final var payerInitBalance = 1_000L;
         final var firstAlias = ByteString.copyFromUtf8("fake");
         final var firstNewAccount = IdUtils.asAccount("0.0.1234");
         final var firstNewAccountNum = EntityNum.fromAccountId(firstNewAccount);
-        final var firstTrigger = BalanceChange.changingHbar(aaOf(payer, -firstAmount), payer);
+        final var firstTrigger = BalanceChange.changingHbar(aaOf(payer, -payerInitBalance), payer);
         final var secondTrigger =
-                BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
+                BalanceChange.changingHbar(aliasedAa(firstAlias, payerInitBalance), payer);
         final var changes = List.of(firstTrigger, secondTrigger);
         given(autoCreationLogic.create(secondTrigger, accountsLedger, changes))
                 .willAnswer(
@@ -452,7 +457,10 @@ class TransferLogicTest {
         accountsLedger.begin();
         accountsLedger.create(funding);
         accountsLedger.create(payer);
-        accountsLedger.set(payer, BALANCE, firstAmount);
+        accountsLedger.set(payer, BALANCE, payerInitBalance);
+        accountsLedger.commit();
+        accountsLedger.begin();
+
         given(txnCtx.activePayer()).willReturn(payer);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
         given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
@@ -462,7 +470,7 @@ class TransferLogicTest {
 
         assertEquals(INSUFFICIENT_PAYER_BALANCE, ex.getResponseCode());
         assertEquals(0L, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
-        assertEquals(0L, (long) accountsLedger.get(payer, AccountProperty.BALANCE));
+        assertEquals(payerInitBalance, (long) accountsLedger.get(payer, AccountProperty.BALANCE));
         verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
         verify(autoCreationLogic).reclaimPendingAliases();
     }
@@ -470,10 +478,16 @@ class TransferLogicTest {
     @Test
     void happyPathHbarAllowance() {
         setUpAccountWithAllowances();
+        given(txnCtx.activePayer()).willReturn(owner);
         final var change = BalanceChange.changingHbar(allowanceAA(owner, -50L), payer);
-
+        final var change2 =
+                BalanceChange.changingHbar(
+                        AccountAmount.newBuilder().setAccountID(payer).setAmount(-50L).build(),
+                        payer);
         accountsLedger.begin();
-        subject.doZeroSum(List.of(change));
+        accountsLedger.create(payer);
+        accountsLedger.set(payer, BALANCE, 50L);
+        subject.doZeroSum(List.of(change, change2));
 
         updateAllowanceMaps();
         assertEquals(initialBalance - 50L, accountsLedger.get(owner, AccountProperty.BALANCE));
@@ -489,7 +503,7 @@ class TransferLogicTest {
                         fungibleTokenID,
                         allowanceAA(owner, -50L),
                         payer);
-
+        given(txnCtx.activePayer()).willReturn(owner);
         given(tokenStore.tryTokenChange(change)).willReturn(OK);
 
         accountsLedger.begin();
@@ -527,6 +541,7 @@ class TransferLogicTest {
         given(tokenStore.tryTokenChange(change2)).willReturn(OK);
         given(tokenStore.tryTokenChange(change3)).willReturn(OK);
         given(nftsLedger.get(nftId1, SPENDER)).willReturn(EntityId.fromGrpcAccountId(payer));
+        given(txnCtx.activePayer()).willReturn(owner);
 
         accountsLedger.begin();
         assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2, change3)));

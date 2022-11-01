@@ -111,6 +111,8 @@ public class TransferLogic {
         var validity = OK;
         var autoCreationFee = 0L;
 
+        final var payer = txnCtx.activePayer();
+        var payerBalanceAfterAdjustments = (long) accountsLedger.get(payer, BALANCE);
         for (var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
@@ -134,6 +136,9 @@ public class TransferLogic {
                 validity =
                         accountsLedger.validate(
                                 change.accountId(), scopedCheck.setBalanceChange(change));
+                if (change.accountId().equals(payer)) {
+                    payerBalanceAfterAdjustments = change.getNewBalance();
+                }
             } else {
                 validity =
                         accountsLedger.validate(
@@ -148,23 +153,19 @@ public class TransferLogic {
             }
         }
 
+        if (validity == OK
+                && (autoCreationFee > 0)
+                && (autoCreationFee > payerBalanceAfterAdjustments)) {
+            validity = INSUFFICIENT_PAYER_BALANCE;
+        }
+
         if (validity == OK) {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
-                // try to pay auto creation fee only **after** balances have been adjusted,
-                // so we are certain the payer has enough balance after potential transfers
-                // from his account
-                if ((autoCreationFee > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE))) {
-                    validity = INSUFFICIENT_PAYER_BALANCE;
-                    accountsLedger.undoChangesOfType(List.of(BALANCE));
-                } else {
-                    payAutoCreationFee(autoCreationFee);
-                    autoCreationLogic.submitRecordsTo(recordsHistorian);
-                }
+                payAutoCreationFee(autoCreationFee);
+                autoCreationLogic.submitRecordsTo(recordsHistorian);
             }
-        }
-
-        if (validity != OK) {
+        } else {
             dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
             if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
                 accountsLedger.undoCreations();
