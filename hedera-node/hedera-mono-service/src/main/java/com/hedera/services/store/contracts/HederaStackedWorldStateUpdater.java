@@ -45,6 +45,7 @@ import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -202,7 +203,7 @@ public class HederaStackedWorldStateUpdater
     public Account get(final Address addressOrAlias) {
         final var address = aliases().resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
-            return new WorldStateTokenAccount(address);
+            return new HederaEvmWorldStateTokenAccount(address);
         }
         return super.get(addressOrAlias);
     }
@@ -211,7 +212,7 @@ public class HederaStackedWorldStateUpdater
     public EvmAccount getAccount(final Address addressOrAlias) {
         final var address = aliases().resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
-            final var proxyAccount = new WorldStateTokenAccount(address);
+            final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
             final var newMutable =
                     new UpdateTrackingLedgerAccount<>(proxyAccount, trackingAccounts());
             return new WrappedEvmAccount(newMutable);

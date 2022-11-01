@@ -8,7 +8,9 @@ module com.hedera.services.evm {
     requires com.swirlds.common;
     requires com.google.common;
     requires tuweni.units;
+    requires com.github.benmanes.caffeine;
 
+    exports com.hedera.services.evm.store.contracts.utils;
     exports com.hedera.services.evm.contracts.execution;
     exports com.hedera.services.evm.store.contracts;
     exports com.hedera.services.evm.store.models;

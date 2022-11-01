@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,41 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts;
+package com.hedera.services.evm.store.contracts;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.utils.BytesKey;
+import com.hedera.services.evm.store.contracts.utils.BytesKey;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -59,15 +35,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CodeCacheTest {
-    @Mock NodeLocalProperties properties;
-    @Mock MutableEntityAccess entityAccess;
+class AbstractCodeCacheTest {
+    @Mock HederaEvmEntityAccess entityAccess;
 
-    CodeCache codeCache;
+    MockAbstractCodeCache codeCache;
 
     @BeforeEach
     void setup() {
-        codeCache = new CodeCache(100, entityAccess);
+        codeCache = new MockAbstractCodeCache(100, entityAccess);
     }
 
     @Test
@@ -96,12 +71,11 @@ class CodeCacheTest {
 
     @Test
     void returnsCachedValue() {
-        Address demoAddress = Address.fromHexString("aaa");
+        Address demoAddress = Address.fromHexString("0xabc");
         BytesKey key = new BytesKey(demoAddress.toArray());
         Code code = Code.EMPTY;
 
         codeCache.cacheValue(key, code);
-
         Code codeResult = codeCache.getIfPresent(demoAddress);
 
         assertEquals(code, codeResult);
@@ -109,11 +83,21 @@ class CodeCacheTest {
     }
 
     @Test
+    void cacheSize() {
+        Address demoAddress = Address.fromHexString("0xabc");
+        BytesKey key = new BytesKey(demoAddress.toArray());
+        Code code = Code.EMPTY;
+
+        codeCache.cacheValue(key, code);
+        assertEquals(1, codeCache.size());
+    }
+
+    @Test
     void getTokenCodeReturnsRedirectCode() {
         given(entityAccess.isTokenAccount(any())).willReturn(true);
 
         assertEquals(
-                proxyBytecodeFor(Address.fromHexString("0xabc")),
+                HederaEvmWorldStateTokenAccount.proxyBytecodeFor(Address.fromHexString("0xabc")),
                 codeCache.getIfPresent(Address.fromHexString("0xabc")).getBytes());
     }
 
