@@ -83,4 +83,8 @@ public class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
     public Account get(Address address) {
         return new UpdatedHederaEvmAccount(accountAccessor.canonicalAddress(address));
     }
+
+    public boolean isTokenAddress(Address address) {
+        return accountAccessor.isTokenAddress(address);
+    }
 }

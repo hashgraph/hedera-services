@@ -20,4 +20,6 @@ import org.hyperledger.besu.datatypes.Address;
 public interface AccountAccessor {
 
     Address canonicalAddress(final Address addressOrAlias);
+
+    boolean isTokenAddress(final Address address);
 }
