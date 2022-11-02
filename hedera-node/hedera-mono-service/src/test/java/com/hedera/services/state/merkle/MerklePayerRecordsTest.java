@@ -15,10 +15,13 @@
  */
 package com.hedera.services.state.merkle;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.evm.store.contracts.utils.BytesKey;
 import com.hedera.services.state.migration.QueryableRecords;
-import com.hedera.services.utils.BytesKey;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.SeededPropertySource;
 import java.util.HashSet;

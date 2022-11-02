@@ -262,6 +262,7 @@ class LedgerBalanceChangesTest {
         // and:
         backingAccounts.getRef(bModel).setDeleted(true);
         givenUnexpiredEntities();
+        given(txnCtx.activePayer()).willReturn(uninvolvedPayer);
 
         // when:
         subject.begin();
@@ -320,6 +321,7 @@ class LedgerBalanceChangesTest {
         givenUnexpiredEntities();
 
         givenInitialBalancesAndOwnership();
+        given(txnCtx.activePayer()).willReturn(uninvolvedPayer);
 
         // when:
         subject.begin();
@@ -337,6 +339,7 @@ class LedgerBalanceChangesTest {
     void happyPathRecordsTransfersAndChangesBalancesAsExpected() {
         givenInitialBalancesAndOwnership();
         givenUnexpiredEntities();
+        given(txnCtx.activePayer()).willReturn(uninvolvedPayer);
 
         // when:
         subject.begin();
@@ -613,6 +616,7 @@ class LedgerBalanceChangesTest {
     private final AccountID aModel = asAccount("0.0.3");
     private final AccountID bModel = asAccount("0.0.4");
     private final AccountID cModel = asAccount("0.0.5");
+    private final AccountID uninvolvedPayer = asAccount("0.0.666666");
     private final Id token = new Id(0, 0, 75231);
     private final Id anotherToken = new Id(0, 0, 75232);
     private final Id yetAnotherToken = new Id(0, 0, 75233);

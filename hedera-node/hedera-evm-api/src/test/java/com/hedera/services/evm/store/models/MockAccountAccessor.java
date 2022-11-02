@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.utils;
+package com.hedera.services.evm.store.models;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.hedera.services.evm.accounts.AccountAccessor;
+import org.hyperledger.besu.datatypes.Address;
 
-import com.swirlds.common.utility.CommonUtils;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.jupiter.api.Test;
+public class MockAccountAccessor implements AccountAccessor {
+    private final Address address =
+            Address.fromHexString("0x000000000000000000000000000000000000077e");
 
-class BytesKeyTest {
-    @Test
-    void toStringIncorporatesArrayContents() {
-        final var literal = Hex.decode("abcdef");
-        final var desired = "BytesKey[array=" + CommonUtils.hex(literal) + "]";
-
-        final var subject = new BytesKey(literal);
-
-        assertEquals(desired, subject.toString());
+    @Override
+    public Address canonicalAddress(Address addressOrAlias) {
+        return address;
     }
 }
