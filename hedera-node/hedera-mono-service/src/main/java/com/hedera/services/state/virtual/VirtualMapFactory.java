@@ -17,6 +17,10 @@ package com.hedera.services.state.virtual;
 
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskAccountSupplier;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRelSupplier;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKeySerializer;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKeySupplier;
@@ -50,6 +54,8 @@ public class VirtualMapFactory {
     private static final long MAX_BLOBS = 50_000_000;
     private static final long MAX_STORAGE_ENTRIES = 500_000_000;
     private static final long MAX_SCHEDULES = 1_000_000_000L;
+    private static final long MAX_ACCOUNTS = 100_000_000L;
+    private static final long MAX_TOKEN_RELS = 100_000_000L;
     private static final long MAX_SCHEDULE_SECONDS = 500_000_000;
     private static final long MAX_IN_MEMORY_INTERNAL_HASHES = 0;
     private static final long MAX_MINTABLE_NFTS = 500_000_000L;
@@ -60,9 +66,11 @@ public class VirtualMapFactory {
     private static final String SCHEDULE_LIST_STORAGE_VM_NAME = "scheduleListStore";
     private static final String SCHEDULE_TEMPORAL_STORAGE_VM_NAME = "scheduleTemporalStore";
     private static final String SCHEDULE_EQUALITY_STORAGE_VM_NAME = "scheduleEqualityStore";
+    private static final String ON_DISK_ACCOUNT_STORAGE_VM_NAME = "accountStore";
+    private static final String ON_DISK_TOKEN_RELS_STORAGE_VM_NAME = "tokenRelStore";
     private static final String UNIQUE_TOKENS_VM_NAME = "uniqueTokenStore";
 
-    private static boolean useMerkleDb;
+    private static final boolean useMerkleDb;
 
     static {
         final BootstrapProperties props = new BootstrapProperties();
@@ -250,6 +258,60 @@ public class VirtualMapFactory {
                 .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
                 .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
         return new VirtualMap<>(SCHEDULE_EQUALITY_STORAGE_VM_NAME, dsBuilder);
+    }
+
+    public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage() {
+        final var keySerializer = new EntityNumVirtualKeySerializer();
+        final VirtualLeafRecordSerializer<EntityNumVirtualKey, OnDiskAccount>
+                accountLeafRecordSerializer =
+                        new VirtualLeafRecordSerializer<>(
+                                CURRENT_SERIALIZATION_VERSION,
+                                DigestType.SHA_384,
+                                CURRENT_SERIALIZATION_VERSION,
+                                keySerializer.getSerializedSize(),
+                                new EntityNumVirtualKeySupplier(),
+                                CURRENT_SERIALIZATION_VERSION,
+                                DataFileCommon.VARIABLE_DATA_SIZE,
+                                new OnDiskAccountSupplier(),
+                                false);
+
+        final JasperDbBuilder<EntityNumVirtualKey, OnDiskAccount> dsBuilder = new JasperDbBuilder<>();
+        dsBuilder
+                .storageDir(storageDir)
+                .virtualLeafRecordSerializer(accountLeafRecordSerializer)
+                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                .keySerializer(keySerializer)
+                .maxNumOfKeys(MAX_ACCOUNTS)
+                .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
+                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        return new VirtualMap<>(ON_DISK_ACCOUNT_STORAGE_VM_NAME, dsBuilder);
+    }
+
+    public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels() {
+        final var keySerializer = new EntityNumVirtualKeySerializer();
+        final VirtualLeafRecordSerializer<EntityNumVirtualKey, OnDiskTokenRel>
+                tokenRelLeafRecordSerializer =
+                        new VirtualLeafRecordSerializer<>(
+                                CURRENT_SERIALIZATION_VERSION,
+                                DigestType.SHA_384,
+                                CURRENT_SERIALIZATION_VERSION,
+                                keySerializer.getSerializedSize(),
+                                new EntityNumVirtualKeySupplier(),
+                                CURRENT_SERIALIZATION_VERSION,
+                                OnDiskTokenRel.serializedSizeInBytes(),
+                                new OnDiskTokenRelSupplier(),
+                                false);
+
+        final JasperDbBuilder<EntityNumVirtualKey, OnDiskTokenRel> dsBuilder = new JasperDbBuilder<>();
+        dsBuilder
+                .storageDir(storageDir)
+                .virtualLeafRecordSerializer(tokenRelLeafRecordSerializer)
+                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                .keySerializer(keySerializer)
+                .maxNumOfKeys(MAX_TOKEN_RELS)
+                .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
+                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        return new VirtualMap<>(ON_DISK_TOKEN_RELS_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage() {

@@ -34,7 +34,7 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -256,7 +256,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 
     private boolean isReceiverSigExempt(
             final AccountID id,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         return !accounts.contains(id) || !(boolean) accounts.get(id, IS_RECEIVER_SIG_REQUIRED);
     }
 }

@@ -16,14 +16,15 @@
 package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -31,7 +32,6 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -41,7 +41,7 @@ import java.util.Map;
 public interface StateChildren {
     Instant signedAt();
 
-    MerkleMap<EntityNum, MerkleAccount> accounts();
+    AccountStorageAdapter accounts();
 
     MerkleMap<EntityNum, MerkleTopic> topics();
 
@@ -53,7 +53,7 @@ public interface StateChildren {
 
     VirtualMap<ContractKey, IterableContractValue> contractStorage();
 
-    MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations();
+    TokenRelStorageAdapter tokenAssociations();
 
     MerkleNetworkContext networkCtx();
 
@@ -62,6 +62,8 @@ public interface StateChildren {
     MerkleSpecialFiles specialFiles();
 
     UniqueTokenMapAdapter uniqueTokens();
+
+    RecordsStorageAdapter payerRecords();
 
     MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo();
 

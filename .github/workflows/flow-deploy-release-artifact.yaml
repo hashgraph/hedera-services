@@ -53,8 +53,7 @@ on:
         default: "wrapper"
   push:
     branches:
-      - master
-      - main
+      - develop
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+-?*"
 

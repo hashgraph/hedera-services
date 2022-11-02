@@ -15,6 +15,7 @@
  */
 package com.hedera.services.ledger.interceptors;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -23,9 +24,12 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.AccountUsageTracking;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,9 +68,25 @@ class AccountsCommitInterceptorTest {
         verifyNoInteractions(usageTracking);
     }
 
-    private EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges(
+    @Test
+    void failsFastOnImpossibleBalance() {
+        final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
+                impossibleNewAccountBalance = new EntityChangeSet<>();
+        impossibleNewAccountBalance.include(idWith(1234L), null, Map.of(BALANCE, -1L));
+        Assertions.assertThrows(
+                IllegalStateException.class, () -> subject.preview(impossibleNewAccountBalance));
+
+        final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
+                impossibleExtantAccountBalance = new EntityChangeSet<>();
+        impossibleExtantAccountBalance.include(
+                idWith(1234L), new OnDiskAccount(), Map.of(BALANCE, -1L));
+        Assertions.assertThrows(
+                IllegalStateException.class, () -> subject.preview(impossibleExtantAccountBalance));
+    }
+
+    private EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges(
             final boolean includeContract, final boolean includeAccounts) {
-        final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges =
+        final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges =
                 new EntityChangeSet<>();
         if (includeAccounts) {
             pendingChanges.include(idWith(1234L), null, Map.of(IS_SMART_CONTRACT, false));

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.utils;
 
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -89,7 +89,7 @@ public final class KeyActivationUtils {
     }
 
     private static Optional<MessageFrame> getParentOf(final MessageFrame frame) {
-        final var it = frame.getMessageFrameStack().descendingIterator();
+        final var it = frame.getMessageFrameStack().iterator();
 
         if (it.hasNext()) {
             it.next();

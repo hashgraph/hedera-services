@@ -20,7 +20,7 @@ import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsaf
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
+import static com.hedera.services.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -88,6 +88,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     private PubKeyToSigBytes pubKeyToSigBytes;
     private boolean throttleExempt;
     private boolean congestionExempt;
+    private boolean usesUnknownFields = false;
 
     private AccountID payer;
     private ScheduleID scheduleRef;
@@ -126,6 +127,7 @@ public class SignedTxnAccessor implements TxnAccessor {
             txnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
         }
         this.signedTxnWrapper = txnWrapper;
+        usesUnknownFields |= hasUnknownFields(signedTxnWrapper);
 
         final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
         if (signedTxnBytes.isEmpty()) {
@@ -134,6 +136,7 @@ public class SignedTxnAccessor implements TxnAccessor {
             hash = noThrowSha384HashOf(signedTxnWrapperBytes);
         } else {
             final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
+            usesUnknownFields |= hasUnknownFields(signedTxn);
             txnBytes = unwrapUnsafelyIfPossible(signedTxn.getBodyBytes());
             sigMap = signedTxn.getSigMap();
             hash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(signedTxnBytes));
@@ -141,6 +144,10 @@ public class SignedTxnAccessor implements TxnAccessor {
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
 
         txn = TransactionBody.parseFrom(txnBytes);
+        // Note that the SignatureMap was parsed with either the top-level
+        // Transaction or the SignedTransaction, so we've already checked
+        // it for unknown fields either way; only still need to check the body
+        usesUnknownFields |= hasUnknownFields(txn);
         memo = txn.getMemo();
         txnId = txn.getTransactionID();
         sigMapSize = sigMap.getSerializedSize();
@@ -152,6 +159,11 @@ public class SignedTxnAccessor implements TxnAccessor {
         getFunction();
         setBaseUsageMeta();
         setOpUsageMeta();
+    }
+
+    @Override
+    public boolean hasConsequentialUnknownFields() {
+        return usesUnknownFields;
     }
 
     @Override
@@ -370,6 +382,11 @@ public class SignedTxnAccessor implements TxnAccessor {
                             + ACCESSOR_LITERAL);
         }
         return submitMessageMeta;
+    }
+
+    @Override
+    public boolean mintsWithMetadata() {
+        return function == TokenMint && txn.getTokenMint().getMetadataCount() > 0;
     }
 
     @Override

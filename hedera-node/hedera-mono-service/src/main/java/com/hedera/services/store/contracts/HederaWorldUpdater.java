@@ -37,6 +37,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
@@ -45,7 +46,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * org.hyperledger.besu.evm.frame.MessageFrame} in order to provide a layered view for read/writes
  * of the state during EVM transaction execution
  */
-public interface HederaWorldUpdater extends WorldUpdater {
+public interface HederaWorldUpdater extends HederaEvmWorldUpdater, WorldUpdater {
     /**
      * Allocates new Contract address based on the realm and shard of the sponsor IMPORTANT - The Id
      * must be reclaimed if the MessageFrame reverts

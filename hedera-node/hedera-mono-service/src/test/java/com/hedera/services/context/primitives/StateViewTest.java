@@ -81,6 +81,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
@@ -187,9 +189,9 @@ class StateViewTest {
 
     private MerkleMap<EntityNum, MerkleToken> tokens;
     private MerkleMap<EntityNum, MerkleTopic> topics;
-    private MerkleMap<EntityNum, MerkleAccount> contracts;
+    private AccountStorageAdapter contracts;
     private UniqueTokenMapAdapter uniqueTokens;
-    private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    private TokenRelStorageAdapter tokenRels;
     private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
@@ -265,7 +267,7 @@ class StateViewTest {
                         .autoRenewAccount(asAccount("0.0.4"))
                         .maxAutomaticAssociations(10)
                         .get();
-        contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
+        contracts = mock(AccountStorageAdapter.class);
         topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
         stakingInfo = (MerkleMap<EntityNum, MerkleStakingInfo>) mock(MerkleMap.class);
         networkContext = mock(MerkleNetworkContext.class);
@@ -278,7 +280,7 @@ class StateViewTest {
         tokenAccountRel.setKey(nftAssociationId);
         tokenAccountRel.setPrev(tokenId.getTokenNum());
 
-        tokenRels = new MerkleMap<>();
+        tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
         tokenRels.put(tokenAssociationId, tokenAccountRel);
         tokenRels.put(nftAssociationId, nftAccountRel);
 

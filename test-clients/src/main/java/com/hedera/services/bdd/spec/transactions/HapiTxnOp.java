@@ -38,6 +38,7 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnPrecheckStateException;
 import com.hedera.services.bdd.spec.fees.Payment;
@@ -589,6 +590,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
+    public T withUnknownFieldIn(final UnknownFieldLocation location) {
+        unknownFieldLocation = location;
+        return self();
+    }
+
     public T record(Boolean isGenerated) {
         genRecord = Optional.of(isGenerated);
         return self();
@@ -735,8 +741,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
-    public T withLegacyProtoStructure() {
-        alwaysWithLegacyProtoStructure = true;
+    public T withProtoStructure(HapiSpecSetup.TxnProtoStructure protoStructure) {
+        explicitProtoStructure = protoStructure;
         return self();
     }
 

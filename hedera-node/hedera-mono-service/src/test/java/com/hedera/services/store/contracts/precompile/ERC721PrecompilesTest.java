@@ -34,6 +34,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
@@ -43,6 +44,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failRe
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidFullPrefix;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.missingNftResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferList;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.ownerOfAndTokenUriWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.precompiledContract;
@@ -98,9 +100,9 @@ import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -115,7 +117,6 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.services.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
@@ -190,10 +191,10 @@ class ERC721PrecompilesTest {
     @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRels;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
@@ -1425,9 +1426,7 @@ class ERC721PrecompilesTest {
         givenPricingUtilsContext();
 
         given(frame.getContractAddress()).willReturn(contractAddr);
-        given(
-                        syntheticTxnFactory.createCryptoTransfer(
-                                Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(frame.getSenderAddress()).willReturn(senderAddress);
@@ -1477,7 +1476,7 @@ class ERC721PrecompilesTest {
                                         any(),
                                         any(),
                                         any()))
-                .thenReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+                .thenReturn(CRYPTO_TRANSFER_NFT_WRAPPER);
         final var nftId = NftId.fromGrpc(token, serialNumber);
         given(wrappedLedgers.nfts()).willReturn(nfts);
         given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
@@ -1524,9 +1523,7 @@ class ERC721PrecompilesTest {
         givenPricingUtilsContext();
 
         given(frame.getContractAddress()).willReturn(contractAddr);
-        given(
-                        syntheticTxnFactory.createCryptoTransfer(
-                                Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
@@ -1571,7 +1568,7 @@ class ERC721PrecompilesTest {
                                         any(),
                                         any(),
                                         any()))
-                .thenReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+                .thenReturn(CRYPTO_TRANSFER_NFT_WRAPPER);
         final var nftId = NftId.fromGrpc(token, serialNumber);
         given(wrappedLedgers.nfts()).willReturn(nfts);
         given(nfts.contains(nftId)).willReturn(true);
@@ -1715,10 +1712,6 @@ class ERC721PrecompilesTest {
     }
 
     public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
-    public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER =
-            new TokenTransferWrapper(
-                    List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
-                    new ArrayList<>() {});
 
     private void givenLedgers() {
         given(wrappedLedgers.accounts()).willReturn(accounts);

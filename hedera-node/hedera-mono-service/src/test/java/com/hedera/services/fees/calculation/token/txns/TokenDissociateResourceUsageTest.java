@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
@@ -66,7 +67,7 @@ class TokenDissociateResourceUsageTest {
         accounts = mock(MerkleMap.class);
         given(accounts.get(EntityNum.fromAccountId(target))).willReturn(account);
         view = mock(StateView.class);
-        given(view.accounts()).willReturn(accounts);
+        given(view.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
 
         tokenDissociateTxn = mock(TransactionBody.class);
         given(tokenDissociateTxn.hasTokenDissociate()).willReturn(true);

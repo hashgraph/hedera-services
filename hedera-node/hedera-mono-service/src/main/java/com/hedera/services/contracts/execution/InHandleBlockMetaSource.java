@@ -16,6 +16,7 @@
 package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.evm.contracts.execution.BlockMetaSource;
 import com.hedera.services.state.logic.BlockManager;
 import javax.inject.Inject;
 import javax.inject.Singleton;

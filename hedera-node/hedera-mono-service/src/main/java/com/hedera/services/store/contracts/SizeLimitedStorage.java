@@ -26,13 +26,12 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.StorageFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.ContractStorageLimits;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -72,7 +71,7 @@ public class SizeLimitedStorage {
     private final Function<Long, KvUsageInfo> usageInfoLookup;
 
     // Used to look up the initial key/value counts for the contracts involved in a change set
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     // Used to both read and write key/value pairs throughout the lifecycle of a change set
     private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 
@@ -90,7 +89,7 @@ public class SizeLimitedStorage {
             final ContractStorageLimits usageLimits,
             final IterableStorageUpserter storageUpserter,
             final IterableStorageRemover storageRemover,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage) {
         this.storageRemover = storageRemover;
         this.storageUpserter = storageUpserter;
@@ -120,7 +119,7 @@ public class SizeLimitedStorage {
      *     exceeded
      */
     public void validateAndCommit(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         validatePendingSizeChanges();
         // If fees cannot be paid, throws an ITE,  rolling back this EVM transaction
         storageFeeCharging.chargeStorageRent(totalKvPairs, usageChanges, accountsLedger);
@@ -140,7 +139,7 @@ public class SizeLimitedStorage {
      * @param accountsLedger the ledger to use to record the new counts
      */
     public void recordNewKvUsageTo(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         if (usageChanges.isEmpty()) {
             return;
         }

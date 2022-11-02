@@ -34,6 +34,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -63,7 +64,7 @@ class ReadOnlyTokenStoreTest {
     @Mock private AccountStore accountStore;
     @Mock private BackingStore<TokenID, MerkleToken> tokens;
     @Mock private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
-    @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
+    @Mock private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels;
 
     private ReadOnlyTokenStore subject;
 

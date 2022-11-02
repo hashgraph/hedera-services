@@ -32,9 +32,9 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
@@ -90,13 +90,13 @@ class InfrastructureFactoryTest {
     @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private BackingStore<TokenID, MerkleToken> tokens;
     @Mock private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
-    @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
+    @Mock private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels;
     @Mock private MessageFrame frame;
     @Mock private ViewGasCalculator gasCalculator;
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;

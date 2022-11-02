@@ -19,43 +19,7 @@ import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.f
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.services.throttling.MapAccessType.STORAGE_REMOVE;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
-import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
-import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.SCHEDULE_DELETE_METRIC;
-import static com.hedera.services.utils.MiscUtils.SCHEDULE_SIGN_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_ASSOCIATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_BURN_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_CREATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_DELETE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_DISSOCIATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_FEE_SCHEDULE_UPDATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_FREEZE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_GRANT_KYC_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_MINT_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_PAUSE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_REVOKE_KYC_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_UNFREEZE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_UNPAUSE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_UPDATE_METRIC;
-import static com.hedera.services.utils.MiscUtils.TOKEN_WIPE_ACCOUNT_METRIC;
-import static com.hedera.services.utils.MiscUtils.UTIL_PRNG_METRIC;
-import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
-import static com.hedera.services.utils.MiscUtils.asOrdinary;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-import static com.hedera.services.utils.MiscUtils.baseStatNameOf;
-import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
-import static com.hedera.services.utils.MiscUtils.canonicalRepr;
-import static com.hedera.services.utils.MiscUtils.describe;
-import static com.hedera.services.utils.MiscUtils.functionOf;
-import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
-import static com.hedera.services.utils.MiscUtils.getTxnStat;
-import static com.hedera.services.utils.MiscUtils.isGasThrottled;
-import static com.hedera.services.utils.MiscUtils.isSchedulable;
-import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
-import static com.hedera.services.utils.MiscUtils.perm64;
-import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
-import static com.hedera.services.utils.MiscUtils.readableProperty;
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.services.utils.MiscUtils.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -126,13 +90,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -176,6 +137,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -403,9 +365,7 @@ class MiscUtilsTest {
     void throwsOnUnexpectedFunctionality() {
         assertThrows(
                 UnknownHederaFunctionality.class,
-                () -> {
-                    functionOf(TransactionBody.getDefaultInstance());
-                });
+                () -> functionOf(TransactionBody.getDefaultInstance()));
     }
 
     @Test
@@ -981,7 +941,8 @@ class MiscUtilsTest {
                     final var txn = TransactionBody.newBuilder();
                     setter.setDefaultInstanceFor(txn);
                     try {
-                        assertEquals(function, functionOf(txn.build()));
+                        final var input = txn.build();
+                        assertEquals(function, functionOf(input));
                     } catch (UnknownHederaFunctionality uhf) {
                         throw new IllegalStateException(uhf);
                     }
@@ -1060,6 +1021,109 @@ class MiscUtilsTest {
                                 .build()
                                 .toByteString()));
         assertFalse(MiscUtils.isSerializedProtoKey(ByteString.copyFromUtf8("NONSENSE")));
+    }
+
+    @Test
+    void rejectsInvalidEd25519Keys() {
+        // 32 bytes is ok
+        assertTrue(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setEd25519(
+                                        ByteString.copyFromUtf8("01234567890123456789012345678901"))
+                                .build()
+                                .toByteString()));
+        // But not 31
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setEd25519(
+                                        ByteString.copyFromUtf8("0123456789012345678901234567890"))
+                                .build()
+                                .toByteString()));
+        // And not 33
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setEd25519(
+                                        ByteString.copyFromUtf8(
+                                                "012345678901234567890123456789012"))
+                                .build()
+                                .toByteString()));
+    }
+
+    @Test
+    void rejectsInvalidEcdsaKeys() {
+        // 33 bytes is ok if starting with 0x02
+        assertTrue(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x02),
+                                                                Bytes.of(
+                                                                        "01234567890123456789012345678901"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
+        // 33 bytes is ok if starting with 0x03
+        assertTrue(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x03),
+                                                                Bytes.of(
+                                                                        "01234567890123456789012345678901"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
+        // But not if starting with 0x04
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x04),
+                                                                Bytes.of(
+                                                                        "01234567890123456789012345678901"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
+        // And starting with 0x03 is not enough if not followed by 32 bytes
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x03),
+                                                                Bytes.of(
+                                                                        "0123456789012345678901234567890"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
+        // And starting with 0x02 is not enough if not followed by 32 bytes
+        assertFalse(
+                MiscUtils.isSerializedProtoKey(
+                        Key.newBuilder()
+                                .setECDSASecp256K1(
+                                        ByteString.copyFrom(
+                                                Bytes.concatenate(
+                                                                Bytes.of(0x02),
+                                                                Bytes.of(
+                                                                        "012345678901234567890123456789012"
+                                                                                .getBytes()))
+                                                        .toArray()))
+                                .build()
+                                .toByteString()));
     }
 
     @Test
@@ -1148,6 +1212,25 @@ class MiscUtilsTest {
         assertEquals(
                 Integer.parseUnsignedInt(byteArrayToBinaryString(hashBytes).substring(0, 32), 2),
                 ByteBuffer.wrap(hashBytes, 0, 32).getInt());
+    }
+
+    @Test
+    void testAsPrimitiveKeyUnchecked() {
+        final var ecdsaKeyBytes =
+                unhex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
+        final var ecdsaKey =
+                Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsaKeyBytes)).build();
+
+        assertEquals(ecdsaKey, MiscUtils.asPrimitiveKeyUnchecked(ecdsaKey.toByteString()));
+    }
+
+    @Test
+    void testAsPrimitiveKeyUncheckedFails() {
+        final var ecdsaKeyBytes =
+                unhex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
+        final var alias = ByteString.copyFrom(ecdsaKeyBytes);
+
+        assertThrows(IllegalStateException.class, () -> MiscUtils.asPrimitiveKeyUnchecked(alias));
     }
 
     public static String byteArrayToBinaryString(byte[] bytes) {

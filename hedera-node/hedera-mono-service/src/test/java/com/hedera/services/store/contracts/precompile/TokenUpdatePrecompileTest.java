@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V3;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
@@ -26,6 +27,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfo;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV2;
+import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV3;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.function.UnaryOperator.identity;
@@ -37,8 +39,8 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
+import com.hedera.services.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -52,9 +54,9 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -108,10 +110,10 @@ class TokenUpdatePrecompileTest {
     @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRels;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
@@ -135,6 +137,9 @@ class TokenUpdatePrecompileTest {
     private static final Bytes UPDATE_FUNGIBLE_TOKEN_INPUT_V2 =
             Bytes.fromHexString(
                     "0x18370d3400000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000b6100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b6100000000000000000000000000000000000000000000000000000000007a1200000000000000000000000000000000000000000000000000000000000000000a637573746f6d4e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cea900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054f6d656761000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes UPDATE_FUNGIBLE_TOKEN_INPUT_V3 =
+            Bytes.fromHexString(
+                    "0x7d305cfa00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000b6100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b6100000000000000000000000000000000000000000000000000000000007a1200000000000000000000000000000000000000000000000000000000000000000a637573746f6d4e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cea900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054f6d656761000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<TokenUpdatePrecompile> tokenUpdatePrecompile;
@@ -169,7 +174,9 @@ class TokenUpdatePrecompileTest {
 
     @AfterEach
     void closeMocks() {
-        tokenUpdatePrecompile.close();
+        if (!tokenUpdatePrecompile.isClosed()) {
+            tokenUpdatePrecompile.close();
+        }
     }
 
     @Test
@@ -211,6 +218,31 @@ class TokenUpdatePrecompileTest {
         givenMinimalContextForSuccessfulCall();
         givenMinimalRecordStructureForSuccessfulCall();
         givenUpdateTokenContextV2();
+        givenPricingUtilsContext();
+        given(updateLogic.validate(any())).willReturn(OK);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance());
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
+
+    @Test
+    void computeCallsSuccessfullyForUpdateFungibleTokenV3() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO_V3));
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenFrameContext();
+        given(frame.getBlockValues())
+                .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        givenLedgers();
+        givenMinimalContextForSuccessfulCall();
+        givenMinimalRecordStructureForSuccessfulCall();
+        givenUpdateTokenContextV3();
         givenPricingUtilsContext();
         given(updateLogic.validate(any())).willReturn(OK);
         // when
@@ -267,21 +299,26 @@ class TokenUpdatePrecompileTest {
 
     @Test
     void decodeFungibleUpdateInput() {
-        tokenUpdatePrecompile
-                .when(() -> decodeUpdateTokenInfo(UPDATE_FUNGIBLE_TOKEN_INPUT, identity()))
-                .thenCallRealMethod();
+        tokenUpdatePrecompile.close();
         final var decodedInput = decodeUpdateTokenInfo(UPDATE_FUNGIBLE_TOKEN_INPUT, identity());
 
         assertExpectedFungibleTokenUpdateStruct(decodedInput);
     }
 
     @Test
-    void decodeFungibleUpdateInpuV2() {
-        tokenUpdatePrecompile
-                .when(() -> decodeUpdateTokenInfoV2(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, identity()))
-                .thenCallRealMethod();
+    void decodeFungibleUpdateInputV2() {
+        tokenUpdatePrecompile.close();
         final var decodedInput =
                 decodeUpdateTokenInfoV2(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, identity());
+
+        assertExpectedFungibleTokenUpdateStruct(decodedInput);
+    }
+
+    @Test
+    void decodeFungibleUpdateInputV3() {
+        tokenUpdatePrecompile.close();
+        final var decodedInput =
+                decodeUpdateTokenInfoV3(UPDATE_FUNGIBLE_TOKEN_INPUT_V3, identity());
 
         assertExpectedFungibleTokenUpdateStruct(decodedInput);
     }
@@ -350,6 +387,26 @@ class TokenUpdatePrecompileTest {
                 .willReturn(updateLogic);
         tokenUpdatePrecompile
                 .when(() -> decodeUpdateTokenInfoV2(any(), any()))
+                .thenReturn(updateWrapper);
+        given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+    }
+
+    private void givenUpdateTokenContextV3() {
+        given(
+                        sigsVerifier.hasActiveAdminKey(
+                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                        infrastructureFactory.newTokenUpdateLogic(
+                                hederaTokenStore, wrappedLedgers, sideEffects))
+                .willReturn(updateLogic);
+        tokenUpdatePrecompile
+                .when(() -> decodeUpdateTokenInfoV3(any(), any()))
                 .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(

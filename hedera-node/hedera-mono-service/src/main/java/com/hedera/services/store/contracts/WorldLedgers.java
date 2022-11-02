@@ -55,9 +55,9 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -80,9 +80,8 @@ public class WorldLedgers {
     private final StaticEntityAccess staticEntityAccess;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-    private final TransactionalLedger<
-                    Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
+    private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
 
     public static WorldLedgers staticLedgersWith(
@@ -92,10 +91,9 @@ public class WorldLedgers {
 
     public WorldLedgers(
             final ContractAliases aliases,
-            final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
             final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
         this.tokenRelsLedger = tokenRelsLedger;
@@ -278,10 +276,10 @@ public class WorldLedgers {
         } else {
             Objects.requireNonNull(
                     staticEntityAccess, "Null ledgers must imply non-null static access");
-            if (!staticEntityAccess.isExtant(sourceId)) {
+            if (!staticEntityAccess.isExtant(address)) {
                 return address;
             }
-            alias = staticEntityAccess.alias(sourceId);
+            alias = staticEntityAccess.alias(address);
         }
         if (!alias.isEmpty()) {
             if (alias.size() == EVM_ADDRESS_SIZE) {
@@ -384,12 +382,12 @@ public class WorldLedgers {
         return aliases;
     }
 
-    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRels() {
         return tokenRelsLedger;
     }
 
-    public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts() {
+    public TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts() {
         return accountsLedger;
     }
 

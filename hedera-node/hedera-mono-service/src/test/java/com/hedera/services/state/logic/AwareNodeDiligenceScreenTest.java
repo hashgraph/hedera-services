@@ -17,29 +17,19 @@ package com.hedera.services.state.logic;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -76,7 +66,7 @@ class AwareNodeDiligenceScreenTest {
 
     @Mock private TransactionContext txnCtx;
     @Mock private OptionValidator validator;
-    @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
+    @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
 
     @LoggingTarget private LogCaptor logCaptor;
 
@@ -85,6 +75,17 @@ class AwareNodeDiligenceScreenTest {
     @BeforeEach
     void setUp() {
         subject = new AwareNodeDiligenceScreen(validator, txnCtx, backingAccounts);
+    }
+
+    @Test
+    void flagsUnknownFields() {
+        accessor = mock(SignedTxnAccessor.class);
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(accessor.hasConsequentialUnknownFields()).willReturn(true);
+
+        assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+
+        verify(txnCtx).setStatus(TRANSACTION_HAS_UNKNOWN_FIELDS);
     }
 
     @Test

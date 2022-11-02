@@ -40,6 +40,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.impl.BurnPrecompile.decodeBurn;
+import static com.hedera.services.store.contracts.precompile.impl.BurnPrecompile.decodeBurnV2;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -76,9 +77,9 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
@@ -145,10 +146,10 @@ class BurnPrecompilesTest {
     @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRels;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
@@ -173,9 +174,15 @@ class BurnPrecompilesTest {
     private static final Bytes FUNGIBLE_BURN_INPUT =
             Bytes.fromHexString(
                     "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_BURN_INPUT_V2 =
+            Bytes.fromHexString(
+                    "0xd6910d060000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes NON_FUNGIBLE_BURN_INPUT =
             Bytes.fromHexString(
                     "0xacb9cff9000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
+    private static final Bytes NON_FUNGIBLE_BURN_INPUT_V2 =
+            Bytes.fromHexString(
+                    "0xd6910d06000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<BurnPrecompile> burnPrecompile;
@@ -215,7 +222,9 @@ class BurnPrecompilesTest {
 
     @AfterEach
     void closeMocks() {
-        burnPrecompile.close();
+        if (!burnPrecompile.isClosed()) {
+            burnPrecompile.close();
+        }
     }
 
     @Test
@@ -534,7 +543,7 @@ class BurnPrecompilesTest {
 
     @Test
     void decodeFungibleBurnInput() {
-        burnPrecompile.when(() -> decodeBurn(FUNGIBLE_BURN_INPUT)).thenCallRealMethod();
+        burnPrecompile.close();
         final var decodedInput = decodeBurn(FUNGIBLE_BURN_INPUT);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
@@ -544,9 +553,33 @@ class BurnPrecompilesTest {
     }
 
     @Test
+    void decodeFungibleBurnInputV2() {
+        burnPrecompile.close();
+        final var decodedInput = decodeBurnV2(FUNGIBLE_BURN_INPUT_V2);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(33, decodedInput.amount());
+        assertEquals(0, decodedInput.serialNos().size());
+        assertEquals(FUNGIBLE_COMMON, decodedInput.type());
+    }
+
+    @Test
     void decodeNonFungibleBurnInput() {
-        burnPrecompile.when(() -> decodeBurn(NON_FUNGIBLE_BURN_INPUT)).thenCallRealMethod();
+        burnPrecompile.close();
         final var decodedInput = decodeBurn(NON_FUNGIBLE_BURN_INPUT);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(-1, decodedInput.amount());
+        assertEquals(2, decodedInput.serialNos().size());
+        assertEquals(123, decodedInput.serialNos().get(0));
+        assertEquals(234, decodedInput.serialNos().get(1));
+        assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
+    @Test
+    void decodeNonFungibleBurnInputV2() {
+        burnPrecompile.close();
+        final var decodedInput = decodeBurnV2(NON_FUNGIBLE_BURN_INPUT_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(-1, decodedInput.amount());

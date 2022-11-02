@@ -25,6 +25,9 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.utils.CheckedConsumer;
+import com.hedera.services.state.virtual.utils.CheckedConsumer2;
+import com.hedera.services.state.virtual.utils.CheckedSupplier;
 import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -142,14 +145,6 @@ public class UniqueTokenValue implements VirtualValue {
                 + Long.BYTES + Long.BYTES; // next NFT num pair: token num + serial num
     }
 
-    interface CheckedConsumer<T> {
-        void accept(T t) throws IOException;
-    }
-
-    interface CheckedConsumer2<T, U> {
-        void accept(T t, U u) throws IOException;
-    }
-
     // Keep it in sync with getSerializedSize()
     /* package */ void serializeTo(
             final CheckedConsumer<Byte> writeByteFn,
@@ -162,10 +157,6 @@ public class UniqueTokenValue implements VirtualValue {
         writeBytes(metadata, MAX_METADATA_BYTES, writeByteFn, writeBytesFn);
         writeNftNumPair(prev, writeLongFn);
         writeNftNumPair(next, writeLongFn);
-    }
-
-    interface CheckedSupplier<T> {
-        T get() throws IOException;
     }
 
     private static NftNumPair readNftNumPair(final CheckedSupplier<Long> readLongFn)
