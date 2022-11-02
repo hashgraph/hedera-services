@@ -87,8 +87,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private static final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
     public static final int MAX_PSEUDORANDOM_BYTES_LENGTH = 48;
 
-    private static final int EVM_ADDRESS_SIZE = 20;
-
     private String txn;
     private boolean scheduled = false;
     private boolean assertNothing = false;
