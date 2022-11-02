@@ -196,6 +196,7 @@ class TransferLogicTest {
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         final var changes = List.of(failingTrigger);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+
         given(autoCreationLogic.create(failingTrigger, accountsLedger, changes))
                 .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
         accountsLedger.begin();
@@ -477,8 +478,9 @@ class TransferLogicTest {
     void happyPathHbarAllowance() {
         setUpAccountWithAllowances();
         final var change = BalanceChange.changingHbar(allowanceAA(owner, -50L), payer);
-        accountsLedger.begin();
+        given(txnCtx.activePayer()).willReturn(payer);
 
+        accountsLedger.begin();
         subject.doZeroSum(List.of(change));
 
         updateAllowanceMaps();

@@ -100,7 +100,7 @@ class SolidityActionTest {
         final var actual = new SolidityAction(ContractActionType.CALL, gas, input, value, 0);
         actual.setGasUsed(gasUsed);
         actual.setError(output);
-        actual.setInvalidSolidityAddress(recipient.toEvmAddress().toArrayUnsafe());
+        actual.setTargetedAddress(recipient.toEvmAddress().toArrayUnsafe());
         actual.setCallingContract(sender);
         actual.setCallOperationType(CallOperationType.OP_CALL);
 
@@ -111,7 +111,7 @@ class SolidityActionTest {
                                 EntityIdUtils.contractIdFromEvmAddress(sender.toEvmAddress()))
                         .setGas(gas)
                         .setInput(ByteStringUtils.wrapUnsafely(input))
-                        .setInvalidSolidityAddress(
+                        .setTargetedAddress(
                                 ByteStringUtils.wrapUnsafely(
                                         recipient.toEvmAddress().toArrayUnsafe()))
                         .setValue(value)

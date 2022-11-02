@@ -19,7 +19,9 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
+import static com.hedera.services.utils.EntityNum.fromEvmAddress;
 import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -96,13 +98,13 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public long getBalance(AccountID id) {
-        return accounts.get(fromAccountId(id)).getBalance();
+    public long getBalance(final Address address) {
+        return accounts.get(fromEvmAddress(address)).getBalance();
     }
 
     @Override
-    public ByteString alias(final AccountID id) {
-        return accounts.get(fromAccountId(id)).getAlias();
+    public ByteString alias(final Address address) {
+        return accounts.get(fromEvmAddress(address)).getAlias();
     }
 
     @Override
@@ -111,8 +113,8 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isUsable(AccountID id) {
-        final var account = accounts.get(fromAccountId(id));
+    public boolean isUsable(Address address) {
+        final var account = accounts.get(fromEvmAddress(address));
         if (account == null || account.isDeleted()) {
             return false;
         }
@@ -122,8 +124,8 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isExtant(AccountID id) {
-        return accounts.get(fromAccountId(id)) != null;
+    public boolean isExtant(final Address address) {
+        return accounts.get(fromEvmAddress(address)) != null;
     }
 
     @Override
@@ -132,13 +134,14 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public void putStorage(AccountID id, UInt256 key, UInt256 value) {
+    public void putStorage(AccountID id, Bytes key, Bytes value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public UInt256 getStorage(AccountID id, UInt256 key) {
-        final var contractKey = new ContractKey(id.getAccountNum(), key.toArray());
+    public UInt256 getStorage(Address address, Bytes key) {
+        final var num = numFromEvmAddress(address.toArrayUnsafe());
+        final var contractKey = new ContractKey(num, key.toArray());
         IterableContractValue value = storage.get(contractKey);
         return value == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(value.getValue()));
     }
@@ -155,8 +158,8 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public Bytes fetchCodeIfPresent(final AccountID id) {
-        return explicitCodeFetch(bytecode, id);
+    public Bytes fetchCodeIfPresent(final Address address) {
+        return explicitCodeFetch(bytecode, accountIdFromEvmAddress(address));
     }
 
     @Nullable

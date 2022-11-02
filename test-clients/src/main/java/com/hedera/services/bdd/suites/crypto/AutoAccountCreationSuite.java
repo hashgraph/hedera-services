@@ -100,6 +100,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.tuple.Pair;
@@ -191,7 +192,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 repeatedAliasInSameTransferListFails(),
                 tokenTransfersFailWhenFeatureFlagDisabled(),
                 canAutoCreateWithHbarAndTokenTransfers(),
-                feesAreCorrectForHollowAccountCreationWithCryptoTransfer());
+                payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
+            feesAreCorrectForHollowAccountCreationWithCryptoTransfer());
     }
 
     private HapiApiSpec canAutoCreateWithHbarAndTokenTransfers() {
@@ -650,6 +652,75 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .hasToken(relationshipWith(A_TOKEN).balance(10))
                                 .hasToken(relationshipWith(B_TOKEN).balance(20)));
+    }
+
+    private HapiApiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
+        final var secondAliasKey = "secondAlias";
+        final var secondPayer = "secondPayer";
+        final AtomicLong totalAutoCreationFees = new AtomicLong();
+
+        return defaultHapiSpec("PayerBalanceIsReflectsAllChangesBeforeFeeCharging")
+                .given(
+                        overriding(FEATURE_FLAG, "true"),
+                        newKeyNamed(VALID_ALIAS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(1000)
+                                .treasury(TOKEN_TREASURY),
+                        cryptoCreate(CIVILIAN)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(1),
+                        cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
+                        cryptoTransfer(
+                                        moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
+                                        movingHbar(1).between(CIVILIAN, FUNDING))
+                                .fee(50 * ONE_HBAR)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN),
+                        getAccountBalance(CIVILIAN)
+                                .exposingBalanceTo(
+                                        balance ->
+                                                totalAutoCreationFees.set(
+                                                        ONE_HUNDRED_HBARS - balance - 1)))
+                .when(
+                        logIt(
+                                spec ->
+                                        String.format(
+                                                "Total auto-creation fees: %d",
+                                                totalAutoCreationFees.get())),
+                        sourcing(
+                                () ->
+                                        cryptoCreate(secondPayer)
+                                                .maxAutomaticTokenAssociations(1)
+                                                .balance(totalAutoCreationFees.get())),
+                        cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, secondPayer)))
+                .then(
+                        newKeyNamed(secondAliasKey),
+                        sourcing(
+                                () ->
+                                        cryptoTransfer(
+                                                        moving(10, A_TOKEN)
+                                                                .between(
+                                                                        secondPayer,
+                                                                        secondAliasKey),
+                                                        movingHbar(1).between(secondPayer, FUNDING))
+                                                .fee(totalAutoCreationFees.get() - 2)
+                                                .payingWith(secondPayer)
+                                                .signedBy(secondPayer)
+                                                .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)),
+                        getAccountBalance(secondPayer)
+                                .hasTinyBars(
+                                        spec ->
+                                                // Should only be charged a few hundred thousand
+                                                // tinybar at most
+                                                balance ->
+                                                        ((totalAutoCreationFees.get() - balance)
+                                                                        > 500_000L)
+                                                                ? Optional.empty()
+                                                                : Optional.of(
+                                                                        "Payer was"
+                                                                            + " over-charged!")));
     }
 
     private HapiApiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {

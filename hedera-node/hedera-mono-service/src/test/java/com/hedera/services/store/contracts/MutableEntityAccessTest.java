@@ -16,10 +16,15 @@
 package com.hedera.services.store.contracts;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -164,7 +169,7 @@ class MutableEntityAccessTest {
     void delegatesAlias() {
         final var pretend = ByteString.copyFromUtf8("YAWN");
         given(ledger.alias(id)).willReturn(pretend);
-        assertSame(pretend, subject.alias(id));
+        assertSame(pretend, subject.alias(asTypedEvmAddress(id)));
     }
 
     @Test
@@ -173,7 +178,7 @@ class MutableEntityAccessTest {
         given(ledger.getBalance(id)).willReturn(balance);
 
         // when:
-        final var result = subject.getBalance(id);
+        final var result = subject.getBalance(asTypedEvmAddress(id));
 
         // then:
         assertEquals(balance, result);
@@ -185,14 +190,14 @@ class MutableEntityAccessTest {
     void checksIfUsableOk() {
         given(ledger.usabilityOf(id)).willReturn(OK);
 
-        assertTrue(subject.isUsable(id));
+        assertTrue(subject.isUsable(asTypedEvmAddress(id)));
     }
 
     @Test
     void checksIfUsableNotOk() {
         given(ledger.usabilityOf(id)).willReturn(ACCOUNT_DELETED);
 
-        assertFalse(subject.isUsable(id));
+        assertFalse(subject.isUsable(asTypedEvmAddress(id)));
     }
 
     @Test
@@ -201,7 +206,7 @@ class MutableEntityAccessTest {
         given(ledger.exists(id)).willReturn(true);
 
         // when:
-        assertTrue(subject.isExtant(id));
+        assertTrue(subject.isExtant(asTypedEvmAddress(id)));
 
         // and:
         verify(ledger).exists(id);
@@ -233,7 +238,7 @@ class MutableEntityAccessTest {
         given(storage.getStorage(id, contractStorageKey)).willReturn(UInt256.MAX_VALUE);
 
         // when:
-        final var result = subject.getStorage(id, contractStorageKey);
+        final var result = subject.getStorage(asTypedEvmAddress(id), contractStorageKey);
 
         // then:
         assertEquals(UInt256.MAX_VALUE, result);
@@ -255,7 +260,7 @@ class MutableEntityAccessTest {
     void fetchesEmptyBytecode() {
         given(supplierBytecode.get()).willReturn(bytecodeStorage);
 
-        assertNull(subject.fetchCodeIfPresent(id));
+        assertNull(subject.fetchCodeIfPresent(asTypedEvmAddress(id)));
     }
 
     @Test
@@ -263,7 +268,7 @@ class MutableEntityAccessTest {
         given(supplierBytecode.get()).willReturn(bytecodeStorage);
         given(bytecodeStorage.get(expectedBytecodeKey)).willReturn(expectedBytecodeValue);
 
-        final var result = subject.fetchCodeIfPresent(id);
+        final var result = subject.fetchCodeIfPresent(asTypedEvmAddress(id));
 
         assertEquals(bytecode, result);
         verify(bytecodeStorage).get(expectedBytecodeKey);
