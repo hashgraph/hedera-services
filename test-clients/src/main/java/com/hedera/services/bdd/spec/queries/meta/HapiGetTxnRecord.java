@@ -857,8 +857,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 spec.registry()
                         .saveAccountId(
                                 rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
-                spec.registry()
-                        .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                try {
+                    spec.registry()
+                            .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                } catch (InvalidProtocolBufferException e) {
+                    LOG.debug(
+                            "Cannot save alias {} as key, since it is an evmAddress alias.",
+                            rec.getAlias()::toStringUtf8);
+                }
                 LOG.info(
                         "{}  Saving alias {} to registry for Account ID {}",
                         spec::logPrefix,
