@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.evm.contracts.loader.impl.PricesAndFeesLoaderImpl;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
@@ -64,10 +65,12 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     private final AliasManager aliasManager;
     private final SigImpactHistorian sigImpactHistorian;
     private final EntityAccess entityAccess;
+    private final PricesAndFeesLoaderImpl pricesAndFeesLoader;
 
     @Inject
     public ContractCallTransitionLogic(
             final TransactionContext txnCtx,
+            final PricesAndFeesLoaderImpl pricesAndFeesLoader,
             final AccountStore accountStore,
             final HederaWorldState worldState,
             final TransactionRecordService recordService,
@@ -87,6 +90,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         this.codeCache = codeCache;
         this.sigImpactHistorian = sigImpactHistorian;
         this.entityAccess = entityAccess;
+        this.pricesAndFeesLoader = pricesAndFeesLoader;
     }
 
     @Override

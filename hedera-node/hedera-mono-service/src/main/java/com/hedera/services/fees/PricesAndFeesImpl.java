@@ -15,15 +15,13 @@
  */
 package com.hedera.services.fees;
 
-import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
-
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -32,42 +30,31 @@ import javax.inject.Singleton;
 @Singleton
 public class PricesAndFeesImpl implements PricesAndFeesProvider {
 
-    private final HbarCentExchange exchange;
-    private final UsagePricesProvider usagePrices;
     private final LivePricesSource livePricesSource;
 
     @Inject
-    public PricesAndFeesImpl(
-            final HbarCentExchange exchange,
-            final UsagePricesProvider usagePrices,
-            final LivePricesSource livePricesSource) {
-        this.exchange = exchange;
-        this.usagePrices = usagePrices;
+    public PricesAndFeesImpl(LivePricesSource livePricesSource) {
         this.livePricesSource = livePricesSource;
     }
 
+    @Override
     public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
-        return PricesAndFeesProvider.defaultPricesGiven(function, at);
+        return PricesAndFeesUtils.pricesGiven(function, at).get(SubType.DEFAULT);
     }
 
-    public ExchangeRate rate(Timestamp at) {
-        return PricesAndFeesProvider.rate(at);
+    @Override
+    public ExchangeRate rate(Timestamp now) {
+        return PricesAndFeesUtils.rateAt(now.getSeconds());
     }
 
     @Override
     public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
-        var rates = PricesAndFeesProvider.rate(at);
-        var prices = PricesAndFeesProvider.defaultPricesGiven(function, at);
-        return gasPriceInTinybars(prices, rates);
-    }
-
-    private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
-        long priceInTinyCents = prices.getServicedata().getGas() / FEE_DIVISOR_FACTOR;
-        long priceInTinyBars = getTinybarsFromTinyCents(rates, priceInTinyCents);
-        return Math.max(priceInTinyBars, 1L);
+        var rates = rate(at);
+        var prices = defaultPricesGiven(function, at);
+        return PricesAndFeesUtils.gasPriceInTinybars(prices, rates);
     }
 
     public long currentGasPrice(Instant now, HederaFunctionality function) {
-        return PricesAndFeesProvider.currentGasPrice(now, function);
+        return livePricesSource.currentGasPrice(now, function);
     }
 }

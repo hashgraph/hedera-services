@@ -26,15 +26,7 @@ import java.util.Map;
 
 public interface PricesAndFeesLoader {
 
-    EnumMap<HederaFunctionality, Map<SubType, FeeData>> getCurrFunctionUsagePrices();
-
-    EnumMap<HederaFunctionality, Map<SubType, FeeData>> getNextFunctionUsagePrices();
-
-    Timestamp currFunctionUsagePricesExpiry();
-
-    Timestamp nextFunctionUsagePricesExpiry();
-
     ExchangeRateSet getExchangeRates();
 
-    CurrentAndNextFeeSchedule feeSchedules();
+    CurrentAndNextFeeSchedule getFeeSchedules();
 }

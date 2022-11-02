@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 public class PricesAndFeesUtils {
     static final Logger log = LogManager.getLogger(PricesAndFeesUtils.class);
-    private static ExchangeRateSet grpcRates = null;
+    private static final ExchangeRateSet grpcRates = null;
     CurrentAndNextFeeSchedule feeSchedules;
     private static Timestamp currFunctionUsagePricesExpiry;
     private static Timestamp nextFunctionUsagePricesExpiry;

@@ -24,27 +24,14 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.EnumMap;
 import java.util.Map;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class PricesAndFeesLoaderImpl implements PricesAndFeesLoader {
-    @Override
-    public EnumMap<HederaFunctionality, Map<SubType, FeeData>> getCurrFunctionUsagePrices() {
-        return null;
-    }
 
-    @Override
-    public EnumMap<HederaFunctionality, Map<SubType, FeeData>> getNextFunctionUsagePrices() {
-        return null;
-    }
-
-    @Override
-    public Timestamp currFunctionUsagePricesExpiry() {
-        return null;
-    }
-
-    @Override
-    public Timestamp nextFunctionUsagePricesExpiry() {
-        return null;
-    }
+    @Inject
+    public PricesAndFeesLoaderImpl() {}
 
     @Override
     public ExchangeRateSet getExchangeRates() {
@@ -52,7 +39,7 @@ public class PricesAndFeesLoaderImpl implements PricesAndFeesLoader {
     }
 
     @Override
-    public CurrentAndNextFeeSchedule feeSchedules() {
+    public CurrentAndNextFeeSchedule getFeeSchedules() {
         return null;
     }
 }
