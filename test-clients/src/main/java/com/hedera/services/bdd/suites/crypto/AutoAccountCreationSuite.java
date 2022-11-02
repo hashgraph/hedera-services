@@ -916,8 +916,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .getECDSASecp256K1()
                                                     .toByteArray();
                                     final var evmAddress =
-                                            ByteString.copyFrom(
-                                                    recoverAddressFromPubKey(ecdsaKey));
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                                     final var op =
                                             cryptoTransfer(
                                                             tinyBarsFromTo(
@@ -980,8 +979,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .getECDSASecp256K1()
                                                     .toByteArray();
                                     final var evmAddress =
-                                            ByteString.copyFrom(
-                                                    recoverAddressFromPubKey(ecdsaKey));
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
 
                                     final var op3 =
                                             cryptoTransfer(
@@ -1033,8 +1031,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .getECDSASecp256K1()
                                                     .toByteArray();
                                     final var evmAddress =
-                                            ByteString.copyFrom(
-                                                    recoverAddressFromPubKey(ecdsaKey));
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                                     final var op =
                                             cryptoTransfer(
                                                             tinyBarsFromTo(
