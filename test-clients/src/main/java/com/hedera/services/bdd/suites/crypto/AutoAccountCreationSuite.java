@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -193,7 +194,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 tokenTransfersFailWhenFeatureFlagDisabled(),
                 canAutoCreateWithHbarAndTokenTransfers(),
                 payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
-            feesAreCorrectForHollowAccountCreationWithCryptoTransfer());
+                feesAreCorrectForHollowAccountCreationWithCryptoTransfer());
     }
 
     private HapiApiSpec canAutoCreateWithHbarAndTokenTransfers() {
