@@ -1387,7 +1387,6 @@ class TransferPrecompilesTest {
                 result);
         // and:
         verify(frame, never()).getGasPrice();
-        verify(autoCreationLogic, never()).getPendingCreations();
         verify(autoCreationLogic)
                 .create(
                         balanceChangesForLazyCreateFailing.get(0),
