@@ -23,7 +23,7 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 
-public abstract class HederaEvmWorldState implements HederaEvmMutableWorldState{
+public abstract class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
