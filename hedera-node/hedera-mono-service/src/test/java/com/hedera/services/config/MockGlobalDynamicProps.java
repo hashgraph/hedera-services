@@ -168,6 +168,16 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     }
 
     @Override
+    public double scheduleTxCostIncrementUSD() {
+        return 0.0002;
+    }
+
+    @Override
+    public int scheduleTxCostIncrementBytesPerMonth() {
+        return 128;
+    }
+
+    @Override
     public int messageMaxBytesAllowed() {
         return 1024;
     }

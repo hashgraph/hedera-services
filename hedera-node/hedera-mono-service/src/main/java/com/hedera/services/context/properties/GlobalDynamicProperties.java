@@ -226,9 +226,11 @@ public class GlobalDynamicProperties implements EvmProperties {
         minAutoRenewDuration = properties.getLongProperty(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION);
         grpcMinAutoRenewDuration = Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
         localCallEstRetBytes = properties.getIntProperty(CONTRACTS_LOCAL_CALL_EST_RET_BYTES);
-        scheduledTxDefaultExpiryTimeSecs = properties.getIntProperty(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
+        scheduledTxDefaultExpiryTimeSecs =
+                properties.getIntProperty(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
         scheduleTxCostIncrementUSD = properties.getDoubleProperty(SCHEDULING_COST_INCREMENT_USD);
-        scheduleTxCostIncrementBytesPerMonth = properties.getIntProperty(SCHEDULING_COST_INCREMENT_BPM);
+        scheduleTxCostIncrementBytesPerMonth =
+                properties.getIntProperty(SCHEDULING_COST_INCREMENT_BPM);
         schedulingLongTermEnabled = properties.getBooleanProperty(SCHEDULING_LONG_TERM_ENABLED);
         schedulingMaxTxnPerSecond = properties.getLongProperty(SCHEDULING_MAX_TXN_PER_SEC);
         schedulingMaxExpirationFutureSeconds =
@@ -516,7 +518,9 @@ public class GlobalDynamicProperties implements EvmProperties {
         return scheduleTxCostIncrementUSD;
     }
 
-    public int scheduleTxCostIncrementBytesPerMonth() {return scheduleTxCostIncrementBytesPerMonth;}
+    public int scheduleTxCostIncrementBytesPerMonth() {
+        return scheduleTxCostIncrementBytesPerMonth;
+    }
 
     public boolean schedulingLongTermEnabled() {
         return schedulingLongTermEnabled;

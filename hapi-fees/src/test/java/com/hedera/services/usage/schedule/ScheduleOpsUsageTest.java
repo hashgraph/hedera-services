@@ -160,7 +160,8 @@ class ScheduleOpsUsageTest {
 
         // when:
         var estimate =
-                subject.scheduleCreateUsage(creationTxn(scheduledTxn), sigUsage, lifetimeSecs);
+                subject.scheduleCreateUsage(
+                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 0, 0, 1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -195,7 +196,12 @@ class ScheduleOpsUsageTest {
         // when:
         var estimate =
                 subject.scheduleCreateUsage(
-                        creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs);
+                        creationTxn(scheduledTxnWithContractCall),
+                        sigUsage,
+                        lifetimeSecs,
+                        0,
+                        0,
+                        1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);

@@ -812,7 +812,7 @@ public class BaseOperationUsage {
                                                         .setTransactionFee(100_000_000L)
                                                         .build()))
                         .build();
-        var feeData = SCHEDULE_OPS_USAGE.scheduleCreateUsage(txn, DUAL_SIG_USAGE, 1800);
+        var feeData = SCHEDULE_OPS_USAGE.scheduleCreateUsage(txn, DUAL_SIG_USAGE, 1800, 0, 0, 1800);
         return UsageAccumulator.fromGrpc(feeData);
     }
 
@@ -888,7 +888,8 @@ public class BaseOperationUsage {
                                                         .setTransactionFee(100_000_000L)
                                                         .build()))
                         .build();
-        var feeData = SCHEDULE_OPS_USAGE.scheduleCreateUsage(txn, SINGLE_SIG_USAGE, 1800);
+        var feeData =
+                SCHEDULE_OPS_USAGE.scheduleCreateUsage(txn, SINGLE_SIG_USAGE, 1800, 0, 0, 1800);
         return UsageAccumulator.fromGrpc(feeData);
     }
 }

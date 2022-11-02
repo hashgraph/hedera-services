@@ -42,6 +42,8 @@ import javax.inject.Singleton;
 public class ScheduleOpsUsage {
     /* Scheduled transaction ids have the scheduled=true flag set */
     private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
+    private static final long DEFAULT_SCHEDULE_ = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
+    private static final long SECS_TO_MONTHS = 30 * 24 * 60 * 60;
 
     @VisibleForTesting EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
     @VisibleForTesting Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
@@ -66,7 +68,8 @@ public class ScheduleOpsUsage {
             SigUsage sigUsage,
             long lifetimeSecs,
             double costIncrementUSD,
-            int costIncrementBytesPerMonth) {
+            int costIncrementBytesPerMonth,
+            final long defaultLifeTimeSecs) {
         var op = scheduleCreate.getScheduleCreate();
 
         var scheduledTxn = op.getScheduledTransactionBody();
@@ -99,11 +102,34 @@ public class ScheduleOpsUsage {
                 (BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
                         * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
+        long fixedPrice =
+                additionalPriceForNonDefaultScheduleTxn(
+                        lifetimeSecs,
+                        costIncrementUSD,
+                        costIncrementBytesPerMonth,
+                        defaultLifeTimeSecs,
+                        scheduledTxn.getSerializedSize());
+
         if (scheduledTxn.hasContractCall()) {
             return estimate.get(SCHEDULE_CREATE_CONTRACT_CALL);
         }
 
         return estimate.get();
+    }
+
+    private long additionalPriceForNonDefaultScheduleTxn(
+            final long lifetimeSecs,
+            final double costIncrementUSD,
+            final int costIncrementBytesPerMonth,
+            final long defaultLifeTimeSecs,
+            final int serializedSize) {
+        if (lifetimeSecs > defaultLifeTimeSecs) {
+            final var scheduleTxnBytes =
+                    (long) Math.ceil(serializedSize / costIncrementBytesPerMonth);
+            final var scheduledLifeInMonths = (long) Math.ceil(lifetimeSecs / SECS_TO_MONTHS);
+            return (long) (costIncrementUSD * scheduleTxnBytes * scheduledLifeInMonths);
+        }
+        return 0L;
     }
 
     public FeeData scheduleSignUsage(

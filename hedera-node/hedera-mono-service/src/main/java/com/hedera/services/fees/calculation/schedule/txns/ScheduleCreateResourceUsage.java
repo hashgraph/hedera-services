@@ -71,12 +71,14 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
             costIncrementUSD = 0;
             costIncrementBytesPerMonth = 0;
         }
+        final long defaultLifeTimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
 
         return scheduleOpsUsage.scheduleCreateUsage(
                 txn,
                 sigUsage,
                 lifetimeSecs,
                 costIncrementUSD,
-                costIncrementBytesPerMonth);
+                costIncrementBytesPerMonth,
+                defaultLifeTimeSecs);
     }
 }

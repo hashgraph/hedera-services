@@ -63,7 +63,12 @@ class ScheduleCreateResourceUsageTest {
 
         given(
                         scheduleOpsUsage.scheduleCreateUsage(
-                                scheduleCreateTxn, sigUsage, props.scheduledTxExpiryTimeSecs()))
+                                scheduleCreateTxn,
+                                sigUsage,
+                                props.scheduledTxExpiryTimeSecs(),
+                                props.scheduleTxCostIncrementUSD(),
+                                props.scheduleTxCostIncrementBytesPerMonth(),
+                                props.scheduledTxExpiryTimeSecs()))
                 .willReturn(expected);
 
         subject = new ScheduleCreateResourceUsage(scheduleOpsUsage, props);
@@ -100,7 +105,7 @@ class ScheduleCreateResourceUsageTest {
                                         Timestamp.newBuilder().setSeconds(1L).setNanos(0))
                                 .build());
 
-        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 1L))
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 1L, 0, 0, 1800))
                 .willReturn(expected);
 
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
@@ -144,7 +149,7 @@ class ScheduleCreateResourceUsageTest {
                                         Timestamp.newBuilder().setSeconds(5L).setNanos(0))
                                 .build());
 
-        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 0L))
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 0L, 0, 0, 1800))
                 .willReturn(expected);
 
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));

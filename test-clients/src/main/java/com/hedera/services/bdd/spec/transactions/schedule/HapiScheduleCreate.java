@@ -59,6 +59,10 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
     private static final int defaultScheduleTxnExpiry =
             HapiSpecSetup.getDefaultNodeProps().getInteger("ledger.schedule.txExpiryTimeSecs");
+    private static final int defaultScheduleTxCostIncrementUSD =
+            HapiSpecSetup.getDefaultNodeProps().getInteger("scheduling.costIncrementUSD");
+    private static final int defaultScheduleTxCostIncrementBytesPerMonth =
+            HapiSpecSetup.getDefaultNodeProps().getInteger("scheduling.costIncrementBytesPerMonth");
 
     private boolean advertiseCreation = false;
     private boolean recordScheduledTxn = false;
@@ -249,7 +253,12 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
         FeeCalculator.ActivityMetrics metricsCalc =
                 (_txn, svo) ->
                         scheduleOpsUsage.scheduleCreateUsage(
-                                _txn, suFrom(svo), defaultScheduleTxnExpiry);
+                                _txn,
+                                suFrom(svo),
+                                defaultScheduleTxnExpiry,
+                                defaultScheduleTxCostIncrementUSD,
+                                defaultScheduleTxCostIncrementBytesPerMonth,
+                                defaultScheduleTxnExpiry);
 
         return spec.fees()
                 .forActivityBasedOp(
