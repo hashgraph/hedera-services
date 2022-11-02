@@ -320,7 +320,7 @@ public class AutoCreationLogic {
     }
 
     @VisibleForTesting
-    List<InProgressChildRecord> getPendingCreations() {
+    public List<InProgressChildRecord> getPendingCreations() {
         return pendingCreations;
     }
 
