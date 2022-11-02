@@ -29,7 +29,7 @@ public abstract class HederaEvmWorldState implements HederaEvmMutableWorldState 
     private final EvmProperties evmProperties;
     private final AbstractCodeCache abstractCodeCache;
 
-    public HederaEvmWorldState(
+    protected HederaEvmWorldState(
             HederaEvmEntityAccess hederaEvmEntityAccess,
             EvmProperties evmProperties,
             AbstractCodeCache abstractCodeCache) {
@@ -53,9 +53,6 @@ public abstract class HederaEvmWorldState implements HederaEvmMutableWorldState 
         return new WorldStateAccount(
                 address, Wei.of(balance), abstractCodeCache, hederaEvmEntityAccess);
     }
-
-    @Override
-    public abstract HederaEvmWorldUpdater updater();
 
     @Override
     public Hash rootHash() {
