@@ -362,8 +362,15 @@ public class HTSTestsUtil {
             List.of(
                     new SyntheticTxnFactory.HbarTransfer(AMOUNT, false, null, receiver),
                     new SyntheticTxnFactory.HbarTransfer(-AMOUNT, false, sender, null));
+    public static final List<SyntheticTxnFactory.HbarTransfer> hbarTransfersAliased =
+            List.of(
+                    new SyntheticTxnFactory.HbarTransfer(AMOUNT, false, null, receiverAliased),
+                    new SyntheticTxnFactory.HbarTransfer(-AMOUNT, false, sender, null));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), Collections.emptyList());
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER_ALIASED =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(hbarTransfersAliased), Collections.emptyList());
     public static final List<SyntheticTxnFactory.HbarTransfer> twoHbarTransfers =
             List.of(
                     new SyntheticTxnFactory.HbarTransfer(AMOUNT, false, null, receiver),
@@ -567,6 +574,20 @@ public class HTSTestsUtil {
                     BalanceChange.changingHbar(
                             AccountAmount.newBuilder()
                                     .setAccountID(receiver)
+                                    .setAmount(AMOUNT)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingHbar(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(sender)
+                                    .setAmount(-AMOUNT)
+                                    .build(),
+                            payer));
+    public static final List<BalanceChange> hbarOnlyChangesAliased =
+            List.of(
+                    BalanceChange.changingHbar(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(receiverAliased)
                                     .setAmount(AMOUNT)
                                     .build(),
                             payer),

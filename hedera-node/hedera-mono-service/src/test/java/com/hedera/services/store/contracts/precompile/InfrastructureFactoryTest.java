@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -40,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -73,6 +75,7 @@ import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -392,5 +395,20 @@ class InfrastructureFactoryTest {
                                 sideEffects, tokens, nftsLedger, tokenRelsLedger),
                         ledgers,
                         sideEffects));
+    }
+
+    @Test
+    void canCreateNewRecordSubmissions() {
+        final var updater = mock(HederaStackedWorldStateUpdater.class);
+        final var recordSubmissions = subject.newRecordSubmissionsScopedTo(updater);
+        final var expirableTxnRecord = mock(ExpirableTxnRecord.Builder.class);
+        final var txnBodyBuilder = mock(Builder.class);
+
+        recordSubmissions.submitForTracking(txnBodyBuilder, expirableTxnRecord);
+
+        verify(expirableTxnRecord).onlyExternalizeIfSuccessful();
+        verify(updater)
+                .manageInProgressPrecedingRecord(
+                        recordsHistorian, expirableTxnRecord, txnBodyBuilder);
     }
 }

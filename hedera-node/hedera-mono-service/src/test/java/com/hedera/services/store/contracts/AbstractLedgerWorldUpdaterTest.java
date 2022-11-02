@@ -197,11 +197,14 @@ class AbstractLedgerWorldUpdaterTest {
     void revertsSourceIdIfCreated() {
         final var sourceId = 123;
         final var aRecord = ExpirableTxnRecord.newBuilder();
+        final var bRecord = ExpirableTxnRecord.newBuilder();
 
         given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
 
         subject.manageInProgressPrecedingRecord(
                 recordsHistorian, aRecord, TransactionBody.newBuilder());
+        subject.manageInProgressPrecedingRecord(
+                recordsHistorian, bRecord, TransactionBody.newBuilder());
         subject.revert();
 
         verify(recordsHistorian).revertChildRecordsFromSource(sourceId);
