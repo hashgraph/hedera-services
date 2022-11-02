@@ -17,8 +17,8 @@ package com.hedera.services.fees.charging;
 
 import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
 import static com.hedera.services.fees.charging.ContractStoragePriceTiers.THOUSANDTHS_TO_TINY;
-import static com.hedera.services.fees.charging.ContractStoragePriceTiers.cappedAddition;
-import static com.hedera.services.fees.charging.ContractStoragePriceTiers.cappedMultiplication;
+import static com.hederahashgraph.fee.FeeUtils.cappedAddition;
+import static com.hederahashgraph.fee.FeeUtils.cappedMultiplication;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

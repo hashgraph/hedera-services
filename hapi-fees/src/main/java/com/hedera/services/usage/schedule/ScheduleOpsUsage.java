@@ -24,6 +24,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
+import static com.hederahashgraph.fee.FeeUtils.cappedMultiplication;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.usage.EstimatorFactory;
@@ -127,7 +128,7 @@ public class ScheduleOpsUsage {
             final var scheduleTxnBytes =
                     (long) Math.ceil(serializedSize / costIncrementBytesPerMonth);
             final var scheduledLifeInMonths = (long) Math.ceil(lifetimeSecs / SECS_TO_MONTHS);
-            return (long) (costIncrementUSD * scheduleTxnBytes * scheduledLifeInMonths);
+            return (long) (costIncrementUSD * cappedMultiplication(scheduleTxnBytes, scheduledLifeInMonths));
         }
         return 0L;
     }
