@@ -146,16 +146,6 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
     }
 
     @Override
-    public Hash rootHash() {
-        return Hash.EMPTY;
-    }
-
-    @Override
-    public Hash frontierRootHash() {
-        return rootHash();
-    }
-
-    @Override
     public Stream<StreamableAccount> streamAccounts(final Bytes32 startKeyHash, final int limit) {
         throw new UnsupportedOperationException();
     }

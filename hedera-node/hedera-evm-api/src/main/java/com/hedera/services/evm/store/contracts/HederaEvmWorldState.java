@@ -16,11 +16,14 @@
 package com.hedera.services.evm.store.contracts;
 
 import com.hedera.services.evm.contracts.execution.EvmProperties;
+import java.util.stream.Stream;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 
-public class HederaEvmWorldState {
+public abstract class HederaEvmWorldState implements HederaEvmMutableWorldState{
 
     private final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
@@ -49,5 +52,23 @@ public class HederaEvmWorldState {
         final long balance = hederaEvmEntityAccess.getBalance(address);
         return new WorldStateAccount(
                 address, Wei.of(balance), abstractCodeCache, hederaEvmEntityAccess);
+    }
+
+    @Override
+    public abstract HederaEvmWorldUpdater updater();
+
+    @Override
+    public Hash rootHash() {
+        return Hash.EMPTY;
+    }
+
+    @Override
+    public Hash frontierRootHash() {
+        return rootHash();
+    }
+
+    @Override
+    public Stream<StreamableAccount> streamAccounts(Bytes32 startKeyHash, int limit) {
+        return Stream.empty();
     }
 }
