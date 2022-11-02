@@ -246,8 +246,21 @@ class PrecheckVerifierTest {
                 SignatureMap.newBuilder()
                         .addSigPair(
                                 SignaturePair.newBuilder()
+                                        .setPubKeyPrefix(
+                                                ByteString.copyFromUtf8(
+                                                        "012345678901234567890123456789012"))
+                                        .setECDSASecp256K1(ByteString.copyFromUtf8("EC sig")))
+                        .addSigPair(
+                                SignaturePair.newBuilder()
+                                        .setPubKeyPrefix(
+                                                ByteString.copyFromUtf8(
+                                                        "01234567890123456789012345678901"))
+                                        .setEd25519(ByteString.copyFromUtf8("ED sig")))
+                        .addSigPair(
+                                SignaturePair.newBuilder()
                                         .setPubKeyPrefix(ByteString.copyFrom(ecdsaCompressedBytes))
-                                        .setECDSASecp256K1(ByteString.copyFromUtf8("sig")))
+                                        .setECDSASecp256K1(
+                                                ByteString.copyFromUtf8("matching EC sig")))
                         .build();
 
         given(mockAccessor.getPkToSigsFn()).willReturn(new PojoSigMapPubKeyToSigBytes(sigMap));

@@ -17,11 +17,13 @@ package com.hedera.services.state.logic;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -32,6 +34,7 @@ import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;
@@ -160,6 +163,79 @@ class SigsAndPayerKeyScreenTest {
 
         // then:
         verify(account).setAccountKey(sigMeta.payerKey());
+        // and:
+        Assertions.assertEquals(OK, result);
+    }
+
+    @Test
+    void skipsHollowAccountCompletionWithNoSigMeta() {
+        givenOkRationalization();
+        given(payerSigValidity.test(accessor, validityTest)).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        // when:
+        final var result = subject.applyTo(accessor);
+
+        // then:
+        verify(account, never()).setAccountKey(any());
+        // and:
+        Assertions.assertEquals(OK, result);
+    }
+
+    @Test
+    void skipsHollowAccountCompletionForInvalidEthereumTxn() {
+        givenOkRationalization();
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+        given(spanMapAccessor.getEthTxExpansion(accessor))
+                .willReturn(new EthTxExpansion(null, INVALID_TRANSACTION));
+
+        // when:
+        final var result = subject.applyTo(accessor);
+
+        // then:
+        verify(account, never()).setAccountKey(any());
+        // and:
+        Assertions.assertEquals(OK, result);
+    }
+
+    @Test
+    void skipsHollowAccountCompletionForEthereumTxnAliasNotFound() {
+        givenOkRationalization();
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+        given(spanMapAccessor.getEthTxExpansion(accessor)).willReturn(new EthTxExpansion(null, OK));
+        var key = new JECDSASecp256k1Key(ByteString.copyFromUtf8("publicKey").toByteArray());
+        given(spanMapAccessor.getEthTxSigsMeta(accessor))
+                .willReturn(new EthTxSigs(key.getECDSASecp256k1Key(), new byte[0]));
+        given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.MISSING_NUM);
+
+        // when:
+        final var result = subject.applyTo(accessor);
+
+        // then:
+        verify(account, never()).setAccountKey(any());
+        // and:
+        Assertions.assertEquals(OK, result);
+    }
+
+    @Test
+    void skipsHollowAccountCompletionForEthereumTxnAccountKeyNotEmpty() {
+        givenOkRationalization();
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+        given(spanMapAccessor.getEthTxExpansion(accessor)).willReturn(new EthTxExpansion(null, OK));
+        var key = new JECDSASecp256k1Key(ByteString.copyFromUtf8("publicKey").toByteArray());
+        given(spanMapAccessor.getEthTxSigsMeta(accessor))
+                .willReturn(new EthTxSigs(key.getECDSASecp256k1Key(), new byte[0]));
+        given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromInt(1));
+        given(accounts.get()).willReturn(accountStorage);
+        given(accountStorage.getForModify(any())).willReturn(account);
+        given(account.getAccountKey())
+                .willReturn(new JEd25519Key(ByteString.copyFromUtf8("accountKey").toByteArray()));
+
+        // when:
+        final var result = subject.applyTo(accessor);
+
+        // then:
+        verify(account, never()).setAccountKey(any());
         // and:
         Assertions.assertEquals(OK, result);
     }
