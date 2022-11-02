@@ -42,7 +42,7 @@ class HederaEvmWorldStateTest {
     @Mock private AbstractCodeCache abstractCodeCache;
 
     private final Address address =
-        Address.fromHexString("0x000000000000000000000000000000000000077e");
+            Address.fromHexString("0x000000000000000000000000000000000000077e");
     final long balance = 1_234L;
 
     private HederaEvmWorldState subject;
