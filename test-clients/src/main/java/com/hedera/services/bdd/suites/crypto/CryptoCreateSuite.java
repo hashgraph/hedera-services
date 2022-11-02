@@ -67,7 +67,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
     public static final String AUTO_CREATED_ACCOUNT = "auto-created account";
     public static final String ED_25519_KEY = "ed25519Alias";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final String TRUE = "true";
 
     public static void main(String... args) {
