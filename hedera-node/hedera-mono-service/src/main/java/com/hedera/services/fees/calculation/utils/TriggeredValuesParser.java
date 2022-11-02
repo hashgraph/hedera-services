@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ public class TriggeredValuesParser {
 
     private static Integer triggerFrom(final String s) {
         final var trigger = Integer.valueOf(sansDecimals(s));
-        if (trigger <= 0 || trigger > 100) {
+        if (trigger < 0 || trigger > 100) {
             throw new IllegalArgumentException("Cannot use trigger value " + trigger + "!");
         }
         return trigger;

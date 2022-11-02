@@ -15,6 +15,7 @@
  */
 package com.hedera.services.legacy.core.jproto;
 
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 
@@ -55,6 +56,10 @@ public class JEd25519Key extends JKey {
         } else {
             return ed25519.length == ED25519_BYTE_LENGTH;
         }
+    }
+
+    public static boolean isValidProto(final Key ed25519Key) {
+        return ed25519Key.getEd25519().size() == ED25519_BYTE_LENGTH;
     }
 
     @Override

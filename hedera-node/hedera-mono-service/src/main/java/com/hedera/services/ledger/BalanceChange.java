@@ -221,6 +221,10 @@ public class BalanceChange {
         return isForFungibleToken() || isForNft();
     }
 
+    public boolean affectsAccount(final AccountID accountId) {
+        return accountId.equals(this.accountId);
+    }
+
     public NftId nftId() {
         return nftId;
     }
