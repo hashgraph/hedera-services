@@ -62,7 +62,11 @@ public class ScheduleOpsUsage {
     }
 
     public FeeData scheduleCreateUsage(
-            TransactionBody scheduleCreate, SigUsage sigUsage, long lifetimeSecs) {
+            TransactionBody scheduleCreate,
+            SigUsage sigUsage,
+            long lifetimeSecs,
+            double costIncrementUSD,
+            int costIncrementBytesPerMonth) {
         var op = scheduleCreate.getScheduleCreate();
 
         var scheduledTxn = op.getScheduledTransactionBody();

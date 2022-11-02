@@ -53,6 +53,8 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
                         svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
         final long lifetimeSecs;
+        final int costIncrementBytesPerMonth;
+        final double costIncrementUSD;
 
         if (op.hasExpirationTime() && dynamicProperties.schedulingLongTermEnabled()) {
             lifetimeSecs =
@@ -62,10 +64,19 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
                                     - txn.getTransactionID()
                                             .getTransactionValidStart()
                                             .getSeconds());
+            costIncrementUSD = dynamicProperties.scheduleTxCostIncrementUSD();
+            costIncrementBytesPerMonth = dynamicProperties.scheduleTxCostIncrementBytesPerMonth();
         } else {
             lifetimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
+            costIncrementUSD = 0;
+            costIncrementBytesPerMonth = 0;
         }
 
-        return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);
+        return scheduleOpsUsage.scheduleCreateUsage(
+                txn,
+                sigUsage,
+                lifetimeSecs,
+                costIncrementUSD,
+                costIncrementBytesPerMonth);
     }
 }
