@@ -16,9 +16,15 @@
 package com.hedera.services.evm.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.evm.contracts.execution.EvmProperties;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +40,10 @@ class HederaEvmWorldStateTest {
     @Mock private EvmProperties evmProperties;
 
     @Mock private AbstractCodeCache abstractCodeCache;
+
+    private final Address address =
+        Address.fromHexString("0x000000000000000000000000000000000000077e");
+    final long balance = 1_234L;
 
     private HederaEvmWorldState subject;
 
@@ -61,5 +71,39 @@ class HederaEvmWorldStateTest {
     @Test
     void streamAccounts() {
         assertThrows(UnsupportedOperationException.class, () -> subject.streamAccounts(null, 10));
+    }
+
+    @Test
+    void returnsNullForNull() {
+        assertNull(subject.get(null));
+    }
+
+    @Test
+    void returnsNull() {
+        assertNull(subject.get(address));
+    }
+
+    @Test
+    void returnsWorldStateAccountt() {
+        final var address = Address.RIPEMD160;
+        given(hederaEvmEntityAccess.getBalance(address)).willReturn(balance);
+        given(hederaEvmEntityAccess.isUsable(any())).willReturn(true);
+
+        final var account = subject.get(address);
+
+        assertTrue(account.getCode().isEmpty());
+        assertFalse(account.hasCode());
+    }
+
+    @Test
+    void returnsHederaEvmWorldStateTokenAccount() {
+        final var address = Address.RIPEMD160;
+        given(hederaEvmEntityAccess.isTokenAccount(address)).willReturn(true);
+        given(evmProperties.isRedirectTokenCallsEnabled()).willReturn(true);
+
+        final var account = subject.get(address);
+
+        assertFalse(account.getCode().isEmpty());
+        assertTrue(account.hasCode());
     }
 }
