@@ -22,9 +22,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenRelsListMutationTest {
     private static final long accountNum = 1_234L;
 
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    @Mock private TokenRelStorageAdapter tokenRels;
 
     private TokenRelsListMutation subject;
 
@@ -78,7 +78,7 @@ class TokenRelsListMutationTest {
 
         subject.markAsHead(nextRel);
 
-        assertEquals(EntityNum.MISSING_NUM.longValue(), nextRel.prevKey());
+        assertEquals(EntityNum.MISSING_NUM.longValue(), nextRel.getPrev());
     }
 
     @Test
@@ -87,21 +87,21 @@ class TokenRelsListMutationTest {
 
         subject.markAsTail(targetRel);
 
-        assertEquals(EntityNum.MISSING_NUM.longValue(), targetRel.nextKey());
+        assertEquals(EntityNum.MISSING_NUM.longValue(), targetRel.getNext());
     }
 
     @Test
     void setsPrevAsExpected() {
         subject.updatePrev(targetRel, rootRelKey);
 
-        assertEquals(rootNum, targetRel.prevKey());
+        assertEquals(rootNum, targetRel.getPrev());
     }
 
     @Test
     void setsNextAsExpected() {
         subject.updateNext(targetRel, nextRelKey);
 
-        assertEquals(nextNum, targetRel.nextKey());
+        assertEquals(nextNum, targetRel.getNext());
     }
 
     @Test

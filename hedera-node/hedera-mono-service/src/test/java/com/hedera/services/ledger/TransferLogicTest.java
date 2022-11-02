@@ -19,6 +19,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
+import static com.hedera.test.utils.TxnUtils.aaOf;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -51,8 +52,8 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -118,7 +119,7 @@ class TransferLogicTest {
     @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
 
     @Mock private SideEffectsTracker sideEffectsTracker;
@@ -428,9 +429,52 @@ class TransferLogicTest {
     }
 
     @Test
+    void failsIfPayerDoesntHaveEnoughBalanceAfterTransfersFromHisAccount() {
+        final var autoFee = 500L;
+        final var payerInitBalance = 1_000L;
+        final var firstAlias = ByteString.copyFromUtf8("fake");
+        final var firstNewAccount = IdUtils.asAccount("0.0.1234");
+        final var firstNewAccountNum = EntityNum.fromAccountId(firstNewAccount);
+        final var firstTrigger = BalanceChange.changingHbar(aaOf(payer, -payerInitBalance), payer);
+        final var secondTrigger =
+                BalanceChange.changingHbar(aliasedAa(firstAlias, payerInitBalance), payer);
+        final var changes = List.of(firstTrigger, secondTrigger);
+        given(autoCreationLogic.create(secondTrigger, accountsLedger, changes))
+                .willAnswer(
+                        invocationOnMock -> {
+                            accountsLedger.create(firstNewAccount);
+                            final var change = (BalanceChange) invocationOnMock.getArgument(0);
+                            change.replaceNonEmptyAliasWith(firstNewAccountNum);
+                            change.setNewBalance(change.getAggregatedUnits());
+                            return Pair.of(OK, autoFee);
+                        });
+        final var funding = IdUtils.asAccount("0.0.98");
+        accountsLedger.begin();
+        accountsLedger.create(funding);
+        accountsLedger.create(payer);
+        accountsLedger.set(payer, BALANCE, payerInitBalance);
+        accountsLedger.commit();
+        accountsLedger.begin();
+
+        given(txnCtx.activePayer()).willReturn(payer);
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
+
+        final var ex =
+                assertThrows(InvalidTransactionException.class, () -> subject.doZeroSum(changes));
+
+        assertEquals(INSUFFICIENT_PAYER_BALANCE, ex.getResponseCode());
+        assertEquals(0L, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
+        assertEquals(payerInitBalance, (long) accountsLedger.get(payer, AccountProperty.BALANCE));
+        verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
+        verify(autoCreationLogic).reclaimPendingAliases();
+    }
+
+    @Test
     void happyPathHbarAllowance() {
         setUpAccountWithAllowances();
         final var change = BalanceChange.changingHbar(allowanceAA(owner, -50L), payer);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         accountsLedger.begin();
         subject.doZeroSum(List.of(change));

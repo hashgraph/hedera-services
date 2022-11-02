@@ -79,7 +79,6 @@ class EntityIdUtilsTest {
         final var input =
                 ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
 
-        given(aliasManager.isMirror(mockAddr)).willReturn(true);
         assertEquals(expectedId, EntityIdUtils.unaliased(input, aliasManager));
     }
 
@@ -117,7 +116,6 @@ class EntityIdUtilsTest {
         final var expectedId = EntityNum.fromLong(num);
         final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
 
-        given(aliasManager.isMirror(mockAddr)).willReturn(true);
         assertEquals(expectedId, unaliased(input, aliasManager));
     }
 

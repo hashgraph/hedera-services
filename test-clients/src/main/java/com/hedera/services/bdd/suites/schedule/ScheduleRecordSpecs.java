@@ -51,6 +51,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
@@ -118,7 +119,11 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
                         scheduleDelete("tbd").via("canonicalDeletion").payingWith("payingSender"),
                         scheduleCreate(
                                         "contractCall",
-                                        contractCall("SimpleUpdate", "set", 5, 42)
+                                        contractCall(
+                                                        "SimpleUpdate",
+                                                        "set",
+                                                        BigInteger.valueOf(5),
+                                                        BigInteger.valueOf(42))
                                                 .gas(10_000L)
                                                 .memo("")
                                                 .fee(ONE_HBAR))

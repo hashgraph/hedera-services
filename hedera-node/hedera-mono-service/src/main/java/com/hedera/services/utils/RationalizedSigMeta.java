@@ -23,6 +23,7 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.evm.store.contracts.utils.BytesKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.MiscCryptoUtils;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;

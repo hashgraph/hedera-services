@@ -60,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.time.Instant;
@@ -121,8 +122,14 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                                                         contract,
                                                         getABIFor(FUNCTION, "donate", contract),
                                                         new Object[] {
-                                                            asAddress(civilianAccountID.get()),
-                                                            asAddress(detachedAccountID.get())
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            civilianAccountID
+                                                                                    .get())),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            detachedAccountID
+                                                                                    .get()))
                                                         })
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         getAccountBalance(civilian).hasTinyBars(0L),
@@ -136,8 +143,10 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                                                 contract,
                                                 getABIFor(FUNCTION, "donate", contract),
                                                 new Object[] {
-                                                    asAddress(civilianAccountID.get()),
-                                                    asAddress(detachedAccountID.get())
+                                                    HapiParserUtil.asHeadlongAddress(
+                                                            asAddress(civilianAccountID.get())),
+                                                    HapiParserUtil.asHeadlongAddress(
+                                                            asAddress(detachedAccountID.get()))
                                                 })),
                         getAccountBalance(civilian).hasTinyBars(1L),
                         getAccountBalance(detachedAccount).hasTinyBars(1L));

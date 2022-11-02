@@ -95,6 +95,11 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     }
 
     @Override
+    public boolean hasConsequentialUnknownFields() {
+        return delegate.hasConsequentialUnknownFields();
+    }
+
+    @Override
     public String toLoggableString() {
         return MoreObjects.toStringHelper(this)
                 .add("delegate", delegate.toLoggableString())
@@ -336,5 +341,10 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     @Override
     public StateView getStateView() {
         return delegate.getStateView();
+    }
+
+    @Override
+    public boolean mintsWithMetadata() {
+        return delegate.mintsWithMetadata();
     }
 }

@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -50,7 +51,7 @@ public class CallCodeOperationSuite extends HapiApiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, "callCode", INVALID_ADDRESS)
+                        contractCall(contract, "callCode", asHeadlongAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
                         withOpContext(
                                 (spec, opLog) -> {
@@ -59,7 +60,10 @@ public class CallCodeOperationSuite extends HapiApiSuite {
                                             HapiPropertySource.asHexedSolidityAddress(id);
 
                                     final var contractCall =
-                                            contractCall(contract, "callCode", solidityAddress)
+                                            contractCall(
+                                                            contract,
+                                                            "callCode",
+                                                            asHeadlongAddress(solidityAddress))
                                                     .hasKnownStatus(SUCCESS);
 
                                     allRunFor(spec, contractCall);

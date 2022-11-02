@@ -23,6 +23,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.virtual.annotations.StateSetter;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -265,8 +266,14 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         try {
             final var getter = virtualValueType.getMethod(getterName);
             return Arguments.of(subject, getter, setter);
-        } catch (final NoSuchMethodException fatal) {
-            throw new RuntimeException(fatal);
+        } catch (final NoSuchMethodException maybeFatal) {
+            getterName = "is" + getterName.substring(3);
+            try {
+                final var getter = virtualValueType.getMethod(getterName);
+                return Arguments.of(subject, getter, setter);
+            } catch (final NoSuchMethodException fatal) {
+                throw new RuntimeException(fatal);
+            }
         }
     }
 
@@ -323,6 +330,8 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
             return 666L;
         } else if (boolean.class.equals(type)) {
             return true;
+        } else if (EntityNumPair.class.equals(type)) {
+            return new EntityNumPair(666_666L);
         } else if (JKey.class.equals(type)) {
             return new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
         } else if (ByteString.class.equals(type)) {

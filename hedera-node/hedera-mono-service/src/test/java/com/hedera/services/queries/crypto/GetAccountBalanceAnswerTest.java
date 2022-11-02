@@ -44,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -342,7 +343,7 @@ class GetAccountBalanceAnswerTest {
     }
 
     private StateView wellKnownView() {
-        MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+        TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
         tokenRels.put(aKey, aRel);
         aRel.setNext(bToken.getTokenNum());
         tokenRels.put(bKey, bRel);

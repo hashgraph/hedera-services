@@ -37,8 +37,8 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
@@ -73,8 +73,7 @@ public class TransferLogic {
     private final MerkleAccountScopedCheck scopedCheck;
     private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
-    private final TransactionalLedger<
-                    Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
@@ -84,8 +83,7 @@ public class TransferLogic {
     public TransferLogic(
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
-            final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger,
             final TokenStore tokenStore,
             final SideEffectsTracker sideEffectsTracker,
@@ -110,9 +108,10 @@ public class TransferLogic {
     }
 
     public void doZeroSum(final List<BalanceChange> changes) {
+        final var topLevelPayer = txnCtx.activePayer();
         var validity = OK;
         var autoCreationFee = 0L;
-
+        var updatedPayerBalance = Long.MIN_VALUE;
         for (var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
@@ -136,6 +135,9 @@ public class TransferLogic {
                 validity =
                         accountsLedger.validate(
                                 change.accountId(), scopedCheck.setBalanceChange(change));
+                if (change.affectsAccount(topLevelPayer)) {
+                    updatedPayerBalance = change.getNewBalance();
+                }
             } else {
                 validity =
                         accountsLedger.validate(
@@ -150,10 +152,14 @@ public class TransferLogic {
             }
         }
 
-        if (validity == OK
-                && (autoCreationFee > 0)
-                && (autoCreationFee > (long) accountsLedger.get(txnCtx.activePayer(), BALANCE))) {
-            validity = INSUFFICIENT_PAYER_BALANCE;
+        if (validity == OK && autoCreationFee > 0) {
+            updatedPayerBalance =
+                    (updatedPayerBalance == Long.MIN_VALUE)
+                            ? (long) accountsLedger.get(topLevelPayer, BALANCE)
+                            : updatedPayerBalance;
+            if (autoCreationFee > updatedPayerBalance) {
+                validity = INSUFFICIENT_PAYER_BALANCE;
+            }
         }
 
         if (validity == OK) {
@@ -202,8 +208,7 @@ public class TransferLogic {
             final SideEffectsTracker sideEffectsTracker,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
-            final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger) {
         if (tokenRelsLedger.isInTransaction()) {
             tokenRelsLedger.rollback();

@@ -16,6 +16,7 @@
 package com.hedera.services.grpc.marshalling;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
@@ -182,7 +183,7 @@ public class AliasResolver {
             final var alias = idOrAlias.getAlias();
             if (alias.size() == EVM_ADDRESS_SIZE) {
                 final var evmAddress = alias.toByteArray();
-                if (aliasManager.isMirror(evmAddress)) {
+                if (isMirror(evmAddress)) {
                     offerMirrorId(evmAddress, resolvingAction);
                     return Result.KNOWN_ALIAS;
                 }
@@ -210,7 +211,7 @@ public class AliasResolver {
             final var alias = adjust.getAccountID().getAlias();
             if (alias.size() == EVM_ADDRESS_SIZE) {
                 final var evmAddress = alias.toByteArray();
-                if (aliasManager.isMirror(evmAddress)) {
+                if (isMirror(evmAddress)) {
                     offerMirrorId(
                             evmAddress,
                             id ->

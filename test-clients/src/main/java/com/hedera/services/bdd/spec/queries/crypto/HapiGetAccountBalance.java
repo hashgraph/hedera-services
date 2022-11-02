@@ -51,6 +51,7 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,6 +68,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     Optional<Function<HapiApiSpec, Function<Long, Optional<String>>>> expectedCondition =
             Optional.empty();
     Optional<Map<String, LongConsumer>> tokenBalanceObservers = Optional.empty();
+    @Nullable LongConsumer balanceObserver;
     private String repr;
 
     private AccountID expectedId = null;
@@ -135,6 +137,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         return this;
     }
 
+    public HapiGetAccountBalance exposingBalanceTo(final LongConsumer obs) {
+        balanceObserver = obs;
+        return this;
+    }
+
     public HapiGetAccountBalance persists(boolean toExport) {
         exportAccount = toExport;
         return this;
@@ -164,6 +171,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
         final var balanceResponse = response.getCryptogetAccountBalance();
         long actual = balanceResponse.getBalance();
+        if (balanceObserver != null) {
+            balanceObserver.accept(actual);
+        }
         if (verboseLoggingOn) {
             log.info(
                     "Explicit token balances: "

@@ -24,10 +24,11 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.fees.charging.ContractStoragePriceTiers;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -104,7 +105,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long maxNftMints;
     private int maxXferBalanceChanges;
     private int maxCustomFeeDepth;
-    private ThrottleReqOpsScaleFactor nftMintScaleFactor;
+    private ScaleFactor nftMintScaleFactor;
     private String upgradeArtifactsLoc;
     private boolean throttleByGas;
     private int contractMaxRefundPercentOfGasLimit;
@@ -158,6 +159,8 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long traceabilityMinFreeToUsedGasThrottleRatio;
     private boolean lazyCreationEnabled;
     private boolean cryptoCreateWithAliasEnabled;
+    private boolean enforceContractCreationThrottle;
+    private EntityScaleFactors entityScaleFactors;
 
     @Inject
     public GlobalDynamicProperties(
@@ -323,6 +326,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
         cryptoCreateWithAliasEnabled =
                 properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
+        enforceContractCreationThrottle =
+                properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
+        entityScaleFactors =
+                properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
     }
 
     public int maxTokensPerAccount() {
@@ -553,7 +560,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         return maxCustomFeeDepth;
     }
 
-    public ThrottleReqOpsScaleFactor nftMintScaleFactor() {
+    public ScaleFactor nftMintScaleFactor() {
         return nftMintScaleFactor;
     }
 
@@ -775,5 +782,13 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isCryptoCreateWithAliasEnabled() {
         return cryptoCreateWithAliasEnabled;
+    }
+
+    public EntityScaleFactors entityScaleFactors() {
+        return entityScaleFactors;
+    }
+
+    public boolean shouldEnforceAccountCreationThrottleForContracts() {
+        return enforceContractCreationThrottle;
     }
 }
