@@ -144,11 +144,6 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
         return new Updater(this, entityAccess.worldLedgers().wrapped(), dynamicProperties);
     }
 
-    @Override
-    public Stream<StreamableAccount> streamAccounts(final Bytes32 startKeyHash, final int limit) {
-        throw new UnsupportedOperationException();
-    }
-
     public static class Updater extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>
             implements HederaEvmWorldUpdater, HederaWorldUpdater {
 

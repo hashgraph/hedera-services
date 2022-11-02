@@ -66,6 +66,6 @@ public abstract class HederaEvmWorldState implements HederaEvmMutableWorldState 
 
     @Override
     public Stream<StreamableAccount> streamAccounts(Bytes32 startKeyHash, int limit) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

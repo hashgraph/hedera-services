@@ -16,7 +16,7 @@
 package com.hedera.services.evm.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.services.evm.contracts.execution.EvmProperties;
 import org.apache.tuweni.bytes.Bytes32;
@@ -61,6 +61,6 @@ class HederaEvmWorldStateTest {
 
     @Test
     void streamAccounts() {
-        assertNull(subject.streamAccounts(Bytes32.ZERO, 1));
+        assertThrows(UnsupportedOperationException.class, () -> subject.streamAccounts(null, 10));
     }
 }
