@@ -41,10 +41,10 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.InProgressChildRecord;
+import com.hedera.services.records.RecordSubmissions;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -66,7 +66,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -167,8 +166,7 @@ public class AutoCreationLogic {
     }
 
     public void submitRecords(
-            final BiConsumer<TransactionBody.Builder, ExpirableTxnRecord.Builder> recordConsumer,
-            final boolean trackSigImpact) {
+            final RecordSubmissions recordSubmissions, final boolean trackSigImpact) {
         for (final var pendingCreation : pendingCreations) {
             final var syntheticCreation = pendingCreation.syntheticBody();
             final var childRecord = pendingCreation.recordBuilder();
@@ -177,7 +175,7 @@ public class AutoCreationLogic {
                 sigImpactHistorian.markEntityChanged(
                         childRecord.getReceiptBuilder().getAccountId().num());
             }
-            recordConsumer.accept(syntheticCreation, childRecord);
+            recordSubmissions.submitForTracking(syntheticCreation, childRecord);
         }
     }
 

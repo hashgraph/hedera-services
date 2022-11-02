@@ -32,6 +32,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.records.RecordSubmissions;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -321,5 +322,13 @@ public class InfrastructureFactory {
                         dynamicProperties);
         autoCreationLogic.setFeeCalculator(feeCalculator.get());
         return autoCreationLogic;
+    }
+
+    public RecordSubmissions newRecordSubmissionsScopedTo(
+            final HederaStackedWorldStateUpdater updater) {
+        return (txnBody, txnRecord) -> {
+            txnRecord.onlyExternalizeIfSuccessful();
+            updater.manageInProgressPrecedingRecord(recordsHistorian, txnRecord, txnBody);
+        };
     }
 }

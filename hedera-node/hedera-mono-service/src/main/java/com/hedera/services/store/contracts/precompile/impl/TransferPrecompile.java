@@ -46,7 +46,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -130,14 +129,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final int functionId;
     private final Address senderAddress;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
-    private final AutoCreationLogic autoCreationLogic;
-    private final RecordsHistorian recordsHistorian;
     private final boolean isLazyCreationEnabled;
     private ResponseCodeEnum impliedValidity;
     private ImpliedTransfers impliedTransfers;
     private List<BalanceChange> explicitChanges;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
+    private AutoCreationLogic autoCreationLogic;
     private int numLazyCreates;
 
     public TransferPrecompile(
@@ -151,8 +149,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final int functionId,
             final Address senderAddress,
             final ImpliedTransfersMarshal impliedTransfersMarshal,
-            final RecordsHistorian recordsHistorian,
-            final AutoCreationLogic autoCreationLogic,
             final boolean isLazyCreationEnabled) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.updater = updater;
@@ -160,8 +156,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         this.functionId = functionId;
         this.senderAddress = senderAddress;
         this.impliedTransfersMarshal = impliedTransfersMarshal;
-        this.recordsHistorian = recordsHistorian;
-        this.autoCreationLogic = autoCreationLogic;
         this.isLazyCreationEnabled = isLazyCreationEnabled;
     }
 
@@ -295,14 +289,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         }
 
         // track auto-creation child records if needed
-        if (numLazyCreates > 0) {
+        if (autoCreationLogic != null) {
             autoCreationLogic.submitRecords(
-                    (txnBody, txnRecord) -> {
-                        txnRecord.onlyExternalizeIfSuccessful();
-                        updater.manageInProgressPrecedingRecord(
-                                recordsHistorian, txnRecord, txnBody);
-                    },
-                    false);
+                    infrastructureFactory.newRecordSubmissionsScopedTo(updater), false);
         }
 
         transferLogic.doZeroSum(changes);
@@ -317,6 +306,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
         } else {
+            if (autoCreationLogic == null) {
+                autoCreationLogic = infrastructureFactory.newAutoCreationLogicScopedTo(updater);
+            }
             final var lazyCreateResult =
                     autoCreationLogic.create(change, ledgers.accounts(), changes);
             validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());

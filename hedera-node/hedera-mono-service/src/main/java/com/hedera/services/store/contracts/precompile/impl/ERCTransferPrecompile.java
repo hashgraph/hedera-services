@@ -36,7 +36,6 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -50,7 +49,6 @@ import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper
 import com.hedera.services.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -109,8 +107,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final ImpliedTransfersMarshal impliedTransfersMarshal,
-            final RecordsHistorian recordsHistorian,
-            final AutoCreationLogic autoCreationLogic,
             final boolean isLazyCreationEnabled) {
         super(
                 ledgers,
@@ -123,8 +119,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 functionId,
                 callerAccount,
                 impliedTransfersMarshal,
-                recordsHistorian,
-                autoCreationLogic,
                 isLazyCreationEnabled);
         this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
         this.tokenID = tokenID;
@@ -145,8 +139,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final ImpliedTransfersMarshal impliedTransfersMarshal,
-            final RecordsHistorian recordsHistorian,
-            final AutoCreationLogic autoCreationLogic,
             final boolean isLazyCreationEnabled) {
         this(
                 null,
@@ -162,8 +154,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 pricingUtils,
                 functionId,
                 impliedTransfersMarshal,
-                recordsHistorian,
-                autoCreationLogic,
                 isLazyCreationEnabled);
     }
 
