@@ -181,7 +181,7 @@ class EthereumTransitionLogicTest {
     @Test
     void transitionDelegatesToCustomContractCreateForSynthCreate() {
         givenValidlyCalled(createTxn);
-        given(creationCustomizer.customize(createTxn, callerId)).willReturn(createTxn);
+        given(creationCustomizer.customize(createTxn, callerId, false)).willReturn(createTxn);
         givenOfferedPrice();
 
         subject.doStateTransition();
