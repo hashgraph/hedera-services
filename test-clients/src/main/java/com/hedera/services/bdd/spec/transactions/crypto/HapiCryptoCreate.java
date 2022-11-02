@@ -254,6 +254,9 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                     } else {
                                         b.setKey(key);
                                     }
+                                    if (unknownFieldLocation == UnknownFieldLocation.OP_BODY) {
+                                        b.setUnknownFields(nonEmptyUnknownFields());
+                                    }
 
                                     proxy.ifPresent(b::setProxyAccountID);
                                     entityMemo.ifPresent(b::setMemo);

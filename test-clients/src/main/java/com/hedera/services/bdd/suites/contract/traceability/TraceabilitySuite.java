@@ -6995,7 +6995,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                                         .copyFromUtf8(
                                                                                                 INVALID_SOLIDITY_ADDRESS
                                                                                                         .name()))
-                                                                        .setInvalidSolidityAddress(
+                                                                        .setTargetedAddress(
                                                                                 ByteString.copyFrom(
                                                                                         asSolidityAddress(
                                                                                                 0,

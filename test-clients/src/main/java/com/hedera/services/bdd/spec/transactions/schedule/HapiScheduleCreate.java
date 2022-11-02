@@ -81,7 +81,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
     public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
         this.scheduleEntity = scheduled;
-        this.scheduled = txn.withLegacyProtoStructure().sansTxnId().sansNodeAccount().signedBy();
+        this.scheduled =
+                txn.withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
+                        .sansTxnId()
+                        .sansNodeAccount()
+                        .signedBy();
     }
 
     public HapiScheduleCreate<T> advertisingCreation() {
