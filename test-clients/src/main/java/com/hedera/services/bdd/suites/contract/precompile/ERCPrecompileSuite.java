@@ -2843,10 +2843,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_721_SCENARIOS,
                                                         TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MISSING_TO)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -3447,10 +3448,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                         contractCall(
                                                         SOME_ERC_20_SCENARIOS,
                                                         DO_TRANSFER_FROM,
-                                                        tokenMirrorAddr.get(),
-                                                        contractMirrorAddr.get(),
-                                                        zCivilianMirrorAddr.get(),
-                                                        1L)
+                                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                                        asHeadlongAddress(contractMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                zCivilianMirrorAddr.get()),
+                                                        BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MISSING_TO)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
