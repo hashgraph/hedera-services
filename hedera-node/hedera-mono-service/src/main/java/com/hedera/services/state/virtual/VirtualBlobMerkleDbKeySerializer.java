@@ -73,7 +73,7 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
         Objects.requireNonNull(key);
         Objects.requireNonNull(buffer);
         key.serialize(buffer);
-        return VirtualBlobKey.sizeInBytes();
+        return getSerializedSize();
     }
 
     // Key deserialization
@@ -95,8 +95,7 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
     @Override
     public boolean equals(final ByteBuffer buffer, final int version, final VirtualBlobKey key) throws IOException {
         Objects.requireNonNull(buffer);
-        return (key.getType().ordinal() == (0xff & buffer.get()))
-                && (key.getEntityNumCode() == buffer.getInt());
+        return key.equals(buffer, version);
     }
 
 }

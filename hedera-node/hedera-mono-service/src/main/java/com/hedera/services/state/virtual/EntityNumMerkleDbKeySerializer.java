@@ -16,22 +16,23 @@
 package com.hedera.services.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTokenKey> {
+public class EntityNumMerkleDbKeySerializer implements KeySerializer<EntityNumVirtualKey> {
 
     // Serializer class ID
-    static final long CLASS_ID = 0xb3c94b6cf62aa6c5L;
+    static final long CLASS_ID = 0xc7b4f042fcf1e2a3L;
 
     // Serializer version
     static final int CURRENT_VERSION = 1;
 
     // Key data version
-    static final long DATA_VERSION = UniqueTokenKey.CURRENT_VERSION;
+    static final long DATA_VERSION = 1;
 
     // Serializer info
 
@@ -55,49 +56,53 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     // Key serialization
 
     @Override
+    public KeyIndexType getIndexType() {
+        // By default, if serialized size is 8 bytes, key index type is SEQUENTIAL_INCREMENTING_LONGS,
+        // but this is not the case for EntityNumVirtualKey. Hence, override getIndexType() here
+        return KeyIndexType.GENERIC;
+    }
+
+    @Override
     public int getSerializedSize() {
-        return VARIABLE_DATA_SIZE;
+        return EntityNumVirtualKey.sizeInBytes();
     }
 
     @Override
-    public int getTypicalSerializedSize() {
-        return UniqueTokenKey.ESTIMATED_SIZE_BYTES;
-    }
-
-    @Override
-    public int serialize(final UniqueTokenKey key, final SerializableDataOutputStream out) throws IOException {
+    public int serialize(EntityNumVirtualKey key, SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
-        return key.serializeTo(out::write);
+        key.serialize(out);
+        return getSerializedSize();
     }
 
     @Override
-    public int serialize(final UniqueTokenKey key, final ByteBuffer buffer) throws IOException {
+    public int serialize(final EntityNumVirtualKey key, final ByteBuffer buffer) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(buffer);
-        return key.serializeTo(buffer::put);
+        key.serialize(buffer);
+        return EntityNumVirtualKey.sizeInBytes();
     }
 
     // Key deserialization
 
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
+    public int deserializeKeySize(ByteBuffer buffer) {
         Objects.requireNonNull(buffer);
-        return UniqueTokenKey.deserializeKeySize(buffer);
+        return EntityNumVirtualKey.sizeInBytes();
     }
 
     @Override
-    public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public EntityNumVirtualKey deserialize(ByteBuffer buffer, long version) throws IOException {
         Objects.requireNonNull(buffer);
-        final UniqueTokenKey tokenKey = new UniqueTokenKey();
-        tokenKey.deserialize(buffer, (int) dataVersion);
-        return tokenKey;
+        final var key = new EntityNumVirtualKey();
+        key.deserialize(buffer, (int) version);
+        return key;
     }
 
     @Override
-    public boolean equals(final ByteBuffer buffer, final int version, final UniqueTokenKey key) throws IOException {
+    public boolean equals(ByteBuffer buffer, int version, EntityNumVirtualKey key) throws IOException {
         Objects.requireNonNull(buffer);
-        return key.equalsTo(buffer);
+        return key.equals(buffer, version);
     }
 
 }

@@ -145,7 +145,7 @@ public class VirtualMapFactory {
                             CURRENT_SERIALIZATION_VERSION,
                             new ContractMerkleDbKeySerializer(),
                             CURRENT_SERIALIZATION_VERSION,
-                            new IterableContractValueMerkleDbValueSerializer());
+                            new IterableContractMerkleDbValueSerializer());
             tableConfig.maxNumberOfKeys(MAX_STORAGE_ENTRIES);
             tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
             tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
@@ -261,56 +261,87 @@ public class VirtualMapFactory {
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage() {
-        final var keySerializer = new EntityNumVirtualKeySerializer();
-        final VirtualLeafRecordSerializer<EntityNumVirtualKey, OnDiskAccount>
-                accountLeafRecordSerializer =
-                        new VirtualLeafRecordSerializer<>(
-                                CURRENT_SERIALIZATION_VERSION,
-                                DigestType.SHA_384,
-                                CURRENT_SERIALIZATION_VERSION,
-                                keySerializer.getSerializedSize(),
-                                new EntityNumVirtualKeySupplier(),
-                                CURRENT_SERIALIZATION_VERSION,
-                                DataFileCommon.VARIABLE_DATA_SIZE,
-                                new OnDiskAccountSupplier(),
-                                false);
+        final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskAccount> dsBuilder;
+        if (useMerkleDb) {
+            final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskAccount> tableConfig =
+                    new MerkleDbTableConfig<>(
+                            CURRENT_SERIALIZATION_VERSION,
+                            DigestType.SHA_384,
+                            CURRENT_SERIALIZATION_VERSION,
+                            new EntityNumMerkleDbKeySerializer(),
+                            CURRENT_SERIALIZATION_VERSION,
+                            new OnDiskAccountMerkleDbValueSerializer());
+            tableConfig.maxNumberOfKeys(MAX_ACCOUNTS);
+            tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        } else {
+            final var keySerializer = new EntityNumVirtualKeySerializer();
+            final VirtualLeafRecordSerializer<EntityNumVirtualKey, OnDiskAccount>
+                    accountLeafRecordSerializer =
+                    new VirtualLeafRecordSerializer<>(
+                            CURRENT_SERIALIZATION_VERSION,
+                            DigestType.SHA_384,
+                            CURRENT_SERIALIZATION_VERSION,
+                            keySerializer.getSerializedSize(),
+                            new EntityNumVirtualKeySupplier(),
+                            CURRENT_SERIALIZATION_VERSION,
+                            DataFileCommon.VARIABLE_DATA_SIZE,
+                            new OnDiskAccountSupplier(),
+                            false);
 
-        final JasperDbBuilder<EntityNumVirtualKey, OnDiskAccount> dsBuilder = new JasperDbBuilder<>();
-        dsBuilder
-                .storageDir(storageDir)
-                .virtualLeafRecordSerializer(accountLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
-                .keySerializer(keySerializer)
-                .maxNumOfKeys(MAX_ACCOUNTS)
-                .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            dsBuilder = new JasperDbBuilder<EntityNumVirtualKey, OnDiskAccount>()
+                    .storageDir(storageDir)
+                    .virtualLeafRecordSerializer(accountLeafRecordSerializer)
+                    .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                    .keySerializer(keySerializer)
+                    .maxNumOfKeys(MAX_ACCOUNTS)
+                    .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        }
         return new VirtualMap<>(ON_DISK_ACCOUNT_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels() {
-        final var keySerializer = new EntityNumVirtualKeySerializer();
-        final VirtualLeafRecordSerializer<EntityNumVirtualKey, OnDiskTokenRel>
-                tokenRelLeafRecordSerializer =
-                        new VirtualLeafRecordSerializer<>(
-                                CURRENT_SERIALIZATION_VERSION,
-                                DigestType.SHA_384,
-                                CURRENT_SERIALIZATION_VERSION,
-                                keySerializer.getSerializedSize(),
-                                new EntityNumVirtualKeySupplier(),
-                                CURRENT_SERIALIZATION_VERSION,
-                                OnDiskTokenRel.serializedSizeInBytes(),
-                                new OnDiskTokenRelSupplier(),
-                                false);
+        final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskTokenRel> dsBuilder;
+        if (useMerkleDb) {
+            final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskTokenRel> tableConfig =
+                    new MerkleDbTableConfig<>(
+                            CURRENT_SERIALIZATION_VERSION,
+                            DigestType.SHA_384,
+                            CURRENT_SERIALIZATION_VERSION,
+                            new EntityNumMerkleDbKeySerializer(),
+                            CURRENT_SERIALIZATION_VERSION,
+                            new OnDiskTokenRelMerkleDbValueSerializer());
+            tableConfig.maxNumberOfKeys(MAX_TOKEN_RELS);
+            tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        } else {
+            final var keySerializer = new EntityNumVirtualKeySerializer();
+            final VirtualLeafRecordSerializer<EntityNumVirtualKey, OnDiskTokenRel>
+                    tokenRelLeafRecordSerializer =
+                    new VirtualLeafRecordSerializer<>(
+                            CURRENT_SERIALIZATION_VERSION,
+                            DigestType.SHA_384,
+                            CURRENT_SERIALIZATION_VERSION,
+                            keySerializer.getSerializedSize(),
+                            new EntityNumVirtualKeySupplier(),
+                            CURRENT_SERIALIZATION_VERSION,
+                            // Why does (1 + 4 * Long.SIZE) result in "leaked keys"?
+                            DataFileCommon.VARIABLE_DATA_SIZE,
+                            new OnDiskTokenRelSupplier(),
+                            false);
 
-        final JasperDbBuilder<EntityNumVirtualKey, OnDiskTokenRel> dsBuilder = new JasperDbBuilder<>();
-        dsBuilder
-                .storageDir(storageDir)
-                .virtualLeafRecordSerializer(tokenRelLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
-                .keySerializer(keySerializer)
-                .maxNumOfKeys(MAX_TOKEN_RELS)
-                .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            dsBuilder = new JasperDbBuilder<EntityNumVirtualKey, OnDiskTokenRel>()
+                    .storageDir(storageDir)
+                    .virtualLeafRecordSerializer(tokenRelLeafRecordSerializer)
+                    .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                    .keySerializer(keySerializer)
+                    .maxNumOfKeys(MAX_TOKEN_RELS)
+                    .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+        }
         return new VirtualMap<>(ON_DISK_TOKEN_RELS_STORAGE_VM_NAME, dsBuilder);
     }
 

@@ -19,7 +19,6 @@ import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
-import static com.hedera.services.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap;
@@ -144,7 +143,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 uniqueTokens().size());
         log.info(
                 "  (@ {}) # token associations = {}",
-                TOKEN_ASSOCIATIONS,
+                StateChildIndices.TOKEN_ASSOCIATIONS,
                 tokenAssociations().size());
         log.info("  (@ {}) # topics             = {}", StateChildIndices.TOPICS, topics().size());
         log.info("  (@ {}) # blobs              = {}", StateChildIndices.STORAGE, storage().size());
@@ -483,7 +482,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @SuppressWarnings("unchecked")
     public TokenRelStorageAdapter tokenAssociations() {
-        final var relsStorage = getChild(TOKEN_ASSOCIATIONS);
+        final var relsStorage = getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
         return (relsStorage instanceof VirtualMap)
                 ? TokenRelStorageAdapter.fromOnDisk(
                         (VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage)
@@ -551,9 +550,9 @@ public class ServicesState extends PartialNaryMerkleInternal
             setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
         }
         if (enableVirtualTokenRels) {
-            setChild(TOKEN_ASSOCIATIONS, virtualMapFactory.newOnDiskTokenRels());
+            setChild(StateChildIndices.TOKEN_ASSOCIATIONS, virtualMapFactory.newOnDiskTokenRels());
         } else {
-            setChild(TOKEN_ASSOCIATIONS, new MerkleMap<>());
+            setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
         }
         setChild(StateChildIndices.TOPICS, new MerkleMap<>());
         setChild(StateChildIndices.STORAGE, virtualMapFactory.newVirtualizedBlobs());
@@ -620,7 +619,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     boolean shouldMigrateTokenRelsToDisk() {
-        return enableVirtualTokenRels && getChild(TOKEN_ASSOCIATIONS) instanceof MerkleMap<?, ?>;
+        return enableVirtualTokenRels && getChild(StateChildIndices.TOKEN_ASSOCIATIONS) instanceof MerkleMap<?, ?>;
     }
 
     private static void migrateVirtualMapsToMerkleDb(final ServicesState state) throws InterruptedException {
@@ -644,6 +643,30 @@ public class ServicesState extends PartialNaryMerkleInternal
                     vmFactory.newVirtualizedIterableStorage();
             merkleDbBackedMap = migrateVirtualMap(contractStorageMap, merkleDbBackedMap);
             state.setChild(StateChildIndices.CONTRACT_STORAGE, merkleDbBackedMap);
+        }
+
+        // virtualized accounts, if enabled
+        if (state.enableVirtualAccounts) {
+            final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accountsMap =
+                    state.getChild(StateChildIndices.ACCOUNTS);
+            if (jasperDbBacked(accountsMap)) {
+                VirtualMap<EntityNumVirtualKey, OnDiskAccount> merkleDbBackedMap =
+                        vmFactory.newOnDiskAccountStorage();
+                merkleDbBackedMap = migrateVirtualMap(accountsMap, merkleDbBackedMap);
+                state.setChild(StateChildIndices.ACCOUNTS, merkleDbBackedMap);
+            }
+        }
+
+        // virtualized token associations, if enabled
+        if (state.enableVirtualTokenRels) {
+            final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenAssociationsMap =
+                    state.getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
+            if (jasperDbBacked(tokenAssociationsMap)) {
+                VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> merkleDbBackedMap =
+                        vmFactory.newOnDiskTokenRels();
+                merkleDbBackedMap = migrateVirtualMap(tokenAssociationsMap, merkleDbBackedMap);
+                state.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, merkleDbBackedMap);
+            }
         }
 
         // virtualized unique token storage, if enabled

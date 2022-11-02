@@ -67,11 +67,6 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
         return onDisk;
     }
 
-    public static int serializedSizeInBytes() {
-        // Why does (1 + 4 * Long.SIZE) result in "leaked keys"?
-        return DataFileCommon.VARIABLE_DATA_SIZE;
-    }
-
     @Override
     public long getClassId() {
         return CLASS_ID;
