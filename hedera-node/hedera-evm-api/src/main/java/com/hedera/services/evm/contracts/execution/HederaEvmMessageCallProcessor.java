@@ -41,7 +41,7 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
             Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
 
-    private final Map<Address, PrecompiledContract> hederaPrecompiles;
+    protected final Map<Address, PrecompiledContract> hederaPrecompiles;
     protected long gasRequirement;
     protected Bytes output;
 

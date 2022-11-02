@@ -23,7 +23,6 @@ import com.hedera.services.contracts.execution.traceability.HederaOperationTrace
 import com.hedera.services.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -38,14 +37,11 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     public static final Bytes INVALID_TRANSFER =
             Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
-    private final Map<Address, PrecompiledContract> hederaPrecompiles;
-
     public HederaMessageCallProcessor(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList) {
         super(evm, precompiles, hederaPrecompileList);
-        hederaPrecompiles = new HashMap<>();
         hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
     }
 
