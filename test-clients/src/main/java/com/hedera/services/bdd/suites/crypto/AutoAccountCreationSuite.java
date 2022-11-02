@@ -56,9 +56,6 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREAT
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
