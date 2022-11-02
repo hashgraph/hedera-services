@@ -111,6 +111,9 @@ class InfrastructureFactoryTest {
     @Mock private AliasManager aliasManager;
     @Mock private FeeDistribution feeDistribution;
     @Mock private Provider<FeeCalculator> feeCalculator;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private StateView view;
+    @Mock private EntityCreator entityCreator;
 
     private InfrastructureFactory subject;
 
@@ -129,7 +132,10 @@ class InfrastructureFactoryTest {
                         txnCtx,
                         aliasManager,
                         feeDistribution,
-                        feeCalculator);
+                        feeCalculator,
+                        syntheticTxnFactory,
+                        view,
+                        entityCreator);
     }
 
     @Test
@@ -158,11 +164,7 @@ class InfrastructureFactoryTest {
     void canCreateNewAutoCreationLogc() {
         assertInstanceOf(
                 AutoCreationLogic.class,
-                subject.newAutoCreationLogic(
-                        mock(SyntheticTxnFactory.class),
-                        mock(EntityCreator.class),
-                        mock(StateView.class),
-                        mock(AliasManager.class)));
+                subject.newAutoCreationLogicScopedTo(mock(HederaStackedWorldStateUpdater.class)));
     }
 
     @Test

@@ -27,7 +27,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.accounts.HederaAliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -42,6 +41,7 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
@@ -93,6 +93,9 @@ public class InfrastructureFactory {
     private final AliasManager aliasManager;
     private final FeeDistribution feeDistribution;
     private final Provider<FeeCalculator> feeCalculator;
+    private final SyntheticTxnFactory syntheticTxnFactory;
+    private final StateView view;
+    private final EntityCreator entityCreator;
 
     @Inject
     public InfrastructureFactory(
@@ -107,7 +110,10 @@ public class InfrastructureFactory {
             final TransactionContext txnCtx,
             final AliasManager aliasManager,
             final FeeDistribution feeDistribution,
-            final Provider<FeeCalculator> feeCalculator) {
+            final Provider<FeeCalculator> feeCalculator,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final StateView view,
+            final EntityCreator entityCreator) {
         this.ids = ids;
         this.encoder = encoder;
         this.validator = validator;
@@ -120,6 +126,9 @@ public class InfrastructureFactory {
         this.aliasManager = aliasManager;
         this.feeDistribution = feeDistribution;
         this.feeCalculator = feeCalculator;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.view = view;
+        this.entityCreator = entityCreator;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -297,18 +306,15 @@ public class InfrastructureFactory {
                 sigImpactHistorian);
     }
 
-    public AutoCreationLogic newAutoCreationLogic(
-            final SyntheticTxnFactory syntheticTxnFactory,
-            final EntityCreator entityCreator,
-            final StateView view,
-            final HederaAliasManager aliasManager) {
+    public AutoCreationLogic newAutoCreationLogicScopedTo(
+            final HederaStackedWorldStateUpdater updater) {
         final var autoCreationLogic =
                 new AutoCreationLogic(
                         usageLimits,
                         syntheticTxnFactory,
                         entityCreator,
                         ids,
-                        aliasManager,
+                        updater.aliases(),
                         sigImpactHistorian,
                         () -> view,
                         txnCtx,

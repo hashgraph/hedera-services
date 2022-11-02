@@ -89,7 +89,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -116,7 +115,6 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.pricing.AssetsLoader;
-import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -1134,7 +1132,7 @@ class TransferPrecompilesTest {
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
         given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
-        given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(any()))
                 .willReturn(autoCreationLogic);
         final var lazyCreationFee = 500L;
         when(autoCreationLogic.create(
@@ -1150,12 +1148,6 @@ class TransferPrecompilesTest {
                         });
         final var gasPrice = 50L;
         given(frame.getGasPrice()).willReturn(Wei.of(gasPrice));
-        final var inProgressChildRecord = mock(InProgressChildRecord.class);
-        final var builder = mock(ExpirableTxnRecord.Builder.class);
-        given(inProgressChildRecord.recordBuilder()).willReturn(builder);
-        final var syntheticBodyMock = mock(TransactionBody.Builder.class);
-        given(inProgressChildRecord.syntheticBody()).willReturn(syntheticBodyMock);
-        given(autoCreationLogic.getPendingCreations()).willReturn(List.of(inProgressChildRecord));
 
         // when:
         subject.prepareFields(frame);
@@ -1180,10 +1172,8 @@ class TransferPrecompilesTest {
                         balanceChangesForLazyCreateHappyPath.get(1),
                         accounts,
                         balanceChangesForLazyCreateHappyPath);
-        verify(worldUpdater)
-                .manageInProgressPrecedingRecord(recordsHistorian, builder, syntheticBodyMock);
+        verify(autoCreationLogic).submitRecords(any(), eq(false));
         verify(frame).decrementRemainingGas(lazyCreationFee / gasPrice);
-        verify(builder).onlyExternalizeIfSuccessful();
         verify(transferLogic).doZeroSum(balanceChangesForLazyCreateHappyPath);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
@@ -1255,7 +1245,7 @@ class TransferPrecompilesTest {
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
         given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
-        given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(any()))
                 .willReturn(autoCreationLogic);
         final var lazyCreationFee = 500L;
         given(
@@ -1284,12 +1274,6 @@ class TransferPrecompilesTest {
                         });
         final var gasPrice = 50L;
         given(frame.getGasPrice()).willReturn(Wei.of(gasPrice));
-        final var inProgressChildRecord = mock(InProgressChildRecord.class);
-        final var builder = mock(ExpirableTxnRecord.Builder.class);
-        given(inProgressChildRecord.recordBuilder()).willReturn(builder);
-        final var syntheticBodyMock = mock(TransactionBody.Builder.class);
-        given(inProgressChildRecord.syntheticBody()).willReturn(syntheticBodyMock);
-        given(autoCreationLogic.getPendingCreations()).willReturn(List.of(inProgressChildRecord));
 
         // when:
         subject.prepareFields(frame);
@@ -1305,10 +1289,8 @@ class TransferPrecompilesTest {
         final var expected = 6 * defaultCost;
         assertEquals(expected + (expected / 5), gasRequirement);
         verify(autoCreationLogic, times(2)).create(any(), any(), any());
-        verify(worldUpdater, times(2))
-                .manageInProgressPrecedingRecord(recordsHistorian, builder, syntheticBodyMock);
+        verify(autoCreationLogic).submitRecords(any(), eq(false));
         verify(frame, times(2)).decrementRemainingGas(lazyCreationFee / gasPrice);
-        verify(builder, times(2)).onlyExternalizeIfSuccessful();
         verify(transferLogic).doZeroSum(tokensTransferChangesAliased2x);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
@@ -1372,7 +1354,7 @@ class TransferPrecompilesTest {
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
         given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
-        given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(any()))
                 .willReturn(autoCreationLogic);
         final var lazyCreationFee = 500L;
         when(autoCreationLogic.create(
@@ -1468,7 +1450,7 @@ class TransferPrecompilesTest {
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
         given(dynamicProperties.isImplicitCreationEnabled()).willReturn(false);
-        given(infrastructureFactory.newAutoCreationLogic(any(), any(), any(), any()))
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(any()))
                 .willReturn(autoCreationLogic);
         given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.NOT_SUPPORTED))
                 .willReturn(mockRecordBuilder);

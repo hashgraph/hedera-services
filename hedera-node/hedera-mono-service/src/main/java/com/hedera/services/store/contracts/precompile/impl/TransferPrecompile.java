@@ -294,6 +294,17 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             }
         }
 
+        // track auto-creation child records if needed
+        if (numLazyCreates > 0) {
+            autoCreationLogic.submitRecords(
+                    (txnBody, txnRecord) -> {
+                        txnRecord.onlyExternalizeIfSuccessful();
+                        updater.manageInProgressPrecedingRecord(
+                                recordsHistorian, txnRecord, txnBody);
+                    },
+                    false);
+        }
+
         transferLogic.doZeroSum(changes);
     }
 
@@ -306,7 +317,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
         } else {
-            executeLazyCreate(frame, changes, change);
+            final var lazyCreateResult =
+                    autoCreationLogic.create(change, ledgers.accounts(), changes);
+            validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
+            // charge lazy creation fees in gas
+            final var creationFeeInTinybars = lazyCreateResult.getRight();
+            final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
+            frame.decrementRemainingGas(creationFeeInGas);
             completedLazyCreates.put(
                     receiverAlias,
                     EntityNum.fromAccountId(
@@ -314,25 +331,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     ? change.accountId()
                                     : change.counterPartyAccountId()));
         }
-    }
-
-    private void executeLazyCreate(
-            final MessageFrame frame,
-            final List<BalanceChange> changes,
-            final BalanceChange change) {
-        final var lazyCreateResult = autoCreationLogic.create(change, ledgers.accounts(), changes);
-        validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
-        // charge lazy creation fees in gas
-        final var creationFeeInTinybars = lazyCreateResult.getRight();
-        final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
-        frame.decrementRemainingGas(creationFeeInGas);
-        // track auto-creation preceding child record
-        final var pendingCreations = autoCreationLogic.getPendingCreations();
-        final var lastRecord = pendingCreations.get(pendingCreations.size() - 1);
-        final var recordSoFar = lastRecord.recordBuilder();
-        recordSoFar.onlyExternalizeIfSuccessful();
-        updater.manageInProgressPrecedingRecord(
-                recordsHistorian, recordSoFar, lastRecord.syntheticBody());
     }
 
     @Override
