@@ -25,12 +25,7 @@ import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTo
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
@@ -52,14 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
@@ -67,13 +55,7 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.A
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -84,7 +66,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -99,6 +80,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.tuple.Pair;
@@ -195,7 +177,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 canAutoCreateWithHbarAndTokenTransfers(),
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
-                transferNonFungibleToEVMAddressAlias());
+                transferNonFungibleToEVMAddressAlias(),
+                payerBalanceIsReflectsAllChangesBeforeFeeCharging());
     }
 
     private HapiApiSpec canAutoCreateWithHbarAndTokenTransfers() {
@@ -657,6 +640,75 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .hasToken(relationshipWith(B_TOKEN).balance(20)));
     }
 
+    private HapiApiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
+        final var secondAliasKey = "secondAlias";
+        final var secondPayer = "secondPayer";
+        final AtomicLong totalAutoCreationFees = new AtomicLong();
+
+        return defaultHapiSpec("PayerBalanceIsReflectsAllChangesBeforeFeeCharging")
+                .given(
+                        overriding(FEATURE_FLAG, "true"),
+                        newKeyNamed(VALID_ALIAS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(1000)
+                                .treasury(TOKEN_TREASURY),
+                        cryptoCreate(CIVILIAN)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(1),
+                        cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
+                        cryptoTransfer(
+                                        moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
+                                        movingHbar(1).between(CIVILIAN, FUNDING))
+                                .fee(50 * ONE_HBAR)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN),
+                        getAccountBalance(CIVILIAN)
+                                .exposingBalanceTo(
+                                        balance ->
+                                                totalAutoCreationFees.set(
+                                                        ONE_HUNDRED_HBARS - balance - 1)))
+                .when(
+                        logIt(
+                                spec ->
+                                        String.format(
+                                                "Total auto-creation fees: %d",
+                                                totalAutoCreationFees.get())),
+                        sourcing(
+                                () ->
+                                        cryptoCreate(secondPayer)
+                                                .maxAutomaticTokenAssociations(1)
+                                                .balance(totalAutoCreationFees.get())),
+                        cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, secondPayer)))
+                .then(
+                        newKeyNamed(secondAliasKey),
+                        sourcing(
+                                () ->
+                                        cryptoTransfer(
+                                                        moving(10, A_TOKEN)
+                                                                .between(
+                                                                        secondPayer,
+                                                                        secondAliasKey),
+                                                        movingHbar(1).between(secondPayer, FUNDING))
+                                                .fee(totalAutoCreationFees.get() - 2)
+                                                .payingWith(secondPayer)
+                                                .signedBy(secondPayer)
+                                                .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)),
+                        getAccountBalance(secondPayer)
+                                .hasTinyBars(
+                                        spec ->
+                                                // Should only be charged a few hundred thousand
+                                                // tinybar at most
+                                                balance ->
+                                                        ((totalAutoCreationFees.get() - balance)
+                                                                        > 500_000L)
+                                                                ? Optional.empty()
+                                                                : Optional.of(
+                                                                        "Payer was"
+                                                                            + " over-charged!")));
+    }
+
     private HapiApiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
@@ -778,8 +830,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .getECDSASecp256K1()
                                                     .toByteArray();
                                     final var evmAddress =
-                                            ByteString.copyFrom(
-                                                    EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                                     final var op =
                                             cryptoTransfer(
                                                             tinyBarsFromTo(
@@ -826,8 +877,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .getECDSASecp256K1()
                                                     .toByteArray();
                                     final var evmAddress =
-                                            ByteString.copyFrom(
-                                                    EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                                     final var op =
                                             cryptoTransfer(
                                                             tinyBarsFromTo(
