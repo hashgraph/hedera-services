@@ -71,10 +71,10 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.A
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -207,7 +207,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias(),
                 payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
-            feesAreCorrectForHollowAccountCreationWithCryptoTransfer());
+                feesAreCorrectForHollowAccountCreationWithCryptoTransfer());
     }
 
     private HapiApiSpec canAutoCreateWithHbarAndTokenTransfers() {
@@ -848,7 +848,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         final long REDUCED_NETWORK_FEE = 3L;
         final long REDUCED_SERVICE_FEE = 3L;
         final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
-        return defaultHapiSpec("HollowAccountCreationWithCryptoTransfer")
+        return defaultHapiSpec("FeesAreCorrectForHollowAccountCreationWithCryptoTransfer")
                 .given(
                         UtilVerbs.overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -879,8 +879,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .getECDSASecp256K1()
                                                     .toByteArray();
                                     final var evmAddress =
-                                            ByteString.copyFrom(
-                                                    EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                                     // try to create the hollow account without having enough
                                     // balance to pay for the finalization (CryptoUpdate) fee
                                     final var op =

@@ -73,6 +73,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
@@ -195,7 +196,8 @@ class AutoCreationLogicTest {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                        Objects.requireNonNull(
+                                EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key())));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -242,7 +244,8 @@ class AutoCreationLogicTest {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                        Objects.requireNonNull(
+                                EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key())));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -279,8 +282,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(2 * totalFee, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, 2 * totalFee), result);
     }
 
     @Test
@@ -288,7 +291,8 @@ class AutoCreationLogicTest {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                        Objects.requireNonNull(
+                                EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key())));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -325,8 +329,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(2 * totalFee, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, 2 * totalFee), result);
     }
 
     @Test

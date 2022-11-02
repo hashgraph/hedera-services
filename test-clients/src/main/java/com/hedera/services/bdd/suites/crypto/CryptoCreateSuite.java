@@ -830,7 +830,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
         final long REDUCED_SERVICE_FEE = 3L;
         final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
         final var payer = "payer";
-        return defaultHapiSpec("CreateAnAccountWithEVMAddressAlias")
+        return defaultHapiSpec("HollowAccountCreationChargesExpectedFees")
                 .given(
                         UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
                         UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
