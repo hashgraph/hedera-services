@@ -680,7 +680,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                 kvPair -> {
                     final K key = kvPair.getKey();
                     final V value = kvPair.getValue();
-                    log.info("Migrating " + key + " to " + value);
                     final VirtualMap<K, V> curCopy = targetMapRef.get();
                     curCopy.put(key, value);
                     // Make a map copy every X rounds to flush map cache to disk
