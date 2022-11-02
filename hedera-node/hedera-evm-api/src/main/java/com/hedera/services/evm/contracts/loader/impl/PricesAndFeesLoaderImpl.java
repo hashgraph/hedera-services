@@ -18,12 +18,6 @@ package com.hedera.services.evm.contracts.loader.impl;
 import com.hedera.services.evm.contracts.loader.PricesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import java.util.EnumMap;
-import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
