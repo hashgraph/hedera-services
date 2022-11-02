@@ -233,7 +233,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         if (!result.isSuccessful()) {
             worldState.reclaimContractId();
 
-            // Unlink unneeded alias from the alias map to free memory
             if (aliasManager.isInUse(newContractAddress)) {
                 aliasManager.unlink(newContractAddress);
             }
@@ -276,6 +275,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             }
             txnCtx.setTargetedContract(newContractId);
             sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
+            if (relayerId != null) {
+                sigImpactHistorian.markAliasChanged(
+                        ByteStringUtils.wrapUnsafely(newContractAddress.toArrayUnsafe()));
+            }
         } else {
             if (properties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)
                     && op.getInitcodeSourceCase() != INITCODE) {
