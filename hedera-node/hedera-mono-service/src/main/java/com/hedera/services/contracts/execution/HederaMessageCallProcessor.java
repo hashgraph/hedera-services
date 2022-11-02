@@ -25,7 +25,6 @@ import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
@@ -42,7 +41,6 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList) {
         super(evm, precompiles, hederaPrecompileList);
-        hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
     }
 
     @Override
