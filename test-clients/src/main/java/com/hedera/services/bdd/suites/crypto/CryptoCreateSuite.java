@@ -863,7 +863,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op2 =
                                             cryptoTransfer(
                                                     tinyBarsFromTo(
-                                                            GENESIS, payer, REDUCED_TOTAL_FEE));
+                                                            GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(evmAddressBytes)
