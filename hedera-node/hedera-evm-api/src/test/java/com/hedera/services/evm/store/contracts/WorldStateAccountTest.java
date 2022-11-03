@@ -60,33 +60,35 @@ class WorldStateAccountTest {
 
     @Test
     void storageEntriesFrom() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.storageEntriesFrom(null, 10));
+        assertThrows(
+                UnsupportedOperationException.class, () -> subject.storageEntriesFrom(null, 10));
     }
 
     @Test
     void stringified() {
-        var stringified = "AccountState"
-            + "{"
-            + "address="
-            + subject.getAddress()
-            + ", "
-            + "nonce="
-            + subject.getNonce()
-            + ", "
-            + "balance="
-            + subject.getBalance()
-            + ", "
-            + "codeHash="
-            + subject.getCodeHash()
-            + ", "
-            + "}";
+        var stringified =
+                "AccountState"
+                        + "{"
+                        + "address="
+                        + subject.getAddress()
+                        + ", "
+                        + "nonce="
+                        + subject.getNonce()
+                        + ", "
+                        + "balance="
+                        + subject.getBalance()
+                        + ", "
+                        + "codeHash="
+                        + subject.getCodeHash()
+                        + ", "
+                        + "}";
 
         assertEquals(stringified, subject.toString());
     }
 
     @Test
     void getStorageValue() {
-       assertEquals(UInt256.valueOf(0), subject.getStorageValue(UInt256.MIN_VALUE));
+        assertEquals(UInt256.valueOf(0), subject.getStorageValue(UInt256.MIN_VALUE));
     }
 
     @Test
