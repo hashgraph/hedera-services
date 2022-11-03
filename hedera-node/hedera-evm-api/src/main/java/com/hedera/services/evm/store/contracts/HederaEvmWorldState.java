@@ -28,7 +28,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-public  class HederaEvmWorldState implements HederaEvmMutableWorldState {
+public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
@@ -46,10 +46,10 @@ public  class HederaEvmWorldState implements HederaEvmMutableWorldState {
     }
 
     protected HederaEvmWorldState(
-        HederaEvmEntityAccess hederaEvmEntityAccess,
-        EvmProperties evmProperties,
-        AbstractCodeCache abstractCodeCache,
-        AccountAccessor accountAccessor) {
+            HederaEvmEntityAccess hederaEvmEntityAccess,
+            EvmProperties evmProperties,
+            AbstractCodeCache abstractCodeCache,
+            AccountAccessor accountAccessor) {
         this(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
         this.accountAccessor = accountAccessor;
     }
@@ -114,9 +114,7 @@ public  class HederaEvmWorldState implements HederaEvmMutableWorldState {
         }
 
         @Override
-        public void deleteAccount(Address address) {
-
-        }
+        public void deleteAccount(Address address) {}
 
         @Override
         public Collection<? extends Account> getTouchedAccounts() {
@@ -129,14 +127,10 @@ public  class HederaEvmWorldState implements HederaEvmMutableWorldState {
         }
 
         @Override
-        public void revert() {
-
-        }
+        public void revert() {}
 
         @Override
-        public void commit() {
-
-        }
+        public void commit() {}
 
         @Override
         public Optional<WorldUpdater> parentUpdater() {
