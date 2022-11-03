@@ -15,19 +15,26 @@
  */
 package com.hedera.services.evm.store.contracts;
 
+import com.hedera.services.evm.accounts.AccountAccessor;
 import com.hedera.services.evm.contracts.execution.EvmProperties;
+import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-public abstract class HederaEvmWorldState implements HederaEvmMutableWorldState {
+public  class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
     private final AbstractCodeCache abstractCodeCache;
+
+    AccountAccessor accountAccessor;
 
     protected HederaEvmWorldState(
             HederaEvmEntityAccess hederaEvmEntityAccess,
@@ -36,6 +43,15 @@ public abstract class HederaEvmWorldState implements HederaEvmMutableWorldState 
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.abstractCodeCache = abstractCodeCache;
+    }
+
+    protected HederaEvmWorldState(
+        HederaEvmEntityAccess hederaEvmEntityAccess,
+        EvmProperties evmProperties,
+        AbstractCodeCache abstractCodeCache,
+        AccountAccessor accountAccessor) {
+        this(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
+        this.accountAccessor = accountAccessor;
     }
 
     public Account get(final Address address) {
@@ -67,5 +83,74 @@ public abstract class HederaEvmWorldState implements HederaEvmMutableWorldState 
     @Override
     public Stream<StreamableAccount> streamAccounts(Bytes32 startKeyHash, int limit) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public HederaEvmWorldUpdater updater() {
+        return new Updater(accountAccessor);
+    }
+
+    public static class Updater implements HederaEvmWorldUpdater {
+
+        AccountAccessor accountAccessor;
+
+        protected Updater(AccountAccessor accountAccessor) {
+            this.accountAccessor = accountAccessor;
+        }
+
+        @Override
+        public long getSbhRefund() {
+            return 0;
+        }
+
+        @Override
+        public EvmAccount createAccount(Address address, long nonce, Wei balance) {
+            return null;
+        }
+
+        @Override
+        public EvmAccount getAccount(Address address) {
+            return null;
+        }
+
+        @Override
+        public void deleteAccount(Address address) {
+
+        }
+
+        @Override
+        public Collection<? extends Account> getTouchedAccounts() {
+            return null;
+        }
+
+        @Override
+        public Collection<Address> getDeletedAccountAddresses() {
+            return null;
+        }
+
+        @Override
+        public void revert() {
+
+        }
+
+        @Override
+        public void commit() {
+
+        }
+
+        @Override
+        public Optional<WorldUpdater> parentUpdater() {
+            return Optional.empty();
+        }
+
+        @Override
+        public WorldUpdater updater() {
+            return new AbstractLedgerEvmWorldUpdater(accountAccessor);
+        }
+
+        @Override
+        public Account get(Address address) {
+            return null;
+        }
     }
 }
