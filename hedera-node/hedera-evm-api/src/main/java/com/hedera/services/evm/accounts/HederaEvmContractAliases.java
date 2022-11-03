@@ -36,7 +36,7 @@ public abstract class HederaEvmContractAliases {
                         System.arraycopy(
                                 Longs.toByteArray(StaticProperties.getRealm()), 0, result, 4, 8);
                         return result;
-                    });
+                    })::get;
 
     public abstract Address resolveForEvm(Address addressOrAlias);
 
