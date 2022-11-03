@@ -180,7 +180,8 @@ public class PropertyNames {
     public static final String SCHEDULING_MAX_NUM = "scheduling.maxNumber";
     public static final String SCHEDULING_MAX_EXPIRATION_FUTURE_SECS =
             "scheduling.maxExpirationFutureSeconds";
-    public static final String SCHEDULING_COST_INCREMENT_USD = "scheduling.costIncrementUSD";
+    public static final String SCHEDULING_COST_INCREMENT_TINY_CENTS =
+            "scheduling.costIncrementTinyCents";
     public static final String SCHEDULING_COST_INCREMENT_BPM =
             "scheduling.costIncrementBytesPerMonth";
     public static final String SCHEDULING_WHITE_LIST = "scheduling.whitelist";

@@ -95,7 +95,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long schedulingMaxTxnPerSecond;
     private long schedulingMaxExpirationFutureSeconds;
     private int scheduledTxDefaultExpiryTimeSecs;
-    private double scheduleTxCostIncrementUSD;
+    private long scheduleTxCostIncrementTinyCents;
     private int scheduleTxCostIncrementBytesPerMonth;
     private int messageMaxBytesAllowed;
     private long maxPrecedingRecords;
@@ -228,7 +228,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         localCallEstRetBytes = properties.getIntProperty(CONTRACTS_LOCAL_CALL_EST_RET_BYTES);
         scheduledTxDefaultExpiryTimeSecs =
                 properties.getIntProperty(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
-        scheduleTxCostIncrementUSD = properties.getDoubleProperty(SCHEDULING_COST_INCREMENT_USD);
+        scheduleTxCostIncrementTinyCents =
+                properties.getLongProperty(SCHEDULING_COST_INCREMENT_TINY_CENTS);
         scheduleTxCostIncrementBytesPerMonth =
                 properties.getIntProperty(SCHEDULING_COST_INCREMENT_BPM);
         schedulingLongTermEnabled = properties.getBooleanProperty(SCHEDULING_LONG_TERM_ENABLED);
@@ -514,8 +515,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         return scheduledTxDefaultExpiryTimeSecs;
     }
 
-    public double scheduleTxCostIncrementUSD() {
-        return scheduleTxCostIncrementUSD;
+    public long scheduleTxCostIncrementTinyCents() {
+        return scheduleTxCostIncrementTinyCents;
     }
 
     public int scheduleTxCostIncrementBytesPerMonth() {

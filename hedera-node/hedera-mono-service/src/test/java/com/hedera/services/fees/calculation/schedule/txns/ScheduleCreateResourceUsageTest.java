@@ -66,7 +66,7 @@ class ScheduleCreateResourceUsageTest {
                                 scheduleCreateTxn,
                                 sigUsage,
                                 props.scheduledTxExpiryTimeSecs(),
-                                props.scheduleTxCostIncrementUSD(),
+                                props.scheduleTxCostIncrementTinyCents(),
                                 props.scheduleTxCostIncrementBytesPerMonth(),
                                 props.scheduledTxExpiryTimeSecs()))
                 .willReturn(expected);

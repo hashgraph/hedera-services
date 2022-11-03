@@ -168,8 +168,8 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     }
 
     @Override
-    public double scheduleTxCostIncrementUSD() {
-        return 0.0002;
+    public long scheduleTxCostIncrementTinyCents() {
+        return 20000000L;
     }
 
     @Override

@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
@@ -137,34 +138,68 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 enableLongTermScheduledTransactions(),
-                executionWithDefaultPayerWorks(),
-//                executionWithCustomPayerWorks(),
-//                executionWithCustomPayerThatNeverSignsFails(),
-//                executionWithCustomPayerWhoSignsAtCreationAsPayerWorks(),
-//                executionWithCustomPayerAndAdminKeyWorks(),
-//                executionWithDefaultPayerButNoFundsFails(),
-//                executionWithCustomPayerButNoFundsFails(),
-//                executionWithDefaultPayerButAccountDeletedFails(),
-//                executionWithCustomPayerButAccountDeletedFails(),
-//                executionWithInvalidAccountAmountsFails(),
-//                executionWithCryptoInsufficientAccountBalanceFails(),
-//                executionWithCryptoSenderDeletedFails(),
-//                executionTriggersWithWeirdlyRepeatedKey(),
-//                scheduledFreezeWorksAsExpected(),
-//                scheduledFreezeWithUnauthorizedPayerFails(),
-//                scheduledPermissionedFileUpdateWorksAsExpected(),
-//                scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
-//                scheduledSystemDeleteWorksAsExpected(),
-//                scheduledSystemDeleteUnauthorizedPayerFails(),
-//                executionWithContractCallWorksAtExpiry(),
-//                executionWithContractCreateWorksAtExpiry(),
-//                futureThrottlesAreRespected(),
-//                disableLongTermScheduledTransactions(),
-//                waitForExpiryIgnoredWhenLongTermDisabled(),
-//                expiryIgnoredWhenLongTermDisabled(),
-//                waitForExpiryIgnoredWhenLongTermDisabledThenEnabled(),
-//                expiryIgnoredWhenLongTermDisabledThenEnabled(),
+                //                executionWithDefaultPayerWorks(),
+                //                executionWithCustomPayerWorks(),
+                //                executionWithCustomPayerThatNeverSignsFails(),
+                //                executionWithCustomPayerWhoSignsAtCreationAsPayerWorks(),
+                //                executionWithCustomPayerAndAdminKeyWorks(),
+                //                executionWithDefaultPayerButNoFundsFails(),
+                //                executionWithCustomPayerButNoFundsFails(),
+                //                executionWithDefaultPayerButAccountDeletedFails(),
+                //                executionWithCustomPayerButAccountDeletedFails(),
+                //                executionWithInvalidAccountAmountsFails(),
+                //                executionWithCryptoInsufficientAccountBalanceFails(),
+                //                executionWithCryptoSenderDeletedFails(),
+                //                executionTriggersWithWeirdlyRepeatedKey(),
+                //                scheduledFreezeWorksAsExpected(),
+                //                scheduledFreezeWithUnauthorizedPayerFails(),
+                //                scheduledPermissionedFileUpdateWorksAsExpected(),
+                //                scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
+                //                scheduledSystemDeleteWorksAsExpected(),
+                //                scheduledSystemDeleteUnauthorizedPayerFails(),
+                //                executionWithContractCallWorksAtExpiry(),
+                //                executionWithContractCreateWorksAtExpiry(),
+                //                futureThrottlesAreRespected(),
+                //                disableLongTermScheduledTransactions(),
+                //                waitForExpiryIgnoredWhenLongTermDisabled(),
+                //                expiryIgnoredWhenLongTermDisabled(),
+                //                waitForExpiryIgnoredWhenLongTermDisabledThenEnabled(),
+                //                expiryIgnoredWhenLongTermDisabledThenEnabled(),
+                feesValidation(),
                 setLongTermScheduledTransactionsToDefault());
+    }
+
+    private HapiApiSpec feesValidation() {
+        long transferAmount = 1;
+        return defaultHapiSpec("feesValidation")
+                .given(
+                        overriding(SCHEDULING_WHITELIST, "FileUpdate"),
+                        cryptoCreate(SENDER),
+                        cryptoCreate(RECEIVER),
+                        cryptoCreate(PAYING_ACCOUNT),
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        cryptoTransfer(
+                                                tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
+                                .waitForExpiry()
+                                .withRelativeExpiry(SENDER_TXN, 3600)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .via("basicXferCreate"),
+                        validateChargedUsd("basicXferCreate", 0.001),
+                        scheduleCreate(
+                                        VALID_SCHEDULE,
+                                        fileUpdate(standardUpdateFile).contents("fooo!"))
+                                .withEntityMemo(randomUppercase(100))
+                                .designatingPayer(FREEZE_ADMIN)
+                                .payingWith(PAYING_ACCOUNT)
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .recordingScheduledTxn()
+                                .via("fileUpdateTxn"),
+                        validateChargedUsd("basicXferCreate", 0.001))
+                .when()
+                .then();
     }
 
     @SuppressWarnings("java:S5960")
@@ -540,102 +575,101 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .via(CREATE_TX))
                 .when(scheduleSign(BASIC_XFER).alsoSigningWith(SENDER).via(SIGN_TX))
                 .then(
-//                        getScheduleInfo(BASIC_XFER)
-//                                .hasScheduleId(BASIC_XFER)
-//                                .hasWaitForExpiry()
-//                                .isNotExecuted()
-//                                .isNotDeleted()
-//                                .hasRelativeExpiry(SENDER_TXN, 8)
-//                                .hasRecordedScheduledTxn(),
-//                        sleepFor(9000),
-//                        cryptoCreate("foo").via(TRIGGERING_TXN),
-//                        getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-//                        withOpContext(
-//                                (spec, opLog) -> {
-//                                    var createTx = getTxnRecord(CREATE_TX);
-//                                    var signTx = getTxnRecord(SIGN_TX);
-//                                    var triggeringTx = getTxnRecord(TRIGGERING_TXN);
-//                                    var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
-//                                    allRunFor(spec, createTx, signTx, triggeredTx, triggeringTx);
-//
-//                                    Assertions.assertEquals(
-//                                            SUCCESS,
-//                                            triggeredTx
-//                                                    .getResponseRecord()
-//                                                    .getReceipt()
-//                                                    .getStatus(),
-//                                            SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
-//
-//                                    Instant triggerTime =
-//                                            Instant.ofEpochSecond(
-//                                                    triggeringTx
-//                                                            .getResponseRecord()
-//                                                            .getConsensusTimestamp()
-//                                                            .getSeconds(),
-//                                                    triggeringTx
-//                                                            .getResponseRecord()
-//                                                            .getConsensusTimestamp()
-//                                                            .getNanos());
-//
-//                                    Instant triggeredTime =
-//                                            Instant.ofEpochSecond(
-//                                                    triggeredTx
-//                                                            .getResponseRecord()
-//                                                            .getConsensusTimestamp()
-//                                                            .getSeconds(),
-//                                                    triggeredTx
-//                                                            .getResponseRecord()
-//                                                            .getConsensusTimestamp()
-//                                                            .getNanos());
-//
-//                                    Assertions.assertTrue(
-//                                            triggerTime.isBefore(triggeredTime),
-//                                            WRONG_CONSENSUS_TIMESTAMP);
-//
-//                                    Assertions.assertEquals(
-//                                            createTx.getResponseRecord()
-//                                                    .getTransactionID()
-//                                                    .getTransactionValidStart(),
-//                                            triggeredTx
-//                                                    .getResponseRecord()
-//                                                    .getTransactionID()
-//                                                    .getTransactionValidStart(),
-//                                            WRONG_TRANSACTION_VALID_START);
-//
-//                                    Assertions.assertEquals(
-//                                            createTx.getResponseRecord()
-//                                                    .getTransactionID()
-//                                                    .getAccountID(),
-//                                            triggeredTx
-//                                                    .getResponseRecord()
-//                                                    .getTransactionID()
-//                                                    .getAccountID(),
-//                                            WRONG_RECORD_ACCOUNT_ID);
-//
-//                                    Assertions.assertTrue(
-//                                            triggeredTx
-//                                                    .getResponseRecord()
-//                                                    .getTransactionID()
-//                                                    .getScheduled(),
-//                                            TRANSACTION_NOT_SCHEDULED);
-//
-//                                    Assertions.assertEquals(
-//                                            createTx.getResponseRecord()
-//                                                    .getReceipt()
-//                                                    .getScheduleID(),
-//                                            triggeredTx.getResponseRecord().getScheduleRef(),
-//                                            WRONG_SCHEDULE_ID);
-//
-//                                    Assertions.assertTrue(
-//                                            transferListCheck(
-//                                                    triggeredTx,
-//                                                    asId(SENDER, spec),
-//                                                    asId(RECEIVER, spec),
-//                                                    asId(PAYING_ACCOUNT, spec),
-//                                                    transferAmount),
-//                                            WRONG_TRANSFER_LIST);
-//                                })
-            );
+                        getScheduleInfo(BASIC_XFER)
+                                .hasScheduleId(BASIC_XFER)
+                                .hasWaitForExpiry()
+                                .isNotExecuted()
+                                .isNotDeleted()
+                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRecordedScheduledTxn(),
+                        sleepFor(9000),
+                        cryptoCreate("foo").via(TRIGGERING_TXN),
+                        getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    var createTx = getTxnRecord(CREATE_TX);
+                                    var signTx = getTxnRecord(SIGN_TX);
+                                    var triggeringTx = getTxnRecord(TRIGGERING_TXN);
+                                    var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
+                                    allRunFor(spec, createTx, signTx, triggeredTx, triggeringTx);
+
+                                    Assertions.assertEquals(
+                                            SUCCESS,
+                                            triggeredTx
+                                                    .getResponseRecord()
+                                                    .getReceipt()
+                                                    .getStatus(),
+                                            SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+
+                                    Instant triggerTime =
+                                            Instant.ofEpochSecond(
+                                                    triggeringTx
+                                                            .getResponseRecord()
+                                                            .getConsensusTimestamp()
+                                                            .getSeconds(),
+                                                    triggeringTx
+                                                            .getResponseRecord()
+                                                            .getConsensusTimestamp()
+                                                            .getNanos());
+
+                                    Instant triggeredTime =
+                                            Instant.ofEpochSecond(
+                                                    triggeredTx
+                                                            .getResponseRecord()
+                                                            .getConsensusTimestamp()
+                                                            .getSeconds(),
+                                                    triggeredTx
+                                                            .getResponseRecord()
+                                                            .getConsensusTimestamp()
+                                                            .getNanos());
+
+                                    Assertions.assertTrue(
+                                            triggerTime.isBefore(triggeredTime),
+                                            WRONG_CONSENSUS_TIMESTAMP);
+
+                                    Assertions.assertEquals(
+                                            createTx.getResponseRecord()
+                                                    .getTransactionID()
+                                                    .getTransactionValidStart(),
+                                            triggeredTx
+                                                    .getResponseRecord()
+                                                    .getTransactionID()
+                                                    .getTransactionValidStart(),
+                                            WRONG_TRANSACTION_VALID_START);
+
+                                    Assertions.assertEquals(
+                                            createTx.getResponseRecord()
+                                                    .getTransactionID()
+                                                    .getAccountID(),
+                                            triggeredTx
+                                                    .getResponseRecord()
+                                                    .getTransactionID()
+                                                    .getAccountID(),
+                                            WRONG_RECORD_ACCOUNT_ID);
+
+                                    Assertions.assertTrue(
+                                            triggeredTx
+                                                    .getResponseRecord()
+                                                    .getTransactionID()
+                                                    .getScheduled(),
+                                            TRANSACTION_NOT_SCHEDULED);
+
+                                    Assertions.assertEquals(
+                                            createTx.getResponseRecord()
+                                                    .getReceipt()
+                                                    .getScheduleID(),
+                                            triggeredTx.getResponseRecord().getScheduleRef(),
+                                            WRONG_SCHEDULE_ID);
+
+                                    Assertions.assertTrue(
+                                            transferListCheck(
+                                                    triggeredTx,
+                                                    asId(SENDER, spec),
+                                                    asId(RECEIVER, spec),
+                                                    asId(PAYING_ACCOUNT, spec),
+                                                    transferAmount),
+                                            WRONG_TRANSFER_LIST);
+                                }));
     }
 
     public HapiApiSpec executionWithContractCallWorksAtExpiry() {

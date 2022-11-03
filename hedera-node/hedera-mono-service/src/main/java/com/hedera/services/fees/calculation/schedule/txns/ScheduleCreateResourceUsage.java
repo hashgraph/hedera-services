@@ -54,7 +54,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 
         final long lifetimeSecs;
         final int costIncrementBytesPerMonth;
-        final double costIncrementUSD;
+        final long costIncrementTinyCents;
 
         if (op.hasExpirationTime() && dynamicProperties.schedulingLongTermEnabled()) {
             lifetimeSecs =
@@ -64,11 +64,11 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
                                     - txn.getTransactionID()
                                             .getTransactionValidStart()
                                             .getSeconds());
-            costIncrementUSD = dynamicProperties.scheduleTxCostIncrementUSD();
+            costIncrementTinyCents = dynamicProperties.scheduleTxCostIncrementTinyCents();
             costIncrementBytesPerMonth = dynamicProperties.scheduleTxCostIncrementBytesPerMonth();
         } else {
             lifetimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
-            costIncrementUSD = 0;
+            costIncrementTinyCents = 0;
             costIncrementBytesPerMonth = 0;
         }
         final long defaultLifeTimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
@@ -77,7 +77,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
                 txn,
                 sigUsage,
                 lifetimeSecs,
-                costIncrementUSD,
+                costIncrementTinyCents,
                 costIncrementBytesPerMonth,
                 defaultLifeTimeSecs);
     }
