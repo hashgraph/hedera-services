@@ -17,16 +17,12 @@ package com.hedera.services.evm.store.contracts;
 
 import com.hedera.services.evm.accounts.AccountAccessor;
 import com.hedera.services.evm.contracts.execution.EvmProperties;
-import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
@@ -90,7 +86,8 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         return new Updater(accountAccessor);
     }
 
-    public static class Updater extends AbstractLedgerEvmWorldUpdater implements HederaEvmWorldUpdater {
+    public static class Updater extends AbstractLedgerEvmWorldUpdater
+            implements HederaEvmWorldUpdater {
 
         protected Updater(AccountAccessor accountAccessor) {
             super(accountAccessor);
