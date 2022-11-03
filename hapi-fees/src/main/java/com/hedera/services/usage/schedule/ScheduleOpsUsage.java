@@ -24,7 +24,6 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
-import static com.hederahashgraph.fee.FeeUtils.cappedMultiplication;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.usage.EstimatorFactory;
@@ -43,8 +42,7 @@ import javax.inject.Singleton;
 public class ScheduleOpsUsage {
     /* Scheduled transaction ids have the scheduled=true flag set */
     private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
-    private static final long DEFAULT_SCHEDULE_ = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
-    private static final long SECS_TO_MONTHS = 30 * 24 * 60 * 60;
+    private static final int SECS_TO_MONTHS = 30 * 24 * 60 * 60;
 
     @VisibleForTesting EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
     @VisibleForTesting Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
@@ -68,7 +66,7 @@ public class ScheduleOpsUsage {
             TransactionBody scheduleCreate,
             SigUsage sigUsage,
             long lifetimeSecs,
-            double costIncrementUSD,
+            long costIncrementTinyCents,
             int costIncrementBytesPerMonth,
             final long defaultLifeTimeSecs) {
         var op = scheduleCreate.getScheduleCreate();
@@ -103,14 +101,16 @@ public class ScheduleOpsUsage {
                 (BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
                         * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
-        long fixedPrice =
+        /* fee for storing long term schedule transactions based on the size of the transaction
+        and minutesTillScheduledTime */
+        final var fixedPrice =
                 additionalPriceForNonDefaultScheduleTxn(
                         lifetimeSecs,
-                        costIncrementUSD,
+                        costIncrementTinyCents,
                         costIncrementBytesPerMonth,
                         defaultLifeTimeSecs,
                         scheduledTxn.getSerializedSize());
-        estimate.addSbs(fixedPrice);
+        estimate.addConstant(fixedPrice);
 
         if (scheduledTxn.hasContractCall()) {
             return estimate.get(SCHEDULE_CREATE_CONTRACT_CALL);
@@ -121,15 +121,18 @@ public class ScheduleOpsUsage {
 
     private long additionalPriceForNonDefaultScheduleTxn(
             final long lifetimeSecs,
-            final double costIncrementUSD,
+            final long costIncrementTinyCents,
             final int costIncrementBytesPerMonth,
             final long defaultLifeTimeSecs,
             final int serializedSize) {
         if (lifetimeSecs > defaultLifeTimeSecs) {
             final var scheduleTxnBytes =
-                    Math.ceil(serializedSize / costIncrementBytesPerMonth);
-            final var scheduledLifeInMonths = Math.ceil(lifetimeSecs / SECS_TO_MONTHS);
-            return (long) (costIncrementUSD * scheduleTxnBytes * scheduledLifeInMonths);
+                    Math.ceil(
+                            ESTIMATOR_UTILS.nonDegenerateDiv(
+                                    serializedSize, costIncrementBytesPerMonth));
+            final var scheduledLifeInMonths =
+                    Math.ceil(ESTIMATOR_UTILS.nonDegenerateDiv(lifetimeSecs, SECS_TO_MONTHS));
+            return (long) (costIncrementTinyCents * scheduleTxnBytes * scheduledLifeInMonths);
         }
         return 0L;
     }

@@ -173,10 +173,10 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
         long transferAmount = 1;
         return defaultHapiSpec("feesValidation")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "FileUpdate"),
-                        cryptoCreate(SENDER),
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer"),
+                        cryptoCreate(SENDER).via(SENDER_TXN),
                         cryptoCreate(RECEIVER),
-                        cryptoCreate(PAYING_ACCOUNT),
+                        cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                         scheduleCreate(
                                         BASIC_XFER,
                                         cryptoTransfer(
@@ -185,8 +185,10 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .withRelativeExpiry(SENDER_TXN, 3600)
                                 .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
+                                .fee(ONE_HBAR)
                                 .via("basicXferCreate"),
-                        validateChargedUsd("basicXferCreate", 0.001),
+                        validateChargedUsd("basicXferCreate", 0.00951),
+                        overriding(SCHEDULING_WHITELIST, "FileUpdate"),
                         scheduleCreate(
                                         VALID_SCHEDULE,
                                         fileUpdate(standardUpdateFile).contents("fooo!"))
@@ -194,10 +196,11 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .designatingPayer(FREEZE_ADMIN)
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
-                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .fee(ONE_HBAR)
+                                .withRelativeExpiry(PAYER_TXN, 3600)
                                 .recordingScheduledTxn()
                                 .via("fileUpdateTxn"),
-                        validateChargedUsd("basicXferCreate", 0.001))
+                        validateChargedUsd("fileUpdateTxn", 0.00953))
                 .when()
                 .then();
     }

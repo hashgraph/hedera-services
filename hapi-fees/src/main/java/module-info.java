@@ -17,4 +17,5 @@ module com.hedera.services.hapi.fees {
     requires com.google.common;
     requires javax.inject;
     requires com.google.protobuf;
+    requires org.apache.commons.lang3;
 }

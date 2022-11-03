@@ -59,7 +59,6 @@ public class ExtantScheduleContext {
                 + (resolved ? BASIC_RICH_INSTANT_SIZE : 0)
                 + memo.getBytes(StandardCharsets.UTF_8).length
                 + getAccountKeyStorageSize(adminKey)
-                + scheduledTxn.getSerializedSize()
                 + SCHEDULE_ENTITY_SIZES.bytesUsedForSigningKeys(numSigners);
     }
 
