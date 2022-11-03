@@ -106,4 +106,13 @@ class HederaEvmWorldStateTest {
         assertFalse(account.getCode().isEmpty());
         assertTrue(account.hasCode());
     }
+
+    @Test
+    void returnsNull2() {
+        final var address = Address.RIPEMD160;
+        given(hederaEvmEntityAccess.isTokenAccount(address)).willReturn(true);
+        given(evmProperties.isRedirectTokenCallsEnabled()).willReturn(false);
+
+        assertNull(subject.get(address));
+    }
 }
