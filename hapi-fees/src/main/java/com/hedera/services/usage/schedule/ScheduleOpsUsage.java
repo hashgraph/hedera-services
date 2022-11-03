@@ -110,6 +110,7 @@ public class ScheduleOpsUsage {
                         costIncrementBytesPerMonth,
                         defaultLifeTimeSecs,
                         scheduledTxn.getSerializedSize());
+        estimate.addSbs(fixedPrice);
 
         if (scheduledTxn.hasContractCall()) {
             return estimate.get(SCHEDULE_CREATE_CONTRACT_CALL);
@@ -126,9 +127,9 @@ public class ScheduleOpsUsage {
             final int serializedSize) {
         if (lifetimeSecs > defaultLifeTimeSecs) {
             final var scheduleTxnBytes =
-                    (long) Math.ceil(serializedSize / costIncrementBytesPerMonth);
-            final var scheduledLifeInMonths = (long) Math.ceil(lifetimeSecs / SECS_TO_MONTHS);
-            return (long) (costIncrementUSD * cappedMultiplication(scheduleTxnBytes, scheduledLifeInMonths));
+                    Math.ceil(serializedSize / costIncrementBytesPerMonth);
+            final var scheduledLifeInMonths = Math.ceil(lifetimeSecs / SECS_TO_MONTHS);
+            return (long) (costIncrementUSD * scheduleTxnBytes * scheduledLifeInMonths);
         }
         return 0L;
     }

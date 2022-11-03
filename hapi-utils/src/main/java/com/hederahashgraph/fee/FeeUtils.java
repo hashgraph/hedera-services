@@ -18,15 +18,15 @@ package com.hederahashgraph.fee;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
 
 public class FeeUtils {
-	public static long cappedMultiplication(final long a, final long b) {
-		if (productWouldOverflow(a, b)) {
-			return Long.MAX_VALUE;
-		}
-		return a * b;
-	}
+    public static long cappedMultiplication(final long a, final long b) {
+        if (productWouldOverflow(a, b)) {
+            return Long.MAX_VALUE;
+        }
+        return a * b;
+    }
 
-	public static long cappedAddition(final long a, final long b) {
-		final var nominal = a + b;
-		return nominal >= 0 ? nominal : Long.MAX_VALUE;
-	}
+    public static long cappedAddition(final long a, final long b) {
+        final var nominal = a + b;
+        return nominal >= 0 ? nominal : Long.MAX_VALUE;
+    }
 }
