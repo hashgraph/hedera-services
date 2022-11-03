@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.evm.contracts.execution.EvmProperties;
+import com.hedera.services.evm.store.models.MockAccountAccessor;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,17 +46,19 @@ class HederaEvmWorldStateTest {
             Address.fromHexString("0x000000000000000000000000000000000000077e");
     final long balance = 1_234L;
 
+    MockAccountAccessor accountAccessor = new MockAccountAccessor();
+
     private HederaEvmWorldState subject;
+
+    private HederaEvmWorldState subject2;
 
     @BeforeEach
     void setUp() {
         subject =
-                new HederaEvmWorldState(hederaEvmEntityAccess, evmProperties, abstractCodeCache) {
-                    @Override
-                    public HederaEvmWorldUpdater updater() {
-                        return null;
-                    }
-                };
+                new HederaEvmWorldState(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
+
+        subject2 = new HederaEvmWorldState(hederaEvmEntityAccess, evmProperties, abstractCodeCache,
+            accountAccessor);
     }
 
     @Test
@@ -114,5 +117,11 @@ class HederaEvmWorldStateTest {
         given(evmProperties.isRedirectTokenCallsEnabled()).willReturn(false);
 
         assertNull(subject.get(address));
+    }
+
+    @Test
+    void updater() {
+        var actualSubject = subject2.updater();
+        assertEquals(0, actualSubject.getSbhRefund());
     }
 }
