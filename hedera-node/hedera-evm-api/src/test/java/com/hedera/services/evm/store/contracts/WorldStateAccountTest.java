@@ -16,23 +16,23 @@
 package com.hedera.services.evm.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class WorldStateAccountTest {
 
-    @Mock HederaEvmEntityAccess entityAccess;
-
+    HederaEvmEntityAccess entityAccess = new MockEntityAccess();
     MockAbstractCodeCache codeCache = new MockAbstractCodeCache(100, entityAccess);
-    ;
-
     private final Address address =
             Address.fromHexString("0x000000000000000000000000000000000000077e");
 
@@ -56,5 +56,51 @@ class WorldStateAccountTest {
     @Test
     void getBalance() {
         assertEquals(Wei.ONE, subject.getBalance());
+    }
+
+    @Test
+    void storageEntriesFrom() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.storageEntriesFrom(null, 10));
+    }
+
+    @Test
+    void stringified() {
+        var stringified = "AccountState"
+            + "{"
+            + "address="
+            + subject.getAddress()
+            + ", "
+            + "nonce="
+            + subject.getNonce()
+            + ", "
+            + "balance="
+            + subject.getBalance()
+            + ", "
+            + "codeHash="
+            + subject.getCodeHash()
+            + ", "
+            + "}";
+
+        assertEquals(stringified, subject.toString());
+    }
+
+    @Test
+    void getStorageValue() {
+       assertEquals(UInt256.valueOf(0), subject.getStorageValue(UInt256.MIN_VALUE));
+    }
+
+    @Test
+    void getOriginalStorageValue() {
+        assertEquals(UInt256.valueOf(0), subject.getOriginalStorageValue(UInt256.MIN_VALUE));
+    }
+
+    @Test
+    void getCode() {
+        assertEquals(Bytes.EMPTY, subject.getCode());
+    }
+
+    @Test
+    void hasCode() {
+        assertFalse(subject.hasCode());
     }
 }
