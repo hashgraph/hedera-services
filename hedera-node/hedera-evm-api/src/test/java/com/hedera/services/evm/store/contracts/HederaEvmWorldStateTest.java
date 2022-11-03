@@ -54,11 +54,11 @@ class HederaEvmWorldStateTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new HederaEvmWorldState(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
+        subject = new HederaEvmWorldState(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
 
-        subject2 = new HederaEvmWorldState(hederaEvmEntityAccess, evmProperties, abstractCodeCache,
-            accountAccessor);
+        subject2 =
+                new HederaEvmWorldState(
+                        hederaEvmEntityAccess, evmProperties, abstractCodeCache, accountAccessor);
     }
 
     @Test
