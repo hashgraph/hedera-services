@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.evm.contracts.execution.utils;
+package com.hedera.services.evm.contracts.execution;
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
-import com.hedera.services.evm.contracts.execution.RequiredPriceTypes;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -40,12 +39,12 @@ import org.apache.logging.log4j.Logger;
 
 public class PricesAndFeesUtils {
     static final Logger log = LogManager.getLogger(PricesAndFeesUtils.class);
-    private static final ExchangeRateSet grpcRates = null;
-    CurrentAndNextFeeSchedule feeSchedules;
-    private static Timestamp currFunctionUsagePricesExpiry;
-    private static Timestamp nextFunctionUsagePricesExpiry;
-    private static EnumMap<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices;
-    private static EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
+    private ExchangeRateSet exchangeRates;
+    private CurrentAndNextFeeSchedule feeSchedules;
+    private Timestamp currFunctionUsagePricesExpiry;
+    private Timestamp nextFunctionUsagePricesExpiry;
+    private EnumMap<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices;
+    private EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
     private static final long DEFAULT_FEE = 100_000L;
     private static final int FEE_DIVISOR_FACTOR = 1000;
     private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES =
@@ -71,6 +70,12 @@ public class PricesAndFeesUtils {
                             .setServicedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
                             .build());
 
+    public PricesAndFeesUtils(
+            ExchangeRateSet exchangeRates, CurrentAndNextFeeSchedule feeSchedules) {
+        this.exchangeRates = exchangeRates;
+        this.feeSchedules = feeSchedules;
+    }
+
     public void setFeeSchedules(final CurrentAndNextFeeSchedule feeSchedules) {
         this.feeSchedules = feeSchedules;
 
@@ -83,7 +88,7 @@ public class PricesAndFeesUtils {
                 asTimestamp(feeSchedules.getNextFeeSchedule().getExpiryTime());
     }
 
-    public static Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
+    public Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
         try {
             Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices =
                     applicableUsagePrices(at);
@@ -100,7 +105,7 @@ public class PricesAndFeesUtils {
         return DEFAULT_RESOURCE_PRICES;
     }
 
-    private static Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(
+    public Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(
             final Timestamp at) {
         if (onlyNextScheduleApplies(at)) {
             return nextFunctionUsagePrices;
@@ -109,15 +114,15 @@ public class PricesAndFeesUtils {
         }
     }
 
-    private static boolean onlyNextScheduleApplies(final Timestamp at) {
+    private boolean onlyNextScheduleApplies(final Timestamp at) {
         return at.getSeconds() >= currFunctionUsagePricesExpiry.getSeconds()
                 && at.getSeconds() < nextFunctionUsagePricesExpiry.getSeconds();
     }
 
-    public static ExchangeRate rateAt(final long now) {
-        final var currentRate = grpcRates.getCurrentRate();
+    public ExchangeRate rateAt(final long now) {
+        final var currentRate = exchangeRates.getCurrentRate();
         final var currentExpiry = currentRate.getExpirationTime().getSeconds();
-        return (now < currentExpiry) ? currentRate : grpcRates.getNextRate();
+        return (now < currentExpiry) ? currentRate : exchangeRates.getNextRate();
     }
 
     private static long getTinybarsFromTinyCents(ExchangeRate exchangeRate, long tinyCentsFee) {

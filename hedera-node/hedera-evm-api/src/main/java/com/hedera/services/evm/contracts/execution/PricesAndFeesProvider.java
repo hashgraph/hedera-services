@@ -26,7 +26,11 @@ public interface PricesAndFeesProvider {
 
     ExchangeRate rate(final Timestamp now);
 
-    long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
+    default long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
+        var rates = rate(at);
+        var prices = defaultPricesGiven(function, at);
+        return PricesAndFeesUtils.gasPriceInTinybars(prices, rates);
+    }
 
     long currentGasPrice(Instant now, HederaFunctionality function);
 }

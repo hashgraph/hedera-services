@@ -15,33 +15,39 @@
  */
 package com.hedera.services.evm.contracts.execution;
 
-import static com.hedera.services.evm.contracts.execution.utils.PricesAndFeesUtils.gasPriceInTinybars;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class PricesAndFeesImpl implements PricesAndFeesProvider {
-    @Override
+    private final PricesAndFeesUtils utils;
+
+    @Inject
+    public PricesAndFeesImpl(PricesAndFeesUtils utils) {
+        this.utils = utils;
+    }
+
     public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
-        return null;
+        return utils.pricesGiven(function, at).get(DEFAULT);
     }
 
-    @Override
     public ExchangeRate rate(Timestamp now) {
-        return null;
+        return utils.rateAt(now.getSeconds());
     }
 
-    @Override
     public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
         var rates = rate(at);
         var prices = defaultPricesGiven(function, at);
-        return gasPriceInTinybars(prices, rates);
+        return PricesAndFeesUtils.gasPriceInTinybars(prices, rates);
     }
 
-    @Override
     public long currentGasPrice(Instant now, HederaFunctionality function) {
         return 0;
     }
