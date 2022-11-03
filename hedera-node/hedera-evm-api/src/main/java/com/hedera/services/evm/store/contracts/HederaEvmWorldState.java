@@ -30,22 +30,22 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     private final EvmProperties evmProperties;
     private final AbstractCodeCache abstractCodeCache;
 
-    AccountAccessor accountAccessor;
+    private AccountAccessor accountAccessor;
 
     protected HederaEvmWorldState(
-            HederaEvmEntityAccess hederaEvmEntityAccess,
-            EvmProperties evmProperties,
-            AbstractCodeCache abstractCodeCache) {
+            final HederaEvmEntityAccess hederaEvmEntityAccess,
+            final EvmProperties evmProperties,
+            final AbstractCodeCache abstractCodeCache) {
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.abstractCodeCache = abstractCodeCache;
     }
 
     protected HederaEvmWorldState(
-            HederaEvmEntityAccess hederaEvmEntityAccess,
-            EvmProperties evmProperties,
-            AbstractCodeCache abstractCodeCache,
-            AccountAccessor accountAccessor) {
+            final HederaEvmEntityAccess hederaEvmEntityAccess,
+            final EvmProperties evmProperties,
+            final AbstractCodeCache abstractCodeCache,
+            final AccountAccessor accountAccessor) {
         this(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
         this.accountAccessor = accountAccessor;
     }
