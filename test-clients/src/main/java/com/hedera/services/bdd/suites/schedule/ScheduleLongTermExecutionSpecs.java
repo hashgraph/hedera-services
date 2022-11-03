@@ -43,7 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.ORI
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.getPoeticUpgradeHash;
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.transferListCheck;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
+import static com.hedera.services.usage.schedule.ScheduleOpsUsage.ONE_MONTH_IN_SECS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -174,35 +175,70 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
         return defaultHapiSpec("feesValidation")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer"),
+                        overriding("scheduling.maxExpirationFutureSeconds", "25920000"),
                         cryptoCreate(SENDER).via(SENDER_TXN),
                         cryptoCreate(RECEIVER),
                         cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                         scheduleCreate(
+                                        "baseTxn",
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                SENDER, RECEIVER, transferAmount))
+                                                .blankMemo())
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .blankMemo()
+                                .fee(ONE_HBAR)
+                                .via("basicTxnCreate"),
+                        getTxnRecord("basicTxnCreate").logged(),
+                        validateChargedUsdWithin("basicTxnCreate", 0.0094925796, 0),
+                        scheduleCreate(
                                         BASIC_XFER,
                                         cryptoTransfer(
-                                                tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
+                                                        tinyBarsFromTo(
+                                                                SENDER, RECEIVER, transferAmount))
+                                                .blankMemo())
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 3600)
+                                .withRelativeExpiry(SENDER_TXN, 1800)
                                 .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
+                                .blankMemo()
                                 .fee(ONE_HBAR)
                                 .via("basicXferCreate"),
-                        validateChargedUsd("basicXferCreate", 0.00951),
-                        overriding(SCHEDULING_WHITELIST, "FileUpdate"),
+                        getTxnRecord("basicXferCreate").logged(),
+                        validateChargedUsdWithin("basicXferCreate", 0.0094925796, 0))
+                .when(
                         scheduleCreate(
-                                        VALID_SCHEDULE,
-                                        fileUpdate(standardUpdateFile).contents("fooo!"))
-                                .withEntityMemo(randomUppercase(100))
-                                .designatingPayer(FREEZE_ADMIN)
-                                .payingWith(PAYING_ACCOUNT)
+                                        BASIC_XFER,
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                SENDER, RECEIVER, transferAmount))
+                                                .blankMemo())
                                 .waitForExpiry()
-                                .fee(ONE_HBAR)
-                                .withRelativeExpiry(PAYER_TXN, 3600)
+                                .withRelativeExpiry(SENDER_TXN, ONE_MONTH_IN_SECS)
+                                .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
-                                .via("fileUpdateTxn"),
-                        validateChargedUsd("fileUpdateTxn", 0.00953))
-                .when()
-                .then();
+                                .blankMemo()
+                                .fee(ONE_HBAR)
+                                .via("oneMonthCreate"),
+                        getTxnRecord("oneMonthCreate").logged(),
+                        validateChargedUsdWithin("oneMonthCreate", 0.009506709600000001, 0))
+                .then(
+                        scheduleCreate(
+                                        CREATE_TX,
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                SENDER, RECEIVER, transferAmount))
+                                                .memo("one month xfer"))
+                                .waitForExpiry()
+                                .withRelativeExpiry(SENDER_TXN, 10 * ONE_MONTH_IN_SECS)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .memo("testing base transaction")
+                                .fee(ONE_HBAR)
+                                .via("tenMonthsCreate"),
+                        getTxnRecord("tenMonthsCreate").logged(),
+                        validateChargedUsdWithin("tenMonthsCreate", 0.009642108, 0));
     }
 
     @SuppressWarnings("java:S5960")

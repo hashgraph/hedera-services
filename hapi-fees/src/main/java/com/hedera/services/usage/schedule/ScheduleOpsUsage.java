@@ -42,7 +42,7 @@ import javax.inject.Singleton;
 public class ScheduleOpsUsage {
     /* Scheduled transaction ids have the scheduled=true flag set */
     private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
-    private static final int SECS_TO_MONTHS = 30 * 24 * 60 * 60;
+    public static final int ONE_MONTH_IN_SECS = 2592000;
 
     @VisibleForTesting EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
     @VisibleForTesting Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
@@ -103,14 +103,18 @@ public class ScheduleOpsUsage {
 
         /* fee for storing long term schedule transactions based on the size of the transaction
         and minutesTillScheduledTime */
-        final var fixedPrice =
-                additionalPriceForNonDefaultScheduleTxn(
-                        lifetimeSecs,
-                        costIncrementTinyCents,
-                        costIncrementBytesPerMonth,
-                        defaultLifeTimeSecs,
-                        scheduledTxn.getSerializedSize());
-        estimate.addConstant(fixedPrice);
+        if (lifetimeSecs > defaultLifeTimeSecs) {
+            final var addedFeeForLongTerm =
+                    addedFeeForLongTermScheduleTxn(
+                            lifetimeSecs,
+                            costIncrementTinyCents,
+                            costIncrementBytesPerMonth,
+                            defaultLifeTimeSecs,
+                            scheduledTxn.getSerializedSize());
+            estimate.addConstant(addedFeeForLongTerm);
+        } else {
+            estimate.addRbs(scheduledTxn.getSerializedSize() * lifetimeSecs);
+        }
 
         if (scheduledTxn.hasContractCall()) {
             return estimate.get(SCHEDULE_CREATE_CONTRACT_CALL);
@@ -119,20 +123,36 @@ public class ScheduleOpsUsage {
         return estimate.get();
     }
 
-    private long additionalPriceForNonDefaultScheduleTxn(
+    /**
+     * Since long term scheduled transactions can be scheduled far from future, adds a fee based on
+     * number of minutes until scheduled time and size of schedule transaction. This fee is added
+     * only to the transactions scheduled beyond the defaultLifeTimeSecs.
+     *
+     * <p>Fee calculation is as follows :
+     * <li>Charges the base fee for transactions whose lifetimeSecs <= defaultLifeTimeSecs
+     * <li>lifetimeSecs > defaultLifeTimeSecs, an additional price of costIncrementTinyCents per
+     *     costIncrementBytesPerMonth bytes per month is added to the base price above. The
+     *     additional cost is for storing the scheduled transaction in the disk.
+     *
+     * @param lifetimeSecs seconds until the transaction will be expired
+     * @param costIncrementTinyCents additional cost in tiny cents , defaults to 20000000
+     * @param costIncrementBytesPerMonth number of bytes per month to increment cost by
+     *     costIncrementTinyCents, defaults to 128 bytes
+     * @param defaultLifeTimeSecs default lifetime of schedule txn , defaults to 30 mins
+     * @param serializedSize size of the schedule txn
+     * @return additiona fee to be charged
+     */
+    private long addedFeeForLongTermScheduleTxn(
             final long lifetimeSecs,
             final long costIncrementTinyCents,
             final int costIncrementBytesPerMonth,
             final long defaultLifeTimeSecs,
             final int serializedSize) {
         if (lifetimeSecs > defaultLifeTimeSecs) {
-            final var scheduleTxnBytes =
-                    Math.ceil(
-                            ESTIMATOR_UTILS.nonDegenerateDiv(
-                                    serializedSize, costIncrementBytesPerMonth));
-            final var scheduledLifeInMonths =
-                    Math.ceil(ESTIMATOR_UTILS.nonDegenerateDiv(lifetimeSecs, SECS_TO_MONTHS));
-            return (long) (costIncrementTinyCents * scheduleTxnBytes * scheduledLifeInMonths);
+            final var numerator =
+                    Math.multiplyExact(costIncrementTinyCents, lifetimeSecs) * serializedSize;
+            final var denominator = costIncrementBytesPerMonth * ONE_MONTH_IN_SECS;
+            return ESTIMATOR_UTILS.nonDegenerateDiv(numerator, denominator);
         }
         return 0L;
     }

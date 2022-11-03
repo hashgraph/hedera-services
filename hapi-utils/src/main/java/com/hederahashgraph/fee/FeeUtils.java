@@ -17,7 +17,12 @@ package com.hederahashgraph.fee;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
 
+/** Utility class for Fees */
 public class FeeUtils {
+    private FeeUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static long cappedMultiplication(final long a, final long b) {
         if (productWouldOverflow(a, b)) {
             return Long.MAX_VALUE;
