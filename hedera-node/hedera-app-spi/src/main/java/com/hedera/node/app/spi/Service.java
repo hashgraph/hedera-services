@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+package com.hedera.node.app.spi;
 
-description = "Hedera Application - API"
+import com.hedera.node.app.spi.state.States;
+
+import javax.annotation.Nonnull;
+
+/**
+ * A definition of an interface that will be implemented by each conceptual "service" like
+ * crypto-service, token-service etc.,
+ */
+public interface Service {
+    /**
+     * Creates and returns a new {@link PreTransactionHandler}
+     *
+     * @return A new {@link PreTransactionHandler}
+     */
+    @Nonnull
+    PreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+}

@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.spi.key;
+package com.hedera.node.app;
 
+import static com.hedera.node.app.Utils.asHederaKey;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -26,13 +27,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaKeyTest {
+class UtilsTest {
     @Test
     void canConvertToHederaKey() {
         final var id = IdUtils.asContract("1.2.3");
         final var input = Key.newBuilder().setDelegatableContractId(id).build();
 
-        final var subject = HederaKey.asHederaKey(input);
+        final var subject = asHederaKey(input);
 
         assertTrue(subject.isPresent());
 
