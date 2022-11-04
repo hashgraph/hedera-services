@@ -30,7 +30,7 @@ public abstract class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
 
     protected final AccountAccessor accountAccessor;
 
-    public AbstractLedgerEvmWorldUpdater(AccountAccessor accountAccessor) {
+    protected AbstractLedgerEvmWorldUpdater(AccountAccessor accountAccessor) {
         this.accountAccessor = accountAccessor;
     }
 
