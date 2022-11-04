@@ -195,7 +195,7 @@ class ScheduleOpsUsageTest {
                         clampedMultiply(
                                 clampedMultiply(lifetimeSecs, 20000000),
                                 scheduledTxn.getSerializedSize()),
-                        (int) clampedMultiply(128, ONE_MONTH_IN_SECS));
+                        128 * ONE_MONTH_IN_SECS);
         // and:
         var expectedTxBytes =
                 scheduledTxn.getSerializedSize()
