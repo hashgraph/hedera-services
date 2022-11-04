@@ -164,7 +164,7 @@ class ScheduleOpsUsageTest {
         // when:
         var estimate =
                 subject.scheduleCreateUsage(
-                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 20000000, 128, 1800);
+                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 200L, 128, 1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -193,7 +193,7 @@ class ScheduleOpsUsageTest {
         var expectedExtraFee =
                 ESTIMATOR_UTILS.nonDegenerateDiv(
                         clampedMultiply(
-                                clampedMultiply(lifetimeSecs, 20000000),
+                                clampedMultiply(lifetimeSecs, 200L),
                                 scheduledTxn.getSerializedSize()),
                         128 * ONE_MONTH_IN_SECS);
         // and:
@@ -206,7 +206,7 @@ class ScheduleOpsUsageTest {
         // when:
         var estimate =
                 subject.scheduleCreateUsage(
-                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 20000000, 128, 1800);
+                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 200L, 128, 1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -237,7 +237,7 @@ class ScheduleOpsUsageTest {
         var expectedExtraFee =
                 ESTIMATOR_UTILS.nonDegenerateDiv(
                         clampedMultiply(
-                                clampedMultiply(lifetimeSecs, 20000000),
+                                clampedMultiply(lifetimeSecs, 200L),
                                 scheduledTxnWithContractCall.getSerializedSize()),
                         (int) clampedMultiply(128, ONE_MONTH_IN_SECS));
         // and:
@@ -253,7 +253,7 @@ class ScheduleOpsUsageTest {
                         creationTxn(scheduledTxnWithContractCall),
                         sigUsage,
                         lifetimeSecs,
-                        20000000,
+                        200L,
                         128,
                         1800);
 
@@ -294,7 +294,7 @@ class ScheduleOpsUsageTest {
                         creationTxn(scheduledTxnWithContractCall),
                         sigUsage,
                         lifetimeSecs,
-                        20000000,
+                        200L,
                         128,
                         1800);
 

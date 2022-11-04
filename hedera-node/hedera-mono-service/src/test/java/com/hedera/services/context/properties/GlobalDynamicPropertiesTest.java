@@ -546,8 +546,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
                 .willReturn((i + 91) % 2 == 0);
-        given(properties.getIntProperty(SCHEDULING_COST_INCREMENT_BPM)).willReturn(i + 92);
-        given(properties.getLongProperty(SCHEDULING_COST_INCREMENT_TINY_CENTS)).willReturn(i + 93L);
+        given(properties.getIntProperty(SCHEDULING_INCREASED_PRICE_BYTES_PER_MONTH)).willReturn(i + 92);
+        given(properties.getLongProperty(SCHEDULING_INCREASED_PRICE)).willReturn(i + 93L);
     }
 
     private Set<EntityType> typesFor(final int i) {

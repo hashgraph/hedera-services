@@ -229,9 +229,9 @@ public class GlobalDynamicProperties implements EvmProperties {
         scheduledTxDefaultExpiryTimeSecs =
                 properties.getIntProperty(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
         scheduleTxCostIncrementTinyCents =
-                properties.getLongProperty(SCHEDULING_COST_INCREMENT_TINY_CENTS);
+                properties.getLongProperty(SCHEDULING_INCREASED_PRICE);
         scheduleTxCostIncrementBytesPerMonth =
-                properties.getIntProperty(SCHEDULING_COST_INCREMENT_BPM);
+                properties.getIntProperty(SCHEDULING_INCREASED_PRICE_BYTES_PER_MONTH);
         schedulingLongTermEnabled = properties.getBooleanProperty(SCHEDULING_LONG_TERM_ENABLED);
         schedulingMaxTxnPerSecond = properties.getLongProperty(SCHEDULING_MAX_TXN_PER_SEC);
         schedulingMaxExpirationFutureSeconds =

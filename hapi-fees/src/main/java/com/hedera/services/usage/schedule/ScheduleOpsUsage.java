@@ -137,7 +137,7 @@ public class ScheduleOpsUsage {
      *     additional cost is for storing the scheduled transaction in the disk.
      *
      * @param lifetimeSecs seconds until the transaction will be expired
-     * @param costIncrementTinyCents additional cost in tiny cents , defaults to 20000000
+     * @param costIncrementTinyCents additional cost in tiny cents , defaults to 200L
      * @param costIncrementBytesPerMonth number of bytes per month to increment cost by
      *     costIncrementTinyCents, defaults to 128 bytes
      * @param defaultLifeTimeSecs default lifetime of schedule txn , defaults to 30 mins

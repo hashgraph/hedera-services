@@ -158,7 +158,7 @@ public class BaseOperationUsage {
     private static final String A_TOKEN_SYMBOL = "ABCD";
     private static final String BLANK_MEMO = "";
     private static final int DEFAULT_SCHEDULE_LIFETIME = 1800;
-    private static final long DEFAULT_SCHEDULE_COST_INCREMENT = 20000000;
+    private static final long DEFAULT_SCHEDULE_COST_INCREMENT = 200L;
     private static final int DEFAULT_SCHEDULE_COST_INCREMENT_BYTES_PER_MONTH = 128;
 
     private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();

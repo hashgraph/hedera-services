@@ -169,7 +169,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     @Override
     public long scheduleTxCostIncrementTinyCents() {
-        return 20000000L;
+        return 200L;
     }
 
     @Override
@@ -213,7 +213,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     public int autoRenewNumberOfEntitiesToScan() {
         return 100;
     }
-
     @Override
     public int autoRenewMaxNumberOfEntitiesToRenewOrDelete() {
         return maxToTouch;

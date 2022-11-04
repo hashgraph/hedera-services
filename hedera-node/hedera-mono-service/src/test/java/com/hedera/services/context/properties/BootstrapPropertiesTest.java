@@ -225,8 +225,8 @@ class BootstrapPropertiesTest {
                     entry(
                             SCHEDULING_WHITE_LIST,
                             Set.of(CryptoTransfer, TokenMint, TokenBurn, ConsensusSubmitMessage)),
-                    entry(SCHEDULING_COST_INCREMENT_BPM, 128),
-                    entry(SCHEDULING_COST_INCREMENT_TINY_CENTS, 20000000L),
+                    entry(SCHEDULING_INCREASED_PRICE_BYTES_PER_MONTH, 128),
+                    entry(SCHEDULING_INCREASED_PRICE, 20000000L),
                     entry(SIGS_EXPAND_FROM_IMMUTABLE_STATE, true),
                     entry(
                             STATS_CONS_THROTTLES_TO_SAMPLE,

@@ -68,6 +68,8 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -172,6 +174,9 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 
     private HapiApiSpec feesValidation() {
         long transferAmount = 1;
+        final var VALID_BYTES = new byte[100];
+        Arrays.fill(VALID_BYTES, (byte) 'ф');
+        final var longMemo = new String(VALID_BYTES, StandardCharsets.UTF_8);
         return defaultHapiSpec("feesValidation")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer"),
@@ -191,7 +196,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .fee(ONE_HBAR)
                                 .via("basicTxnCreate"),
                         getTxnRecord("basicTxnCreate").logged(),
-                        validateChargedUsdWithin("basicTxnCreate", 0.0094925796, 0),
+                        validateChargedUsdWithin("basicTxnCreate", 0.009492580799999999, 0),
                         scheduleCreate(
                                         BASIC_XFER,
                                         cryptoTransfer(
@@ -213,7 +218,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                         cryptoTransfer(
                                                         tinyBarsFromTo(
                                                                 SENDER, RECEIVER, transferAmount))
-                                                .blankMemo())
+                                                .memo(longMemo))
                                 .waitForExpiry()
                                 .withRelativeExpiry(SENDER_TXN, ONE_MONTH_IN_SECS)
                                 .payingWith(PAYING_ACCOUNT)
@@ -222,14 +227,14 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .fee(ONE_HBAR)
                                 .via("oneMonthCreate"),
                         getTxnRecord("oneMonthCreate").logged(),
-                        validateChargedUsdWithin("oneMonthCreate", 0.009506709600000001, 0))
+                        validateChargedUsdWithin("oneMonthCreate", 0.0095274708, 0))
                 .then(
                         scheduleCreate(
                                         CREATE_TX,
                                         cryptoTransfer(
                                                         tinyBarsFromTo(
                                                                 SENDER, RECEIVER, transferAmount))
-                                                .memo("one month xfer"))
+                                                .memo(longMemo))
                                 .waitForExpiry()
                                 .withRelativeExpiry(SENDER_TXN, 10 * ONE_MONTH_IN_SECS)
                                 .payingWith(PAYING_ACCOUNT)
@@ -238,7 +243,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .fee(ONE_HBAR)
                                 .via("tenMonthsCreate"),
                         getTxnRecord("tenMonthsCreate").logged(),
-                        validateChargedUsdWithin("tenMonthsCreate", 0.009642108, 0));
+                        validateChargedUsdWithin("tenMonthsCreate", 0.0096596124, 0));
     }
 
     @SuppressWarnings("java:S5960")
