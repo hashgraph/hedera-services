@@ -207,7 +207,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(76L, subject.maxDailyStakeRewardThPerH());
         assertEquals(88L, subject.traceabilityMinFreeToUsedGasThrottleRatio());
         assertEquals(89L, subject.traceabilityMaxExportsPerConsSec());
-        assertEquals(94L, subject.scheduleTxCostIncrementTinyCents());
+        assertEquals(94L, subject.scheduleTxIncreasedPrice());
     }
 
     @Test
@@ -325,7 +325,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(79, subject.recordFileVersion());
         assertEquals(80, subject.recordSignatureFileVersion());
         assertEquals(90, subject.getSidecarMaxSizeMb());
-        assertEquals(94, subject.scheduleTxCostIncrementBytesPerMonth());
+        assertEquals(94, subject.scheduleTxIncreasedPriceBytesPerMonth());
     }
 
     @Test
@@ -546,7 +546,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
                 .willReturn((i + 91) % 2 == 0);
-        given(properties.getIntProperty(SCHEDULING_INCREASED_PRICE_BYTES_PER_MONTH)).willReturn(i + 92);
+        given(properties.getIntProperty(SCHEDULING_INCREASED_PRICE_BYTES_PER_MONTH))
+                .willReturn(i + 92);
         given(properties.getLongProperty(SCHEDULING_INCREASED_PRICE)).willReturn(i + 93L);
     }
 

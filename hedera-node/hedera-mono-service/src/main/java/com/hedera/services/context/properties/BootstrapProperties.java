@@ -290,7 +290,7 @@ public final class BootstrapProperties implements PropertySource {
                     SCHEDULING_MAX_NUM,
                     SCHEDULING_MAX_EXPIRATION_FUTURE_SECS,
                     SCHEDULING_INCREASED_PRICE_BYTES_PER_MONTH,
-					SCHEDULING_INCREASED_PRICE,
+                    SCHEDULING_INCREASED_PRICE,
                     SCHEDULING_WHITE_LIST,
                     SIGS_EXPAND_FROM_IMMUTABLE_STATE,
                     STAKING_FEES_NODE_REWARD_PERCENT,

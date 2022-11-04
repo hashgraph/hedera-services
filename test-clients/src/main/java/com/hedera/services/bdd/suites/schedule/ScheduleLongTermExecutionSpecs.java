@@ -68,7 +68,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;

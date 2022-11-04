@@ -95,8 +95,8 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long schedulingMaxTxnPerSecond;
     private long schedulingMaxExpirationFutureSeconds;
     private int scheduledTxDefaultExpiryTimeSecs;
-    private long scheduleTxCostIncrementTinyCents;
-    private int scheduleTxCostIncrementBytesPerMonth;
+    private long scheduleTxIncreasedPrice;
+    private int scheduleTxIncreasedPriceBytesPerMonth;
     private int messageMaxBytesAllowed;
     private long maxPrecedingRecords;
     private long maxFollowingRecords;
@@ -228,9 +228,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         localCallEstRetBytes = properties.getIntProperty(CONTRACTS_LOCAL_CALL_EST_RET_BYTES);
         scheduledTxDefaultExpiryTimeSecs =
                 properties.getIntProperty(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
-        scheduleTxCostIncrementTinyCents =
-                properties.getLongProperty(SCHEDULING_INCREASED_PRICE);
-        scheduleTxCostIncrementBytesPerMonth =
+        scheduleTxIncreasedPrice = properties.getLongProperty(SCHEDULING_INCREASED_PRICE);
+        scheduleTxIncreasedPriceBytesPerMonth =
                 properties.getIntProperty(SCHEDULING_INCREASED_PRICE_BYTES_PER_MONTH);
         schedulingLongTermEnabled = properties.getBooleanProperty(SCHEDULING_LONG_TERM_ENABLED);
         schedulingMaxTxnPerSecond = properties.getLongProperty(SCHEDULING_MAX_TXN_PER_SEC);
@@ -515,12 +514,12 @@ public class GlobalDynamicProperties implements EvmProperties {
         return scheduledTxDefaultExpiryTimeSecs;
     }
 
-    public long scheduleTxCostIncrementTinyCents() {
-        return scheduleTxCostIncrementTinyCents;
+    public long scheduleTxIncreasedPrice() {
+        return scheduleTxIncreasedPrice;
     }
 
-    public int scheduleTxCostIncrementBytesPerMonth() {
-        return scheduleTxCostIncrementBytesPerMonth;
+    public int scheduleTxIncreasedPriceBytesPerMonth() {
+        return scheduleTxIncreasedPriceBytesPerMonth;
     }
 
     public boolean schedulingLongTermEnabled() {

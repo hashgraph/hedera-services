@@ -66,8 +66,8 @@ class ScheduleCreateResourceUsageTest {
                                 scheduleCreateTxn,
                                 sigUsage,
                                 props.scheduledTxExpiryTimeSecs(),
-                                props.scheduleTxCostIncrementTinyCents(),
-                                props.scheduleTxCostIncrementBytesPerMonth(),
+                                props.scheduleTxIncreasedPrice(),
+                                props.scheduleTxIncreasedPriceBytesPerMonth(),
                                 props.scheduledTxExpiryTimeSecs()))
                 .willReturn(expected);
 
@@ -105,8 +105,9 @@ class ScheduleCreateResourceUsageTest {
                                         Timestamp.newBuilder().setSeconds(1L).setNanos(0))
                                 .build());
 
-        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 1L,
-                200L, 128, 1800))
+        given(
+                        scheduleOpsUsage.scheduleCreateUsage(
+                                scheduleCreateTxn, sigUsage, 1L, 200L, 128, 1800))
                 .willReturn(expected);
 
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));

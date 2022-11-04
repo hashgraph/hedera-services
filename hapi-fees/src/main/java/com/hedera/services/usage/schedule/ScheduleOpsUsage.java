@@ -67,8 +67,8 @@ public class ScheduleOpsUsage {
             TransactionBody scheduleCreate,
             SigUsage sigUsage,
             long lifetimeSecs,
-            long costIncrementTinyCents,
-            int costIncrementBytesPerMonth,
+            long priceIncrement,
+            int increasedPriceBytesPerMonth,
             final long defaultLifeTimeSecs) {
         var op = scheduleCreate.getScheduleCreate();
 
@@ -109,8 +109,8 @@ public class ScheduleOpsUsage {
             final var addedFeeForLongTerm =
                     addedFeeForLongTermScheduleTxn(
                             lifetimeSecs,
-                            costIncrementTinyCents,
-                            costIncrementBytesPerMonth,
+                            priceIncrement,
+                            increasedPriceBytesPerMonth,
                             defaultLifeTimeSecs,
                             serializedSize);
             estimate.addConstant(addedFeeForLongTerm);
@@ -132,29 +132,33 @@ public class ScheduleOpsUsage {
      *
      * <p>Fee calculation is as follows :
      * <li>Charges the base fee for transactions whose lifetimeSecs <= defaultLifeTimeSecs
-     * <li>lifetimeSecs > defaultLifeTimeSecs, an additional price of costIncrementTinyCents per
-     *     costIncrementBytesPerMonth bytes per month is added to the base price above. The
+     * <li>lifetimeSecs > defaultLifeTimeSecs, an additional price of priceIncrement per
+     *     increasedPriceBytesPerMonth bytes per month is added to the base price above. The
      *     additional cost is for storing the scheduled transaction in the disk.
      *
+     *     <p>For example if the defaultLifeTimeSecs is {@code 1800}, priceIncrement is {@code 200}
+     *     and increasedPriceBytesPerMonth is {@code 128} bytes, then for a scheduled transaction
+     *     that is scheduled to execute anytime after 1800 secs, the fees are incremented by $0.002
+     *     for 128 bytes/month.
+     *
      * @param lifetimeSecs seconds until the transaction will be expired
-     * @param costIncrementTinyCents additional cost in tiny cents , defaults to 200L
-     * @param costIncrementBytesPerMonth number of bytes per month to increment cost by
-     *     costIncrementTinyCents, defaults to 128 bytes
+     * @param priceIncrement additional cost in tiny cents , defaults to 200L
+     * @param increasedPriceBytesPerMonth number of bytes per month to increment cost by
+     *     priceIncrement, defaults to 128 bytes
      * @param defaultLifeTimeSecs default lifetime of schedule txn , defaults to 30 mins
      * @param serializedSize size of the schedule txn
      * @return additiona fee to be charged
      */
     private long addedFeeForLongTermScheduleTxn(
             final long lifetimeSecs,
-            final long costIncrementTinyCents,
-            final int costIncrementBytesPerMonth,
+            final long priceIncrement,
+            final int increasedPriceBytesPerMonth,
             final long defaultLifeTimeSecs,
             final int serializedSize) {
         if (lifetimeSecs > defaultLifeTimeSecs) {
             final var numerator =
-                    clampedMultiply(
-                            clampedMultiply(costIncrementTinyCents, lifetimeSecs), serializedSize);
-            final var denominator = costIncrementBytesPerMonth * ONE_MONTH_IN_SECS;
+                    clampedMultiply(clampedMultiply(priceIncrement, lifetimeSecs), serializedSize);
+            final var denominator = increasedPriceBytesPerMonth * ONE_MONTH_IN_SECS;
             return ESTIMATOR_UTILS.nonDegenerateDiv(numerator, denominator);
         }
         return 0L;
