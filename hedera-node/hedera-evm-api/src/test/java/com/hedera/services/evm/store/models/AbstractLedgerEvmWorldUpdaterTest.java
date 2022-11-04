@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import java.util.Collections;
-import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.Test;
