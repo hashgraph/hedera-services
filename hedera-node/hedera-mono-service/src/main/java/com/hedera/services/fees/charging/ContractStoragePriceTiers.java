@@ -16,9 +16,8 @@
 package com.hedera.services.fees.charging;
 
 import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
 import static com.hedera.services.sysfiles.ParsingUtils.fromTwoPartDelimited;
-import static com.hederahashgraph.fee.FeeUtils.cappedAddition;
-import static com.hederahashgraph.fee.FeeUtils.cappedMultiplication;
 
 import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -240,6 +239,18 @@ public record ContractStoragePriceTiers(
                 + ", referenceLifetime="
                 + referenceLifetime
                 + '}';
+    }
+
+    static long cappedMultiplication(final long a, final long b) {
+        if (productWouldOverflow(a, b)) {
+            return Long.MAX_VALUE;
+        }
+        return a * b;
+    }
+
+    static long cappedAddition(final long a, final long b) {
+        final var nominal = a + b;
+        return nominal >= 0 ? nominal : Long.MAX_VALUE;
     }
 
     private static void manageValidatedNonDecreasing(

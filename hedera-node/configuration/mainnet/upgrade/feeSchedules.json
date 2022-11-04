@@ -2066,7 +2066,8 @@
 			}
 		  ]
 		}
-	  }, {
+	  },
+	  {
 		"transactionFeeSchedule" : {
 		  "hederaFunctionality" : "ScheduleCreate",
 		  "fees" : [ {
@@ -2147,7 +2148,8 @@
 			}
 		  } ]
 		}
-	  }, {
+	  },
+	  {
 		"transactionFeeSchedule": {
 		  "hederaFunctionality": "ScheduleSign",
 		  "fees": [
@@ -5344,7 +5346,8 @@
 			}
 		  ]
 		}
-	  }, {
+	  },
+	  {
 		"transactionFeeSchedule" : {
 		  "hederaFunctionality" : "ScheduleCreate",
 		  "fees" : [ {
@@ -5385,7 +5388,8 @@
 			  "min" : 0,
 			  "max" : 1000000000000000
 			}
-		  }, {
+		  },
+			{
 			"subType" : "SCHEDULE_CREATE_CONTRACT_CALL",
 			"nodedata" : {
 			  "constant" : 22946919652,

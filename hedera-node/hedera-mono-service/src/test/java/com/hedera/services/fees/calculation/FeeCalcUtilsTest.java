@@ -19,8 +19,8 @@ import static com.hedera.services.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupFileExpiry;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.sumOfUsages;
-import static com.hederahashgraph.fee.FeeUtils.cappedAddition;
-import static com.hederahashgraph.fee.FeeUtils.cappedMultiplication;
+import static com.hederahashgraph.fee.FeeUtils.clampedAdd;
+import static com.hederahashgraph.fee.FeeUtils.clampedMultiply;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -206,27 +206,27 @@ public class FeeCalcUtilsTest {
     void clampedAddWorks() {
         long a = 100L;
         long b = Long.MAX_VALUE;
-        assertEquals(Long.MAX_VALUE, cappedAddition(a, b));
+        assertEquals(Long.MAX_VALUE, clampedAdd(a, b));
 
         b = 100L;
-        assertEquals(200L, cappedAddition(a, b));
+        assertEquals(200L, clampedAdd(a, b));
 
         a = -100L;
         b = Long.MIN_VALUE;
-        assertEquals(Long.MIN_VALUE, cappedAddition(a, b));
+        assertEquals(Long.MIN_VALUE, clampedAdd(a, b));
     }
 
     @Test
     void clampedMultiplicationWorks() {
         long a = 100L;
         long b = Long.MAX_VALUE;
-        assertEquals(Long.MAX_VALUE, cappedMultiplication(a, b));
+        assertEquals(Long.MAX_VALUE, clampedMultiply(a, b));
 
         b = 100L;
-        assertEquals(10000L, cappedMultiplication(a, b));
+        assertEquals(10000L, clampedMultiply(a, b));
 
         a = -100L;
         b = Long.MAX_VALUE;
-        assertEquals(Long.MIN_VALUE, cappedMultiplication(a, b));
+        assertEquals(Long.MIN_VALUE, clampedMultiply(a, b));
     }
 }

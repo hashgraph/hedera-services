@@ -22,8 +22,8 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
-import static com.hederahashgraph.fee.FeeUtils.cappedAddition;
-import static com.hederahashgraph.fee.FeeUtils.cappedMultiplication;
+import static org.hyperledger.besu.evm.internal.Words.clampedAdd;
+import static org.hyperledger.besu.evm.internal.Words.clampedMultiply;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -155,8 +155,8 @@ public class AutoRenewCalcs {
         // Since contract bytecode is not charged any fees, ignore sbh in the renewal fee
         // calculation
         final var storagePrice = storageFee(contractContext, rate, reqPeriod);
-        final long fixedPrice = cappedAddition(fixedFee, storagePrice);
-        final var hourlyPrice = cappedMultiplication(rbhPrice, contractContext.currentRb());
+        final long fixedPrice = clampedAdd(fixedFee, storagePrice);
+        final var hourlyPrice = clampedMultiply(rbhPrice, contractContext.currentRb());
         return new RenewalFees(inTinybars(fixedPrice, rate), inTinybars(hourlyPrice, rate));
     }
 

@@ -24,6 +24,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
+import static com.hederahashgraph.fee.FeeUtils.clampedMultiply;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.usage.EstimatorFactory;
@@ -72,7 +73,8 @@ public class ScheduleOpsUsage {
         var op = scheduleCreate.getScheduleCreate();
 
         var scheduledTxn = op.getScheduledTransactionBody();
-        long msgBytesUsed = (long) scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
+        final var serializedSize = scheduledTxn.getSerializedSize();
+        long msgBytesUsed = (long) serializedSize + op.getMemoBytes().size();
         if (op.hasPayerAccountID()) {
             msgBytesUsed += BASIC_ENTITY_ID_SIZE;
         }
@@ -110,10 +112,10 @@ public class ScheduleOpsUsage {
                             costIncrementTinyCents,
                             costIncrementBytesPerMonth,
                             defaultLifeTimeSecs,
-                            scheduledTxn.getSerializedSize());
+                            serializedSize);
             estimate.addConstant(addedFeeForLongTerm);
         } else {
-            estimate.addRbs(scheduledTxn.getSerializedSize() * lifetimeSecs);
+            estimate.addRbs(serializedSize * lifetimeSecs);
         }
 
         if (scheduledTxn.hasContractCall()) {
@@ -150,7 +152,8 @@ public class ScheduleOpsUsage {
             final int serializedSize) {
         if (lifetimeSecs > defaultLifeTimeSecs) {
             final var numerator =
-                    Math.multiplyExact(costIncrementTinyCents, lifetimeSecs) * serializedSize;
+                    clampedMultiply(
+                            clampedMultiply(costIncrementTinyCents, lifetimeSecs), serializedSize);
             final var denominator = costIncrementBytesPerMonth * ONE_MONTH_IN_SECS;
             return ESTIMATOR_UTILS.nonDegenerateDiv(numerator, denominator);
         }

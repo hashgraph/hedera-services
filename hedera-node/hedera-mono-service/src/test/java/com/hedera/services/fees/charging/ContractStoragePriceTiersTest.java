@@ -17,8 +17,8 @@ package com.hedera.services.fees.charging;
 
 import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
 import static com.hedera.services.fees.charging.ContractStoragePriceTiers.THOUSANDTHS_TO_TINY;
-import static com.hederahashgraph.fee.FeeUtils.cappedAddition;
-import static com.hederahashgraph.fee.FeeUtils.cappedMultiplication;
+import static com.hederahashgraph.fee.FeeUtils.clampedAdd;
+import static com.hederahashgraph.fee.FeeUtils.clampedMultiply;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -353,14 +353,14 @@ class ContractStoragePriceTiersTest {
 
     @Test
     void cappedMultiplicationWorks() {
-        assertEquals(2 * 10, cappedMultiplication(2, 10));
-        assertEquals(Long.MAX_VALUE, cappedMultiplication(3, Long.MAX_VALUE / 2));
+        assertEquals(2 * 10, clampedMultiply(2, 10));
+        assertEquals(Long.MAX_VALUE, clampedMultiply(3, Long.MAX_VALUE / 2));
     }
 
     @Test
     void cappedAdditionWorks() {
-        assertEquals(2 + 10, cappedAddition(2, 10));
-        assertEquals(Long.MAX_VALUE, cappedAddition(3, Long.MAX_VALUE - 2));
+        assertEquals(2 + 10, clampedAdd(2, 10));
+        assertEquals(Long.MAX_VALUE, clampedAdd(3, Long.MAX_VALUE - 2));
     }
 
     private void givenTypicalSubject() {

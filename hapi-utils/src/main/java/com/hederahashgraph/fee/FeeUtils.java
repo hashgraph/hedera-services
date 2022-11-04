@@ -15,23 +15,25 @@
  */
 package com.hederahashgraph.fee;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
-
 /** Utility class for Fees */
 public class FeeUtils {
     private FeeUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static long cappedMultiplication(final long a, final long b) {
-        if (productWouldOverflow(a, b)) {
-            return Long.MAX_VALUE;
+    public static long clampedMultiply(final long a, final long b) {
+        try {
+            return Math.addExact(a, b);
+        } catch (final ArithmeticException ae) {
+            return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
         }
-        return a * b;
     }
 
-    public static long cappedAddition(final long a, final long b) {
-        final var nominal = a + b;
-        return nominal >= 0 ? nominal : Long.MAX_VALUE;
+    public static long clampedAdd(final long a, final long b) {
+        try {
+            return Math.multiplyExact(a, b);
+        } catch (final ArithmeticException ae) {
+            return ((a ^ b) < 0) ? Long.MIN_VALUE : Long.MAX_VALUE;
+        }
     }
 }

@@ -207,6 +207,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(76L, subject.maxDailyStakeRewardThPerH());
         assertEquals(88L, subject.traceabilityMinFreeToUsedGasThrottleRatio());
         assertEquals(89L, subject.traceabilityMaxExportsPerConsSec());
+        assertEquals(94L, subject.scheduleTxCostIncrementTinyCents());
     }
 
     @Test
@@ -324,6 +325,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(79, subject.recordFileVersion());
         assertEquals(80, subject.recordSignatureFileVersion());
         assertEquals(90, subject.getSidecarMaxSizeMb());
+        assertEquals(94, subject.scheduleTxCostIncrementBytesPerMonth());
     }
 
     @Test
@@ -544,6 +546,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
                 .willReturn((i + 91) % 2 == 0);
+        given(properties.getIntProperty(SCHEDULING_COST_INCREMENT_BPM)).willReturn(i + 92);
+        given(properties.getLongProperty(SCHEDULING_COST_INCREMENT_TINY_CENTS)).willReturn(i + 93L);
     }
 
     private Set<EntityType> typesFor(final int i) {
