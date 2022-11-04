@@ -72,7 +72,8 @@ class VirtualBlobValueTest {
         final var inOrder = inOrder(out);
         subject.serialize(out);
 
-        inOrder.verify(out).writeByteArray(data);
+        inOrder.verify(out).writeInt(data.length);
+        inOrder.verify(out).write(data);
     }
 
     @Test

@@ -377,8 +377,10 @@ public class IterableContractValue implements VirtualValue {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.write(uint256Value);
-        KeyPackingUtils.serializePossiblyMissingKey(prevUint256Key, prevUint256KeyNonZeroBytes, out);
-        KeyPackingUtils.serializePossiblyMissingKey(nextUint256Key, nextUint256KeyNonZeroBytes, out);
+        KeyPackingUtils.serializePossiblyMissingKey(
+                prevUint256Key, prevUint256KeyNonZeroBytes, out);
+        KeyPackingUtils.serializePossiblyMissingKey(
+                nextUint256Key, nextUint256KeyNonZeroBytes, out);
     }
 
     @Override

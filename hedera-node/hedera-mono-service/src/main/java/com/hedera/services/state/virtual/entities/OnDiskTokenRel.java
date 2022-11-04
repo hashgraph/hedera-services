@@ -25,7 +25,6 @@ import com.hedera.services.state.virtual.utils.CheckedSupplier;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;

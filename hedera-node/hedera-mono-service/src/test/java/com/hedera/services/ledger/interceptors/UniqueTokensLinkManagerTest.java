@@ -39,7 +39,6 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,8 +53,7 @@ class UniqueTokensLinkManagerTest {
     private final UniqueTokenMapAdapter uniqueTokens =
             UniqueTokenMapAdapter.wrap(new MerkleMap<>());
     private final UniqueTokenMapAdapter virtualUniqueTokens =
-            UniqueTokenMapAdapter.wrap(
-                    new VirtualMapFactory().newVirtualizedUniqueTokenStorage());
+            UniqueTokenMapAdapter.wrap(new VirtualMapFactory().newVirtualizedUniqueTokenStorage());
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private UniqueTokensLinkManager subject;

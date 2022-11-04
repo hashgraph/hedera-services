@@ -140,9 +140,12 @@ public class UniqueTokenValue implements VirtualValue {
         return Long.BYTES // owner account num
                 + Long.BYTES // spender account num
                 + Long.BYTES // packed creation time
-                + 1 + Math.min(metadata.length, MAX_METADATA_BYTES) // metadata len + metadata
-                + Long.BYTES + Long.BYTES // prev NFT num pair: token num + serial num
-                + Long.BYTES + Long.BYTES; // next NFT num pair: token num + serial num
+                + 1
+                + Math.min(metadata.length, MAX_METADATA_BYTES) // metadata len + metadata
+                + Long.BYTES
+                + Long.BYTES // prev NFT num pair: token num + serial num
+                + Long.BYTES
+                + Long.BYTES; // next NFT num pair: token num + serial num
     }
 
     // Keep it in sync with getSerializedSize()

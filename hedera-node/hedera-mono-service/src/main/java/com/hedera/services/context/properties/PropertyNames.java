@@ -295,5 +295,4 @@ public class PropertyNames {
     public static final String STATS_SPEEDOMETER_HALF_LIFE_SECS = "stats.speedometerHalfLifeSecs";
     public static final String VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB =
             "virtualdatasource.jasperdbToMerkledb";
-
 }

@@ -175,7 +175,8 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         deserializeFrom(in::readByte, in::readInt, in::readLong, in::readFully);
     }
 

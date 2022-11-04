@@ -42,8 +42,7 @@ class StoresModuleTest {
         final var uniqueTokensLinkManager = mock(UniqueTokensLinkManager.class);
         given(bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
-        final var virtualMap =
-                new VirtualMapFactory().newVirtualizedUniqueTokenStorage();
+        final var virtualMap = new VirtualMapFactory().newVirtualizedUniqueTokenStorage();
         final var transactionalLedger =
                 StoresModule.provideNftsLedger(
                         bootstrapProperties,

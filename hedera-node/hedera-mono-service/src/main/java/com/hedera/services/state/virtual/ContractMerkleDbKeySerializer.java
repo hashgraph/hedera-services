@@ -15,19 +15,17 @@
  */
 package com.hedera.services.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.merkledb.serialize.KeySerializer;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Objects;
-
 import static com.hedera.services.state.virtual.ContractKey.deserializeContractID;
 import static com.hedera.services.state.virtual.ContractKey.getContractIdNonZeroBytesFromPacked;
 import static com.hedera.services.state.virtual.ContractKey.getUint256KeyNonZeroBytesFromPacked;
 import static com.hedera.services.state.virtual.KeyPackingUtils.deserializeUint256Key;
+
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Objects;
 
 /** KeySerializer for ContractKeys */
 public class ContractMerkleDbKeySerializer implements KeySerializer<ContractKey> {
@@ -77,7 +75,8 @@ public class ContractMerkleDbKeySerializer implements KeySerializer<ContractKey>
     }
 
     @Override
-    public int serialize(final ContractKey key, SerializableDataOutputStream out) throws IOException {
+    public int serialize(final ContractKey key, SerializableDataOutputStream out)
+            throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
         return key.serializeReturningBytesWritten(out);
@@ -112,5 +111,4 @@ public class ContractMerkleDbKeySerializer implements KeySerializer<ContractKey>
                 deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
         return Arrays.equals(uint256Key, contractKey.getKey());
     }
-
 }

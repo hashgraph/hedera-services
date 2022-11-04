@@ -64,7 +64,8 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
             case 'k' -> new VirtualBlobKey(Type.FILE_METADATA, packedNum);
             case 's' -> new VirtualBlobKey(Type.CONTRACT_BYTECODE, packedNum);
             case 'e' -> new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, packedNum);
-            default -> throw new IllegalArgumentException("Invalid code in blob path '" + path + "'");
+            default -> throw new IllegalArgumentException(
+                    "Invalid code in blob path '" + path + "'");
         };
     }
 
@@ -153,17 +154,12 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     /**
      * Verifies if the content from the buffer is equal to this virtual blob key.
      *
-     * @param buffer
-     *      The buffer with data to be compared with this key
-     * @param version
-     *      The version of the data inside the buffer
-     * @return
-     *      If the content from the buffer has the same data as this instance
-     * @throws IOException
-     *      If an I/O error occurred
+     * @param buffer The buffer with data to be compared with this key
+     * @param version The version of the data inside the buffer
+     * @return If the content from the buffer has the same data as this instance
+     * @throws IOException If an I/O error occurred
      */
     public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
-        return (type.ordinal() == (0xff & buffer.get()))
-                && (entityNumCode == buffer.getInt());
+        return (type.ordinal() == (0xff & buffer.get())) && (entityNumCode == buffer.getInt());
     }
 }

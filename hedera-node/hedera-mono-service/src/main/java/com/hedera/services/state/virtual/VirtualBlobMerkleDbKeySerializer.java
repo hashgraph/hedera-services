@@ -15,10 +15,8 @@
  */
 package com.hedera.services.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -61,7 +59,8 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
     }
 
     @Override
-    public int serialize(final VirtualBlobKey key, final SerializableDataOutputStream out) throws IOException {
+    public int serialize(final VirtualBlobKey key, final SerializableDataOutputStream out)
+            throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
         key.serialize(out);
@@ -85,7 +84,8 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
     }
 
     @Override
-    public VirtualBlobKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    public VirtualBlobKey deserialize(final ByteBuffer buffer, final long version)
+            throws IOException {
         Objects.requireNonNull(buffer);
         final var key = new VirtualBlobKey();
         key.deserialize(buffer, (int) version);
@@ -93,9 +93,9 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
     }
 
     @Override
-    public boolean equals(final ByteBuffer buffer, final int version, final VirtualBlobKey key) throws IOException {
+    public boolean equals(final ByteBuffer buffer, final int version, final VirtualBlobKey key)
+            throws IOException {
         Objects.requireNonNull(buffer);
         return key.equals(buffer, version);
     }
-
 }

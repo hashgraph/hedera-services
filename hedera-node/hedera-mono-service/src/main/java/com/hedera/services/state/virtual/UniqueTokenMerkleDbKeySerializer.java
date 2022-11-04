@@ -17,7 +17,6 @@ package com.hedera.services.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -65,7 +64,8 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     }
 
     @Override
-    public int serialize(final UniqueTokenKey key, final SerializableDataOutputStream out) throws IOException {
+    public int serialize(final UniqueTokenKey key, final SerializableDataOutputStream out)
+            throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
         return key.serializeTo(out::write);
@@ -87,7 +87,8 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     }
 
     @Override
-    public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion)
+            throws IOException {
         Objects.requireNonNull(buffer);
         final UniqueTokenKey tokenKey = new UniqueTokenKey();
         tokenKey.deserialize(buffer, (int) dataVersion);
@@ -95,9 +96,9 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     }
 
     @Override
-    public boolean equals(final ByteBuffer buffer, final int version, final UniqueTokenKey key) throws IOException {
+    public boolean equals(final ByteBuffer buffer, final int version, final UniqueTokenKey key)
+            throws IOException {
         Objects.requireNonNull(buffer);
         return key.equalsTo(buffer);
     }
-
 }
