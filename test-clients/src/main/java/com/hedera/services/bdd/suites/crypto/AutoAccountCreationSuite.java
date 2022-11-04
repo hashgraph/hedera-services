@@ -28,6 +28,8 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -176,6 +178,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 hollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled(),
                 hollowAccountCompletionWithCryptoTransfer(),
                 hollowAccountCompletionWithEthereumTransaction(),
+                hollowAccountCompletionWithContractCreate(),
+                hollowAccountCompletionWithContractCall(),
+                hollowAccountCompletionWithTokenAssociation(),
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
                 multipleTokenTransfersSucceed(),
@@ -1082,6 +1087,222 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 }),
                         resetToDefault(LAZY_CREATE_FEATURE_FLAG),
                         resetToDefault("contracts.chainId"));
+    }
+
+    private HapiApiSpec hollowAccountCompletionWithContractCreate() {
+        final String CONTRACT = "CreateTrivial";
+        return defaultHapiSpec("HollowAccountCompletionWithContractCreate")
+                .given(
+                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT))
+                .when()
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                                    final var op =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    evmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+
+                                    final HapiGetTxnRecord hapiGetTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged();
+
+                                    allRunFor(spec, op, hapiGetTxnRecord);
+
+                                    final AccountID newAccountID =
+                                            hapiGetTxnRecord
+                                                    .getChildRecord(0)
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    spec.registry()
+                                            .saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+
+                                    final var op2 =
+                                            contractCreate(CONTRACT)
+                                                    .adminKey(ADMIN_KEY)
+                                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var op3 =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .evmAddressAlias(evmAddress));
+
+                                    final HapiGetTxnRecord hapiGetSecondTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN_2)
+                                                    .andAllChildRecords()
+                                                    .logged();
+
+                                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
+                                }),
+                        resetToDefault(LAZY_CREATE_FEATURE_FLAG));
+    }
+
+    private HapiApiSpec hollowAccountCompletionWithContractCall() {
+        final String CONTRACT = "PayReceivable";
+        final long DEPOSIT_AMOUNT = 1000;
+        return defaultHapiSpec("HollowAccountCompletionWithContractCall")
+                .given(
+                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                .when()
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                                    final var op =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    evmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+
+                                    final HapiGetTxnRecord hapiGetTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged();
+
+                                    allRunFor(spec, op, hapiGetTxnRecord);
+
+                                    final AccountID newAccountID =
+                                            hapiGetTxnRecord
+                                                    .getChildRecord(0)
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    spec.registry()
+                                            .saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+
+                                    final var op2 =
+                                            contractCall(CONTRACT)
+                                                    .sending(DEPOSIT_AMOUNT)
+                                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var op3 =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .evmAddressAlias(evmAddress));
+
+                                    final HapiGetTxnRecord hapiGetSecondTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN_2)
+                                                    .andAllChildRecords()
+                                                    .logged();
+
+                                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
+                                }),
+                        resetToDefault(LAZY_CREATE_FEATURE_FLAG));
+    }
+
+    private HapiApiSpec hollowAccountCompletionWithTokenAssociation() {
+        final String TOKEN_TREASURY = "treasury";
+        final String VANILLA_TOKEN = "TokenD";
+        return defaultHapiSpec("HollowAccountCompletionWithTokenAssociation")
+                .given(
+                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        overriding("contracts.chainId", "298"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
+                        cryptoCreate("test"))
+                .when()
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                                    final var op =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    evmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+
+                                    final HapiGetTxnRecord hapiGetTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged();
+
+                                    allRunFor(spec, op, hapiGetTxnRecord);
+
+                                    final AccountID newAccountID =
+                                            hapiGetTxnRecord
+                                                    .getChildRecord(0)
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    spec.registry()
+                                            .saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+
+                                    final var op2 =
+                                            tokenAssociate("test", VANILLA_TOKEN)
+                                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var op3 =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .evmAddressAlias(evmAddress));
+
+                                    final HapiGetTxnRecord hapiGetSecondTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN_2)
+                                                    .andAllChildRecords()
+                                                    .logged();
+
+                                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
+                                }));
     }
 
     private HapiApiSpec canGetBalanceAndInfoViaAlias() {
