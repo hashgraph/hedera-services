@@ -58,7 +58,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
@@ -70,7 +69,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -138,10 +136,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
     private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 40927290L;
     public static final String CRYPTO_TRANSFER_RECEIVER = "cryptoTransferReceiver";
+    public static final String TRUE = "true";
     public static final String FALSE = "false";
     private static final String HBAR_XFER = "hbarXfer";
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
+    public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteSync();
@@ -199,7 +199,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         final var initialTokenSupply = 1000;
         return defaultHapiSpec("hbarAndTokenTransfers")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
+                        overriding(FEATURE_FLAG, TRUE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(CIVILIAN)
@@ -296,7 +296,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getTxnRecord(TRANSFER_TXN)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1))
-                .then(overriding(FEATURE_FLAG, "true"));
+                .then(overriding(FEATURE_FLAG, TRUE));
     }
 
     private HapiApiSpec repeatedAliasInSameTransferListFails() {
@@ -477,7 +477,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
+                        overriding(FEATURE_FLAG, TRUE),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -561,7 +561,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("multipleTokenTransfersSucceed")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
+                        overriding(FEATURE_FLAG, TRUE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -661,7 +661,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("PayerBalanceIsReflectsAllChangesBeforeFeeCharging")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
+                        overriding(FEATURE_FLAG, TRUE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(A_TOKEN)
@@ -730,7 +730,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
+                        overriding(FEATURE_FLAG, TRUE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -831,7 +831,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private HapiApiSpec hollowAccountCreationWithCryptoTransfer() {
         return defaultHapiSpec("HollowAccountCreationWithCryptoTransfer")
                 .given(
-                        UtilVerbs.overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when()
@@ -875,7 +875,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         return defaultHapiSpec(
                         "HollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled")
                 .given(
-                        overriding(AUTO_CREATE_FEATURE_FLAG, "true"),
+                        overriding(AUTO_CREATE_FEATURE_FLAG, TRUE),
                         overriding(LAZY_CREATE_FEATURE_FLAG, FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -908,7 +908,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private HapiApiSpec hollowAccountCompletionWithCryptoTransfer() {
         return defaultHapiSpec("HollowAccountCompletionWithCryptoTransfer")
                 .given(
-                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
                         cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -975,7 +975,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
                                     allRunFor(spec, op3);
                                 }),
-                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var ecdsaKey =
@@ -1020,8 +1020,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         final String CONTRACT = "Fuse";
         return defaultHapiSpec("HollowAccountCompletionWithEthereumTransaction")
                 .given(
-                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
-                        overriding("contracts.chainId", "298"),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
+                        overriding(CONTRACTS_CHAIN_ID, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -1086,14 +1086,14 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
                                 }),
                         resetToDefault(LAZY_CREATE_FEATURE_FLAG),
-                        resetToDefault("contracts.chainId"));
+                        resetToDefault(CONTRACTS_CHAIN_ID));
     }
 
     private HapiApiSpec hollowAccountCompletionWithContractCreate() {
         final String CONTRACT = "CreateTrivial";
         return defaultHapiSpec("HollowAccountCompletionWithContractCreate")
                 .given(
-                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
                         newKeyNamed(ADMIN_KEY),
@@ -1165,7 +1165,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         final long DEPOSIT_AMOUNT = 1000;
         return defaultHapiSpec("HollowAccountCompletionWithContractCall")
                 .given(
-                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
                         newKeyNamed(ADMIN_KEY),
@@ -1238,8 +1238,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         final String VANILLA_TOKEN = "TokenD";
         return defaultHapiSpec("HollowAccountCompletionWithTokenAssociation")
                 .given(
-                        overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
-                        overriding("contracts.chainId", "298"),
+                        overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
+                        overriding(CONTRACTS_CHAIN_ID, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -1302,7 +1302,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .logged();
 
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
-                                }));
+                                }),
+                        resetToDefault(LAZY_CREATE_FEATURE_FLAG),
+                        resetToDefault(CONTRACTS_CHAIN_ID));
     }
 
     private HapiApiSpec canGetBalanceAndInfoViaAlias() {
