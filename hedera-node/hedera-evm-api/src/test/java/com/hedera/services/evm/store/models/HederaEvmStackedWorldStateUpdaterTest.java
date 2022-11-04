@@ -39,11 +39,12 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void accountTests() {
         assertNull(hederaEvmStackedWorldStateUpdater.createAccount(address, 1, Wei.ONE));
         assertNull(hederaEvmStackedWorldStateUpdater.getAccount(address));
-        assertEquals(Collections.emptyList(), hederaEvmStackedWorldStateUpdater.getTouchedAccounts());
+        assertEquals(
+                Collections.emptyList(), hederaEvmStackedWorldStateUpdater.getTouchedAccounts());
         hederaEvmStackedWorldStateUpdater.commit();
         assertEquals(
                 Collections.emptyList(),
-            hederaEvmStackedWorldStateUpdater.getDeletedAccountAddresses());
+                hederaEvmStackedWorldStateUpdater.getDeletedAccountAddresses());
     }
 
     @Test
@@ -52,12 +53,13 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
         assertEquals(
                 updatedHederaEvmAccount.getAddress(),
-            hederaEvmStackedWorldStateUpdater.get(address).getAddress());
+                hederaEvmStackedWorldStateUpdater.get(address).getAddress());
     }
 
     @Test
     void updaterTest() {
         assertEquals(Optional.empty(), hederaEvmStackedWorldStateUpdater.parentUpdater());
-        assertEquals(hederaEvmStackedWorldStateUpdater, hederaEvmStackedWorldStateUpdater.updater());
+        assertEquals(
+                hederaEvmStackedWorldStateUpdater, hederaEvmStackedWorldStateUpdater.updater());
     }
 }
