@@ -23,6 +23,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
@@ -86,7 +87,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         return new Updater(accountAccessor);
     }
 
-    public static class Updater extends AbstractLedgerEvmWorldUpdater
+    public static class Updater extends HederaEvmStackedWorldStateUpdater
             implements HederaEvmWorldUpdater {
 
         protected Updater(AccountAccessor accountAccessor) {
@@ -96,6 +97,11 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         @Override
         public long getSbhRefund() {
             return 0;
+        }
+
+        @Override
+        public WorldUpdater updater() {
+            return new HederaEvmStackedWorldStateUpdater(accountAccessor);
         }
     }
 }
