@@ -197,7 +197,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 migrateVirtualMapsToMerkleDb(this);
             } catch (final InterruptedException e) {
                 log.error("VirtualMap migration to MerkleDb is interrupted", e);
-                // exit?
+                throw new RuntimeException(e);
             }
         }
         return MerkleInternal.super.migrate(version);

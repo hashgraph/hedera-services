@@ -69,11 +69,11 @@ public class VirtualMapFactory {
     private static final String ON_DISK_TOKEN_RELS_STORAGE_VM_NAME = "tokenRelStore";
     private static final String UNIQUE_TOKENS_VM_NAME = "uniqueTokenStore";
 
-    private static final boolean useMerkleDb;
+    private static final boolean USE_MERKLE_DB;
 
     static {
         final BootstrapProperties props = new BootstrapProperties();
-        useMerkleDb =
+        USE_MERKLE_DB =
                 props.getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
     }
 
@@ -90,7 +90,7 @@ public class VirtualMapFactory {
             try {
                 this.storageDir =
                         TemporaryFileBuilder.buildTemporaryDirectory(
-                                useMerkleDb ? "merkledb" : "jasperdb");
+                                USE_MERKLE_DB ? "merkledb" : "jasperdb");
             } catch (final IOException z) {
                 throw new UncheckedIOException(z);
             }
@@ -99,7 +99,7 @@ public class VirtualMapFactory {
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs() {
         final VirtualDataSourceBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder;
-        if (useMerkleDb) {
+        if (USE_MERKLE_DB) {
             final MerkleDbTableConfig<VirtualBlobKey, VirtualBlobValue> tableConfig =
                     new MerkleDbTableConfig<>(
                             CURRENT_SERIALIZATION_VERSION,
@@ -141,7 +141,7 @@ public class VirtualMapFactory {
 
     public VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage() {
         final VirtualDataSourceBuilder<ContractKey, IterableContractValue> dsBuilder;
-        if (useMerkleDb) {
+        if (USE_MERKLE_DB) {
             final MerkleDbTableConfig<ContractKey, IterableContractValue> tableConfig =
                     new MerkleDbTableConfig<>(
                             CURRENT_SERIALIZATION_VERSION,
@@ -269,7 +269,7 @@ public class VirtualMapFactory {
 
     public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage() {
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskAccount> dsBuilder;
-        if (useMerkleDb) {
+        if (USE_MERKLE_DB) {
             final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskAccount> tableConfig =
                     new MerkleDbTableConfig<>(
                             CURRENT_SERIALIZATION_VERSION,
@@ -312,7 +312,7 @@ public class VirtualMapFactory {
 
     public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels() {
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskTokenRel> dsBuilder;
-        if (useMerkleDb) {
+        if (USE_MERKLE_DB) {
             final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskTokenRel> tableConfig =
                     new MerkleDbTableConfig<>(
                             CURRENT_SERIALIZATION_VERSION,
@@ -356,7 +356,7 @@ public class VirtualMapFactory {
 
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage() {
         final VirtualDataSourceBuilder<UniqueTokenKey, UniqueTokenValue> dsBuilder;
-        if (useMerkleDb) {
+        if (USE_MERKLE_DB) {
             final MerkleDbTableConfig<UniqueTokenKey, UniqueTokenValue> tableConfig =
                     new MerkleDbTableConfig<>(
                             CURRENT_SERIALIZATION_VERSION,

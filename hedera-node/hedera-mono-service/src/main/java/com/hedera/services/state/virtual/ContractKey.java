@@ -181,7 +181,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         serializeReturningBytesWritten(buffer);
     }
 
-    public int serializeReturningBytesWritten(final ByteBuffer buffer) throws IOException {
+    public int serializeReturningBytesWritten(final ByteBuffer buffer) {
         buffer.put(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             buffer.put((byte) (contractId >> (b * 8)));
