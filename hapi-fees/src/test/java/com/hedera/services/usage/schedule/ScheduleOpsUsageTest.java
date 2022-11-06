@@ -164,7 +164,7 @@ class ScheduleOpsUsageTest {
         // when:
         var estimate =
                 subject.scheduleCreateUsage(
-                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 200L, 128, 1800);
+                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -206,7 +206,7 @@ class ScheduleOpsUsageTest {
         // when:
         var estimate =
                 subject.scheduleCreateUsage(
-                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 200L, 128, 1800);
+                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -217,7 +217,6 @@ class ScheduleOpsUsageTest {
                 .addNetworkRbs(
                         (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize)
                                 * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        verify(base).addConstant(expectedExtraFee);
     }
 
     @Test
@@ -250,12 +249,7 @@ class ScheduleOpsUsageTest {
         // when:
         var estimate =
                 subject.scheduleCreateUsage(
-                        creationTxn(scheduledTxnWithContractCall),
-                        sigUsage,
-                        lifetimeSecs,
-                        200L,
-                        128,
-                        1800);
+                        creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs, 1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -266,7 +260,6 @@ class ScheduleOpsUsageTest {
                 .addNetworkRbs(
                         (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize)
                                 * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        verify(base).addConstant(expectedExtraFee);
     }
 
     @Test
@@ -291,12 +284,7 @@ class ScheduleOpsUsageTest {
         // when:
         var estimate =
                 subject.scheduleCreateUsage(
-                        creationTxn(scheduledTxnWithContractCall),
-                        sigUsage,
-                        lifetimeSecs,
-                        200L,
-                        128,
-                        1800);
+                        creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs, 1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);

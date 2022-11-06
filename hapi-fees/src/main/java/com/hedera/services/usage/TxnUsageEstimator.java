@@ -33,7 +33,6 @@ public class TxnUsageEstimator {
     private long gas;
     private long tv;
     private long networkRbs;
-    private long constant;
 
     public TxnUsageEstimator(SigUsage sigUsage, TransactionBody txn, EstimatorUtils utils) {
         this.txn = txn;
@@ -61,16 +60,10 @@ public class TxnUsageEstimator {
                 .setBpt(baseUsage.getBpt() + bpt)
                 .setVpt(baseUsage.getVpt() + vpt)
                 .setGas(baseUsage.getGas() + gas)
-                .setTv(baseUsage.getTv() + tv)
-                .setConstant(baseUsage.getConstant() + constant);
+                .setTv(baseUsage.getTv() + tv);
         usage.addRbs(rbs);
         usage.addSbs(sbs);
         this.networkRbs += utils.baseNetworkRbs();
-    }
-
-    public TxnUsageEstimator addConstant(long constant) {
-        this.constant += constant;
-        return this;
     }
 
     public TxnUsageEstimator addBpt(long bpt) {

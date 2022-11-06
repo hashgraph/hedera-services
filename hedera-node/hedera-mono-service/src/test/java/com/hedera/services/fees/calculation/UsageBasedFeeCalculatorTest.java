@@ -684,18 +684,21 @@ class UsageBasedFeeCalculatorTest {
         final var secondaryFees = new FeeObject(1, 2, 3);
         FeeObject expectedFees =
                 getFeeObjectWithSecondary(
-                        DEFAULT_RESOURCE_PRICES.get(SubType.DEFAULT), resourceUsage,
-                        secondaryFees, currentRate, 1L);
+                        DEFAULT_RESOURCE_PRICES.get(SubType.DEFAULT),
+                        resourceUsage,
+                        secondaryFees,
+                        currentRate,
+                        1L);
 
         given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(correctOpEstimator));
         given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
         given(correctOpEstimator.hasSecondaryFees()).willReturn(true);
         given(correctOpEstimator.secondaryFeesFor(accessor.getTxn())).willReturn(secondaryFees);
         given(
-                correctOpEstimator.usageGiven(
-                        argThat(accessor.getTxn()::equals),
-                        argThat(factory.apply(expectedSigUsage)),
-                        argThat(view::equals)))
+                        correctOpEstimator.usageGiven(
+                                argThat(accessor.getTxn()::equals),
+                                argThat(factory.apply(expectedSigUsage)),
+                                argThat(view::equals)))
                 .willReturn(resourceUsage);
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(DEFAULT_RESOURCE_PRICES);

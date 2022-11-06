@@ -207,7 +207,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(76L, subject.maxDailyStakeRewardThPerH());
         assertEquals(88L, subject.traceabilityMinFreeToUsedGasThrottleRatio());
         assertEquals(89L, subject.traceabilityMaxExportsPerConsSec());
-        assertEquals(94L, subject.scheduleTxIncreasedPrice());
+        assertEquals(94L, subject.scheduleTxSecondaryFee());
     }
 
     @Test
@@ -325,7 +325,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(79, subject.recordFileVersion());
         assertEquals(80, subject.recordSignatureFileVersion());
         assertEquals(90, subject.getSidecarMaxSizeMb());
-        assertEquals(94, subject.scheduleTxIncreasedPriceBytesPerMonth());
+        assertEquals(94, subject.scheduleTxSecondaryFeeBytesPerMonth());
     }
 
     @Test
@@ -546,9 +546,9 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
                 .willReturn((i + 91) % 2 == 0);
-        given(properties.getIntProperty(SCHEDULING_INCREASED_PRICE_BYTES_PER_MONTH))
+        given(properties.getIntProperty(SCHEDULE_TX_SECONDARY_FEE_BYTES_PER_MONTH))
                 .willReturn(i + 92);
-        given(properties.getLongProperty(SCHEDULING_INCREASED_PRICE)).willReturn(i + 93L);
+        given(properties.getLongProperty(SCHEDULE_TX_SECONDARY_FEE)).willReturn(i + 93L);
     }
 
     private Set<EntityType> typesFor(final int i) {

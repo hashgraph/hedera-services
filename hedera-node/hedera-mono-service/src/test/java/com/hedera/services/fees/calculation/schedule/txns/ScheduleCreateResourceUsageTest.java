@@ -18,6 +18,7 @@ package com.hedera.services.fees.calculation.schedule.txns;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -66,8 +67,6 @@ class ScheduleCreateResourceUsageTest {
                                 scheduleCreateTxn,
                                 sigUsage,
                                 props.scheduledTxExpiryTimeSecs(),
-                                props.scheduleTxIncreasedPrice(),
-                                props.scheduleTxIncreasedPriceBytesPerMonth(),
                                 props.scheduledTxExpiryTimeSecs()))
                 .willReturn(expected);
 
@@ -83,6 +82,19 @@ class ScheduleCreateResourceUsageTest {
 
     @Test
     void delegatesToCorrectEstimate() throws Exception {
+        given(
+                        scheduleOpsUsage.scheduleCreateUsage(
+                                eq(scheduleCreateTxn),
+                                eq(sigUsage),
+                                eq(props.scheduledTxExpiryTimeSecs()),
+                                eq(props.scheduledTxExpiryTimeSecs())))
+                .willReturn(expected);
+        given(scheduleCreateTxn.getTransactionID())
+                .willReturn(
+                        TransactionID.newBuilder()
+                                .setTransactionValidStart(
+                                        Timestamp.newBuilder().setSeconds(1L).setNanos(0))
+                                .build());
         // expect:
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
     }
@@ -105,9 +117,7 @@ class ScheduleCreateResourceUsageTest {
                                         Timestamp.newBuilder().setSeconds(1L).setNanos(0))
                                 .build());
 
-        given(
-                        scheduleOpsUsage.scheduleCreateUsage(
-                                scheduleCreateTxn, sigUsage, 1L, 200L, 128, 1800))
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 1L, 1800))
                 .willReturn(expected);
 
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
@@ -151,7 +161,7 @@ class ScheduleCreateResourceUsageTest {
                                         Timestamp.newBuilder().setSeconds(5L).setNanos(0))
                                 .build());
 
-        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 0L, 0, 0, 1800))
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 0L, 1800))
                 .willReturn(expected);
 
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));

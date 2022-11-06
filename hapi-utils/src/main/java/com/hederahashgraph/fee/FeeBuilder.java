@@ -152,9 +152,7 @@ public class FeeBuilder {
 
     public static FeeObject getFeeObject(
             FeeData feeData, FeeData feeMatrices, ExchangeRate exchangeRate, long multiplier) {
-        return internalGetFeeObject(
-                feeData, feeMatrices, exchangeRate, multiplier,
-                0L, 0L, 0L);
+        return internalGetFeeObject(feeData, feeMatrices, exchangeRate, multiplier, 0L, 0L, 0L);
     }
 
     public static FeeObject getFeeObjectWithSecondary(
@@ -162,11 +160,15 @@ public class FeeBuilder {
             FeeData feeMatrices,
             FeeObject secondaryFees,
             ExchangeRate exchangeRate,
-            long multiplier
-    ) {
+            long multiplier) {
         return internalGetFeeObject(
-                feeData, feeMatrices, exchangeRate, multiplier,
-                secondaryFees.getNetworkFee(), secondaryFees.getNodeFee(), secondaryFees.getServiceFee());
+                feeData,
+                feeMatrices,
+                exchangeRate,
+                multiplier,
+                secondaryFees.getNetworkFee(),
+                secondaryFees.getNodeFee(),
+                secondaryFees.getServiceFee());
     }
 
     private static FeeObject internalGetFeeObject(
@@ -176,8 +178,7 @@ public class FeeBuilder {
             final long multiplier,
             final long secondaryNetworkFee,
             final long secondaryNodeFee,
-            final long secondaryServiceFee
-    ) {
+            final long secondaryServiceFee) {
         // First compute fees in tinycents
         var networkFee =
                 getComponentFeeInTinyCents(feeData.getNetworkdata(), feeMatrices.getNetworkdata())

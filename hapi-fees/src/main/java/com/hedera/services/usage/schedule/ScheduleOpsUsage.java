@@ -24,7 +24,6 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
-import static com.hederahashgraph.fee.FeeUtils.clampedMultiply;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.usage.EstimatorFactory;
@@ -64,11 +63,9 @@ public class ScheduleOpsUsage {
     }
 
     public FeeData scheduleCreateUsage(
-            TransactionBody scheduleCreate,
-            SigUsage sigUsage,
-            long lifetimeSecs,
-            long priceIncrement,
-            int increasedPriceBytesPerMonth,
+            final TransactionBody scheduleCreate,
+            final SigUsage sigUsage,
+            final long lifetimeSecs,
             final long defaultLifeTimeSecs) {
         var op = scheduleCreate.getScheduleCreate();
 
@@ -97,71 +94,24 @@ public class ScheduleOpsUsage {
         estimate.addBpt(msgBytesUsed);
         estimate.addRbs(creationCtx.build().nonBaseRb() * lifetimeSecs);
 
+        /* If the lifetime is less than default lifeTime scheduledTxn serialized size cost is
+          included in Rbs.If it is greater than defaultLifeTime cost is added in secondaryFees.
+        */
+        if (lifetimeSecs <= defaultLifeTimeSecs) {
+            estimate.addRbs(serializedSize * lifetimeSecs);
+        }
+
         /* The receipt of a schedule create includes both the id of the created schedule
         and the transaction id to use for querying the record of the scheduled txn. */
         estimate.addNetworkRbs(
                 (BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
                         * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
-        /* fee for storing long term schedule transactions based on the size of the transaction
-        and minutesTillScheduledTime */
-        if (lifetimeSecs > defaultLifeTimeSecs) {
-            final var addedFeeForLongTerm =
-                    addedFeeForLongTermScheduleTxn(
-                            lifetimeSecs,
-                            priceIncrement,
-                            increasedPriceBytesPerMonth,
-                            defaultLifeTimeSecs,
-                            serializedSize);
-            estimate.addConstant(addedFeeForLongTerm);
-        } else {
-            estimate.addRbs(serializedSize * lifetimeSecs);
-        }
-
         if (scheduledTxn.hasContractCall()) {
             return estimate.get(SCHEDULE_CREATE_CONTRACT_CALL);
         }
 
         return estimate.get();
-    }
-
-    /**
-     * Since long term scheduled transactions can be scheduled far from future, adds a fee based on
-     * number of minutes until scheduled time and size of schedule transaction. This fee is added
-     * only to the transactions scheduled beyond the defaultLifeTimeSecs.
-     *
-     * <p>Fee calculation is as follows :
-     * <li>Charges the base fee for transactions whose lifetimeSecs <= defaultLifeTimeSecs
-     * <li>lifetimeSecs > defaultLifeTimeSecs, an additional price of priceIncrement per
-     *     increasedPriceBytesPerMonth bytes per month is added to the base price above. The
-     *     additional cost is for storing the scheduled transaction in the disk.
-     *
-     *     <p>For example if the defaultLifeTimeSecs is {@code 1800}, priceIncrement is {@code 200}
-     *     and increasedPriceBytesPerMonth is {@code 128} bytes, then for a scheduled transaction
-     *     that is scheduled to execute anytime after 1800 secs, the fees are incremented by $0.002
-     *     for 128 bytes/month.
-     *
-     * @param lifetimeSecs seconds until the transaction will be expired
-     * @param priceIncrement additional cost in tiny cents , defaults to 200L
-     * @param increasedPriceBytesPerMonth number of bytes per month to increment cost by
-     *     priceIncrement, defaults to 128 bytes
-     * @param defaultLifeTimeSecs default lifetime of schedule txn , defaults to 30 mins
-     * @param serializedSize size of the schedule txn
-     * @return additiona fee to be charged
-     */
-    private long addedFeeForLongTermScheduleTxn(
-            final long lifetimeSecs,
-            final long priceIncrement,
-            final int increasedPriceBytesPerMonth,
-            final long defaultLifeTimeSecs,
-            final int serializedSize) {
-        if (lifetimeSecs > defaultLifeTimeSecs) {
-            final var numerator =
-                    clampedMultiply(clampedMultiply(priceIncrement, lifetimeSecs), serializedSize);
-            final var denominator = increasedPriceBytesPerMonth * ONE_MONTH_IN_SECS;
-            return ESTIMATOR_UTILS.nonDegenerateDiv(numerator, denominator);
-        }
-        return 0L;
     }
 
     public FeeData scheduleSignUsage(

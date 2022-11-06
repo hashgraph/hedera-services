@@ -21,7 +21,6 @@ import static com.hedera.services.test.UsageUtils.A_USAGE_VECTOR;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -53,7 +52,7 @@ class TxnUsageEstimatorTest {
     void plusHelpersWork() {
         given(utils.nonDegenerateDiv(anyLong(), anyInt())).willReturn(1L);
         given(utils.baseNetworkRbs()).willReturn(networkRbs);
-        given(utils.baseEstimate(any(), any())).willReturn(baseEstimate());
+        given(utils.baseEstimate(txn, sigUsage)).willReturn(baseEstimate());
         given(
                         utils.withDefaultTxnPartitioning(
                                 expectedEstimate().build(),
@@ -68,8 +67,7 @@ class TxnUsageEstimatorTest {
                 .addSbs(A_USAGE_VECTOR.getSbh() * HRS_DIVISOR)
                 .addGas(A_USAGE_VECTOR.getGas())
                 .addTv(A_USAGE_VECTOR.getTv())
-                .addNetworkRbs(networkRbs)
-                .addConstant(A_USAGE_VECTOR.getConstant());
+                .addNetworkRbs(networkRbs);
 
         // when:
         var actual = subject.get();
@@ -84,8 +82,7 @@ class TxnUsageEstimatorTest {
                         .setBpt(2 * A_USAGE_VECTOR.getBpt())
                         .setVpt(2 * A_USAGE_VECTOR.getVpt())
                         .setGas(2 * A_USAGE_VECTOR.getGas())
-                        .setTv(2 * A_USAGE_VECTOR.getTv())
-                        .setConstant(2 * A_USAGE_VECTOR.getConstant());
+                        .setTv(2 * A_USAGE_VECTOR.getTv());
         var base = new UsageEstimate(updatedUsageVector);
         base.addRbs(2 * A_USAGE_VECTOR.getRbh() * HRS_DIVISOR);
         base.addSbs(2 * A_USAGE_VECTOR.getSbh() * HRS_DIVISOR);
@@ -98,8 +95,7 @@ class TxnUsageEstimatorTest {
                         .setBpt(A_USAGE_VECTOR.getBpt())
                         .setVpt(A_USAGE_VECTOR.getVpt())
                         .setGas(A_USAGE_VECTOR.getGas())
-                        .setTv(A_USAGE_VECTOR.getTv())
-                        .setConstant(A_USAGE_VECTOR.getConstant());
+                        .setTv(A_USAGE_VECTOR.getTv());
         var base = new UsageEstimate(updatedUsageVector);
         base.addRbs(A_USAGE_VECTOR.getRbh() * HRS_DIVISOR);
         base.addSbs(A_USAGE_VECTOR.getSbh() * HRS_DIVISOR);

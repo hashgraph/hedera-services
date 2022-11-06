@@ -140,43 +140,127 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 enableLongTermScheduledTransactions(),
-                //                executionWithDefaultPayerWorks(),
-                //                executionWithCustomPayerWorks(),
-                //                executionWithCustomPayerThatNeverSignsFails(),
-                //                executionWithCustomPayerWhoSignsAtCreationAsPayerWorks(),
-                //                executionWithCustomPayerAndAdminKeyWorks(),
-                //                executionWithDefaultPayerButNoFundsFails(),
-                //                executionWithCustomPayerButNoFundsFails(),
-                //                executionWithDefaultPayerButAccountDeletedFails(),
-                //                executionWithCustomPayerButAccountDeletedFails(),
-                //                executionWithInvalidAccountAmountsFails(),
-                //                executionWithCryptoInsufficientAccountBalanceFails(),
-                //                executionWithCryptoSenderDeletedFails(),
-                //                executionTriggersWithWeirdlyRepeatedKey(),
-                //                scheduledFreezeWorksAsExpected(),
-                //                scheduledFreezeWithUnauthorizedPayerFails(),
-                //                scheduledPermissionedFileUpdateWorksAsExpected(),
-                //                scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
-                //                scheduledSystemDeleteWorksAsExpected(),
-                //                scheduledSystemDeleteUnauthorizedPayerFails(),
-                //                executionWithContractCallWorksAtExpiry(),
-                //                executionWithContractCreateWorksAtExpiry(),
-                //                futureThrottlesAreRespected(),
-                //                disableLongTermScheduledTransactions(),
-                //                waitForExpiryIgnoredWhenLongTermDisabled(),
-                //                expiryIgnoredWhenLongTermDisabled(),
-                //                waitForExpiryIgnoredWhenLongTermDisabledThenEnabled(),
-                //                expiryIgnoredWhenLongTermDisabledThenEnabled(),
-                feesValidation(),
+                executionWithDefaultPayerWorks(),
+                executionWithCustomPayerWorks(),
+                executionWithCustomPayerThatNeverSignsFails(),
+                executionWithCustomPayerWhoSignsAtCreationAsPayerWorks(),
+                executionWithCustomPayerAndAdminKeyWorks(),
+                executionWithDefaultPayerButNoFundsFails(),
+                executionWithCustomPayerButNoFundsFails(),
+                executionWithDefaultPayerButAccountDeletedFails(),
+                executionWithCustomPayerButAccountDeletedFails(),
+                executionWithInvalidAccountAmountsFails(),
+                executionWithCryptoInsufficientAccountBalanceFails(),
+                executionWithCryptoSenderDeletedFails(),
+                executionTriggersWithWeirdlyRepeatedKey(),
+                scheduledFreezeWorksAsExpected(),
+                scheduledFreezeWithUnauthorizedPayerFails(),
+                scheduledPermissionedFileUpdateWorksAsExpected(),
+                scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
+                scheduledSystemDeleteWorksAsExpected(),
+                scheduledSystemDeleteUnauthorizedPayerFails(),
+                executionWithContractCallWorksAtExpiry(),
+                executionWithContractCreateWorksAtExpiry(),
+                futureThrottlesAreRespected(),
+                disableLongTermScheduledTransactions(),
+                waitForExpiryIgnoredWhenLongTermDisabled(),
+                expiryIgnoredWhenLongTermDisabled(),
+                waitForExpiryIgnoredWhenLongTermDisabledThenEnabled(),
+                expiryIgnoredWhenLongTermDisabledThenEnabled(),
+                feesChargedForLongTermTransactionsAsExpected(),
+                feesChargedForLongTermTransactionsWithContractCallAsExpected(),
                 setLongTermScheduledTransactionsToDefault());
     }
 
-    private HapiApiSpec feesValidation() {
-        long transferAmount = 1;
+    private HapiApiSpec feesChargedForLongTermTransactionsWithContractCallAsExpected() {
+        final long transferAmount = 1L;
         final var VALID_BYTES = new byte[100];
         Arrays.fill(VALID_BYTES, (byte) 'ф');
         final var longMemo = new String(VALID_BYTES, StandardCharsets.UTF_8);
-        return defaultHapiSpec("feesValidation")
+        var contract = "Multipurpose";
+        final var largeFee = ONE_HUNDRED_HBARS;
+
+        return defaultHapiSpec("feesChargedForLongTermTransactionsWithContractCallAsExpected")
+                .given(
+                        overriding(SCHEDULING_WHITELIST, "ContractCall"),
+                        overriding("scheduling.maxExpirationFutureSeconds", "25920000"),
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(PAYING_ACCOUNT)
+                                .balance(1000000000000L)
+                                .via(PAYING_ACCOUNT_TXN),
+                        scheduleCreate(
+                                        "baseCall",
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .via("baseCallTx"),
+                        getTxnRecord("baseCallTx").logged(),
+                        validateChargedUsdWithin("baseCallTx", 0.0542388444, 0.1),
+                        scheduleCreate(
+                                        "defaultPeriodCall",
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, 1800)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .fee(ONE_HBAR)
+                                .recordingScheduledTxn()
+                                .via("defaultPeriodCallTx"),
+                        getTxnRecord("defaultPeriodCallTx").logged(),
+                        validateChargedUsdWithin("defaultPeriodCallTx", 0.0542401524, 0.1))
+                .when(
+                        scheduleCreate(
+                                        "oneMonthCall",
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, ONE_MONTH_IN_SECS)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .fee(ONE_HBAR)
+                                .recordingScheduledTxn()
+                                .via("oneMonthCallTx"),
+                        getTxnRecord("oneMonthCallTx").logged(),
+                        validateChargedUsdWithin("oneMonthCallTx", 0.0563248992, 0.1))
+                .then(
+                        scheduleCreate(
+                                        "tenMonthCall",
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, 10 * ONE_MONTH_IN_SECS)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .fee(10 * ONE_HBAR)
+                                .via("tenMonthCallTx"),
+                        getTxnRecord("tenMonthCallTx").logged(),
+                        validateChargedUsdWithin("tenMonthCallTx", 0.0751006644, 0.1));
+    }
+
+    private HapiApiSpec feesChargedForLongTermTransactionsAsExpected() {
+        final long transferAmount = 1L;
+        final var VALID_BYTES = new byte[100];
+        Arrays.fill(VALID_BYTES, (byte) 'ф');
+        final var longMemo = new String(VALID_BYTES, StandardCharsets.UTF_8);
+
+        return defaultHapiSpec("feesChargedForLongTermTransactionsAsExpected")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer"),
                         overriding("scheduling.maxExpirationFutureSeconds", "25920000"),
@@ -195,7 +279,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .fee(ONE_HBAR)
                                 .via("basicTxnCreate"),
                         getTxnRecord("basicTxnCreate").logged(),
-                        validateChargedUsdWithin("basicTxnCreate", 0.009492580799999999, 0),
+                        validateChargedUsdWithin("basicTxnCreate", 0.005127474, 0.1),
                         scheduleCreate(
                                         BASIC_XFER,
                                         cryptoTransfer(
@@ -210,7 +294,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .fee(ONE_HBAR)
                                 .via("basicXferCreate"),
                         getTxnRecord("basicXferCreate").logged(),
-                        validateChargedUsdWithin("basicXferCreate", 0.0094925796, 0))
+                        validateChargedUsdWithin("basicXferCreate", 0.0051277632, 0.1))
                 .when(
                         scheduleCreate(
                                         BASIC_XFER,
@@ -226,7 +310,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .fee(ONE_HBAR)
                                 .via("oneMonthCreate"),
                         getTxnRecord("oneMonthCreate").logged(),
-                        validateChargedUsdWithin("oneMonthCreate", 0.0095274708, 0))
+                        validateChargedUsdWithin("oneMonthCreate", 0.0071624076, 0.1))
                 .then(
                         scheduleCreate(
                                         CREATE_TX,
@@ -242,7 +326,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .fee(ONE_HBAR)
                                 .via("tenMonthsCreate"),
                         getTxnRecord("tenMonthsCreate").logged(),
-                        validateChargedUsdWithin("tenMonthsCreate", 0.0096596124, 0));
+                        validateChargedUsdWithin("tenMonthsCreate", 0.0252945492, 0.1));
     }
 
     @SuppressWarnings("java:S5960")

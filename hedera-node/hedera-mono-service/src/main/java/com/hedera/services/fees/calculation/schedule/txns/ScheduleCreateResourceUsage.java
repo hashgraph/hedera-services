@@ -15,6 +15,10 @@
  */
 package com.hedera.services.fees.calculation.schedule.txns;
 
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.usage.schedule.ScheduleOpsUsage.ONE_MONTH_IN_SECS;
+import static com.hederahashgraph.fee.FeeUtils.clampedMultiply;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
@@ -32,6 +36,7 @@ import javax.inject.Singleton;
 public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
     private final ScheduleOpsUsage scheduleOpsUsage;
     private final GlobalDynamicProperties dynamicProperties;
+    private long lifetimeSecs;
 
     @Inject
     public ScheduleCreateResourceUsage(
@@ -48,52 +53,65 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
     @Override
     public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
             throws InvalidTxBodyException {
-        var op = txn.getScheduleCreate();
         var sigUsage =
                 new SigUsage(
                         svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
-        final long lifetimeSecs;
-        final int increasedPriceBytesPerMonth;
-        final long priceIncrement;
-
-        if (op.hasExpirationTime() && dynamicProperties.schedulingLongTermEnabled()) {
-            lifetimeSecs =
-                    Math.max(
-                            0L,
-                            op.getExpirationTime().getSeconds()
-                                    - txn.getTransactionID()
-                                            .getTransactionValidStart()
-                                            .getSeconds());
-            priceIncrement = dynamicProperties.scheduleTxIncreasedPrice();
-            increasedPriceBytesPerMonth = dynamicProperties.scheduleTxIncreasedPriceBytesPerMonth();
-        } else {
-            lifetimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
-            priceIncrement = 0;
-            increasedPriceBytesPerMonth = 0;
-        }
+        lifetimeSecs = calculateLifeTimeSecs(txn);
         final long defaultLifeTimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
-
         return scheduleOpsUsage.scheduleCreateUsage(
-                txn,
-                sigUsage,
-                lifetimeSecs,
-                priceIncrement,
-                increasedPriceBytesPerMonth,
-                defaultLifeTimeSecs);
+                txn, sigUsage, lifetimeSecs, defaultLifeTimeSecs);
     }
 
     @Override
     public boolean hasSecondaryFees() {
-        // TODO - return true;
-        return false;
+        return true;
     }
 
+    /**
+     * Since long term scheduled transactions can be scheduled far from future, adds a fee based on
+     * number of minutes until scheduled time and size of schedule transaction. This fee is added
+     * only to the transactions scheduled beyond the defaultLifeTimeSecs.
+     *
+     * <p>Fee calculation is as follows :
+     * <li>If lifetimeSecs <= defaultLifeTimeSecs, no additional fee is charged
+     * <li>If lifetimeSecs > defaultLifeTimeSecs, an additional price is charged based on serialized
+     *     size of the scheduled transaction and the expiration tiem is calculated.
+     *
+     *     <p>For example if the defaultLifeTimeSecs is {@code 1800}, priceIncrement is {@code
+     *     20000000} tinycents, and secondaryFeeBytesPerMonth is {@code 128} bytes, then for a
+     *     scheduled transaction that is scheduled to execute anytime after 1800 secs, an extra fee
+     *     of $0.002 for 128 bytes/month is charged.
+     *
+     * @param txn schedule create transaction body
+     * @return fee object for additional fee
+     */
     @Override
     public FeeObject secondaryFeesFor(final TransactionBody txn) {
-        // TODO - check if the price increment applies; if so, compute
-        // the increased cost ABC **in tinycents** and return a
-        // FeeObject(0, 0, ABC) here
-        return null;
+        final long secondaryFeeTinyCents = dynamicProperties.scheduleTxSecondaryFee();
+        final int secondaryFeeBPM = dynamicProperties.scheduleTxSecondaryFeeBytesPerMonth();
+        final long defaultLifeTimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
+
+        if (lifetimeSecs > defaultLifeTimeSecs) {
+            final var serializedSize =
+                    txn.getScheduleCreate().getScheduledTransactionBody().getSerializedSize();
+            final var numerator =
+                    clampedMultiply(
+                            clampedMultiply(secondaryFeeTinyCents, lifetimeSecs), serializedSize);
+            final var denominator = secondaryFeeBPM * ONE_MONTH_IN_SECS;
+            final var additionalServiceFee =
+                    ESTIMATOR_UTILS.nonDegenerateDiv(numerator, denominator);
+            return new FeeObject(0, 0, additionalServiceFee);
+        }
+        return new FeeObject(0, 0, 0);
+    }
+
+    private long calculateLifeTimeSecs(final TransactionBody txn) {
+        final var op = txn.getScheduleCreate();
+        final var validStart = txn.getTransactionID().getTransactionValidStart().getSeconds();
+        if (op.hasExpirationTime() && dynamicProperties.schedulingLongTermEnabled()) {
+            return Math.max(0L, op.getExpirationTime().getSeconds() - validStart);
+        }
+        return dynamicProperties.scheduledTxExpiryTimeSecs();
     }
 }

@@ -50,8 +50,8 @@ public interface TxnResourceUsageEstimator {
             throws InvalidTxBodyException;
 
     /**
-     * Returns whether this estimator can directly compute USD-denominated fees to add
-     * to the resource-derived {@link com.hederahashgraph.fee.FeeObject}.
+     * Returns whether this estimator can directly compute USD-denominated fees to add to the
+     * resource-derived {@link com.hederahashgraph.fee.FeeObject}.
      *
      * @return if this usage estimator can compute secondary fees
      */

@@ -252,11 +252,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
                             rate,
                             multiplier);
                 } else {
-                    return getFeeObject(
-                            applicablePrices,
-                            usage,
-                            rate,
-                            multiplier);
+                    return getFeeObject(applicablePrices, usage, rate, multiplier);
                 }
             } catch (InvalidTxBodyException e) {
                 log.warn(

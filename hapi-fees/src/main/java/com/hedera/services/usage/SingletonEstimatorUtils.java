@@ -67,7 +67,7 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
                         .setSbpr(usage.getSbpr());
         var service =
                 FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
+                        .setConstant(usage.getConstant())
                         .setRbh(usage.getRbh())
                         .setSbh(usage.getSbh())
                         .setTv(usage.getTv());

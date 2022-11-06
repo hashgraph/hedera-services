@@ -195,8 +195,9 @@ class FeeBuilderTest {
     @Test
     void canIncludeSecondaryFees() {
         final var secondaryFees = new FeeObject(1L, 2L, 3L);
-        var result = FeeBuilder.getFeeObjectWithSecondary(
-                feeData, feeMatrices, secondaryFees, exchangeRate, 10);
+        var result =
+                FeeBuilder.getFeeObjectWithSecondary(
+                        feeData, feeMatrices, secondaryFees, exchangeRate, 10);
         assertEquals(200, result.getNodeFee());
         assertEquals(300, result.getNetworkFee());
         assertEquals(400, result.getServiceFee());

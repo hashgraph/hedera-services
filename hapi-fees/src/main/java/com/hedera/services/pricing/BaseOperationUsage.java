@@ -158,7 +158,7 @@ public class BaseOperationUsage {
     private static final String A_TOKEN_SYMBOL = "ABCD";
     private static final String BLANK_MEMO = "";
     private static final int DEFAULT_SCHEDULE_LIFETIME = 1800;
-    private static final long DEFAULT_SCHEDULE_COST_INCREMENT = 200L;
+    private static final long DEFAULT_SCHEDULE_COST_INCREMENT = 20000000L;
     private static final int DEFAULT_SCHEDULE_COST_INCREMENT_BYTES_PER_MONTH = 128;
 
     private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
@@ -817,12 +817,7 @@ public class BaseOperationUsage {
                         .build();
         var feeData =
                 SCHEDULE_OPS_USAGE.scheduleCreateUsage(
-                        txn,
-                        DUAL_SIG_USAGE,
-                        DEFAULT_SCHEDULE_LIFETIME,
-                        DEFAULT_SCHEDULE_COST_INCREMENT,
-                        DEFAULT_SCHEDULE_COST_INCREMENT_BYTES_PER_MONTH,
-                        DEFAULT_SCHEDULE_LIFETIME);
+                        txn, DUAL_SIG_USAGE, DEFAULT_SCHEDULE_LIFETIME, DEFAULT_SCHEDULE_LIFETIME);
         return UsageAccumulator.fromGrpc(feeData);
     }
 
@@ -903,8 +898,6 @@ public class BaseOperationUsage {
                         txn,
                         SINGLE_SIG_USAGE,
                         DEFAULT_SCHEDULE_LIFETIME,
-                        DEFAULT_SCHEDULE_COST_INCREMENT,
-                        DEFAULT_SCHEDULE_COST_INCREMENT_BYTES_PER_MONTH,
                         DEFAULT_SCHEDULE_LIFETIME);
         return UsageAccumulator.fromGrpc(feeData);
     }
