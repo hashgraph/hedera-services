@@ -696,7 +696,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                         cryptoTransfer(
                                                 tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 3600)
+                                .withRelativeExpiry(SENDER_TXN, 8)
                                 .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
                                 .via(CREATE_TX))

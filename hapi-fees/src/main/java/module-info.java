@@ -14,8 +14,4 @@ module com.hedera.services.hapi.fees {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.fasterxml.jackson.databind;
     requires org.apache.logging.log4j;
-    requires com.google.common;
-    requires javax.inject;
-    requires com.google.protobuf;
-    requires org.apache.commons.lang3;
 }
