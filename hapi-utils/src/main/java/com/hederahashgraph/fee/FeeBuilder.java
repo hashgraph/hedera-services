@@ -152,16 +152,48 @@ public class FeeBuilder {
 
     public static FeeObject getFeeObject(
             FeeData feeData, FeeData feeMatrices, ExchangeRate exchangeRate, long multiplier) {
-        // get the Network Fee
-        long networkFee =
-                getComponentFeeInTinyCents(feeData.getNetworkdata(), feeMatrices.getNetworkdata());
-        long nodeFee = getComponentFeeInTinyCents(feeData.getNodedata(), feeMatrices.getNodedata());
-        long serviceFee =
-                getComponentFeeInTinyCents(feeData.getServicedata(), feeMatrices.getServicedata());
-        // convert the Fee to tiny hbars
+        return internalGetFeeObject(
+                feeData, feeMatrices, exchangeRate, multiplier,
+                0L, 0L, 0L);
+    }
+
+    public static FeeObject getFeeObjectWithSecondary(
+            FeeData feeData,
+            FeeData feeMatrices,
+            FeeObject secondaryFees,
+            ExchangeRate exchangeRate,
+            long multiplier
+    ) {
+        return internalGetFeeObject(
+                feeData, feeMatrices, exchangeRate, multiplier,
+                secondaryFees.getNetworkFee(), secondaryFees.getNodeFee(), secondaryFees.getServiceFee());
+    }
+
+    private static FeeObject internalGetFeeObject(
+            final FeeData feeData,
+            final FeeData feeMatrices,
+            final ExchangeRate exchangeRate,
+            final long multiplier,
+            final long secondaryNetworkFee,
+            final long secondaryNodeFee,
+            final long secondaryServiceFee
+    ) {
+        // First compute fees in tinycents
+        var networkFee =
+                getComponentFeeInTinyCents(feeData.getNetworkdata(), feeMatrices.getNetworkdata())
+                        + secondaryNetworkFee;
+        var nodeFee =
+                getComponentFeeInTinyCents(feeData.getNodedata(), feeMatrices.getNodedata())
+                        + secondaryNodeFee;
+        var serviceFee =
+                getComponentFeeInTinyCents(feeData.getServicedata(), feeMatrices.getServicedata())
+                        + secondaryServiceFee;
+
+        // Then convert to tinybars
         networkFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, networkFee) * multiplier;
         nodeFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, nodeFee) * multiplier;
         serviceFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, serviceFee) * multiplier;
+
         return new FeeObject(nodeFee, networkFee, serviceFee);
     }
 

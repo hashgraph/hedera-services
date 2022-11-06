@@ -23,6 +23,7 @@ import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -80,5 +81,19 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
                 priceIncrement,
                 increasedPriceBytesPerMonth,
                 defaultLifeTimeSecs);
+    }
+
+    @Override
+    public boolean hasSecondaryFees() {
+        // TODO - return true;
+        return false;
+    }
+
+    @Override
+    public FeeObject secondaryFeesFor(final TransactionBody txn) {
+        // TODO - check if the price increment applies; if so, compute
+        // the increased cost ABC **in tinycents** and return a
+        // FeeObject(0, 0, ABC) here
+        return null;
     }
 }
