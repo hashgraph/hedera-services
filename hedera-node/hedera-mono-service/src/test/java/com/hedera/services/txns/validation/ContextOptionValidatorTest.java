@@ -203,14 +203,14 @@ class ContextOptionValidatorTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void shortCircuitsIfBalanceIsZeroButExpiryIsFuture() {
+    void shortCircuitsIfBalanceIsZeroButNotDetached() {
         final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
                 mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
-        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY))
-                .willReturn(now.getEpochSecond() + 1);
+        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRED_AND_PENDING_REMOVAL))
+                .willReturn(false);
         assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
     }
 
@@ -221,8 +221,8 @@ class ContextOptionValidatorTest {
                 mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
-        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY))
-                .willReturn(now.getEpochSecond() - 1);
+        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRED_AND_PENDING_REMOVAL))
+                .willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.IS_SMART_CONTRACT)).willReturn(true);
         assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
     }
@@ -235,8 +235,8 @@ class ContextOptionValidatorTest {
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
-        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY))
-                .willReturn(now.getEpochSecond() - 1);
+        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRED_AND_PENDING_REMOVAL))
+                .willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.IS_SMART_CONTRACT)).willReturn(true);
         assertEquals(
                 CONTRACT_EXPIRED_AND_PENDING_REMOVAL,
@@ -245,33 +245,33 @@ class ContextOptionValidatorTest {
 
     @Test
     void alwaysOkExpiryStatusIfNonzeroBalance() {
-        final var status = subject.expiryStatusGiven(1L, 0, true);
+        final var status = subject.expiryStatusGiven(1L, true, true);
         assertEquals(OK, status);
     }
 
     @Test
     void contractIsExpiredIfZeroBalanceAndPastExpiry() {
         given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
-        final var status = subject.expiryStatusGiven(0, now.getEpochSecond() - 1, true);
+        final var status = subject.expiryStatusGiven(0, true, true);
         assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, status);
     }
 
     @Test
-    void accountIsExpiredIfZeroBalanceAndPastExpiry() {
+    void accountIsExpiredIfZeroBalanceAndDetached() {
         given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
-        final var status = subject.expiryStatusGiven(0, now.getEpochSecond() - 1, false);
+        final var status = subject.expiryStatusGiven(0, true, false);
         assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
     }
 
     @Test
     void ifAccountExpiryNotEnabledItsOk() {
-        final var status = subject.expiryStatusGiven(0, now.getEpochSecond() + 1, false);
+        final var status = subject.expiryStatusGiven(0, true, false);
         assertEquals(OK, status);
     }
 
     @Test
     void ifContractExpiryNotEnabledItsOk() {
-        final var status = subject.expiryStatusGiven(0, now.getEpochSecond() + 1, true);
+        final var status = subject.expiryStatusGiven(0, true, true);
         assertEquals(OK, status);
     }
 

@@ -28,8 +28,8 @@ class OnDiskAccountMigrationTest {
     @ParameterizedTest
     @SuppressWarnings("java:S5961")
     void allFieldsAreSet(final int testCaseNo) {
-        final var source = SeededPropertySource.forSerdeTest(
-                MerkleAccountState.CURRENT_VERSION, testCaseNo);
+        final var source =
+                SeededPropertySource.forSerdeTest(MerkleAccountState.CURRENT_VERSION, testCaseNo);
         final var inMemoryAccount = source.nextAccountState();
         final var onDiskAccount = OnDiskAccount.from(inMemoryAccount);
 
@@ -50,7 +50,8 @@ class OnDiskAccountMigrationTest {
         assertEquals(
                 inMemoryAccount.isReceiverSigRequired(), onDiskAccount.isReceiverSigRequired());
         assertEquals(
-                inMemoryAccount.isExpiredAndPendingRemoval(), onDiskAccount.isExpiredAndPendingRemoval());
+                inMemoryAccount.isExpiredAndPendingRemoval(),
+                onDiskAccount.isExpiredAndPendingRemoval());
         // Ints
         assertEquals(
                 inMemoryAccount.getNumContractKvPairs(), onDiskAccount.getNumContractKvPairs());

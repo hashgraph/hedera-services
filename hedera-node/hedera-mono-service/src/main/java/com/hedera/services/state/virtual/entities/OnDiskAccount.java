@@ -423,7 +423,8 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     @Override
     @StateSetter
     public void setExpiredAndPendingRemoval(final boolean flag) {
-        throwIfImmutable("Tried to set IS_EXPIRED_AND_PENDING_REMOVAL on an immutable OnDiskAccount");
+        throwIfImmutable(
+                "Tried to set IS_EXPIRED_AND_PENDING_REMOVAL on an immutable OnDiskAccount");
         if (flag) {
             flags |= Masks.IS_EXPIRED_AND_PENDING_REMOVAL;
         } else {

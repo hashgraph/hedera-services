@@ -304,7 +304,8 @@ class AccountPropertyTest {
         assertEquals(newEthereumNonce, ETHEREUM_NONCE.getter().apply(account));
         assertEquals(newDeclinedReward, DECLINE_REWARD.getter().apply(account));
         assertEquals(newStakedNum, STAKED_ID.getter().apply(account));
-        assertEquals(newExpiredAndPendingRemoval, EXPIRED_AND_PENDING_REMOVAL.getter().apply(account));
+        assertEquals(
+                newExpiredAndPendingRemoval, EXPIRED_AND_PENDING_REMOVAL.getter().apply(account));
 
         STAKED_ID.setter().accept(account, origStakedNum);
         assertEquals(origStakedNum, STAKED_ID.getter().apply(account));

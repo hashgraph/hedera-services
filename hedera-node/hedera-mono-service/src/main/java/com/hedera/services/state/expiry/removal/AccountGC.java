@@ -18,6 +18,7 @@ package com.hedera.services.state.expiry.removal;
 import static com.hedera.services.state.expiry.removal.FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_REMOVE;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -81,6 +82,12 @@ public class AccountGC {
         } else {
             return new CryptoGcOutcome(UNFINISHED_NOOP_FUNGIBLE_RETURNS, nftReturns, false);
         }
+    }
+
+    @VisibleForTesting
+    public void markDetached(final EntityNum num) {
+        final var mutableAccount = backingAccounts.getRef(num.toGrpcAccountId());
+        mutableAccount.setExpiredAndPendingRemoval(true);
     }
 
     private void completeRemoval(final EntityNum num, final HederaAccount expiredAccount) {

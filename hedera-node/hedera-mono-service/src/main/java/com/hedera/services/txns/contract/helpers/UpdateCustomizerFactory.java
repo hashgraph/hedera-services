@@ -18,6 +18,7 @@ package com.hedera.services.txns.contract.helpers;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -38,8 +39,32 @@ import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class UpdateCustomizerFactory {
+    private enum ExtensionType {
+        NO_EXTENSION,
+        VALID_EXTENSION,
+        INVALID_EXTENSION
+    }
+
+    @SuppressWarnings("java:S3776")
     public Pair<Optional<HederaAccountCustomizer>, ResponseCodeEnum> customizerFor(
             HederaAccount contract, OptionValidator validator, ContractUpdateTransactionBody op) {
+        final var customizer = new HederaAccountCustomizer();
+
+        var expiryExtension = ExtensionType.NO_EXTENSION;
+        if (op.hasExpirationTime()) {
+            expiryExtension =
+                    validator.isValidExpiry(op.getExpirationTime())
+                            ? ExtensionType.VALID_EXTENSION
+                            : ExtensionType.INVALID_EXTENSION;
+        }
+        if (contract.isExpiredAndPendingRemoval()) {
+            if (expiryExtension == ExtensionType.VALID_EXTENSION) {
+                customizer.isExpiredAndPendingRemoval(false);
+            } else {
+                return Pair.of(Optional.empty(), CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
+            }
+        }
+
         if (!onlyAffectsExpiry(op) && !isMutable(contract)) {
             return Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT);
         }
@@ -49,17 +74,16 @@ public class UpdateCustomizerFactory {
         }
 
         var cid = op.getContractID();
-        var customizer = new HederaAccountCustomizer();
         if (op.hasAdminKey() && processAdminKey(op, cid, customizer)) {
             return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
         }
         if (op.hasAutoRenewPeriod()) {
             customizer.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
         }
-        if (op.hasExpirationTime()) {
-            if (!validator.isValidExpiry(op.getExpirationTime())) {
-                return Pair.of(Optional.empty(), INVALID_EXPIRATION_TIME);
-            }
+        if (expiryExtension == ExtensionType.INVALID_EXTENSION) {
+            return Pair.of(Optional.empty(), INVALID_EXPIRATION_TIME);
+        }
+        if (expiryExtension == ExtensionType.VALID_EXTENSION) {
             customizer.expiry(op.getExpirationTime().getSeconds());
         }
         if (affectsMemo(op)) {

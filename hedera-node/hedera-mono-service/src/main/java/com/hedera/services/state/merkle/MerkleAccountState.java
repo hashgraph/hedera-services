@@ -50,7 +50,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,7 +58,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
-
 import org.jetbrains.annotations.Nullable;
 
 public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf {

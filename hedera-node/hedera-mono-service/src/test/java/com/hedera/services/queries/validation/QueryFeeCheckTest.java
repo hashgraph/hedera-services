@@ -263,7 +263,7 @@ class QueryFeeCheckTest {
     void detachedPayerRejectedWithRefinement() {
         given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
         final var adjustment = adjustmentWith(aDetached, -aLot);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean()))
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         final var status = subject.adjustmentPlausibility(adjustment);
@@ -447,7 +447,7 @@ class QueryFeeCheckTest {
     }
 
     private void givenOkExpiry() {
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
     }
 
     private AccountAmount adjustmentWith(final AccountID id, final long amount) {
