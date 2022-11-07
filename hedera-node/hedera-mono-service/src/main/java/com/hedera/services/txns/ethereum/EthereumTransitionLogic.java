@@ -200,7 +200,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
             final long maxGasAllowance,
             final BigInteger offeredGasPrice) {
         final var customizedCreate =
-                creationCustomizer.customize(synthCreate, callerId.asGrpcAccount());
+                creationCustomizer.customize(synthCreate, callerId.asGrpcAccount(), false);
         contractCreateTransitionLogic.doStateTransitionOperation(
                 customizedCreate, callerId, true, relayerId, maxGasAllowance, offeredGasPrice);
     }
