@@ -29,11 +29,8 @@ import org.apache.commons.codec.DecoderException;
 // They're just scaffolding while we refactor.
 public class Utils {
 
-    /**
-     * Prohibit creation of this instance
-     */
-    private Utils() {
-    }
+    /** Prohibit creation of this instance */
+    private Utils() {}
 
     // This method shouldn't be here. It needs to find a new home.
     public static Optional<HederaKey> asHederaKey(final Key key) {
