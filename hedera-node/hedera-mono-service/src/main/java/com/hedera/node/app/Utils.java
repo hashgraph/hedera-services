@@ -28,10 +28,17 @@ import org.apache.commons.codec.DecoderException;
 // So some utilities exist here that we can use for now, but these need to be removed.
 // They're just scaffolding while we refactor.
 public class Utils {
+
+    /**
+     * Prohibit creation of this instance
+     */
+    private Utils() {
+    }
+
     // This method shouldn't be here. It needs to find a new home.
     public static Optional<HederaKey> asHederaKey(final Key key) {
         try {
-            // TODO: Need to move JKey after refactoring, adding equals & hashcode into this package
+            // Need to move JKey after refactoring, adding equals & hashcode into this package
             final var fcKey = mapKey(key);
             if (!fcKey.isValid()) {
                 return Optional.empty();
