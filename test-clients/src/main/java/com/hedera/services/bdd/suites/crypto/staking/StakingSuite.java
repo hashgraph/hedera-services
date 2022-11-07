@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.crypto.staking;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -197,7 +196,7 @@ public class StakingSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation() {
-        return onlyDefaultHapiSpec("LosingEvenAZeroBalanceStakerTriggersStakeeRewardSituation")
+        return defaultHapiSpec("LosingEvenAZeroBalanceStakerTriggersStakeeRewardSituation")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
                         overriding(STAKING_REWARD_RATE, "" + SOME_REWARD_RATE),

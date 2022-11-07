@@ -291,7 +291,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final var roundedInitialBalance = roundedToHbar(initialBalance);
             final var delta = roundedFinalBalance - roundedInitialBalance;
             // Even if the stakee's total stake hasn't changed, we still want to
-            // trigger a reward situation to match user expectations; c.f.,
+            // trigger a reward situation whenever the staker balance changes; c.f.,
             // https://github.com/hashgraph/hedera-services/issues/4166
             final var alwaysUpdate = finalBalance != initialBalance;
             alterStakedToMe(curStakedId, delta, alwaysUpdate, pendingChanges);
