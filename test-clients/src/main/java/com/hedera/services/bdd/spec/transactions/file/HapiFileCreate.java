@@ -16,6 +16,8 @@
 package com.hedera.services.bdd.spec.transactions.file;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.payerOptionalAndMaybeAutoRenewSigners;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -40,7 +42,6 @@ import com.hederahashgraph.fee.SigValueObj;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -69,6 +71,8 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
     AtomicReference<Timestamp> expiryUsed = new AtomicReference<>();
     Optional<Function<HapiApiSpec, String>> contentsPathFn = Optional.empty();
 
+    @Nullable private String autoRenewAccount;
+
     public HapiFileCreate(String fileName) {
         this.fileName = fileName;
     }
@@ -80,6 +84,11 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
     public HapiFileCreate advertisingCreation() {
         advertiseCreation = true;
+        return this;
+    }
+
+    public HapiFileCreate autoRenewAccount(final String autoRenewAccount) {
+        this.autoRenewAccount = autoRenewAccount;
         return this;
     }
 
@@ -95,11 +104,11 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
     @Override
     protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        if (immutable) {
+        if (immutable && autoRenewAccount == null) {
             return super.defaultSigners();
         } else {
-            return Arrays.asList(
-                    spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> waclKey);
+            return payerOptionalAndMaybeAutoRenewSigners(
+                    this::effectivePayer, waclKey, autoRenewAccount);
         }
     }
 
@@ -187,6 +196,10 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
                                 builder -> {
                                     if (!immutable) {
                                         builder.setKeys(waclKey.getKeyList());
+                                    }
+
+                                    if (autoRenewAccount != null) {
+                                        builder.setAutoRenewAccount(asId(autoRenewAccount, spec));
                                     }
                                     memo.ifPresent(builder::setMemo);
                                     contents.ifPresent(

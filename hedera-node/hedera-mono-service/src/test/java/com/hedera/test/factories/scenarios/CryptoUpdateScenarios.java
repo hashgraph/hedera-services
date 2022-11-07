@@ -97,6 +97,33 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
+    CRYPTO_UPDATE_WITH_NEW_AUTO_RENEW_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoUpdate(MISC_ACCOUNT_ID)
+                                    .newAutoRenewAccount(FIRST_TOKEN_SENDER_ID)
+                                    .get()));
+        }
+    },
+    CRYPTO_UPDATE_DESIGNATING_AUTO_RENEW_REMOVAL_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoUpdate(MISC_ACCOUNT_ID)
+                                    .newAutoRenewAccount(SENTINEL_ID)
+                                    .get()));
+        }
+    },
+    CRYPTO_UPDATE_DESIGNATING_MISSING_AUTO_RENEW_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoUpdate(MISC_ACCOUNT_ID)
+                                    .newAutoRenewAccount(MISSING_ACCOUNT_ID)
+                                    .get()));
+        }
+    },
     CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(

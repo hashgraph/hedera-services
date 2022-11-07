@@ -15,6 +15,7 @@
  */
 package com.hedera.test.factories.txns;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
 
 import com.hedera.test.factories.keys.KeyTree;
@@ -22,10 +23,12 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 public class FileUpdateFactory extends SignedTxnFactory<FileUpdateFactory> {
     private final String file;
     private Optional<KeyTree> newWaclKt = Optional.empty();
+    @Nullable private String autoRenewAccount;
 
     public FileUpdateFactory(String file) {
         this.file = file;
@@ -50,11 +53,19 @@ public class FileUpdateFactory extends SignedTxnFactory<FileUpdateFactory> {
         FileUpdateTransactionBody.Builder op =
                 FileUpdateTransactionBody.newBuilder().setFileID(asFile(file));
         newWaclKt.ifPresent(kt -> op.setKeys(kt.asKey().getKeyList()));
+        if (autoRenewAccount != null) {
+            op.setAutoRenewAccount(asAccount(autoRenewAccount));
+        }
         txn.setFileUpdate(op);
     }
 
     public FileUpdateFactory newWaclKt(KeyTree newWaclKt) {
         this.newWaclKt = Optional.of(newWaclKt);
+        return this;
+    }
+
+    public FileUpdateFactory newAutoRenewAccount(final String autoRenewAccount) {
+        this.autoRenewAccount = autoRenewAccount;
         return this;
     }
 }

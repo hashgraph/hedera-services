@@ -17,6 +17,7 @@ package com.hedera.services.bdd.spec.transactions.file;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
@@ -65,6 +66,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -94,6 +96,8 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 
     Optional<Consumer<FileID>> preUpdateCb = Optional.empty();
     Optional<Consumer<ResponseCodeEnum>> postUpdateCb = Optional.empty();
+
+    @Nullable private String autoRenewAccount;
 
     public HapiFileUpdate(String file) {
         this.file = file;
@@ -131,6 +135,11 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 
     public HapiFileUpdate contents(Function<HapiApiSpec, ByteString> fn) {
         contentFn = Optional.of(fn);
+        return this;
+    }
+
+    public HapiFileUpdate autoRenewAccount(final String autoRenewAccount) {
+        this.autoRenewAccount = autoRenewAccount;
         return this;
     }
 
@@ -314,6 +323,9 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
                                 FileUpdateTransactionBody.class,
                                 builder -> {
                                     builder.setFileID(fid);
+                                    if (autoRenewAccount != null) {
+                                        builder.setAutoRenewAccount(asId(autoRenewAccount, spec));
+                                    }
                                     newMemo.ifPresent(
                                             s ->
                                                     builder.setMemo(
@@ -396,6 +408,9 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
         List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(oldDefaults());
         if (newWaclKey.isPresent()) {
             signers.add(spec -> spec.registry().getKey(newWaclKey.get()));
+        }
+        if (autoRenewAccount != null) {
+            signers.add(spec -> spec.registry().getKey(autoRenewAccount));
         }
         return signers;
     }

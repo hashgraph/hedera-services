@@ -92,6 +92,8 @@ import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPT
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_WITH_AUTO_RENEW_AND_SIG_REQUIRED_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_WITH_MISSING_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_TARGET;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO;
@@ -135,6 +137,8 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_DESIGNATING_AUTO_RENEW_REMOVAL_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_DESIGNATING_MISSING_AUTO_RENEW_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_IMMUTABLE_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_CUSTOM_PAYER_PAID_SCENARIO;
@@ -145,6 +149,7 @@ import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_U
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_SYS_ACCOUNT_WITH_PRIVILEGED_PAYER;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NEW_KEY;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NO_NEW_KEY;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_WITH_NEW_AUTO_RENEW_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_WITH_NEW_KEY_CUSTOM_PAYER_PAID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_WITH_NEW_KEY_SELF_PAID_SCENARIO;
@@ -154,12 +159,16 @@ import static com.hedera.test.factories.scenarios.FileAppendScenarios.MASTER_SYS
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.TREASURY_SYS_FILE_APPEND_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.VANILLA_FILE_APPEND_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileCreateScenarios.FILE_CREATE_WITH_AUTO_RENEW_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileCreateScenarios.FILE_CREATE_WITH_MISSING_AUTO_RENEW_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileCreateScenarios.VANILLA_FILE_CREATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.IMMUTABLE_FILE_DELETE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.MISSING_FILE_DELETE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.VANILLA_FILE_DELETE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDATE_MISSING_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDATE_NEW_WACL_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDATE_WITH_AUTO_RENEW_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileUpdateScenarios.FILE_UPDATE_WITH_MISSING_AUTO_RENEW_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.IMMUTABLE_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.MASTER_SYS_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.TREASURY_SYS_FILE_UPDATE_SCENARIO;
@@ -549,6 +558,21 @@ class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_ACCOUNT_KT.asKey()));
+    }
+
+    @Test
+    void getsCryptoCreateWithAutoRenewAccount() throws Throwable {
+        // given:
+        setupFor(CRYPTO_CREATE_WITH_AUTO_RENEW_AND_SIG_REQUIRED_SCENARIO);
+
+        // when:
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        // then:
+        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
+        assertThat(
+                sanityRestored(summary.getOrderedKeys()),
+                contains(DEFAULT_ACCOUNT_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -1630,6 +1654,34 @@ class SigRequirementsTest {
     }
 
     @Test
+    void getsCryptoUpdateNewAutoRenew() throws Throwable {
+        // given:
+        setupFor(CRYPTO_UPDATE_WITH_NEW_AUTO_RENEW_SCENARIO);
+
+        // when:
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        // then:
+        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
+        assertThat(
+                sanityRestored(summary.getOrderedKeys()),
+                contains(MISC_ACCOUNT_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+    }
+
+    @Test
+    void getsCryptoUpdateSentinelAutoRenew() throws Throwable {
+        // given:
+        setupFor(CRYPTO_UPDATE_DESIGNATING_AUTO_RENEW_REMOVAL_SCENARIO);
+
+        // when:
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        // then:
+        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey()));
+    }
+
+    @Test
     void getsCryptoUpdateVanillaNewKeyWithCustomPayer() throws Throwable {
         // given:
         setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO);
@@ -1966,6 +2018,40 @@ class SigRequirementsTest {
     }
 
     @Test
+    void reportsCryptoUpdateMissingAutoRenewAccount() throws Throwable {
+        setupFor(CRYPTO_UPDATE_DESIGNATING_MISSING_AUTO_RENEW_SCENARIO);
+        // and:
+        mockSummaryFactory();
+        // and:
+        SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+
+        given(mockSummaryFactory.forInvalidAutoRenewAccount()).willReturn(result);
+
+        // when:
+        subject.keysForOtherParties(txn, mockSummaryFactory);
+
+        // then:
+        verify(mockSummaryFactory).forInvalidAutoRenewAccount();
+    }
+
+    @Test
+    void reportsCryptoCreateMissingAutoRenewAccount() throws Throwable {
+        setupFor(CRYPTO_CREATE_WITH_MISSING_AUTO_RENEW);
+        // and:
+        mockSummaryFactory();
+        // and:
+        SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+
+        given(mockSummaryFactory.forInvalidAutoRenewAccount()).willReturn(result);
+
+        // when:
+        subject.keysForOtherParties(txn, mockSummaryFactory);
+
+        // then:
+        verify(mockSummaryFactory).forInvalidAutoRenewAccount();
+    }
+
+    @Test
     void reportsCryptoUpdateMissingAccountWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
         // and:
@@ -2266,6 +2352,38 @@ class SigRequirementsTest {
     }
 
     @Test
+    void getsFileCreateWithAutoRenew() throws Throwable {
+        // given:
+        setupFor(FILE_CREATE_WITH_AUTO_RENEW_SCENARIO);
+
+        // when:
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        // then:
+        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
+        assertThat(
+                sanityRestored(summary.getOrderedKeys()),
+                contains(DEFAULT_WACL_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+    }
+
+    @Test
+    void getsFileCreateWithMissingAutoRenew() throws Throwable {
+        // given:
+        setupFor(FILE_CREATE_WITH_MISSING_AUTO_RENEW_SCENARIO);
+        // and:
+        mockSummaryFactory();
+        // and:
+        SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+
+        given(mockSummaryFactory.forInvalidAutoRenewAccount()).willReturn(result);
+
+        // when:
+        subject.keysForOtherParties(txn, mockSummaryFactory);
+
+        verify(mockSummaryFactory).forInvalidAutoRenewAccount();
+    }
+
+    @Test
     void getsFileAppend() throws Throwable {
         // given:
         setupFor(VANILLA_FILE_APPEND_SCENARIO);
@@ -2563,6 +2681,21 @@ class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_FILE_WACL_KT.asKey()));
+    }
+
+    @Test
+    void getsFileUpdateWithAutoRenew() throws Throwable {
+        // given:
+        setupFor(FILE_UPDATE_WITH_AUTO_RENEW_SCENARIO);
+
+        // when:
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        // then:
+        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
+        assertThat(
+                sanityRestored(summary.getOrderedKeys()),
+                contains(MISC_FILE_WACL_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -3296,6 +3429,24 @@ class SigRequirementsTest {
     void invalidAutoRenewAccountOnConsensusCreateTopicThrows() throws Throwable {
         // given:
         setupFor(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
+        // and:
+        mockSummaryFactory();
+        // and:
+        SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+
+        given(mockSummaryFactory.forInvalidAutoRenewAccount()).willReturn(result);
+
+        // when:
+        subject.keysForOtherParties(txn, mockSummaryFactory);
+
+        // then:
+        verify(mockSummaryFactory).forInvalidAutoRenewAccount();
+    }
+
+    @Test
+    void invalidAutoRenewAccountOnFileUpdate() throws Throwable {
+        // given:
+        setupFor(FILE_UPDATE_WITH_MISSING_AUTO_RENEW_SCENARIO);
         // and:
         mockSummaryFactory();
         // and:

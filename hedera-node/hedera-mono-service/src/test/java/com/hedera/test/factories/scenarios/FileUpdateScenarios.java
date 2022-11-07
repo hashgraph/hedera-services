@@ -28,6 +28,24 @@ public enum FileUpdateScenarios implements TxnHandlingScenario {
             return PlatformTxnAccessor.from(from(newSignedFileUpdate(MISC_FILE_ID).get()));
         }
     },
+    FILE_UPDATE_WITH_AUTO_RENEW_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedFileUpdate(MISC_FILE_ID)
+                                    .newAutoRenewAccount(FIRST_TOKEN_SENDER_ID)
+                                    .get()));
+        }
+    },
+    FILE_UPDATE_WITH_MISSING_AUTO_RENEW_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedFileUpdate(MISC_FILE_ID)
+                                    .newAutoRenewAccount(MISSING_ACCOUNT_ID)
+                                    .get()));
+        }
+    },
     TREASURY_SYS_FILE_UPDATE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(

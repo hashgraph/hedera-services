@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.payerOptionalAndMaybeAutoRenewSigners;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -43,11 +44,11 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -85,6 +86,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<Long> stakedNodeId = Optional.empty();
     private boolean isDeclinedReward = false;
     private Optional<ByteString> alias = Optional.empty();
+    @Nullable private String autoRenewAccount;
 
     @Override
     public HederaFunctionality type() {
@@ -132,6 +134,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
     public HapiCryptoCreate receiveThreshold(Long amount) {
         receiveThresh = Optional.of(amount);
+        return this;
+    }
+
+    public HapiCryptoCreate autoRenewAccount(final String autoRenewAccount) {
+        this.autoRenewAccount = autoRenewAccount;
         return this;
     }
 
@@ -258,6 +265,9 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                         b.setUnknownFields(nonEmptyUnknownFields());
                                     }
 
+                                    if (autoRenewAccount != null) {
+                                        b.setAutoRenewAccount(asId(autoRenewAccount, spec));
+                                    }
                                     proxy.ifPresent(b::setProxyAccountID);
                                     entityMemo.ifPresent(b::setMemo);
                                     sendThresh.ifPresent(b::setSendRecordThreshold);
@@ -285,7 +295,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
     @Override
     protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> key);
+        return payerOptionalAndMaybeAutoRenewSigners(this::effectivePayer, key, autoRenewAccount);
     }
 
     @Override

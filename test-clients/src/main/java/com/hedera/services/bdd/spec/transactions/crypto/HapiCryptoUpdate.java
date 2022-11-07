@@ -44,6 +44,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,6 +68,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     private Optional<String> newStakee = Optional.empty();
     private Optional<Long> newStakedNodeId = Optional.empty();
     private Optional<Boolean> isDeclinedReward = Optional.empty();
+    @Nullable private String autoRenewAccount;
 
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
@@ -81,6 +83,11 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
         } else {
             account = reference;
         }
+    }
+
+    public HapiCryptoUpdate autoRenewAccount(final String autoRenewAccount) {
+        this.autoRenewAccount = autoRenewAccount;
+        return this;
     }
 
     public HapiCryptoUpdate withYahcliLogging() {
@@ -207,6 +214,9 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
                                     } else {
                                         updKey.ifPresent(builder::setKey);
                                     }
+                                    if (autoRenewAccount != null) {
+                                        builder.setAutoRenewAccount(asId(autoRenewAccount, spec));
+                                    }
                                     newAutoRenewPeriod.ifPresent(
                                             p ->
                                                     builder.setAutoRenewPeriod(
@@ -253,7 +263,11 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
     @Override
     protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        return defaultUpdateSigners(account, updKeyName, this::effectivePayer);
+        final var signers = defaultUpdateSigners(account, updKeyName, this::effectivePayer);
+        if (autoRenewAccount != null) {
+            signers.add(spec -> spec.registry().getKey(autoRenewAccount));
+        }
+        return signers;
     }
 
     @Override

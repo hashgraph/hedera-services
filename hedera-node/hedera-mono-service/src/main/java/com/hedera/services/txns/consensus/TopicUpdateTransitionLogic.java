@@ -38,7 +38,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -194,7 +194,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
             return true;
         }
         var newAutoRenewAccount = op.getAutoRenewAccount();
-        if (designatesAccountRemoval(newAutoRenewAccount)) {
+        if (MiscUtils.designatesAccountRemoval(newAutoRenewAccount)) {
             return true;
         }
         if (topic.hasAutoRenewAccountId()
@@ -221,7 +221,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
     private void applyNewAutoRenewAccount(
             ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
         if (op.hasAutoRenewAccount()) {
-            if (designatesAccountRemoval(op.getAutoRenewAccount())) {
+            if (MiscUtils.designatesAccountRemoval(op.getAutoRenewAccount())) {
                 topic.setAutoRenewAccountId(null);
             } else {
                 topic.setAutoRenewAccountId(EntityId.fromGrpcAccountId(op.getAutoRenewAccount()));
@@ -234,13 +234,6 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
         if (op.hasAutoRenewPeriod()) {
             topic.setAutoRenewDurationSeconds(op.getAutoRenewPeriod().getSeconds());
         }
-    }
-
-    private boolean designatesAccountRemoval(AccountID id) {
-        return id.getShardNum() == 0
-                && id.getRealmNum() == 0
-                && id.getAccountNum() == 0
-                && id.getAlias().isEmpty();
     }
 
     private boolean canApplyNewKeys(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
@@ -292,7 +285,8 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
         var fcKey = JKey.mapKey(newAdminKey);
         if (fcKey.isEmpty()) {
             boolean opRemovesAutoRenewId =
-                    op.hasAutoRenewAccount() && designatesAccountRemoval(op.getAutoRenewAccount());
+                    op.hasAutoRenewAccount()
+                            && MiscUtils.designatesAccountRemoval(op.getAutoRenewAccount());
             if (topic.hasAutoRenewAccountId() && !opRemovesAutoRenewId) {
                 transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
                 return false;

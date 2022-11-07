@@ -17,16 +17,19 @@ package com.hedera.test.factories.txns;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.utils.IdUtils.asAccount;
 
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import javax.annotation.Nullable;
 
 public class FileCreateFactory extends SignedTxnFactory<FileCreateFactory> {
     public static final KeyTree DEFAULT_WACL_KT = KeyTree.withRoot(list(ed25519()));
 
     private KeyTree waclKt = DEFAULT_WACL_KT;
+    @Nullable private String autoRenewAccount;
 
     private FileCreateFactory() {}
 
@@ -49,11 +52,19 @@ public class FileCreateFactory extends SignedTxnFactory<FileCreateFactory> {
         FileCreateTransactionBody.Builder op =
                 FileCreateTransactionBody.newBuilder()
                         .setKeys(waclKt.asKey(keyFactory).getKeyList());
+        if (autoRenewAccount != null) {
+            op.setAutoRenewAccount(asAccount(autoRenewAccount));
+        }
         txn.setFileCreate(op);
     }
 
     public FileCreateFactory waclKt(KeyTree waclKt) {
         this.waclKt = waclKt;
+        return this;
+    }
+
+    public FileCreateFactory newAutoRenewAccount(final String autoRenewAccount) {
+        this.autoRenewAccount = autoRenewAccount;
         return this;
     }
 }

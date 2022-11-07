@@ -18,6 +18,7 @@ package com.hedera.test.factories.txns;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
+import static com.hedera.test.utils.IdUtils.asAccount;
 
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -25,6 +26,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.OptionalLong;
+import javax.annotation.Nullable;
 
 public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
     public static final KeyTree DEFAULT_ACCOUNT_KT =
@@ -38,6 +40,7 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
     private KeyTree accountKt = DEFAULT_ACCOUNT_KT;
     private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
     private OptionalLong balance = OptionalLong.empty();
+    @Nullable private String autoRenewAccount;
 
     private CryptoCreateFactory() {}
 
@@ -65,6 +68,9 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
                         .setSendRecordThreshold(sendThresholdTinybars)
                         .setReceiveRecordThreshold(receiveThresholdTinybars);
         balance.ifPresent(op::setInitialBalance);
+        if (autoRenewAccount != null) {
+            op.setAutoRenewAccount(asAccount(autoRenewAccount));
+        }
         txn.setCryptoCreateAccount(op);
     }
 
@@ -80,6 +86,11 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 
     public CryptoCreateFactory receiverSigRequired(boolean isRequired) {
         this.receiverSigRequired = isRequired;
+        return this;
+    }
+
+    public CryptoCreateFactory newAutoRenewAccount(final String autoRenewAccount) {
+        this.autoRenewAccount = autoRenewAccount;
         return this;
     }
 }

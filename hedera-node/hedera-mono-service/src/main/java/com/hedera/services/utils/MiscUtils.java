@@ -1042,4 +1042,11 @@ public final class MiscUtils {
     public static boolean hasUnknownFieldsHere(final GeneratedMessageV3 msg) {
         return !msg.getUnknownFields().asMap().isEmpty();
     }
+
+    public static boolean designatesAccountRemoval(final AccountID id) {
+        return id.getShardNum() == 0
+                && id.getRealmNum() == 0
+                && id.getAccountNum() == 0
+                && id.getAlias().isEmpty();
+    }
 }

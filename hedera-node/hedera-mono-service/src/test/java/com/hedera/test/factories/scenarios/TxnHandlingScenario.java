@@ -590,6 +590,7 @@ public interface TxnHandlingScenario {
     String KNOWN_TOKEN_WITH_PAUSE_ID = "0.0.780";
     TokenID KNOWN_TOKEN_WITH_PAUSE = asToken(KNOWN_TOKEN_WITH_PAUSE_ID);
 
+    String SENTINEL_ID = "0.0.0";
     String FIRST_TOKEN_SENDER_ID = "0.0.888";
     AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
     ByteString FIRST_TOKEN_SENDER_LITERAL_ALIAS = ByteString.copyFromUtf8("firstTokenSender");

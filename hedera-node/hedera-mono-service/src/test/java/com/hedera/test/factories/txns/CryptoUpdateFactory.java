@@ -22,9 +22,11 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 public class CryptoUpdateFactory extends SignedTxnFactory<CryptoUpdateFactory> {
     private final String account;
+    @Nullable private String autoRenewAccount;
     private Optional<KeyTree> newAccountKt = Optional.empty();
 
     public CryptoUpdateFactory(String account) {
@@ -49,12 +51,20 @@ public class CryptoUpdateFactory extends SignedTxnFactory<CryptoUpdateFactory> {
     protected void customizeTxn(TransactionBody.Builder txn) {
         CryptoUpdateTransactionBody.Builder op =
                 CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(asAccount(account));
+        if (autoRenewAccount != null) {
+            op.setAutoRenewAccount(asAccount(autoRenewAccount));
+        }
         newAccountKt.ifPresent(kt -> op.setKey(kt.asKey(keyFactory)));
         txn.setCryptoUpdateAccount(op);
     }
 
     public CryptoUpdateFactory newAccountKt(KeyTree newAccountKt) {
         this.newAccountKt = Optional.of(newAccountKt);
+        return this;
+    }
+
+    public CryptoUpdateFactory newAutoRenewAccount(final String autoRenewAccount) {
+        this.autoRenewAccount = autoRenewAccount;
         return this;
     }
 }

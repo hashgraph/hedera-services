@@ -26,6 +26,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hedera.services.utils.MiscUtils.designatesAccountRemoval;
 import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
@@ -47,8 +48,10 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -236,7 +239,7 @@ public class SigRequirements {
             final @Nullable LinkedRefs linkedRefs,
             final AccountID payer) {
         if (txn.hasCryptoCreateAccount()) {
-            return cryptoCreate(txn.getCryptoCreateAccount(), factory);
+            return cryptoCreate(txn.getCryptoCreateAccount(), factory, linkedRefs);
         } else if (txn.hasCryptoTransfer()) {
             return cryptoTransfer(payer, txn.getCryptoTransfer(), factory, linkedRefs);
         } else if (txn.hasCryptoUpdateAccount()) {
@@ -324,7 +327,7 @@ public class SigRequirements {
             final @Nullable LinkedRefs linkedRefs,
             final AccountID payer) {
         if (txn.hasFileCreate()) {
-            return fileCreate(txn.getFileCreate(), factory);
+            return fileCreate(txn.getFileCreate(), factory, linkedRefs);
         } else if (txn.hasFileAppend()) {
             return fileAppend(txn, factory, linkedRefs, payer);
         } else if (txn.hasFileUpdate()) {
@@ -517,6 +520,17 @@ public class SigRequirements {
                 var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
                 candidate.ifPresent(required::add);
             }
+            if (needsAutoRenewSignature(
+                    op,
+                    FileUpdateTransactionBody::hasAutoRenewAccount,
+                    FileUpdateTransactionBody::getAutoRenewAccount)) {
+                final var autoRenewResult =
+                        sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccount(), linkedRefs);
+                if (!autoRenewResult.succeeded()) {
+                    return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+                }
+                required.add(autoRenewResult.metadata().key());
+            }
             return factory.forValidOrder(required);
         }
     }
@@ -546,11 +560,24 @@ public class SigRequirements {
     }
 
     private <T> SigningOrderResult<T> fileCreate(
-            final FileCreateTransactionBody op, final SigningOrderResultFactory<T> factory) {
-        var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
-        return candidate.isPresent()
-                ? factory.forValidOrder(List.of(candidate.get()))
-                : SigningOrderResult.noKnownKeys();
+            final FileCreateTransactionBody op,
+            final SigningOrderResultFactory<T> factory,
+            final @Nullable LinkedRefs linkedRefs) {
+        final var needsAutoRenew =
+                needsAutoRenewSignature(
+                        op,
+                        FileCreateTransactionBody::hasAutoRenewAccount,
+                        FileCreateTransactionBody::getAutoRenewAccount);
+        final var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
+        if (candidate.isEmpty() && !needsAutoRenew) {
+            return SigningOrderResult.noKnownKeys();
+        }
+        final List<JKey> required = new ArrayList<>();
+        candidate.ifPresent(required::add);
+        if (needsAutoRenew && !tryToAddAutoRenew(required, op.getAutoRenewAccount(), linkedRefs)) {
+            return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+        }
+        return factory.forValidOrder(required);
     }
 
     private <T> SigningOrderResult<T> cryptoApproveAllowance(
@@ -641,6 +668,7 @@ public class SigRequirements {
         return factory.forValidOrder(required);
     }
 
+    @SuppressWarnings("java:S3776")
     private <T> SigningOrderResult<T> cryptoUpdate(
             final AccountID payer,
             final TransactionBody cryptoUpdateTxn,
@@ -660,6 +688,18 @@ public class SigRequirements {
             if (targetAccountKeyMustSign && !payer.equals(target)) {
                 required = mutable(required);
                 required.add(result.metadata().key());
+            }
+            if (needsAutoRenewSignature(
+                    op,
+                    CryptoUpdateTransactionBody::hasAutoRenewAccount,
+                    CryptoUpdateTransactionBody::getAutoRenewAccount)) {
+                final var autoRenewResult =
+                        sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccount(), linkedRefs);
+                if (!autoRenewResult.succeeded()) {
+                    return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+                }
+                required = mutable(required);
+                required.add(autoRenewResult.metadata().key());
             }
             if (newAccountKeyMustSign && op.hasKey()) {
                 required = mutable(required);
@@ -770,14 +810,27 @@ public class SigRequirements {
     }
 
     private <T> SigningOrderResult<T> cryptoCreate(
-            CryptoCreateTransactionBody op, SigningOrderResultFactory<T> factory) {
-        if (!op.getReceiverSigRequired()) {
+            final CryptoCreateTransactionBody op,
+            final SigningOrderResultFactory<T> factory,
+            final @Nullable LinkedRefs linkedRefs) {
+        final var needsAutoRenew =
+                needsAutoRenewSignature(
+                        op,
+                        CryptoCreateTransactionBody::hasAutoRenewAccount,
+                        CryptoCreateTransactionBody::getAutoRenewAccount);
+        if (!op.getReceiverSigRequired() && !needsAutoRenew) {
             return SigningOrderResult.noKnownKeys();
         } else {
-            var candidate = asUsableFcKey(op.getKey());
-            return candidate.isPresent()
-                    ? factory.forValidOrder(List.of(candidate.get()))
-                    : SigningOrderResult.noKnownKeys();
+            final List<JKey> required = new ArrayList<>();
+            if (op.getReceiverSigRequired()) {
+                final var candidate = asUsableFcKey(op.getKey());
+                candidate.ifPresent(required::add);
+            }
+            if (needsAutoRenew
+                    && !tryToAddAutoRenew(required, op.getAutoRenewAccount(), linkedRefs)) {
+                return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+            }
+            return factory.forValidOrder(required);
         }
     }
 
@@ -1472,5 +1525,24 @@ public class SigRequirements {
             required.add(targetResult.metadata().adminKey());
         }
         return factory.forValidOrder(required);
+    }
+
+    private <T> boolean needsAutoRenewSignature(
+            final T op,
+            final Predicate<T> autoRenewTest,
+            final Function<T, AccountID> autoRenewGetter) {
+        return autoRenewTest.test(op) && !designatesAccountRemoval(autoRenewGetter.apply(op));
+    }
+
+    private boolean tryToAddAutoRenew(
+            final List<JKey> required,
+            final AccountID autoRenewId,
+            final @Nullable LinkedRefs linkedRefs) {
+        final var autoRenewResult = sigMetaLookup.accountSigningMetaFor(autoRenewId, linkedRefs);
+        if (!autoRenewResult.succeeded()) {
+            return false;
+        }
+        required.add(autoRenewResult.metadata().key());
+        return true;
     }
 }

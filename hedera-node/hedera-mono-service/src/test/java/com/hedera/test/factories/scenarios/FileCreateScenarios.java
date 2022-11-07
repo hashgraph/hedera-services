@@ -25,5 +25,17 @@ public enum FileCreateScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(from(newSignedFileCreate().get()));
         }
+    },
+    FILE_CREATE_WITH_AUTO_RENEW_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(newSignedFileCreate().newAutoRenewAccount(FIRST_TOKEN_SENDER_ID).get()));
+        }
+    },
+    FILE_CREATE_WITH_MISSING_AUTO_RENEW_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(newSignedFileCreate().newAutoRenewAccount(MISSING_ACCOUNT_ID).get()));
+        }
     }
 }

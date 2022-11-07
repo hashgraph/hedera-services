@@ -28,6 +28,36 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
                     from(newSignedCryptoCreate().receiverSigRequired(false).get()));
         }
     },
+    CRYPTO_CREATE_WITH_AUTO_RENEW_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoCreate()
+                                    .receiverSigRequired(false)
+                                    .newAutoRenewAccount(FIRST_TOKEN_SENDER_ID)
+                                    .get()));
+        }
+    },
+    CRYPTO_CREATE_WITH_MISSING_AUTO_RENEW {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoCreate()
+                                    .receiverSigRequired(false)
+                                    .newAutoRenewAccount(MISSING_ACCOUNT_ID)
+                                    .get()));
+        }
+    },
+    CRYPTO_CREATE_WITH_AUTO_RENEW_AND_SIG_REQUIRED_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoCreate()
+                                    .receiverSigRequired(true)
+                                    .newAutoRenewAccount(FIRST_TOKEN_SENDER_ID)
+                                    .get()));
+        }
+    },
     CRYPTO_CREATE_RECEIVER_SIG_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(

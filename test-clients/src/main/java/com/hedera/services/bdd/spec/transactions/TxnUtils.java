@@ -97,6 +97,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -137,6 +138,19 @@ public class TxnUtils {
         signers.add(spec -> spec.registry().getKey(owningEntity));
         if (newKeyName.isPresent()) {
             signers.add(spec -> spec.registry().getKey(newKeyName.get()));
+        }
+        return signers;
+    }
+
+    public static List<Function<HapiApiSpec, Key>> payerOptionalAndMaybeAutoRenewSigners(
+            final Function<HapiApiSpec, String> effectivePayer,
+            final Key key,
+            @Nullable String autoRenewAccount) {
+        final List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
+        signers.add(spec -> spec.registry().getKey(effectivePayer.apply(spec)));
+        signers.add(ignore -> key);
+        if (autoRenewAccount != null) {
+            signers.add(spec -> spec.registry().getKey(autoRenewAccount));
         }
         return signers;
     }
