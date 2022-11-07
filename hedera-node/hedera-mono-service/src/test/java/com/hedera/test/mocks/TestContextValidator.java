@@ -91,7 +91,8 @@ public enum TestContextValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum expiryStatusGiven(long balance, long expiry, boolean isContract) {
+    public ResponseCodeEnum expiryStatusGiven(
+            long balance, boolean isDetached, boolean isContract) {
         return OK;
     }
 

@@ -525,7 +525,7 @@ class ApproveAllowanceChecksTest {
         op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
         given(ownerAccount.getNumAssociations()).willReturn(1);
         given(ownerAccount.getNumPositiveBalances()).willReturn(0);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
 
         assertEquals(
                 INVALID_ALLOWANCE_OWNER_ID,
@@ -653,7 +653,7 @@ class ApproveAllowanceChecksTest {
 
         given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
 
         assertEquals(
                 OK,

@@ -31,6 +31,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
+import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
@@ -43,6 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RemovalHelperTest {
+    private static final EntityNum detachedNum = EntityNum.fromLong(666_666);
     private final CryptoGcOutcome finishedReturns =
             new CryptoGcOutcome(
                     FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
@@ -75,7 +77,39 @@ class RemovalHelperTest {
 
         subject =
                 new RemovalHelper(
-                        expiryStats, classifier, properties, contractGC, accountGC, recordsHelper);
+                        expiryStats,
+                        classifier,
+                        properties,
+                        contractGC,
+                        accountGC,
+                        recordsHelper,
+                        expiryThrottle);
+    }
+
+    @Test
+    void doesNothingToDetachIfNotAutoRenewing() {
+        properties.disableAutoRenew();
+        var result = subject.tryToMarkDetached(detachedNum, false);
+        assertEquals(SystemTaskResult.NOTHING_TO_DO, result);
+
+        properties.disableContractAutoRenew();
+        result = subject.tryToMarkDetached(detachedNum, true);
+        assertEquals(SystemTaskResult.NOTHING_TO_DO, result);
+    }
+
+    @Test
+    void checksCapacityBeforeMarkingDetached() {
+        var result = subject.tryToMarkDetached(detachedNum, false);
+
+        assertEquals(SystemTaskResult.NO_CAPACITY_LEFT, result);
+        verify(expiryThrottle).allowOne(MapAccessType.ACCOUNTS_GET_FOR_MODIFY);
+    }
+
+    @Test
+    void marksDetachedWithCapacity() {
+        given(expiryThrottle.allowOne(MapAccessType.ACCOUNTS_GET_FOR_MODIFY)).willReturn(true);
+        var result = subject.tryToMarkDetached(detachedNum, false);
+        assertEquals(SystemTaskResult.DONE, result);
     }
 
     @Test
