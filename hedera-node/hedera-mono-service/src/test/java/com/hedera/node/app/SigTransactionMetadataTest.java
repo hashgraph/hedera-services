@@ -15,6 +15,13 @@
  */
 package com.hedera.node.app;
 
+import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.state.impl.InMemoryStateImpl;
@@ -23,22 +30,14 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.*;
+import java.util.List;
+import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class SigTransactionMetadataTest {

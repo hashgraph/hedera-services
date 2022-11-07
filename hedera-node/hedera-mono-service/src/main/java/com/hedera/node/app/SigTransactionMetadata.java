@@ -15,29 +15,27 @@
  */
 package com.hedera.node.app;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
  * verification. This class may have subclasses in the future.
  *
- * <p>NOTE: This class shouldn't exist here, and is something of a puzzle. We cannot add it to
- * SPI, because it includes a dependency on AccountStore. But we also cannot put it in the
- * app module, because doing so would cause service modules to have a circular dependency
- * on the app module. Maybe we need some kind of base module from which services can extend
- * and put it there?
+ * <p>NOTE: This class shouldn't exist here, and is something of a puzzle. We cannot add it to SPI,
+ * because it includes a dependency on AccountStore. But we also cannot put it in the app module,
+ * because doing so would cause service modules to have a circular dependency on the app module.
+ * Maybe we need some kind of base module from which services can extend and put it there?
  */
 public class SigTransactionMetadata implements TransactionMetadata {
     protected List<HederaKey> requiredKeys = new ArrayList<>();
