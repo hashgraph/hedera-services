@@ -99,12 +99,14 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
         if (lifetimeSecs > defaultLifeTimeSecs) {
             final var serializedSize =
                     txn.getScheduleCreate().getScheduledTransactionBody().getSerializedSize();
-            final var numerator =
-                    clampedMultiply(
-                            clampedMultiply(secondaryFeeTinyCents, lifetimeSecs), serializedSize);
-            final var denominator = secondaryFeeBPM * ONE_MONTH_IN_SECS;
+
+            final var numBpmChunks =
+                    ESTIMATOR_UTILS.nonDegenerateDiv(serializedSize, secondaryFeeBPM);
+            final var numMonths = ESTIMATOR_UTILS.nonDegenerateDiv(lifetimeSecs, ONE_MONTH_IN_SECS);
             final var additionalServiceFee =
-                    ESTIMATOR_UTILS.nonDegenerateDiv(numerator, denominator);
+                    clampedMultiply(
+                            secondaryFeeTinyCents, clampedMultiply(numBpmChunks, numMonths));
+
             return new FeeObject(0, 0, additionalServiceFee);
         }
         return new FeeObject(0, 0, 0);

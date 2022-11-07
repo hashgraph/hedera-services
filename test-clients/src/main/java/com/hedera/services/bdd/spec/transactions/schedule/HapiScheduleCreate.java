@@ -148,11 +148,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
         return this;
     }
 
-    public HapiScheduleCreate<T> waitForExpiry(boolean value) {
-        this.waitForExpiry = Optional.of(value);
-        return this;
-    }
-
     public HapiScheduleCreate<T> withRelativeExpiry(String txnId, long offsetSeconds) {
         this.expirationTimeRelativeTo = Optional.of(Pair.of(txnId, offsetSeconds));
         return this;
