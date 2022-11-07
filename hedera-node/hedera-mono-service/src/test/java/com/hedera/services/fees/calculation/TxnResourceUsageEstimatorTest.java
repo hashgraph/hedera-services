@@ -28,14 +28,13 @@ class TxnResourceUsageEstimatorTest {
     @Test
     void defaultResourceUsageEstimatorHasNoSecondaryFees() {
         final var mockSubject = mock(TxnResourceUsageEstimator.class);
+        final var txn = TransactionBody.getDefaultInstance();
 
         willCallRealMethod().given(mockSubject).hasSecondaryFees();
         willCallRealMethod().given(mockSubject).secondaryFeesFor(any());
 
         assertFalse(mockSubject.hasSecondaryFees());
         verify(mockSubject).hasSecondaryFees();
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> mockSubject.secondaryFeesFor(TransactionBody.getDefaultInstance()));
+        assertThrows(UnsupportedOperationException.class, () -> mockSubject.secondaryFeesFor(txn));
     }
 }

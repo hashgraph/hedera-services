@@ -15,53 +15,66 @@
  */
 package com.hedera.services.fees.calculation.schedule.txns;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.usage.schedule.ScheduleOpsUsage.ONE_MONTH_IN_SECS;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 class ScheduleCreateResourceUsageTest {
-
     ScheduleCreateResourceUsage subject;
-
     StateView view;
     ScheduleOpsUsage scheduleOpsUsage;
     TransactionBody nonScheduleCreateTxn;
     TransactionBody scheduleCreateTxn;
 
-    int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-    SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-    SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-    MockGlobalDynamicProps props = new MockGlobalDynamicProps();
+    final int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    final SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+    final SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+    final MockGlobalDynamicProps props = new MockGlobalDynamicProps();
     FeeData expected;
 
     @BeforeEach
     void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
-        scheduleCreateTxn = mock(TransactionBody.class);
         scheduleOpsUsage = mock(ScheduleOpsUsage.class);
-        given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
-        given(scheduleCreateTxn.getScheduleCreate())
-                .willReturn(ScheduleCreateTransactionBody.getDefaultInstance());
-
         nonScheduleCreateTxn = mock(TransactionBody.class);
 
+        subject = new ScheduleCreateResourceUsage(scheduleOpsUsage, props);
+    }
+
+    @Test
+    void recognizesApplicableQuery() {
+        scheduleCreateTxn =  givenScheduleCreate(2L, 5L);
+
+        assertTrue(subject.applicableTo(scheduleCreateTxn));
+        assertFalse(subject.applicableTo(nonScheduleCreateTxn));
+    }
+
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        scheduleCreateTxn =  givenScheduleCreate(2L, 5L);
         given(
                         scheduleOpsUsage.scheduleCreateUsage(
                                 scheduleCreateTxn,
@@ -69,32 +82,6 @@ class ScheduleCreateResourceUsageTest {
                                 props.scheduledTxExpiryTimeSecs(),
                                 props.scheduledTxExpiryTimeSecs()))
                 .willReturn(expected);
-
-        subject = new ScheduleCreateResourceUsage(scheduleOpsUsage, props);
-    }
-
-    @Test
-    void recognizesApplicableQuery() {
-        // expect:
-        assertTrue(subject.applicableTo(scheduleCreateTxn));
-        assertFalse(subject.applicableTo(nonScheduleCreateTxn));
-    }
-
-    @Test
-    void delegatesToCorrectEstimate() throws Exception {
-        given(
-                        scheduleOpsUsage.scheduleCreateUsage(
-                                eq(scheduleCreateTxn),
-                                eq(sigUsage),
-                                eq(props.scheduledTxExpiryTimeSecs()),
-                                eq(props.scheduledTxExpiryTimeSecs())))
-                .willReturn(expected);
-        given(scheduleCreateTxn.getTransactionID())
-                .willReturn(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(
-                                        Timestamp.newBuilder().setSeconds(1L).setNanos(0))
-                                .build());
         // expect:
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
     }
@@ -102,68 +89,122 @@ class ScheduleCreateResourceUsageTest {
     @Test
     void handlesExpirationTime() throws Exception {
         props.enableSchedulingLongTerm();
+        scheduleCreateTxn =  givenScheduleCreate(2L, 1L);
 
-        given(scheduleCreateTxn.getScheduleCreate())
-                .willReturn(
-                        ScheduleCreateTransactionBody.newBuilder()
-                                .setExpirationTime(
-                                        Timestamp.newBuilder().setSeconds(2L).setNanos(0))
-                                .build());
-
-        given(scheduleCreateTxn.getTransactionID())
-                .willReturn(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(
-                                        Timestamp.newBuilder().setSeconds(1L).setNanos(0))
-                                .build());
-
-        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 1L, 1800))
-                .willReturn(expected);
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage,
+                1L, props.scheduledTxExpiryTimeSecs())).willReturn(expected);
 
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
     }
 
     @Test
     void ignoresExpirationTimeLongTermDisabled() throws Exception {
+        final var txn = givenScheduleCreate(2L, 5L);
 
-        given(scheduleCreateTxn.getScheduleCreate())
-                .willReturn(
-                        ScheduleCreateTransactionBody.newBuilder()
-                                .setExpirationTime(
-                                        Timestamp.newBuilder().setSeconds(2L).setNanos(0))
-                                .build());
+        given(
+                scheduleOpsUsage.scheduleCreateUsage(
+                        txn,
+                        sigUsage,
+                        props.scheduledTxExpiryTimeSecs(),
+                        props.scheduledTxExpiryTimeSecs()))
+                .willReturn(expected);
 
-        given(scheduleCreateTxn.getTransactionID())
-                .willReturn(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(
-                                        Timestamp.newBuilder().setSeconds(1L).setNanos(0))
-                                .build());
-
-        assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
+        assertEquals(expected, subject.usageGiven(txn, obj, view));
     }
 
     @Test
     void handlesPastExpirationTime() throws Exception {
         props.enableSchedulingLongTerm();
-
-        given(scheduleCreateTxn.getScheduleCreate())
-                .willReturn(
-                        ScheduleCreateTransactionBody.newBuilder()
-                                .setExpirationTime(
-                                        Timestamp.newBuilder().setSeconds(2L).setNanos(0))
-                                .build());
-
-        given(scheduleCreateTxn.getTransactionID())
-                .willReturn(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(
-                                        Timestamp.newBuilder().setSeconds(5L).setNanos(0))
-                                .build());
+        scheduleCreateTxn = givenScheduleCreate(1L, 5L);
 
         given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 0L, 1800))
                 .willReturn(expected);
 
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
+    }
+
+    @Test
+    void returnsHasSecondaryFee(){
+        assertTrue(subject.hasSecondaryFees());
+    }
+
+    @Test
+    void calculatesSecondaryFeesForLongExpiryTxns() throws InvalidTxBodyException {
+        props.enableSchedulingLongTerm();
+        final var txn = givenScheduleCreate(ONE_MONTH_IN_SECS, 5L);
+
+        subject.usageGiven(txn, obj, view);
+        final var feeObject = subject.secondaryFeesFor(txn);
+
+        assertEquals(0L, feeObject.getNetworkFee());
+        assertEquals(0L, feeObject.getNodeFee());
+        assertEquals(5156240L, feeObject.getServiceFee());
+    }
+
+    @Test
+    void calculatesSecondaryFeesForDefaultExpiryTxns() throws InvalidTxBodyException {
+        props.enableSchedulingLongTerm();
+        final var txn = givenScheduleCreate(1800L, 5L);
+
+        subject.usageGiven(txn, obj, view);
+        final var feeObject = subject.secondaryFeesFor(txn);
+
+        assertEquals(0L, feeObject.getNetworkFee());
+        assertEquals(0L, feeObject.getNodeFee());
+        assertEquals(0L, feeObject.getServiceFee());
+    }
+
+    @Test
+    void calculatesSecondaryFeesForLessThanDefaultExpiryTxns() throws InvalidTxBodyException {
+        props.enableSchedulingLongTerm();
+        final var txn = givenScheduleCreate(60L, 5L);
+
+        subject.usageGiven(txn, obj, view);
+        final var feeObject = subject.secondaryFeesFor(txn);
+
+        assertEquals(0L, feeObject.getNetworkFee());
+        assertEquals(0L, feeObject.getNodeFee());
+        assertEquals(0L, feeObject.getServiceFee());
+    }
+
+    TransactionBody givenScheduleCreate(final long expirySecs, final long transactionValidStartSecs){
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setTransactionValidStart(
+                                Timestamp.newBuilder().setSeconds(transactionValidStartSecs).setNanos(0))
+                        .build();
+        final var body =
+                ScheduleCreateTransactionBody.newBuilder()
+                        .setExpirationTime(
+                                Timestamp.newBuilder().setSeconds(expirySecs).setNanos(0))
+                        .setScheduledTransactionBody( SchedulableTransactionBody.newBuilder()
+                                .setCryptoTransfer(
+                                        CryptoTransferTransactionBody
+                                                .newBuilder()
+                                                .setTransfers(
+                                                        TransferList
+                                                                .newBuilder()
+                                                                .addAccountAmounts(
+                                                                        AccountAmount
+                                                                                .newBuilder()
+                                                                                .setAmount(
+                                                                                        -1_000_000_000)
+                                                                                .setAccountID(
+                                                                                        asAccount("0.0.10")))
+                                                                .addAccountAmounts(
+                                                                        AccountAmount
+                                                                                .newBuilder()
+                                                                                .setAmount(
+                                                                                        +1_000_000_000)
+                                                                                .setAccountID(
+                                                                                        asAccount("0.0.100")))))
+                                .setMemo("")
+                                .setTransactionFee(100_000_000L)
+                                .build())
+                        .build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setScheduleCreate(body)
+                .build();
     }
 }

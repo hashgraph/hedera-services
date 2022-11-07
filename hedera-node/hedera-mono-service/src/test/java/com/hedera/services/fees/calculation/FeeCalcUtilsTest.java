@@ -201,32 +201,4 @@ public class FeeCalcUtilsTest {
             assertEquals(10, scopedUsage.getSbpr());
         }
     }
-
-    @Test
-    void clampedAddWorks() {
-        long a = 100L;
-        long b = Long.MAX_VALUE;
-        assertEquals(Long.MAX_VALUE, clampedAdd(a, b));
-
-        b = 100L;
-        assertEquals(200L, clampedAdd(a, b));
-
-        a = -100L;
-        b = Long.MIN_VALUE;
-        assertEquals(Long.MIN_VALUE, clampedAdd(a, b));
-    }
-
-    @Test
-    void clampedMultiplicationWorks() {
-        long a = 100L;
-        long b = Long.MAX_VALUE;
-        assertEquals(Long.MAX_VALUE, clampedMultiply(a, b));
-
-        b = 100L;
-        assertEquals(10000L, clampedMultiply(a, b));
-
-        a = -100L;
-        b = Long.MAX_VALUE;
-        assertEquals(Long.MIN_VALUE, clampedMultiply(a, b));
-    }
 }

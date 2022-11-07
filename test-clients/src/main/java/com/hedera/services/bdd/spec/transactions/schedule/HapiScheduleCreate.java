@@ -57,12 +57,8 @@ import org.apache.logging.log4j.Logger;
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
     private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
 
-    private static final int defaultScheduleTxnExpiry =
-            HapiSpecSetup.getDefaultNodeProps().getInteger("ledger.schedule.txExpiryTimeSecs");
-    private static final long defaultScheduleTxSecondaryFee =
-            HapiSpecSetup.getDefaultNodeProps().getLong("schedule.secondaryFee");
-    private static final int defaultScheduleTxSecondaryFeeBPM =
-            HapiSpecSetup.getDefaultNodeProps().getInteger("schedule.secondaryFeeBytesPerMonth");
+    private final int defaultScheduleTxnExpiry =
+           HapiSpecSetup.getDefaultNodeProps().getInteger("ledger.schedule.txExpiryTimeSecs");
 
     private boolean advertiseCreation = false;
     private boolean recordScheduledTxn = false;

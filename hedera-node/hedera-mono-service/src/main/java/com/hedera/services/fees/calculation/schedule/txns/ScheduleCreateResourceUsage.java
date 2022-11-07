@@ -73,11 +73,11 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
      * number of minutes until scheduled time and size of schedule transaction. This fee is added
      * only to the transactions scheduled beyond the defaultLifeTimeSecs.
      *
-     * <p>Fee calculation is as follows : If lifetimeSecs <= defaultLifeTimeSecs, no additional fee
+     * Fee calculation is as follows : If lifetimeSecs <= defaultLifeTimeSecs, no additional fee
      * is charged If lifetimeSecs > defaultLifeTimeSecs, an additional price is charged based on
      * serialized size of the scheduled transaction and the expiration tiem is calculated.
      *
-     * <p>For example if the defaultLifeTimeSecs is {@code 1800}, priceIncrement is {@code 20000000}
+     * For example if the defaultLifeTimeSecs is {@code 1800}, priceIncrement is {@code 20000000}
      * tinycents, and secondaryFeeBytesPerMonth is {@code 128} bytes, then for a scheduled
      * transaction that is scheduled to execute anytime after 1800 secs, an extra fee of $0.002 for
      * 128 bytes/month is charged.

@@ -173,12 +173,16 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec feesChargedForLongTermTransactionsWithContractCallAsExpected() {
-        final long transferAmount = 1L;
-        final var VALID_BYTES = new byte[100];
-        Arrays.fill(VALID_BYTES, (byte) 'ф');
-        final var longMemo = new String(VALID_BYTES, StandardCharsets.UTF_8);
+        final var validBytes = new byte[100];
+        Arrays.fill(validBytes, (byte) 'ф');
+        final var longMemo = new String(validBytes, StandardCharsets.UTF_8);
         var contract = "Multipurpose";
         final var largeFee = ONE_HUNDRED_HBARS;
+
+        final var baseCallTx = "baseCallTx";
+        final var defaultPeriodCallTx = "defaultPeriodCallTx";
+        final var oneMonthCallTx = "oneMonthCallTx";
+        final var tenMonthCallTx = "tenMonthCallTx";
 
         return defaultHapiSpec("feesChargedForLongTermTransactionsWithContractCallAsExpected")
                 .given(
@@ -190,7 +194,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .balance(1000000000000L)
                                 .via(PAYING_ACCOUNT_TXN),
                         scheduleCreate(
-                                        "baseCall",
+                                BASIC_XFER,
                                         contractCall(contract)
                                                 .fee(largeFee)
                                                 .sending(ONE_HBAR)
@@ -199,11 +203,11 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .alsoSigningWith(PAYING_ACCOUNT)
                                 .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
-                                .via("baseCallTx"),
-                        getTxnRecord("baseCallTx").logged(),
-                        validateChargedUsdWithin("baseCallTx", 0.0542388444, 0.1),
+                                .via(baseCallTx),
+                        getTxnRecord(baseCallTx).logged(),
+                        validateChargedUsdWithin(baseCallTx, 0.0542388444, 0.1),
                         scheduleCreate(
-                                        "defaultPeriodCall",
+                                BASIC_XFER,
                                         contractCall(contract)
                                                 .fee(largeFee)
                                                 .sending(ONE_HBAR)
@@ -215,12 +219,12 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .payingWith(PAYING_ACCOUNT)
                                 .fee(ONE_HBAR)
                                 .recordingScheduledTxn()
-                                .via("defaultPeriodCallTx"),
-                        getTxnRecord("defaultPeriodCallTx").logged(),
-                        validateChargedUsdWithin("defaultPeriodCallTx", 0.0542401524, 0.1))
+                                .via(defaultPeriodCallTx),
+                        getTxnRecord(defaultPeriodCallTx).logged(),
+                        validateChargedUsdWithin(defaultPeriodCallTx, 0.0542401524, 0.1))
                 .when(
                         scheduleCreate(
-                                        "oneMonthCall",
+                                BASIC_XFER,
                                         contractCall(contract)
                                                 .fee(largeFee)
                                                 .sending(ONE_HBAR)
@@ -232,33 +236,38 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .payingWith(PAYING_ACCOUNT)
                                 .fee(ONE_HBAR)
                                 .recordingScheduledTxn()
-                                .via("oneMonthCallTx"),
-                        getTxnRecord("oneMonthCallTx").logged(),
-                        validateChargedUsdWithin("oneMonthCallTx", 0.0563248992, 0.1))
+                                .via(oneMonthCallTx),
+                        getTxnRecord(oneMonthCallTx).logged(),
+                        validateChargedUsdWithin(oneMonthCallTx, 0.0563248992, 0.1))
                 .then(
                         scheduleCreate(
-                                        "tenMonthCall",
+                                BASIC_XFER,
                                         contractCall(contract)
                                                 .fee(largeFee)
                                                 .sending(ONE_HBAR)
                                                 .memo(longMemo))
                                 .waitForExpiry()
-                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, 10 * ONE_MONTH_IN_SECS)
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, 10L * ONE_MONTH_IN_SECS)
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .alsoSigningWith(PAYING_ACCOUNT)
                                 .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
                                 .fee(10 * ONE_HBAR)
-                                .via("tenMonthCallTx"),
-                        getTxnRecord("tenMonthCallTx").logged(),
-                        validateChargedUsdWithin("tenMonthCallTx", 0.0751006644, 0.1));
+                                .via(tenMonthCallTx),
+                        getTxnRecord(tenMonthCallTx).logged(),
+                        validateChargedUsdWithin(tenMonthCallTx, 0.0751006644, 0.1));
     }
 
     private HapiApiSpec feesChargedForLongTermTransactionsAsExpected() {
         final long transferAmount = 1L;
-        final var VALID_BYTES = new byte[100];
-        Arrays.fill(VALID_BYTES, (byte) 'ф');
-        final var longMemo = new String(VALID_BYTES, StandardCharsets.UTF_8);
+        final var validBytes = new byte[100];
+        Arrays.fill(validBytes, (byte) 'ф');
+        final var longMemo = new String(validBytes, StandardCharsets.UTF_8);
+
+        final var basicTxnCreate = "basicTxnCreate";
+        final var basicXferCreate = "basicXferCreate";
+        final var oneMonthCreate = "oneMonthCreate";
+        final var tenMonthsCreate = "tenMonthsCreate";
 
         return defaultHapiSpec("feesChargedForLongTermTransactionsAsExpected")
                 .given(
@@ -268,7 +277,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                         cryptoCreate(RECEIVER),
                         cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                         scheduleCreate(
-                                        "baseTxn",
+                                BASIC_XFER,
                                         cryptoTransfer(
                                                         tinyBarsFromTo(
                                                                 SENDER, RECEIVER, transferAmount))
@@ -277,9 +286,9 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .recordingScheduledTxn()
                                 .blankMemo()
                                 .fee(ONE_HBAR)
-                                .via("basicTxnCreate"),
-                        getTxnRecord("basicTxnCreate").logged(),
-                        validateChargedUsdWithin("basicTxnCreate", 0.005127474, 0.1),
+                                .via(basicTxnCreate),
+                        getTxnRecord(basicTxnCreate).logged(),
+                        validateChargedUsdWithin(basicTxnCreate, 0.005127474, 0.1),
                         scheduleCreate(
                                         BASIC_XFER,
                                         cryptoTransfer(
@@ -292,9 +301,9 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .recordingScheduledTxn()
                                 .blankMemo()
                                 .fee(ONE_HBAR)
-                                .via("basicXferCreate"),
-                        getTxnRecord("basicXferCreate").logged(),
-                        validateChargedUsdWithin("basicXferCreate", 0.0051277632, 0.1))
+                                .via(basicXferCreate),
+                        getTxnRecord(basicXferCreate).logged(),
+                        validateChargedUsdWithin(basicXferCreate, 0.0051277632, 0.1))
                 .when(
                         scheduleCreate(
                                         BASIC_XFER,
@@ -308,9 +317,9 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .recordingScheduledTxn()
                                 .blankMemo()
                                 .fee(ONE_HBAR)
-                                .via("oneMonthCreate"),
-                        getTxnRecord("oneMonthCreate").logged(),
-                        validateChargedUsdWithin("oneMonthCreate", 0.0071624076, 0.1))
+                                .via(oneMonthCreate),
+                        getTxnRecord(oneMonthCreate).logged(),
+                        validateChargedUsdWithin(oneMonthCreate, 0.0071624076, 0.1))
                 .then(
                         scheduleCreate(
                                         CREATE_TX,
@@ -319,14 +328,14 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                                                 SENDER, RECEIVER, transferAmount))
                                                 .memo(longMemo))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 10 * ONE_MONTH_IN_SECS)
+                                .withRelativeExpiry(SENDER_TXN, 10L * ONE_MONTH_IN_SECS)
                                 .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
                                 .memo("testing base transaction")
                                 .fee(ONE_HBAR)
-                                .via("tenMonthsCreate"),
-                        getTxnRecord("tenMonthsCreate").logged(),
-                        validateChargedUsdWithin("tenMonthsCreate", 0.0252945492, 0.1));
+                                .via(tenMonthsCreate),
+                        getTxnRecord(tenMonthsCreate).logged(),
+                        validateChargedUsdWithin(tenMonthsCreate, 0.0252945492, 0.1));
     }
 
     @SuppressWarnings("java:S5960")
