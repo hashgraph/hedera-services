@@ -283,20 +283,30 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final StakeChangeScenario scenario,
             final Map<AccountProperty, Object> changes,
             final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
+        // Common case that deserves performance optimization
         if (scenario == FROM_ACCOUNT_TO_ACCOUNT && curStakedId == newStakedId) {
-            final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
-            final var roundedInitialBalance = roundedToHbar(account.getBalance());
-            // Common case that deserves performance optimization
+            final var finalBalance = finalBalanceGiven(account, changes);
+            final var initialBalance = account.getBalance();
+            final var roundedFinalBalance = roundedToHbar(finalBalance);
+            final var roundedInitialBalance = roundedToHbar(initialBalance);
             final var delta = roundedFinalBalance - roundedInitialBalance;
-            alterStakedToMe(curStakedId, delta, pendingChanges);
+            // Even if the stakee's total stake hasn't changed, we still want to
+            // trigger a reward situation to match user expectations; c.f.,
+            // https://github.com/hashgraph/hedera-services/issues/4166
+            final var alwaysUpdate = finalBalance != initialBalance;
+            alterStakedToMe(curStakedId, delta, alwaysUpdate, pendingChanges);
         } else {
             if (scenario.withdrawsFromAccount()) {
                 final var roundedInitialBalance = roundedToHbar(account.getBalance());
-                alterStakedToMe(curStakedId, -roundedInitialBalance, pendingChanges);
+                // Always trigger a reward situation for the old stakee when they are
+                // losing an indirect staker, even if it doesn't change their total stake
+                alterStakedToMe(curStakedId, -roundedInitialBalance, true, pendingChanges);
             }
             if (scenario.awardsToAccount()) {
+                // Always trigger a reward situation for the new stakee when they are
+                // losing an indirect staker, even if it doesn't change their total stake
                 final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
-                alterStakedToMe(newStakedId, roundedFinalBalance, pendingChanges);
+                alterStakedToMe(newStakedId, roundedFinalBalance, true, pendingChanges);
             }
         }
     }
@@ -304,10 +314,11 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     private void alterStakedToMe(
             final long accountNum,
             final long delta,
+            final boolean alwaysUpdate,
             @NotNull
                     final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
-        if (delta != 0) {
+        if (delta != 0 || alwaysUpdate) {
             final var stakeeI = stakeChangeManager.findOrAdd(accountNum, pendingChanges);
             updateStakedToMe(stakeeI, delta, stakedToMeUpdates, pendingChanges);
             // The stakee may now be eligible for a reward
