@@ -32,6 +32,11 @@ import com.hederahashgraph.fee.SigValueObj;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * This class must be thread-safe, because it can be used concurrently from gRPC threads and
+ * handleTransaction. So we need to re-compute any values used in both {@code usageGiven()} and
+ * {@code secondaryFeesFor()}.
+ */
 @Singleton
 public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
     private final ScheduleOpsUsage scheduleOpsUsage;
