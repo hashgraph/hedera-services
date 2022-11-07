@@ -194,7 +194,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .balance(1000000000000L)
                                 .via(PAYING_ACCOUNT_TXN),
                         scheduleCreate(
-                                BASIC_XFER,
+                                        BASIC_XFER,
                                         contractCall(contract)
                                                 .fee(largeFee)
                                                 .sending(ONE_HBAR)
@@ -207,7 +207,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                         getTxnRecord(baseCallTx).logged(),
                         validateChargedUsdWithin(baseCallTx, 0.0542388444, 0.1),
                         scheduleCreate(
-                                BASIC_XFER,
+                                        BASIC_XFER,
                                         contractCall(contract)
                                                 .fee(largeFee)
                                                 .sending(ONE_HBAR)
@@ -224,7 +224,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                         validateChargedUsdWithin(defaultPeriodCallTx, 0.0542401524, 0.1))
                 .when(
                         scheduleCreate(
-                                BASIC_XFER,
+                                        BASIC_XFER,
                                         contractCall(contract)
                                                 .fee(largeFee)
                                                 .sending(ONE_HBAR)
@@ -241,7 +241,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                         validateChargedUsdWithin(oneMonthCallTx, 0.0563248992, 0.1))
                 .then(
                         scheduleCreate(
-                                BASIC_XFER,
+                                        BASIC_XFER,
                                         contractCall(contract)
                                                 .fee(largeFee)
                                                 .sending(ONE_HBAR)
@@ -277,7 +277,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                         cryptoCreate(RECEIVER),
                         cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                         scheduleCreate(
-                                BASIC_XFER,
+                                        BASIC_XFER,
                                         cryptoTransfer(
                                                         tinyBarsFromTo(
                                                                 SENDER, RECEIVER, transferAmount))

@@ -19,8 +19,6 @@ import static com.hedera.services.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupFileExpiry;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.sumOfUsages;
-import static com.hederahashgraph.fee.FeeUtils.clampedAdd;
-import static com.hederahashgraph.fee.FeeUtils.clampedMultiply;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;

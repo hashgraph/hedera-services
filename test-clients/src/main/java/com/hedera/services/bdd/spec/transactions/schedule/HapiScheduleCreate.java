@@ -58,7 +58,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
     private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
 
     private final int defaultScheduleTxnExpiry =
-           HapiSpecSetup.getDefaultNodeProps().getInteger("ledger.schedule.txExpiryTimeSecs");
+            HapiSpecSetup.getDefaultNodeProps().getInteger("ledger.schedule.txExpiryTimeSecs");
 
     private boolean advertiseCreation = false;
     private boolean recordScheduledTxn = false;

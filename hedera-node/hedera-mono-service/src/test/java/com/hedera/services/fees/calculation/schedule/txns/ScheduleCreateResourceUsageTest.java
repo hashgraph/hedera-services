@@ -15,6 +15,14 @@
  */
 package com.hedera.services.fees.calculation.schedule.txns;
 
+import static com.hedera.services.usage.schedule.ScheduleOpsUsage.ONE_MONTH_IN_SECS;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
@@ -32,14 +40,6 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static com.hedera.services.usage.schedule.ScheduleOpsUsage.ONE_MONTH_IN_SECS;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 class ScheduleCreateResourceUsageTest {
     ScheduleCreateResourceUsage subject;
@@ -66,7 +66,7 @@ class ScheduleCreateResourceUsageTest {
 
     @Test
     void recognizesApplicableQuery() {
-        scheduleCreateTxn =  givenScheduleCreate(2L, 5L);
+        scheduleCreateTxn = givenScheduleCreate(2L, 5L);
 
         assertTrue(subject.applicableTo(scheduleCreateTxn));
         assertFalse(subject.applicableTo(nonScheduleCreateTxn));
@@ -74,7 +74,7 @@ class ScheduleCreateResourceUsageTest {
 
     @Test
     void delegatesToCorrectEstimate() throws Exception {
-        scheduleCreateTxn =  givenScheduleCreate(2L, 5L);
+        scheduleCreateTxn = givenScheduleCreate(2L, 5L);
         given(
                         scheduleOpsUsage.scheduleCreateUsage(
                                 scheduleCreateTxn,
@@ -89,10 +89,12 @@ class ScheduleCreateResourceUsageTest {
     @Test
     void handlesExpirationTime() throws Exception {
         props.enableSchedulingLongTerm();
-        scheduleCreateTxn =  givenScheduleCreate(2L, 1L);
+        scheduleCreateTxn = givenScheduleCreate(2L, 1L);
 
-        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage,
-                1L, props.scheduledTxExpiryTimeSecs())).willReturn(expected);
+        given(
+                        scheduleOpsUsage.scheduleCreateUsage(
+                                scheduleCreateTxn, sigUsage, 1L, props.scheduledTxExpiryTimeSecs()))
+                .willReturn(expected);
 
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
     }
@@ -102,11 +104,11 @@ class ScheduleCreateResourceUsageTest {
         final var txn = givenScheduleCreate(2L, 5L);
 
         given(
-                scheduleOpsUsage.scheduleCreateUsage(
-                        txn,
-                        sigUsage,
-                        props.scheduledTxExpiryTimeSecs(),
-                        props.scheduledTxExpiryTimeSecs()))
+                        scheduleOpsUsage.scheduleCreateUsage(
+                                txn,
+                                sigUsage,
+                                props.scheduledTxExpiryTimeSecs(),
+                                props.scheduledTxExpiryTimeSecs()))
                 .willReturn(expected);
 
         assertEquals(expected, subject.usageGiven(txn, obj, view));
@@ -124,7 +126,7 @@ class ScheduleCreateResourceUsageTest {
     }
 
     @Test
-    void returnsHasSecondaryFee(){
+    void returnsHasSecondaryFee() {
         assertTrue(subject.hasSecondaryFees());
     }
 
@@ -167,40 +169,44 @@ class ScheduleCreateResourceUsageTest {
         assertEquals(0L, feeObject.getServiceFee());
     }
 
-    TransactionBody givenScheduleCreate(final long expirySecs, final long transactionValidStartSecs){
+    TransactionBody givenScheduleCreate(
+            final long expirySecs, final long transactionValidStartSecs) {
         final var transactionID =
                 TransactionID.newBuilder()
                         .setTransactionValidStart(
-                                Timestamp.newBuilder().setSeconds(transactionValidStartSecs).setNanos(0))
+                                Timestamp.newBuilder()
+                                        .setSeconds(transactionValidStartSecs)
+                                        .setNanos(0))
                         .build();
         final var body =
                 ScheduleCreateTransactionBody.newBuilder()
                         .setExpirationTime(
                                 Timestamp.newBuilder().setSeconds(expirySecs).setNanos(0))
-                        .setScheduledTransactionBody( SchedulableTransactionBody.newBuilder()
-                                .setCryptoTransfer(
-                                        CryptoTransferTransactionBody
-                                                .newBuilder()
-                                                .setTransfers(
-                                                        TransferList
-                                                                .newBuilder()
-                                                                .addAccountAmounts(
-                                                                        AccountAmount
-                                                                                .newBuilder()
-                                                                                .setAmount(
-                                                                                        -1_000_000_000)
-                                                                                .setAccountID(
-                                                                                        asAccount("0.0.10")))
-                                                                .addAccountAmounts(
-                                                                        AccountAmount
-                                                                                .newBuilder()
-                                                                                .setAmount(
-                                                                                        +1_000_000_000)
-                                                                                .setAccountID(
-                                                                                        asAccount("0.0.100")))))
-                                .setMemo("")
-                                .setTransactionFee(100_000_000L)
-                                .build())
+                        .setScheduledTransactionBody(
+                                SchedulableTransactionBody.newBuilder()
+                                        .setCryptoTransfer(
+                                                CryptoTransferTransactionBody.newBuilder()
+                                                        .setTransfers(
+                                                                TransferList.newBuilder()
+                                                                        .addAccountAmounts(
+                                                                                AccountAmount
+                                                                                        .newBuilder()
+                                                                                        .setAmount(
+                                                                                                -1_000_000_000)
+                                                                                        .setAccountID(
+                                                                                                asAccount(
+                                                                                                        "0.0.10")))
+                                                                        .addAccountAmounts(
+                                                                                AccountAmount
+                                                                                        .newBuilder()
+                                                                                        .setAmount(
+                                                                                                +1_000_000_000)
+                                                                                        .setAccountID(
+                                                                                                asAccount(
+                                                                                                        "0.0.100")))))
+                                        .setMemo("")
+                                        .setTransactionFee(100_000_000L)
+                                        .build())
                         .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)

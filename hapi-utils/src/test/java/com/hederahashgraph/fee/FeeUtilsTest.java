@@ -15,41 +15,41 @@
  */
 package com.hederahashgraph.fee;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import static com.hederahashgraph.fee.FeeUtils.clampedAdd;
 import static com.hederahashgraph.fee.FeeUtils.clampedMultiply;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class FeeUtilsTest {
-	@Test
-	void clampedAddWorks() {
-		long a = 100L;
-		long b = Long.MAX_VALUE;
-		assertEquals(Long.MAX_VALUE, clampedAdd(a, b));
+    @Test
+    void clampedAddWorks() {
+        long a = 100L;
+        long b = Long.MAX_VALUE;
+        assertEquals(Long.MAX_VALUE, clampedAdd(a, b));
 
-		b = 100L;
-		assertEquals(200L, clampedAdd(a, b));
+        b = 100L;
+        assertEquals(200L, clampedAdd(a, b));
 
-		a = -100L;
-		b = Long.MIN_VALUE;
-		assertEquals(Long.MIN_VALUE, clampedAdd(a, b));
-	}
+        a = -100L;
+        b = Long.MIN_VALUE;
+        assertEquals(Long.MIN_VALUE, clampedAdd(a, b));
+    }
 
-	@Test
-	void clampedMultiplicationWorks() {
-		long a = 100L;
-		long b = Long.MAX_VALUE;
-		assertEquals(Long.MAX_VALUE, clampedMultiply(a, b));
+    @Test
+    void clampedMultiplicationWorks() {
+        long a = 100L;
+        long b = Long.MAX_VALUE;
+        assertEquals(Long.MAX_VALUE, clampedMultiply(a, b));
 
-		b = 100L;
-		assertEquals(10000L, clampedMultiply(a, b));
+        b = 100L;
+        assertEquals(10000L, clampedMultiply(a, b));
 
-		a = -100L;
-		b = Long.MAX_VALUE;
-		assertEquals(Long.MIN_VALUE, clampedMultiply(a, b));
-	}
+        a = -100L;
+        b = Long.MAX_VALUE;
+        assertEquals(Long.MIN_VALUE, clampedMultiply(a, b));
+    }
 }
