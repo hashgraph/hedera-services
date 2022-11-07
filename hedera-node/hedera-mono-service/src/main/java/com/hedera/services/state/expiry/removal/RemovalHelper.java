@@ -58,9 +58,7 @@ public class RemovalHelper implements RemovalWork {
 
     @Override
     public SystemTaskResult tryToMarkDetached(final EntityNum num, final boolean isContract) {
-        if (isContract && !properties.shouldAutoRenewContracts()) {
-            return NOTHING_TO_DO;
-        } else if (!properties.shouldAutoRenewAccounts()) {
+        if (nothingToDoForDetached(isContract)) {
             return NOTHING_TO_DO;
         }
         if (!expiryThrottle.allowOne(ACCOUNTS_GET_FOR_MODIFY)) {
@@ -103,5 +101,10 @@ public class RemovalHelper implements RemovalWork {
         } else {
             return NO_CAPACITY_LEFT;
         }
+    }
+
+    private boolean nothingToDoForDetached(final boolean isContract) {
+        return (isContract && !properties.shouldAutoRenewContracts())
+                || !properties.shouldAutoRenewAccounts();
     }
 }
