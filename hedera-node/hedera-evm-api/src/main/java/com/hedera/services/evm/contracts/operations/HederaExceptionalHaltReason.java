@@ -49,15 +49,14 @@ public class HederaExceptionalHaltReason {
     public static final ExceptionalHaltReason INVALID_SOLIDITY_ADDRESS =
             HederaExceptionalHalt.INVALID_SOLIDITY_ADDRESS;
     /**
-     * Used when {hedera-mono-service.HederaSelfDestructOperation} is used and the beneficiary is
-     * specified to be the same as the destructed account
+     * Used when HederaSelfDestructOperation is used and the beneficiary is specified to be the same
+     * as the destructed account
      */
     public static final ExceptionalHaltReason SELF_DESTRUCT_TO_SELF =
             HederaExceptionalHalt.SELF_DESTRUCT_TO_SELF;
     /**
-     * Used when there is no active signature for a given {
-     * com.hedera.services.state.merkle.MerkleAccount} that has {
-     * MerkleAccount#isReceiverSigRequired()} enabled and the account receives HBars
+     * Used when there is no active signature for a given MerkleAccount that has receiverSigRequired
+     * enabled and the account receives HBars
      */
     public static final ExceptionalHaltReason INVALID_SIGNATURE =
             HederaExceptionalHalt.INVALID_SIGNATURE;

@@ -38,7 +38,6 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.evm.contracts.operations.HederaEvmStaticCallOperation;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -56,8 +55,9 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
  * not exist or it is deleted.
  */
-public class HederaStaticCallOperation extends HederaEvmStaticCallOperation {
+public class HederaStaticCallOperation extends StaticCallOperation {
     private final EvmSigsVerifier sigsVerifier;
+    private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Map<String, PrecompiledContract> precompiledContractMap;
 
     public HederaStaticCallOperation(
@@ -65,8 +65,9 @@ public class HederaStaticCallOperation extends HederaEvmStaticCallOperation {
             final EvmSigsVerifier sigsVerifier,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        super(gasCalculator, addressValidator);
+        super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
+        this.addressValidator = addressValidator;
         this.precompiledContractMap = precompiledContractMap;
     }
 
