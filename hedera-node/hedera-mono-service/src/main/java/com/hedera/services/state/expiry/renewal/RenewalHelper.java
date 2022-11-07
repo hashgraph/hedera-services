@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.state.tasks.SystemTaskResult.*;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
@@ -137,6 +138,7 @@ public class RenewalHelper implements RenewalWork {
 
         accountsLedger.begin();
         accountsLedger.set(lastClassifiedAccount, EXPIRY, newExpiry);
+        accountsLedger.set(lastClassifiedAccount, EXPIRED_AND_PENDING_REMOVAL, false);
 
         nonHapiFeeCharging.chargeNonHapiFee(
                 EntityId.fromGrpcAccountId(payerForLastClassified),

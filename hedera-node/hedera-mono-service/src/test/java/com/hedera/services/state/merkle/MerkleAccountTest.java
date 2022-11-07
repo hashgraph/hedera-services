@@ -89,6 +89,7 @@ class MerkleAccountTest {
     private static final long stakedNum = 1111L;
     private static final boolean declinedReward = false;
     private static final long balanceAtStartOfLastRewardedPeriod = 347_576_123L;
+    private static final boolean expiredAndPendingRemoval = true;
 
     private MerkleAccountState state;
     private FCQueue<ExpirableTxnRecord> payerRecords;
@@ -147,7 +148,8 @@ class MerkleAccountTest {
                         stakePeriodStart,
                         stakedNum,
                         declinedReward,
-                        balanceAtStartOfLastRewardedPeriod);
+                        balanceAtStartOfLastRewardedPeriod,
+                        expiredAndPendingRemoval);
 
         subject = new MerkleAccount(List.of(state, payerRecords));
     }
@@ -167,7 +169,7 @@ class MerkleAccountTest {
     }
 
     @Test
-    void namecanGetHeadNftKey() {
+    void canGetHeadNftKey() {
         final var expected = EntityNumPair.fromLongs(lastAssociatedNftNum, lastAssociatedNftSerial);
         assertEquals(expected, subject.getHeadNftKey());
     }
@@ -228,6 +230,7 @@ class MerkleAccountTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void gettersDelegate() {
         // expect:
         assertEquals(new EntityNum(number), subject.getKey());
@@ -266,6 +269,7 @@ class MerkleAccountTest {
         assertEquals(
                 state.getStakeAtStartOfLastRewardedPeriod(),
                 subject.totalStakeAtStartOfLastRewardedPeriod());
+        assertEquals(state.isExpiredAndPendingRemoval(), subject.isExpiredAndPendingRemoval());
     }
 
     @Test
@@ -279,6 +283,7 @@ class MerkleAccountTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void settersDelegate() throws NegativeAccountBalanceException {
         subject = new MerkleAccount(List.of(delegate, new FCQueue<>()));
         given(delegate.getMaxAutomaticAssociations()).willReturn(maxAutoAssociations);
@@ -310,6 +315,7 @@ class MerkleAccountTest {
         subject.setDeclineReward(declinedReward);
         subject.setStakedId(-stakedNum);
         subject.setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+        subject.setExpiredAndPendingRemoval(!expiredAndPendingRemoval);
 
         verify(delegate).setExpiry(otherExpiry);
         verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -338,6 +344,7 @@ class MerkleAccountTest {
         verify(delegate).setStakePeriodStart(stakePeriodStart);
         verify(delegate).setDeclineReward(declinedReward);
         verify(delegate).setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+        verify(delegate).setExpiredAndPendingRemoval(!expiredAndPendingRemoval);
 
         subject.setStakedId(stakedNum);
         verify(delegate).setStakedNum(stakedNum);
