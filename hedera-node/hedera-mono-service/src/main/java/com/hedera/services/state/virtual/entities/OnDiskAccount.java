@@ -115,6 +115,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         onDiskAccount.setIsContract(inMemoryAccount.isSmartContract());
         onDiskAccount.setIsDeclineReward(inMemoryAccount.isDeclineReward());
         onDiskAccount.setIsReceiverSigRequired(inMemoryAccount.isReceiverSigRequired());
+        onDiskAccount.setExpiredAndPendingRemoval(inMemoryAccount.isExpiredAndPendingRemoval());
         // Ints
         onDiskAccount.setNumContractKvPairs(inMemoryAccount.getNumContractKvPairs());
         onDiskAccount.setMaxAutoAssociations(inMemoryAccount.getMaxAutomaticAssociations());
@@ -411,6 +412,22 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
             flags |= Masks.IS_DECLINE_REWARD;
         } else {
             flags &= ~Masks.IS_DECLINE_REWARD;
+        }
+    }
+
+    @Override
+    public boolean isExpiredAndPendingRemoval() {
+        return (flags & Masks.IS_EXPIRED_AND_PENDING_REMOVAL) != 0;
+    }
+
+    @Override
+    @StateSetter
+    public void setExpiredAndPendingRemoval(final boolean flag) {
+        throwIfImmutable("Tried to set IS_EXPIRED_AND_PENDING_REMOVAL on an immutable OnDiskAccount");
+        if (flag) {
+            flags |= Masks.IS_EXPIRED_AND_PENDING_REMOVAL;
+        } else {
+            flags &= ~Masks.IS_EXPIRED_AND_PENDING_REMOVAL;
         }
     }
 
@@ -915,6 +932,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         private static final byte IS_CONTRACT = 1 << 1;
         private static final byte IS_RECEIVER_SIG_REQUIRED = 1 << 2;
         private static final byte IS_DECLINE_REWARD = 1 << 3;
+        private static final byte IS_EXPIRED_AND_PENDING_REMOVAL = 1 << 4;
     }
 
     private static final class IntValues {

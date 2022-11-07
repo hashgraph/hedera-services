@@ -103,6 +103,7 @@ class MerkleAccountStateTest {
     private static final long otherBalanceAtStartOfLastRewardedPeriod = 678_324_546L;
     private static final boolean declineReward = false;
     private static final boolean otherDeclinedReward = true;
+    private static final boolean expiredAndPendingRemoval = true;
 
     private static final EntityNum spenderNum1 = EntityNum.fromLong(1000L);
     private static final EntityNum spenderNum2 = EntityNum.fromLong(3000L);
@@ -168,7 +169,8 @@ class MerkleAccountStateTest {
                         stakePeriodStart,
                         stakedNum,
                         declineReward,
-                        balanceAtStartOfLastRewardedPeriod);
+                        balanceAtStartOfLastRewardedPeriod,
+                        expiredAndPendingRemoval);
     }
 
     @Test

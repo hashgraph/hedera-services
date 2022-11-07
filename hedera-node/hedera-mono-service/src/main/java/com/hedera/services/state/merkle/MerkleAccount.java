@@ -154,6 +154,18 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     }
 
     // ----  Bean  ----
+
+    @Override
+    public boolean isExpiredAndPendingRemoval() {
+        return state().isExpiredAndPendingRemoval();
+    }
+
+    @Override
+    public void setExpiredAndPendingRemoval(final boolean flag) {
+        // The state child enforces immutability
+        state().setExpiredAndPendingRemoval(flag);
+    }
+
     @Override
     public long getNftsOwned() {
         return state().nftsOwned();
