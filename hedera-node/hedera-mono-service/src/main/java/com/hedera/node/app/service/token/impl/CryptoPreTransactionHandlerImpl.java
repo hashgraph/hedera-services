@@ -52,6 +52,22 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
+    public TransactionMetadata preHandleCryptoDelete(TransactionBody txn) {
+        final var op = txn.getCryptoDelete();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var deleteAccountId = op.getDeleteAccountID();
+        final var transferAccountId = op.getTransferAccountID();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        addIfNotPayer(deleteAccountId, payer, meta);
+        if(meta.failed()){
+            return meta;
+        }
+        addIfNotPayerAndReceiverSigRequired(transferAccountId, payer, meta);
+        return meta;
+    }
+
+    @Override
+    /** {@inheritDoc} */
     public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
         throw new NotImplementedException();
     }
@@ -62,11 +78,6 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         throw new NotImplementedException();
     }
 
-    @Override
-    /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoDelete(TransactionBody txn) {
-        throw new NotImplementedException();
-    }
 
     @Override
     /** {@inheritDoc} */
@@ -101,5 +112,35 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             return new SigTransactionMetadata(accountStore, tx, payer, List.of(key.get()));
         }
         return new SigTransactionMetadata(accountStore, tx, payer);
+    }
+
+    private void addIfNotPayer(
+            final AccountID accountId,
+            final AccountID payer,
+            final SigTransactionMetadata meta) {
+        if (payer.equals(accountId)) {
+            return;
+        }
+        var result = accountStore.getKey(accountId);
+        if (result.failed()) {
+            meta.setStatus(result.failureReason());
+        } else {
+            meta.addToReqKeys(result.key());
+        }
+    }
+
+    private void addIfNotPayerAndReceiverSigRequired(
+            final AccountID accountId,
+            final AccountID payer,
+            final SigTransactionMetadata meta) {
+        if (payer.equals(accountId)) {
+            return;
+        }
+        var result = accountStore.getKeyIfReceiverSigRequired(accountId);
+        if (result.failed()) {
+            meta.setStatus(result.failureReason());
+        } else{
+            meta.addToReqKeys(result.key());
+        }
     }
 }

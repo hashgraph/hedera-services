@@ -59,4 +59,10 @@ public interface TransactionMetadata {
      * @return keys needed for validating signing requirements
      */
     List<HederaKey> getReqKeys();
+
+    void setStatus(final ResponseCodeEnum status);
+
+    default void addToReqKeys(final HederaKey key){
+        getReqKeys().add(key);
+    };
 }

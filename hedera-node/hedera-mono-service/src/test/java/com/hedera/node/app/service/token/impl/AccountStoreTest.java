@@ -134,7 +134,7 @@ class AccountStoreTest {
     }
 
     @Test
-    void failsIfMirrorAddressDesntExist() {
+    void failsIfMirrorAddressDoesntExist() {
         final var num = EntityNum.fromLong(payerNum);
         final Address mirrorAddress = num.toEvmAddress();
         final var mirrorAccount =
@@ -147,5 +147,90 @@ class AccountStoreTest {
         assertTrue(result.failed());
         assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
         assertEquals(null, result.key());
+    }
+
+    @Test
+    void getsKeyIfAliasAndReceiverSigRequired() {
+        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+        given(account.isReceiverSigRequired()).willReturn(true);
+
+        final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
+
+        assertFalse(result.failed());
+        assertNull(result.failureReason());
+        assertEquals(payerHederaKey.get(), result.key());
+    }
+
+    @Test
+    void getsKeyIfAccountAndReceiverSigRequired() {
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+        given(account.isReceiverSigRequired()).willReturn(true);
+
+        final var result = subject.getKeyIfReceiverSigRequired(payer);
+
+        assertFalse(result.failed());
+        assertNull(result.failureReason());
+        assertEquals(payerHederaKey.get(), result.key());
+    }
+
+    @Test
+    void getsNullKeyIfAndReceiverSigRequiredIfMissingAlias() {
+        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
+
+        final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
+
+        assertTrue(result.failed());
+        assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
+        assertEquals(null, result.key());
+    }
+
+    @Test
+    void getsNullKeyFromReceiverSigRequiredIfMissingAccount() {
+        given(accounts.get(payerNum)).willReturn(Optional.empty());
+
+        final var result = subject.getKeyIfReceiverSigRequired(payer);
+
+        assertTrue(result.failed());
+        assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
+        assertEquals(null, result.key());
+    }
+
+    @Test
+    void getsNullKeyIfAndReceiverSigNotRequired() {
+        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.isReceiverSigRequired()).willReturn(false);
+
+        final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
+
+        assertFalse(result.failed());
+        assertNull(result.failureReason());
+        assertNull(result.key());
+    }
+
+    @Test
+    void getsNullKeyFromAccountIfReceiverKeyNotRequired() {
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.isReceiverSigRequired()).willReturn(false);
+
+        final var result = subject.getKeyIfReceiverSigRequired(payer);
+
+        assertFalse(result.failed());
+        assertNull(result.failureReason());
+        assertNull(result.key());
+    }
+    @Test
+    void validatesKeyLookedUp(){
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+
+        final var result = subject.getKey(payer);
+
+        assertFalse(result.failed());
+        assertNull(result.failureReason());
+        assertEquals(payerHederaKey.get(), result.key());
     }
 }

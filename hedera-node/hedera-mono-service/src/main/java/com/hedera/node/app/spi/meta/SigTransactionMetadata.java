@@ -77,4 +77,9 @@ public class SigTransactionMetadata implements TransactionMetadata {
     public ResponseCodeEnum status() {
         return status;
     }
+
+    @Override
+    public void setStatus(final ResponseCodeEnum status){
+        this.status = status;
+    }
 }

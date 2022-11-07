@@ -20,12 +20,14 @@ import static com.hedera.node.app.service.token.util.AliasUtils.fromMirror;
 import static com.hedera.services.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -68,7 +70,7 @@ public final class AccountStore {
     /**
      * Fetches the account's key from given {@link MerkleAccount}. If the key could not be fetched
      * as the given accountId is invalid or doesn't exist provides information about the failure
-     * failureReason. If there is no failure failureReason will be {@code ResponseCodeEnum.OK}
+     * failureReason. If there is no failure failureReason will be null.
      *
      * @param idOrAlias account id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
@@ -78,7 +80,28 @@ public final class AccountStore {
         if (account.isEmpty()) {
             return new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID);
         }
-        return new KeyOrLookupFailureReason(account.get().getAccountKey(), null);
+        return validateKey(account.get().getAccountKey());
+    }
+
+    /**
+     * Fetches the account's key from given {@link MerkleAccount} if the
+     * {@code receiverSigRequired} is true. If the key could not be fetched
+     * as the given accountId is invalid or doesn't exist provides information about the failure
+     * failureReason. If there is no failure failureReason will be null.
+     *
+     * @param idOrAlias account id whose key should be fetched
+     * @return key if successfully fetched or failureReason for failure
+     */
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final AccountID idOrAlias) {
+        final var account = getAccountLeaf(idOrAlias);
+        if(account.isEmpty()){
+            return new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID);
+        }
+
+        if(!account.get().isReceiverSigRequired()){
+            return new KeyOrLookupFailureReason(null, null);
+        }
+        return validateKey(account.get().getAccountKey());
     }
 
     /**
@@ -115,5 +138,13 @@ public final class AccountStore {
             return aliases.get(alias).orElse(MISSING_NUM);
         }
         return id.getAccountNum();
+    }
+
+    private KeyOrLookupFailureReason validateKey(final JKey key){
+        if(key == null || key.isEmpty()){
+            // need new response code ACCOUNT_IS_IMMUTABLE?
+            return new KeyOrLookupFailureReason(null, ALIAS_IS_IMMUTABLE);
+        }
+        return new KeyOrLookupFailureReason(key, null);
     }
 }
