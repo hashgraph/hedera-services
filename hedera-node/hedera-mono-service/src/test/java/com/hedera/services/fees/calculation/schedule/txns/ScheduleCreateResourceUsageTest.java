@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -131,11 +130,10 @@ class ScheduleCreateResourceUsageTest {
     }
 
     @Test
-    void calculatesSecondaryFeesForLongExpiryTxns() throws InvalidTxBodyException {
+    void calculatesSecondaryFeesForLongExpiryTxns() {
         props.enableSchedulingLongTerm();
         final var txn = givenScheduleCreate(ONE_MONTH_IN_SECS, 5L);
 
-        subject.usageGiven(txn, obj, view);
         final var feeObject = subject.secondaryFeesFor(txn);
 
         assertEquals(0L, feeObject.getNetworkFee());
@@ -144,11 +142,10 @@ class ScheduleCreateResourceUsageTest {
     }
 
     @Test
-    void calculatesSecondaryFeesForDefaultExpiryTxns() throws InvalidTxBodyException {
+    void calculatesSecondaryFeesForDefaultExpiryTxns() {
         props.enableSchedulingLongTerm();
         final var txn = givenScheduleCreate(1800L, 5L);
 
-        subject.usageGiven(txn, obj, view);
         final var feeObject = subject.secondaryFeesFor(txn);
 
         assertEquals(0L, feeObject.getNetworkFee());
@@ -157,11 +154,10 @@ class ScheduleCreateResourceUsageTest {
     }
 
     @Test
-    void calculatesSecondaryFeesForLessThanDefaultExpiryTxns() throws InvalidTxBodyException {
+    void calculatesSecondaryFeesForLessThanDefaultExpiryTxns() {
         props.enableSchedulingLongTerm();
         final var txn = givenScheduleCreate(60L, 5L);
 
-        subject.usageGiven(txn, obj, view);
         final var feeObject = subject.secondaryFeesFor(txn);
 
         assertEquals(0L, feeObject.getNetworkFee());

@@ -36,7 +36,6 @@ import javax.inject.Singleton;
 public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
     private final ScheduleOpsUsage scheduleOpsUsage;
     private final GlobalDynamicProperties dynamicProperties;
-    private long lifetimeSecs;
 
     @Inject
     public ScheduleCreateResourceUsage(
@@ -57,7 +56,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
                 new SigUsage(
                         svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
-        lifetimeSecs = calculateLifeTimeSecs(txn);
+        final long lifetimeSecs = calculateLifeTimeSecs(txn);
         final long defaultLifeTimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
         return scheduleOpsUsage.scheduleCreateUsage(
                 txn, sigUsage, lifetimeSecs, defaultLifeTimeSecs);
@@ -90,6 +89,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
         final long secondaryFeeTinyCents = dynamicProperties.scheduleTxSecondaryFee();
         final int secondaryFeeBPM = dynamicProperties.scheduleTxSecondaryFeeBytesPerMonth();
         final long defaultLifeTimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
+        final long lifetimeSecs = calculateLifeTimeSecs(txn);
 
         if (lifetimeSecs > defaultLifeTimeSecs) {
             final var serializedSize =
