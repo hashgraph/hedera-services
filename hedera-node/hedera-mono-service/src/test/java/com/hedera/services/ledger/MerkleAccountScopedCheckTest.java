@@ -16,6 +16,7 @@
 package com.hedera.services.ledger;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -25,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +42,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -233,6 +236,30 @@ class MerkleAccountScopedCheckTest {
         assertEquals(
                 "Invalid Property " + AUTO_RENEW_PERIOD + " cannot be validated in scoped check",
                 iae.getMessage());
+    }
+
+    @Test
+    void canGetDetachedFromAccount() {
+        given(account.isExpiredAndPendingRemoval()).willReturn(true);
+        assertTrue(
+                (boolean)
+                        subject.getEffective(
+                                EXPIRED_AND_PENDING_REMOVAL,
+                                account,
+                                null,
+                                Collections.emptyMap()));
+    }
+
+    @Test
+    void canGetDetachedFromExtantProps() {
+        given(extantProps.apply(EXPIRED_AND_PENDING_REMOVAL)).willReturn(true);
+        assertTrue(
+                (boolean)
+                        subject.getEffective(
+                                EXPIRED_AND_PENDING_REMOVAL,
+                                null,
+                                extantProps,
+                                Collections.emptyMap()));
     }
 
     private static final AccountID revokedSpender =

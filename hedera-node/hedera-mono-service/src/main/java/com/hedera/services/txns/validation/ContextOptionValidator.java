@@ -106,6 +106,8 @@ public class ContextOptionValidator implements OptionValidator {
     @Override
     public ResponseCodeEnum expiryStatusGiven(
             final long balance, final boolean isDetached, final boolean isContract) {
+        System.out.println(balance);
+        System.out.println(isDetached);
         if (balance > 0 || !isDetached) {
             return OK;
         }

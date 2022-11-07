@@ -250,6 +250,12 @@ class ContextOptionValidatorTest {
     }
 
     @Test
+    void alwaysOkIfNotDetached() {
+        final var status = subject.expiryStatusGiven(0L, false, true);
+        assertEquals(OK, status);
+    }
+
+    @Test
     void contractIsExpiredIfZeroBalanceAndPastExpiry() {
         given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
         final var status = subject.expiryStatusGiven(0, true, true);
