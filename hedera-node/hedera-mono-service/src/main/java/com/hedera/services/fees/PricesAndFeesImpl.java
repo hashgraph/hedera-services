@@ -15,12 +15,12 @@
  */
 package com.hedera.services.fees;
 
-import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.evm.contracts.execution.PricesAndFeesUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -29,33 +29,23 @@ import javax.inject.Singleton;
 @Singleton
 public class PricesAndFeesImpl implements PricesAndFeesProvider {
 
-    private final LivePricesSource livePricesSource = null;
-    private final HbarCentExchange exchange = null;
-    private final UsagePricesProvider usagePrices = null;
+    private final PricesAndFeesUtils utils = new PricesAndFeesUtils();
 
     @Inject
-    public PricesAndFeesImpl(
-//            LivePricesSource livePricesSource,
-//            HbarCentExchange exchange,
-//            UsagePricesProvider usagePrices
-                ) {
-//        this.livePricesSource = livePricesSource;
-//        this.exchange = exchange;
-//        this.usagePrices = usagePrices;
-    }
+    public PricesAndFeesImpl() {}
 
     @Override
     public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
-        return usagePrices.defaultPricesGiven(function, at);
+        return utils.pricesGiven(function, at).get(SubType.DEFAULT);
     }
 
     @Override
     public ExchangeRate rate(Timestamp now) {
-        return exchange.rate(now);
+        return utils.rateAt(now.getSeconds());
     }
 
     @Override
     public long currentGasPrice(Instant now, HederaFunctionality function) {
-        return livePricesSource.currentGasPrice(now, function);
+        return 0;
     }
 }

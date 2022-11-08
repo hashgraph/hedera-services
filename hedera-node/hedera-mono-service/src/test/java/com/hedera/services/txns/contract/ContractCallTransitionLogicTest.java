@@ -95,7 +95,6 @@ class ContractCallTransitionLogicTest {
         subject =
                 new ContractCallTransitionLogic(
                         txnCtx,
-                        pricesAndFeesLoader,
                         accountStore,
                         worldState,
                         recordService,
