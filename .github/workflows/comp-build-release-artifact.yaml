@@ -278,6 +278,7 @@ jobs:
           parent: false
 
       - name: Notify Jenkins of Release (Integration)
+        id: jenkins-integration
         uses: fjogeleit/http-request-action@v1.10.0
         if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy == 'integration' && !cancelled() && !failure() }}
         with:
@@ -285,8 +286,18 @@ jobs:
           data: ${{ toJSON(github.event) }}
 
       - name: Notify Jenkins of Release (Preview)
+        id: jenkins-preview
         uses: fjogeleit/http-request-action@v1.10.0
         if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy == 'preview' && !cancelled() && !failure() }}
         with:
           url: ${{ secrets.jenkins-preview-url }}
           data: ${{ toJSON(github.event) }}
+
+      - name: Display Jenkins Payload
+        env:
+          JSON_RESPONSE: ${{ steps.jenkins-integration.outputs.response }}
+        if: ${{ inputs.trigger-env-deploy == 'integration' || inputs.trigger-env-deploy == 'preview' }}
+        run: jq '.' <<<"${JSON_RESPONSE}"
+
+#      - name: Check for Jenkins Failures
+#        run: |
