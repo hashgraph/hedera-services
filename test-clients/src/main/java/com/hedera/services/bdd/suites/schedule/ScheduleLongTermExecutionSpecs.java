@@ -169,7 +169,58 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                 expiryIgnoredWhenLongTermDisabledThenEnabled(),
                 feesChargedForLongTermTransactionsAsExpected(),
                 feesChargedForLongTermTransactionsWithContractCallAsExpected(),
+                schedulesWithDecreasingExpiryWorks(),
                 setLongTermScheduledTransactionsToDefault());
+    }
+
+    private HapiApiSpec schedulesWithDecreasingExpiryWorks() {
+        final var validBytes = new byte[100];
+        Arrays.fill(validBytes, (byte) 'ф');
+        final var longMemo = new String(validBytes, StandardCharsets.UTF_8);
+        var contract = "Multipurpose";
+        final var largeFee = ONE_HUNDRED_HBARS;
+
+        final var defaultPeriodCallTx = "defaultPeriodCallTx";
+        final var oneMonthCallTx = "oneMonthCallTx";
+
+        return defaultHapiSpec("schedulesWithDecreasingExpiryWorks")
+                .given(
+                        overriding(SCHEDULING_WHITELIST, "ContractCall"),
+                        overriding("scheduling.maxExpirationFutureSeconds", "25920000"),
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(PAYING_ACCOUNT)
+                                .balance(1000000000000L)
+                                .via(PAYING_ACCOUNT_TXN),
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, ONE_MONTH_IN_SECS)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .fee(10 * ONE_HBAR)
+                                .via(oneMonthCallTx),
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, 1800)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .fee(ONE_HBAR)
+                                .recordingScheduledTxn()
+                                .via(defaultPeriodCallTx))
+                .when()
+                .then();
     }
 
     private HapiApiSpec feesChargedForLongTermTransactionsWithContractCallAsExpected() {
