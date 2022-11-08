@@ -110,22 +110,30 @@ public class ContractCustomizer {
         if (key instanceof JContractIDKey) {
             key = null;
         }
-        final var customizer =
-                new HederaAccountCustomizer()
-                        .memo((String) ledger.get(sponsor, MEMO))
-                        .expiry((long) ledger.get(sponsor, EXPIRY))
-                        .autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
-                        .autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
-                        .maxAutomaticAssociations(
-                                (int)
-                                        ledger.get(
-                                                sponsor,
-                                                AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
-                        .stakedId((long) ledger.get(sponsor, AccountProperty.STAKED_ID))
-                        .isDeclinedReward(
-                                (boolean) ledger.get(sponsor, AccountProperty.DECLINE_REWARD))
-                        .isSmartContract(true);
+        final var customizer = getAccountCustomizer(sponsor, ledger);
         return new ContractCustomizer(key, customizer);
+    }
+
+    public static ContractCustomizer fromSponsorContractWithoutKey(
+            final AccountID sponsor,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
+        final var customizer = getAccountCustomizer(sponsor, ledger);
+        return new ContractCustomizer(customizer);
+    }
+
+    private static HederaAccountCustomizer getAccountCustomizer(
+            final AccountID sponsor,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
+        return new HederaAccountCustomizer()
+                .memo((String) ledger.get(sponsor, MEMO))
+                .expiry((long) ledger.get(sponsor, EXPIRY))
+                .autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
+                .autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
+                .maxAutomaticAssociations(
+                        (int) ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
+                .stakedId((long) ledger.get(sponsor, AccountProperty.STAKED_ID))
+                .isDeclinedReward((boolean) ledger.get(sponsor, AccountProperty.DECLINE_REWARD))
+                .isSmartContract(true);
     }
 
     /**

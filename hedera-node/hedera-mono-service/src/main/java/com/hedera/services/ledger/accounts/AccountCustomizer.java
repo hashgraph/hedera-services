@@ -19,6 +19,7 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALIAS
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
@@ -65,7 +66,8 @@ public abstract class AccountCustomizer<
         ALIAS,
         AUTO_RENEW_ACCOUNT_ID,
         DECLINE_REWARD,
-        STAKED_ID
+        STAKED_ID,
+        EXPIRED_AND_PENDING_REMOVAL
     }
 
     private final Map<Option, P> optionProperties;
@@ -129,6 +131,11 @@ public abstract class AccountCustomizer<
 
     public T isDeleted(final boolean option) {
         changeManager.update(changes, optionProperties.get(IS_DELETED), option);
+        return self();
+    }
+
+    public T isExpiredAndPendingRemoval(final boolean option) {
+        changeManager.update(changes, optionProperties.get(EXPIRED_AND_PENDING_REMOVAL), option);
         return self();
     }
 

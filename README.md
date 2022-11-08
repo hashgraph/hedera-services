@@ -17,7 +17,7 @@ nodes in the Hedera public network, which is built on the Platform.
 * _hapi-utils/_ - deprecated libraries primarily involved in fee calculation.
 
 ## JVM
-OpenJDK 17 is strongly recommended.
+JDK 17 is required. Adoptium builds of OpenJDK 17 are strongly recommended.
 
 ## Solidity
 Hedera Contracts support `pragma solidity <=0.8.9`.
