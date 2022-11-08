@@ -138,7 +138,7 @@ class ScheduleCreateResourceUsageTest {
 
         assertEquals(0L, feeObject.getNetworkFee());
         assertEquals(0L, feeObject.getNodeFee());
-        assertEquals(5156240L, feeObject.getServiceFee());
+        assertEquals(20000000L, feeObject.getServiceFee());
     }
 
     @Test
