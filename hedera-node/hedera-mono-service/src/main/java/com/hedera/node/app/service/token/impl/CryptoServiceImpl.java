@@ -26,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
 public final class CryptoServiceImpl implements CryptoService {
     @NotNull
     @Override
-    public CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull final States states) {
+    public CryptoPreTransactionHandler createPreTransactionHandler(@NotNull final States states) {
         Objects.requireNonNull(states);
         final var store = new AccountStore(states);
         return new CryptoPreTransactionHandlerImpl(store);

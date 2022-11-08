@@ -16,6 +16,8 @@
 package com.hedera.node.app.spi;
 
 import com.hedera.node.app.spi.state.States;
+import org.jetbrains.annotations.NotNull;
+
 import javax.annotation.Nonnull;
 
 /**
@@ -28,6 +30,7 @@ public interface Service {
      *
      * @return A new {@link PreTransactionHandler}
      */
-    @Nonnull    PreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    @NotNull
+    PreTransactionHandler createPreTransactionHandler(@NotNull States states);
 
 }

@@ -51,6 +51,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class TransitionRunner {
@@ -104,7 +105,7 @@ public class TransitionRunner {
      * @param accessor the transaction accessor
      * @return true if the logic was run to completion
      */
-    public boolean tryTransition(@Nonnull TxnAccessor accessor) {
+    public boolean tryTransition(@NotNull TxnAccessor accessor) {
         final var txn = accessor.getTxn();
         final var function = accessor.getFunction();
         final var logic = lookup.lookupFor(function, txn);

@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -36,7 +37,7 @@ import org.apache.commons.lang3.NotImplementedException;
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
 
-    public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
+    public CryptoPreTransactionHandlerImpl(@NotNull final AccountStore accountStore) {
         this.accountStore = Objects.requireNonNull(accountStore);
     }
 

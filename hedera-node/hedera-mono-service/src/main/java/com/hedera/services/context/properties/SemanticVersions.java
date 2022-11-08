@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 public enum SemanticVersions {
     SEMANTIC_VERSIONS;
@@ -42,13 +43,13 @@ public enum SemanticVersions {
     private final AtomicReference<SerializableSemVers> knownSerializable =
             new AtomicReference<>(null);
 
-    @Nonnull
+    @NotNull
     public ActiveVersions getDeployed() {
         ensureLoaded();
         return knownActive.get();
     }
 
-    @Nonnull
+    @NotNull
     public SerializableSemVers deployedSoftwareVersion() {
         ensureLoaded();
         return knownSerializable.get();
@@ -64,7 +65,7 @@ public enum SemanticVersions {
         }
     }
 
-    @Nonnull
+    @NotNull
     static ActiveVersions fromResource(
             final String propertiesFile, final String protoKey, final String servicesKey) {
         try (final var in =

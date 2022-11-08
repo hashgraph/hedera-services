@@ -47,6 +47,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
+
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class StakedAnswerFlow implements AnswerFlow {
@@ -138,7 +140,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
         return service.responseGiven(query, view, OK, fee, queryCtx);
     }
 
-    private ResponseCodeEnum tryToPay(@Nonnull final SignedTxnAccessor payment, final long fee) {
+    private ResponseCodeEnum tryToPay(@NotNull final SignedTxnAccessor payment, final long fee) {
         if (accountNums.isSuperuser(payment.getPayer().getAccountNum())) {
             return OK;
         }

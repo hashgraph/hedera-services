@@ -18,6 +18,8 @@ package com.hedera.node.app.state.impl;
 import com.hedera.node.app.spi.state.State;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fchashmap.FCHashMap;
+import org.jetbrains.annotations.NotNull;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
@@ -35,15 +37,15 @@ public final class RebuiltStateImpl<K, V> extends StateBase<K, V> {
     private final Instant lastModifiedTime;
 
     public RebuiltStateImpl(
-            @Nonnull final String stateKey,
-            @Nonnull Map<K, V> aliases,
-            @Nonnull final Instant lastModifiedTime) {
+            @NotNull final String stateKey,
+            @NotNull Map<K, V> aliases,
+            @NotNull final Instant lastModifiedTime) {
         super(stateKey);
         this.aliases = Objects.requireNonNull(aliases);
         this.lastModifiedTime = lastModifiedTime;
     }
 
-    RebuiltStateImpl(@Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
+    RebuiltStateImpl(@NotNull final String stateKey, @NotNull final Instant lastModifiedTime) {
         this(stateKey, new FCHashMap<>(), lastModifiedTime);
     }
 

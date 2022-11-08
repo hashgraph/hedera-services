@@ -30,6 +30,7 @@ import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 
 /** Class used to generate the TriggeredTxnAccessor for a scheduled transaction. */
 @Singleton
@@ -46,9 +47,9 @@ public final class ScheduleExecutor {
      * transaction.
      */
     ResponseCodeEnum processImmediateExecution(
-            @Nonnull ScheduleID id,
-            @Nonnull ScheduleStore store,
-            @Nonnull TransactionContext txnCtx)
+            @NotNull ScheduleID id,
+            @NotNull ScheduleStore store,
+            @NotNull TransactionContext txnCtx)
             throws InvalidProtocolBufferException {
         Objects.requireNonNull(txnCtx, "The active transaction context cannot be null");
 
@@ -65,8 +66,8 @@ public final class ScheduleExecutor {
      * Signatures must be checked before using it.
      */
     Pair<ResponseCodeEnum, TxnAccessor> getTriggeredTxnAccessor(
-            @Nonnull final ScheduleID id,
-            @Nonnull final ScheduleStore store,
+            @NotNull final ScheduleID id,
+            @NotNull final ScheduleStore store,
             final boolean isImmediate)
             throws InvalidProtocolBufferException {
 
@@ -84,7 +85,7 @@ public final class ScheduleExecutor {
 
     TxnAccessor getTxnAccessor(
             final ScheduleID id,
-            @Nonnull final ScheduleVirtualValue schedule,
+            @NotNull final ScheduleVirtualValue schedule,
             final boolean throttleAndCongestionExempt)
             throws InvalidProtocolBufferException {
 

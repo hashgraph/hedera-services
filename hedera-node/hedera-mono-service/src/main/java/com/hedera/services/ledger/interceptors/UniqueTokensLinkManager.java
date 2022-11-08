@@ -35,6 +35,8 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
+
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -81,7 +83,7 @@ public class UniqueTokensLinkManager {
     public UniqueTokenAdapter updateLinks(
             @Nullable final EntityNum from,
             @Nullable final EntityNum to,
-            @Nonnull final NftId nftId) {
+            @NotNull final NftId nftId) {
         final var curAccounts = accounts.get();
         final var curTokens = tokens.get();
         final var curUniqueTokens = uniqueTokens.get();

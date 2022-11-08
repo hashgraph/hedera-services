@@ -51,6 +51,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class NetworkCtxManager {
@@ -188,7 +189,7 @@ public class NetworkCtxManager {
      *
      * @param op the type of transaction just handled
      */
-    public void finishIncorporating(@Nonnull HederaFunctionality op) {
+    public void finishIncorporating(@NotNull HederaFunctionality op) {
         opCounters.countHandled(op);
         if (consensusSecondJustChanged) {
             runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);

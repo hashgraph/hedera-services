@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 import javax.annotation.Nonnull;
+
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,7 +52,7 @@ public final class AccountStore {
      *
      * @param states The state to use.
      */
-    public AccountStore(@Nonnull States states) {
+    public AccountStore(@NotNull States states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }

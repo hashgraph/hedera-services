@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.spi.state;
 
+import org.jetbrains.annotations.NotNull;
+
 import javax.annotation.Nonnull;
 
 /**
@@ -34,6 +36,6 @@ public interface States {
      * @throws NullPointerException if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
-    @Nonnull
-    <K, V> State<K, V> get(@Nonnull String stateKey);
+    @NotNull
+    <K, V> State<K, V> get(@NotNull String stateKey);
 }
