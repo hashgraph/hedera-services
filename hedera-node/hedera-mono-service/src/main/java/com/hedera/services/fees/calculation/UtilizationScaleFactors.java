@@ -16,7 +16,7 @@
 package com.hedera.services.fees.calculation;
 
 import com.hedera.services.fees.calculation.utils.TriggeredValuesParser;
-import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
+import com.hedera.services.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import java.util.Arrays;
 
 public record UtilizationScaleFactors(int[] usagePercentTriggers, ScaleFactor[] scaleFactors) {

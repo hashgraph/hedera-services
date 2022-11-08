@@ -15,7 +15,7 @@
  */
 package com.hedera.services.legacy.core.jproto;
 
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;

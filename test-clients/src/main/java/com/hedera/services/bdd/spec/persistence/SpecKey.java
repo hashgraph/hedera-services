@@ -23,7 +23,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0039;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
-import com.hedera.services.keys.Ed25519Utils;
+import com.hedera.services.hapi.utils.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;

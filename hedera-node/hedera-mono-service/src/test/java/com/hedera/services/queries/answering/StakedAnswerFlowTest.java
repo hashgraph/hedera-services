@@ -57,7 +57,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.services.hapi.utils.fee.FeeObject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;

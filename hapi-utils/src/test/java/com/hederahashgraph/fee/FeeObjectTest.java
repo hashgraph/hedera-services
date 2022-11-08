@@ -15,6 +15,7 @@
  */
 package com.hederahashgraph.fee;
 
+import com.hedera.services.hapi.utils.fee.FeeObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

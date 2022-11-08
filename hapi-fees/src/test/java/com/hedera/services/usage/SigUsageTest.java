@@ -18,6 +18,7 @@ package com.hedera.services.usage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import com.hedera.services.hapi.fees.usage.SigUsage;
 import org.junit.jupiter.api.Test;
 
 class SigUsageTest {

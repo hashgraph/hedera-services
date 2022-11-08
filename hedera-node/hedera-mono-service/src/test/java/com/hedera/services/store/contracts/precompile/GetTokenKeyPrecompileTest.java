@@ -38,7 +38,7 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.pricing.AssetsLoader;
+import com.hedera.services.hapi.fees.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;

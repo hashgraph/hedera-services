@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.stream.proto.ContractAction;
 

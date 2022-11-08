@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.services.hapi.utils.fee.FeeObject;
 import java.time.Instant;
 import java.util.Map;
 

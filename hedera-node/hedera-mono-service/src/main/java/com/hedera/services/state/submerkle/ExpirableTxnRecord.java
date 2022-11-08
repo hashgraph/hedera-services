@@ -17,7 +17,7 @@ package com.hedera.services.state.submerkle;
 
 import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
 import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
+import static com.hedera.services.hapi.utils.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
@@ -31,7 +31,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

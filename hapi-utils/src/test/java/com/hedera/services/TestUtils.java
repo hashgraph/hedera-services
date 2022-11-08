@@ -15,7 +15,7 @@
  */
 package com.hedera.services;
 
-import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
+import com.hedera.services.hapi.utils.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ public class TestUtils {
         }
     }
 
-    public static com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions pojoDefs(
+    public static com.hedera.services.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions pojoDefs(
             final String testResource) throws IOException {
         try (final var in =
                 ThrottlesJsonToProtoSerde.class

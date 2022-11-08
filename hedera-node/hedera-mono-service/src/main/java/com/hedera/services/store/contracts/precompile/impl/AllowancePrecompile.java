@@ -15,9 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS_TRIO_RAW_TYPE;
-import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ADDRESS_TRIO_RAW_TYPE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;

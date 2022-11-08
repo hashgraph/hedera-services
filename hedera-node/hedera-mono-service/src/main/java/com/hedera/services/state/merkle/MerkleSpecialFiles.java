@@ -16,7 +16,7 @@
 package com.hedera.services.state.merkle;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 import com.google.common.base.MoreObjects;

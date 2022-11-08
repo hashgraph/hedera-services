@@ -24,8 +24,8 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -121,7 +121,7 @@ public class SpanMapManager {
      *
      * <ol>
      *   <li>Fetch the call data, if needed, from the signed state's blobs {@code VirtualMap}; and,
-     *   <li>Recover the signing key as a {@link com.hedera.services.ethereum.EthTxSigs}; and,
+     *   <li>Recover the signing key as a {@link EthTxSigs}; and,
      *   <li>Create the synthetic transaction implied by the above two results; and,
      *   <li>If this is a synthetic contract call, run {@link
      *       ContractCallTransitionLogic#preFetch(TxnAccessor)}.

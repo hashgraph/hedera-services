@@ -21,12 +21,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+import com.hedera.services.hapi.fees.usage.token.TokenDissociateUsage;
 import com.hedera.services.test.IdUtils;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.hapi.fees.usage.EstimatorFactory;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hedera.services.hapi.utils.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

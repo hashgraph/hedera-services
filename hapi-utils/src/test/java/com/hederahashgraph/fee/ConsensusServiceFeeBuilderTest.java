@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+import com.hedera.services.hapi.utils.fee.ConsensusServiceFeeBuilder;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
@@ -32,7 +34,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.Test;
 
 class ConsensusServiceFeeBuilderTest {

@@ -27,8 +27,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
-import com.hedera.services.keys.Ed25519Utils;
-import com.hedera.services.legacy.proto.utils.SignatureGenerator;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
+import com.hedera.services.hapi.utils.keys.Ed25519Utils;
+import com.hedera.services.hapi.utils.utils.SignatureGenerator;
 import com.hederahashgraph.api.proto.java.*;
 import java.io.IOException;
 import java.io.Serializable;
@@ -205,7 +206,7 @@ public class KeyFactory implements Serializable {
             throws Throwable {
         final var signing =
                 new PrimitiveSigning(
-                        com.hedera.services.legacy.proto.utils.CommonUtils
+                        CommonUtils
                                 .extractTransactionBodyBytes(txn),
                         authors);
 
@@ -225,7 +226,7 @@ public class KeyFactory implements Serializable {
                         .toList();
         final var signing =
                 new PrimitiveSigning(
-                        com.hedera.services.legacy.proto.utils.CommonUtils
+                        CommonUtils
                                 .extractTransactionBodyBytes(txn),
                         authors);
         final var primitiveSigs = signing.completed();

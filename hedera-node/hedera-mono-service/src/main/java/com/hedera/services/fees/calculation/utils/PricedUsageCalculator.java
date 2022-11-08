@@ -17,16 +17,16 @@ package com.hedera.services.fees.calculation.utils;
 
 import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 
-import com.hedera.services.calc.OverflowCheckingCalc;
+import com.hedera.services.hapi.fees.calc.OverflowCheckingCalc;
 import com.hedera.services.fees.annotations.GenericPriceMultiplier;
 import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.services.hapi.utils.fee.FeeObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

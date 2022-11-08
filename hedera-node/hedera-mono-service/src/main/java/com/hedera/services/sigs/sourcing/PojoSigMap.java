@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sigs.sourcing;
 
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.hapi.utils.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.SignatureMap;

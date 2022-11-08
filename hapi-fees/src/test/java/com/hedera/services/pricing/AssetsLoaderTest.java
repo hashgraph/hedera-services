@@ -15,9 +15,9 @@
  */
 package com.hedera.services.pricing;
 
-import static com.hedera.services.pricing.UsableResource.BPR;
-import static com.hedera.services.pricing.UsableResource.CONSTANT;
-import static com.hedera.services.pricing.UsableResource.VPT;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.BPR;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.CONSTANT;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.VPT;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
@@ -30,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+
+import com.hedera.services.hapi.fees.pricing.AssetsLoader;
 import org.junit.jupiter.api.Test;
 
 class AssetsLoaderTest {

@@ -19,6 +19,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_CAPACITY_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Optional;
+
+import com.hedera.services.hapi.utils.sysfiles.validation.ErrorCodeUtils;
 import org.junit.jupiter.api.Test;
 
 class ErrorCodeUtilsTest {

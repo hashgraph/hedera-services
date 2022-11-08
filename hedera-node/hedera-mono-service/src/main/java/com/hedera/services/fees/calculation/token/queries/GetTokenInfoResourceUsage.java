@@ -20,7 +20,7 @@ import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.usage.token.TokenGetInfoUsage;
+import com.hedera.services.hapi.fees.usage.token.TokenGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;

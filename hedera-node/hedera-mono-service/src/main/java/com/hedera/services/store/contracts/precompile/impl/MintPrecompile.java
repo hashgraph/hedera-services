@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -34,7 +34,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;

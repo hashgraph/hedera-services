@@ -15,7 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.extractTransactionBody;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 
 import com.google.protobuf.InvalidProtocolBufferException;

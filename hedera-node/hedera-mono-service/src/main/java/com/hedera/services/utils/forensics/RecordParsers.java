@@ -15,7 +15,7 @@
  */
 package com.hedera.services.utils.forensics;
 
-import static com.hedera.services.exports.recordstreaming.RecordStreamingUtils.readRecordStreamFile;
+import static com.hedera.services.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readRecordStreamFile;
 import static com.hedera.services.utils.MiscUtils.timestampToInstant;
 import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static java.util.Comparator.comparing;

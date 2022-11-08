@@ -19,6 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import com.hedera.services.hapi.fees.usage.crypto.AllowanceId;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoContextUtils;
 import org.junit.jupiter.api.Test;
 
 class CryptoContextUtilsTest {

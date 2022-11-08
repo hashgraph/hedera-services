@@ -15,21 +15,21 @@
  */
 package com.hedera.services.bdd.spec.fees;
 
-import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
-import static com.hederahashgraph.fee.FeeBuilder.getSignatureCount;
-import static com.hederahashgraph.fee.FeeBuilder.getSignatureSize;
-import static com.hederahashgraph.fee.FeeBuilder.getTotalFeeforRequest;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.getFeeObject;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.getSignatureCount;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.getSignatureSize;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.getTotalFeeforRequest;
 
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.FeeObject;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.fee.FeeObject;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;

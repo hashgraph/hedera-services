@@ -17,6 +17,8 @@ package com.hedera.services.usage.token.meta;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.token.meta.TokenFreezeMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenUnfreezeMeta;
 import org.junit.jupiter.api.Test;
 
 class TokenFreezeMetaTest {

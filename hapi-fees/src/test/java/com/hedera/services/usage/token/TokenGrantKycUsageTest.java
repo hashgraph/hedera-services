@@ -20,12 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
 
+import com.hedera.services.hapi.fees.usage.token.TokenGrantKycUsage;
 import com.hedera.services.test.IdUtils;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.hapi.fees.usage.EstimatorFactory;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hedera.services.hapi.utils.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

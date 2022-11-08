@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
@@ -27,8 +27,8 @@ import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenUpdateUsage;
+import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.services.hapi.fees.usage.token.TokenUpdateUsage;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.ArrayList;
 import java.util.List;

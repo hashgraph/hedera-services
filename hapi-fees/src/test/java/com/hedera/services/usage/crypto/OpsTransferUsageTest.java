@@ -19,10 +19,12 @@ import static com.hedera.services.test.AdapterUtils.feeDataFrom;
 import static com.hedera.services.test.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.test.IdUtils;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;

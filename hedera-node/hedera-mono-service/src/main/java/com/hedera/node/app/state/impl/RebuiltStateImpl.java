@@ -16,6 +16,7 @@
 package com.hedera.node.app.state.impl;
 
 import com.hedera.node.app.spi.state.State;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fchashmap.FCHashMap;
 import java.time.Instant;
 import java.util.Map;

@@ -15,14 +15,15 @@
  */
 package com.hedera.services.usage.crypto;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
-import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
+import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.hapi.fees.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.crypto.CryptoGetInfoUsage;
 import com.hedera.services.test.KeyUtils;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.FeeComponents;

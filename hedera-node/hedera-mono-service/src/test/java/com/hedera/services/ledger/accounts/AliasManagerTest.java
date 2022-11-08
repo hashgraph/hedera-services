@@ -29,9 +29,9 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;

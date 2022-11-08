@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sysfiles.validation;
 
-import static com.hedera.services.sysfiles.validation.ExpectedCustomThrottles.ACTIVE_OPS;
+import static com.hedera.services.hapi.utils.sysfiles.validation.ExpectedCustomThrottles.ACTIVE_OPS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;

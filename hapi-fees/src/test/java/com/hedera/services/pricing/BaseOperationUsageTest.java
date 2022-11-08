@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.SubType.UNRECOGNIZED;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.services.hapi.fees.pricing.BaseOperationUsage;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.fees.internal.StandardExemptions;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;

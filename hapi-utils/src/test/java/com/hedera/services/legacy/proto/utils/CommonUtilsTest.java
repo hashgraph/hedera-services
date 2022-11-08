@@ -15,8 +15,8 @@
  */
 package com.hedera.services.legacy.proto.utils;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.productWouldOverflow;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;

@@ -15,14 +15,15 @@
  */
 package com.hedera.services.usage.crypto;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.INT_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;

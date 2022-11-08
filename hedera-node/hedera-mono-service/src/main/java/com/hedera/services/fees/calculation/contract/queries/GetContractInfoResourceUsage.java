@@ -23,7 +23,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
-import com.hedera.services.usage.contract.ContractGetInfoUsage;
+import com.hedera.services.hapi.fees.usage.contract.ContractGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import java.util.Map;

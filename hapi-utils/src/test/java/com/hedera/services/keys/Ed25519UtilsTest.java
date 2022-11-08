@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.hapi.utils.keys.Ed25519Utils;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.security.KeyPair;

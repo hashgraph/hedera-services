@@ -18,8 +18,8 @@ package com.hedera.services.fees.calculation;
 import com.hedera.services.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 
 /**
  * Defines a type able to estimate the resource usage of one (or more) transaction operations,

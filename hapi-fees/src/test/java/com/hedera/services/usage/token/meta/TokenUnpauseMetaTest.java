@@ -17,6 +17,7 @@ package com.hedera.services.usage.token.meta;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.token.meta.TokenUnpauseMeta;
 import org.junit.jupiter.api.Test;
 
 class TokenUnpauseMetaTest {

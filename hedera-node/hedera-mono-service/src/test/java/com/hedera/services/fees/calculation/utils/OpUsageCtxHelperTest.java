@@ -44,7 +44,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
-import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.hapi.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;

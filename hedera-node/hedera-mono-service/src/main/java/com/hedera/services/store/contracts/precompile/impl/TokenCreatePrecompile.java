@@ -15,13 +15,13 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
-import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE_V2;
-import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
-import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE_V2;
-import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
-import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE_V2;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FIXED_FEE_V2;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE_V2;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE_V2;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;

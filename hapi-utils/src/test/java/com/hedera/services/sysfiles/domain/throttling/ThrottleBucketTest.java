@@ -21,8 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.services.TestUtils;
+import com.hedera.services.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.services.throttles.ConcurrentThrottleTestHelper;
-import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.hapi.utils.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.io.IOException;
 import java.util.List;

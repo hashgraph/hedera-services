@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.hapi.utils.fee.FeeBuilder;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -38,7 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.Test;
 
 class FeeBuilderTest {

@@ -15,18 +15,19 @@
  */
 package com.hedera.services.usage.token;
 
-import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hedera.services.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.token.TokenGetInfoUsage;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hedera.services.hapi.utils.fee.FeeBuilder;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

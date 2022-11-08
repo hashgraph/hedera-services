@@ -22,7 +22,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.keys.Ed25519Utils;
+import com.hedera.services.hapi.utils.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import java.util.Optional;

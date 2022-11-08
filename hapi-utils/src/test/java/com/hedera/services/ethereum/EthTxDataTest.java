@@ -15,7 +15,7 @@
  */
 package com.hedera.services.ethereum;
 
-import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.google.protobuf.ByteString;
+import com.hedera.services.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.hapi.utils.ethereum.EthTxSigs;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
 
 import com.google.common.primitives.Ints;

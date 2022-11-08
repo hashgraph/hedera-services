@@ -19,9 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.services.throttles.BucketThrottle;
-import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
+import com.hedera.services.hapi.utils.throttles.BucketThrottle;
+import com.hedera.services.hapi.utils.throttles.DeterministicThrottle;
 import java.time.Instant;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;

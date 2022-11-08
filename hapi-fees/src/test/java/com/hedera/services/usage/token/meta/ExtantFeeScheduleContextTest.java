@@ -17,6 +17,7 @@ package com.hedera.services.usage.token.meta;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.services.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
 import org.junit.jupiter.api.Test;
 
 class ExtantFeeScheduleContextTest {

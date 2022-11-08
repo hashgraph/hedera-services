@@ -21,9 +21,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAut
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
-import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.getFeeObject;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
@@ -43,9 +43,9 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.FeeObject;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.fee.FeeObject;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;

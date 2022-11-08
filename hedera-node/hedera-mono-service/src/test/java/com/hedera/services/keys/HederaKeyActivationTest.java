@@ -18,7 +18,7 @@ package com.hedera.services.keys;
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
-import static com.hedera.services.legacy.proto.utils.SignatureGenerator.signBytes;
+import static com.hedera.services.hapi.utils.utils.SignatureGenerator.signBytes;
 import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.ed25519Sig;
 import static com.hedera.services.sigs.utils.MiscCryptoUtils.keccak256DigestOf;

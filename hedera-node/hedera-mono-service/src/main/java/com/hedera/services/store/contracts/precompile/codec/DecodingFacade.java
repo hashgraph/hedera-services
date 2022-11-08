@@ -15,10 +15,10 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
-import static com.hedera.services.contracts.ParsingConstants.EXPIRY_V2;
-import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;

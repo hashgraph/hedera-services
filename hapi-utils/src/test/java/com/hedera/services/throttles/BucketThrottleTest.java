@@ -15,15 +15,16 @@
  */
 package com.hedera.services.throttles;
 
-import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
-import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_TXN;
-import static com.hedera.services.throttles.BucketThrottle.MTPS_PER_TPS;
-import static com.hedera.services.throttles.BucketThrottle.NTPS_PER_MTPS;
+import static com.hedera.services.hapi.utils.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
+import static com.hedera.services.hapi.utils.throttles.BucketThrottle.CAPACITY_UNITS_PER_TXN;
+import static com.hedera.services.hapi.utils.throttles.BucketThrottle.MTPS_PER_TPS;
+import static com.hedera.services.hapi.utils.throttles.BucketThrottle.NTPS_PER_MTPS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.hapi.utils.throttles.BucketThrottle;
 import org.junit.jupiter.api.Test;
 
 class BucketThrottleTest {

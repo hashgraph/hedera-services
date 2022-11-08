@@ -15,8 +15,8 @@
  */
 package com.hedera.services.throttling;
 
-import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
+import com.hedera.services.hapi.utils.throttles.DeterministicThrottle;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;

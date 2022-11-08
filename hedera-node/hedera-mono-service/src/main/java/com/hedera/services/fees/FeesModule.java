@@ -51,6 +51,8 @@ import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.fees.congestion.GasPriceMultiplierSource;
 import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.fees.congestion.TxnRateFeeMultiplierSource;
+import com.hedera.services.fees.internal.BasicHbarCentExchange;
+import com.hedera.services.fees.internal.StandardExemptions;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

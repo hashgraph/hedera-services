@@ -15,17 +15,17 @@
  */
 package com.hedera.services;
 
-import com.hedera.services.keys.Ed25519Utils;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.legacy.proto.utils.SignatureGenerator;
-import com.hedera.services.sysfiles.ParsingUtils;
-import com.hedera.services.sysfiles.domain.throttling.HapiThrottleUtils;
-import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
-import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
-import com.hedera.services.sysfiles.validation.ExpectedCustomThrottles;
-import com.hederahashgraph.builder.RequestBuilder;
-import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
+import com.hedera.services.hapi.utils.keys.Ed25519Utils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
+import com.hedera.services.hapi.utils.utils.SignatureGenerator;
+import com.hedera.services.hapi.utils.sysfiles.ParsingUtils;
+import com.hedera.services.hapi.utils.sysfiles.domain.throttling.HapiThrottleUtils;
+import com.hedera.services.hapi.utils.sysfiles.serdes.ThrottlesJsonToProtoSerde;
+import com.hedera.services.hapi.utils.sysfiles.validation.ErrorCodeUtils;
+import com.hedera.services.hapi.utils.sysfiles.validation.ExpectedCustomThrottles;
+import com.hedera.services.hapi.utils.builder.RequestBuilder;
+import com.hedera.services.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;

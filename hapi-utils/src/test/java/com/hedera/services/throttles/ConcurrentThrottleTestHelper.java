@@ -22,6 +22,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.hedera.services.hapi.utils.throttles.DeterministicThrottle;
 import org.junit.jupiter.api.Assertions;
 
 public class ConcurrentThrottleTestHelper {

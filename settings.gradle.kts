@@ -61,7 +61,7 @@ dependencyResolutionManagement {
             version("guava-version", "31.1-jre")
             version("hapi-version", "0.32.0-SNAPSHOT")
             version("headlong-version", "6.1.1")
-            version("jackson-version", "2.12.6.1")
+            version("jackson-version", "2.13.3")
             version("javax-annotation-version", "1.3.2")
             version("javax-inject-version", "1")
             version("jetbrains-annotation-version", "16.0.2")
@@ -84,18 +84,7 @@ dependencyResolutionManagement {
             // Use when you need to depend upon netty
             bundle("netty", listOf("netty-handler", "netty-transport-native-epoll"))
             // Use when you depend upon all or swirlds
-            bundle(
-                "swirlds",
-                listOf(
-                    "swirlds-common",
-                    "swirlds-platform-core",
-                    "swirlds-fchashmap",
-                    "swirlds-merkle",
-                    "swirlds-fcqueue",
-                    "swirlds-jasperdb",
-                    "swirlds-virtualmap"
-                )
-            )
+            bundle("swirlds", listOf("swirlds-merkle"))
 
             // Define the individual libraries
             library("besu-bls12-381", "org.hyperledger.besu", "bls12-381").versionRef("besu-native-version")

@@ -50,7 +50,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;

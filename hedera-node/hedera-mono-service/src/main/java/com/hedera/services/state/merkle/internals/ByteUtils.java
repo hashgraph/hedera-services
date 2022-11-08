@@ -16,7 +16,7 @@
 package com.hedera.services.state.merkle.internals;
 
 import com.google.common.primitives.Longs;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
 
 public final class ByteUtils {
 

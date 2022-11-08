@@ -15,15 +15,16 @@
  */
 package com.hedera.services.sysfiles.serdes;
 
-import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromJson;
-import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
-import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.parseFeeScheduleFromJson;
-import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.stringToSubType;
+import static com.hedera.services.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromJson;
+import static com.hedera.services.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
+import static com.hedera.services.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.parseFeeScheduleFromJson;
+import static com.hedera.services.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.stringToSubType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.io.Files;
+import com.hedera.services.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.SubType;
 import java.io.File;

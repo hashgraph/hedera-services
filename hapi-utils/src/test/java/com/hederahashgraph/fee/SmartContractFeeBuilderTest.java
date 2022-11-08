@@ -18,9 +18,11 @@ package com.hederahashgraph.fee;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.services.hapi.utils.fee.SigValueObj;
+import com.hedera.services.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.Test;
 
 class SmartContractFeeBuilderTest {

@@ -31,6 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.EnumSet;
+
+import com.hedera.services.hapi.fees.pricing.RequiredPriceTypes;
 import org.junit.jupiter.api.Test;
 
 class RequiredPriceTypesTest {

@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.hapi.utils.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.*;
@@ -27,7 +27,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;

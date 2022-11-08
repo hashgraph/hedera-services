@@ -18,12 +18,14 @@ package com.hederahashgraph.fee;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.services.hapi.utils.fee.FileFeeBuilder;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.Test;
 
 class FileFeeBuilderTest {

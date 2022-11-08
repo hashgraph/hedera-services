@@ -17,7 +17,7 @@ package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.noThrowSha384HashOf;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;

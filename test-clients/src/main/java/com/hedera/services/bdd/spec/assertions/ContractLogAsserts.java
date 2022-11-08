@@ -19,7 +19,7 @@ import static java.util.Arrays.copyOfRange;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.hapi.utils.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;

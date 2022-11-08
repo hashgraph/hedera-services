@@ -18,6 +18,7 @@ package com.hedera.services.usage.file;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.services.hapi.fees.usage.file.ExtantFileContext;
 import com.hedera.services.test.KeyUtils;
 import com.hederahashgraph.api.proto.java.KeyList;
 import org.junit.jupiter.api.Test;

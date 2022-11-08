@@ -41,7 +41,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
+import com.hedera.services.hapi.utils.fee.CryptoFeeBuilder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;

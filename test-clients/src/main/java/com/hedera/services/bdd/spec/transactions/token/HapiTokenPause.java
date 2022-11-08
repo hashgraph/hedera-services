@@ -16,16 +16,16 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.services.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.services.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.services.hapi.fees.usage.token.TokenOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;

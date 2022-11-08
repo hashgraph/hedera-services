@@ -135,7 +135,7 @@ import com.hedera.services.bdd.suites.utils.validation.domain.SysFilesUpScenario
 import com.hedera.services.bdd.suites.utils.validation.domain.UpdateAction;
 import com.hedera.services.bdd.suites.utils.validation.domain.ValidationConfig;
 import com.hedera.services.bdd.suites.utils.validation.domain.VersionInfoScenario;
-import com.hedera.services.keys.Ed25519Utils;
+import com.hedera.services.hapi.utils.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;

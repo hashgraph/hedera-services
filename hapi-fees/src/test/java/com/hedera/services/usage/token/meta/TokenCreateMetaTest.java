@@ -18,6 +18,7 @@ package com.hedera.services.usage.token.meta;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.token.meta.TokenCreateMeta;
 import org.junit.jupiter.api.Test;
 
 class TokenCreateMetaTest {

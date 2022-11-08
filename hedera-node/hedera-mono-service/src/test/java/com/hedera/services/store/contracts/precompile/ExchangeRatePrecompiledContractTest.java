@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
+import static com.hedera.services.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYBARS_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYCENTS_SELECTOR;
 import static org.junit.jupiter.api.Assertions.assertEquals;

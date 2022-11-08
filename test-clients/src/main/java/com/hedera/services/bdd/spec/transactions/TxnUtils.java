@@ -24,16 +24,16 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopic;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.extractTransactionBody;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
-import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
-import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.FEE_MATRICES_CONST;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static java.lang.System.arraycopy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -52,7 +52,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
-import com.hedera.services.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -75,7 +75,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -643,7 +643,7 @@ public class TxnUtils {
                 + TextFormat.shortDebugString(body)
                 + "; sigs="
                 + TextFormat.shortDebugString(
-                        com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMap(
+                        com.hedera.services.hapi.utils.utils.CommonUtils.extractSignatureMap(
                                 grpcTransaction));
     }
 

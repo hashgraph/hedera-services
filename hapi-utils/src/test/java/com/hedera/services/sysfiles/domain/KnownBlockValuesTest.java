@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

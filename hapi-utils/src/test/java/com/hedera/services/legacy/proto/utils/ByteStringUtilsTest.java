@@ -30,6 +30,8 @@ import static org.mockito.Mockito.mock;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import org.junit.jupiter.api.Test;
 
 class ByteStringUtilsTest {

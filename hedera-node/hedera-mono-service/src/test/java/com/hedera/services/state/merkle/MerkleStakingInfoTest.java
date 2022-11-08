@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
 import com.hedera.services.state.merkle.internals.ByteUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;

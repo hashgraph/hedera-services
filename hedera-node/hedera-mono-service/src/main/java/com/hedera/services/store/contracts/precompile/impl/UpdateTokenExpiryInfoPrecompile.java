@@ -15,9 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.BYTES32;
-import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
-import static com.hedera.services.contracts.ParsingConstants.EXPIRY_V2;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.EXPIRY_DECODER;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;

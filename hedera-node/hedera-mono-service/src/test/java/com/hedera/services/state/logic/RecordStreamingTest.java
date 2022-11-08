@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;

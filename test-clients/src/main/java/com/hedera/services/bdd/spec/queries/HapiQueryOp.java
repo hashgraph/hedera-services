@@ -51,7 +51,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;

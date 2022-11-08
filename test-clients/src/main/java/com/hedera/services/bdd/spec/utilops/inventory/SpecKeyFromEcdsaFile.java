@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.utilops.inventory;
 
-import static com.hedera.services.legacy.proto.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
+import static com.hedera.services.hapi.utils.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -25,15 +25,15 @@ import static org.mockito.Mockito.verify;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenAssociateUsage;
+import com.hedera.services.hapi.fees.usage.EstimatorFactory;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.services.hapi.fees.usage.token.TokenAssociateUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -16,17 +16,17 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenDissociateUsage;
+import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.services.hapi.fees.usage.token.TokenDissociateUsage;
 import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;

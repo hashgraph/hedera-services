@@ -15,7 +15,7 @@
  */
 package com.hedera.services.pricing;
 
-import static com.hedera.services.pricing.ScheduleGenerator.SUPPORTED_FUNCTIONS;
+import static com.hedera.services.hapi.fees.pricing.ScheduleGenerator.SUPPORTED_FUNCTIONS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.services.hapi.fees.pricing.ScheduleGenerator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import java.io.IOException;

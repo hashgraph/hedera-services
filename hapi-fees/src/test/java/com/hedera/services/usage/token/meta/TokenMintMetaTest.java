@@ -18,6 +18,7 @@ package com.hedera.services.usage.token.meta;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.token.meta.TokenMintMeta;
 import org.junit.jupiter.api.Test;
 
 class TokenMintMetaTest {

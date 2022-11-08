@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

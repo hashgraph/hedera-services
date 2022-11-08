@@ -19,7 +19,7 @@ import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

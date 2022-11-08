@@ -48,7 +48,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.EntityCreator;

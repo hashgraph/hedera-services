@@ -20,8 +20,8 @@ import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.usage.schedule.ExtantScheduleContext;
-import com.hedera.services.usage.schedule.ScheduleOpsUsage;
+import com.hedera.services.hapi.fees.usage.schedule.ExtantScheduleContext;
+import com.hedera.services.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import java.util.Map;

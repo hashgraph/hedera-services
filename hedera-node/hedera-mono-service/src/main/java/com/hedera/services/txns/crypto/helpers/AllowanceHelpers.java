@@ -29,7 +29,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.usage.crypto.AllowanceId;
+import com.hedera.services.hapi.fees.usage.crypto.AllowanceId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;

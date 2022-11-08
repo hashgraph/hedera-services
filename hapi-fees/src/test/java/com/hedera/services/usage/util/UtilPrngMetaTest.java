@@ -17,6 +17,7 @@ package com.hedera.services.usage.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.util.UtilPrngMeta;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import org.junit.jupiter.api.Test;

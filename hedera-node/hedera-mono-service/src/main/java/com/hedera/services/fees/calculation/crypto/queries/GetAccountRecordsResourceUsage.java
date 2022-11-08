@@ -25,7 +25,7 @@ import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
+import com.hedera.services.hapi.utils.fee.CryptoFeeBuilder;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Inject;

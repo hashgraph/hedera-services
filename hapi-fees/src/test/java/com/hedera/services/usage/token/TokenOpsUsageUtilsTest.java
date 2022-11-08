@@ -16,7 +16,7 @@
 package com.hedera.services.usage.token;
 
 import static com.hedera.services.test.IdUtils.asAccount;
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.services.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -28,12 +28,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
-import com.hedera.services.usage.token.meta.TokenBurnMeta;
-import com.hedera.services.usage.token.meta.TokenCreateMeta;
-import com.hedera.services.usage.token.meta.TokenMintMeta;
-import com.hedera.services.usage.token.meta.TokenPauseMeta;
-import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
-import com.hedera.services.usage.token.meta.TokenWipeMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenBurnMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenMintMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenPauseMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenUnpauseMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.extractTransactionBody;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.InvalidProtocolBufferException;

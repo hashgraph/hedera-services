@@ -32,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.services.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.hapi.utils.ethereum.EthTxSigs;
 import com.swirlds.common.utility.*;
 import java.math.BigInteger;
 import java.util.*;

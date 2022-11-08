@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

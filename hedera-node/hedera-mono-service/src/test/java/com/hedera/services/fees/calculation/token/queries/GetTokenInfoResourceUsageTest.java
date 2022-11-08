@@ -30,7 +30,7 @@ import static org.mockito.Mockito.never;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.token.GetTokenInfoAnswer;
-import com.hedera.services.usage.token.TokenGetInfoUsage;
+import com.hedera.services.hapi.fees.usage.token.TokenGetInfoUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;

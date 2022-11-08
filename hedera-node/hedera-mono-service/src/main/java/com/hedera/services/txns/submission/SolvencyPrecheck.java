@@ -37,7 +37,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.services.hapi.utils.fee.FeeObject;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;

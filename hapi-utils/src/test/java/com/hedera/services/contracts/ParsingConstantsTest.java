@@ -15,11 +15,11 @@
  */
 package com.hedera.services.contracts;
 
-import static com.hedera.services.contracts.ParsingConstants.*;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType;
 import org.junit.jupiter.api.Test;
 
 class ParsingConstantsTest {

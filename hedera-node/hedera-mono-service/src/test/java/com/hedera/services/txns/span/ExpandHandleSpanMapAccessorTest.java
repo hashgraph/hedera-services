@@ -15,20 +15,20 @@
  */
 package com.hedera.services.txns.span;
 
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.services.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.sigs.order.LinkedRefs;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoUpdateMeta;
-import com.hedera.services.usage.util.UtilPrngMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;

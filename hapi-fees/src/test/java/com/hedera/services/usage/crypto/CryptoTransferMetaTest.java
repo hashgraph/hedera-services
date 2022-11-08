@@ -17,6 +17,7 @@ package com.hedera.services.usage.crypto;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.services.hapi.fees.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.SubType;
 import org.junit.jupiter.api.Test;
 

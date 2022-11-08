@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.hedera.services.sysfiles.domain.KnownBlockValues;
+import com.hedera.services.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

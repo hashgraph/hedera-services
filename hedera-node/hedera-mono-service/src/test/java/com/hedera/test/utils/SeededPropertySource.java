@@ -39,7 +39,7 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;

@@ -40,7 +40,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.fee.SmartContractFeeBuilder;
+import com.hedera.services.hapi.utils.fee.SmartContractFeeBuilder;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Inject;

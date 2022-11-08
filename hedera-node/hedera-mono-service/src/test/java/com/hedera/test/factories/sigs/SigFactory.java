@@ -15,12 +15,12 @@
  */
 package com.hedera.test.factories.sigs;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBodyBytes;
-import static com.hedera.services.legacy.proto.utils.SignatureGenerator.signBytes;
+import static com.hedera.services.hapi.utils.utils.CommonUtils.extractTransactionBodyBytes;
+import static com.hedera.services.hapi.utils.utils.SignatureGenerator.signBytes;
 import static com.hedera.services.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.SignatureGenerator;
+import com.hedera.services.hapi.utils.utils.SignatureGenerator;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.KeyTreeLeaf;

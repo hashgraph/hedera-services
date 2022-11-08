@@ -15,11 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
-import static com.hedera.services.contracts.ParsingConstants.BOOL;
-import static com.hedera.services.contracts.ParsingConstants.INT;
-import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.BOOL;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;

@@ -24,7 +24,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.services.hapi.utils.fee.FeeObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

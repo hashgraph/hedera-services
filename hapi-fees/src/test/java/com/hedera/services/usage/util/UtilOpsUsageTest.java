@@ -18,9 +18,11 @@ package com.hedera.services.usage.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.services.hapi.fees.usage.util.UtilOpsUsage;
+import com.hedera.services.hapi.fees.usage.util.UtilPrngMeta;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;

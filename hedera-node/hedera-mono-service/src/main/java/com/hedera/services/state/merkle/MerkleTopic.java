@@ -24,7 +24,7 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;

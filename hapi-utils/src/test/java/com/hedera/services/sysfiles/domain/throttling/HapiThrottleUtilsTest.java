@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.TestUtils;
 import java.io.IOException;
+
+import com.hedera.services.hapi.utils.sysfiles.domain.throttling.HapiThrottleUtils;
 import org.junit.jupiter.api.Test;
 
 class HapiThrottleUtilsTest {

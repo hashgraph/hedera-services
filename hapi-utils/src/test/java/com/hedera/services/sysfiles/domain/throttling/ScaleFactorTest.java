@@ -17,6 +17,7 @@ package com.hedera.services.sysfiles.domain.throttling;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.services.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

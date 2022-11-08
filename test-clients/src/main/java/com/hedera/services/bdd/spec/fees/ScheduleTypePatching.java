@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.fees;
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
-import com.hedera.services.pricing.RequiredPriceTypes;
+import com.hedera.services.hapi.fees.pricing.RequiredPriceTypes;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.SubType;

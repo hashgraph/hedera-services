@@ -18,6 +18,9 @@ package com.hederahashgraph.fee;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.services.hapi.utils.fee.CryptoFeeBuilder;
+import com.hedera.services.hapi.utils.fee.FeeBuilder;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -30,7 +33,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

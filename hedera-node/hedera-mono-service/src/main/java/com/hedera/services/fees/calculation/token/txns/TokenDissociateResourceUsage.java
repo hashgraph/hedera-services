@@ -15,19 +15,19 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenDissociateUsage;
+import com.hedera.services.hapi.fees.usage.EstimatorFactory;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.services.hapi.fees.usage.token.TokenDissociateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import java.util.function.BiFunction;
 import javax.inject.Inject;
 import javax.inject.Singleton;

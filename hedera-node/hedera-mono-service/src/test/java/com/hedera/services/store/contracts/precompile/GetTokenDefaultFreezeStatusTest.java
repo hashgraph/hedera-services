@@ -34,7 +34,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.pricing.AssetsLoader;
+import com.hedera.services.hapi.fees.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;

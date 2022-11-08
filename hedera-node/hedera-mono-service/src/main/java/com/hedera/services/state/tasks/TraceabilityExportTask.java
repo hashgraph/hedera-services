@@ -24,7 +24,7 @@ import static com.hedera.services.throttling.MapAccessType.STORAGE_GET;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;

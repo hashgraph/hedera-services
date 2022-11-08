@@ -17,7 +17,7 @@ package com.hedera.services.recordstreaming;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.exports.recordstreaming.RecordStreamingUtils;
+import com.hedera.services.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;

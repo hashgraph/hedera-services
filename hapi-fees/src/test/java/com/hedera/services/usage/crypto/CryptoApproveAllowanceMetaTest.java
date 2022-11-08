@@ -16,16 +16,18 @@
 package com.hedera.services.usage.crypto;
 
 import static com.hedera.services.test.IdUtils.asAccount;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.countSerials;
-import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
+import static com.hedera.services.hapi.fees.usage.crypto.CryptoContextUtils.convertToCryptoMap;
+import static com.hedera.services.hapi.fees.usage.crypto.CryptoContextUtils.convertToNftMap;
+import static com.hedera.services.hapi.fees.usage.crypto.CryptoContextUtils.convertToTokenMap;
+import static com.hedera.services.hapi.fees.usage.crypto.CryptoContextUtils.countSerials;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.crypto.AllowanceId;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.test.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;

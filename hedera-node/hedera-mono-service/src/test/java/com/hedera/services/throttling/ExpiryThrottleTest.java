@@ -21,8 +21,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hedera.services.files.HybridResouceLoader;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleGroup;
-import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
+import com.hedera.services.hapi.utils.throttles.DeterministicThrottle;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;

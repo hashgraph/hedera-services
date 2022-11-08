@@ -15,22 +15,22 @@
  */
 package com.hedera.services.txns.span;
 
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoUpdateMeta;
-import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.token.meta.TokenBurnMeta;
-import com.hedera.services.usage.token.meta.TokenCreateMeta;
-import com.hedera.services.usage.token.meta.TokenFreezeMeta;
-import com.hedera.services.usage.token.meta.TokenPauseMeta;
-import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
-import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
-import com.hedera.services.usage.token.meta.TokenWipeMeta;
-import com.hedera.services.usage.util.UtilPrngMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenBurnMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenCreateMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenFreezeMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenPauseMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenUnfreezeMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenUnpauseMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenWipeMeta;
+import com.hedera.services.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;

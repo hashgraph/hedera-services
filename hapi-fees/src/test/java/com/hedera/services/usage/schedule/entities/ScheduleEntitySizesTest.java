@@ -35,10 +35,11 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
-import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.KEY_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.schedule.entities.ScheduleEntitySizes;
 import org.junit.jupiter.api.Test;
 
 class ScheduleEntitySizesTest {

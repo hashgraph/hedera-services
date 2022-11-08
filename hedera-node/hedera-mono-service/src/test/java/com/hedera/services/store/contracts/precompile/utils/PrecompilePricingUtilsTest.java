@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.utils;
 
-import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static com.hedera.services.hapi.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -24,7 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.pricing.AssetsLoader;
+import com.hedera.services.hapi.fees.pricing.AssetsLoader;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

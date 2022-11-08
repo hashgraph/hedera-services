@@ -23,7 +23,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.keys.Ed25519Utils;
+import com.hedera.services.hapi.utils.keys.Ed25519Utils;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.nio.file.Files;

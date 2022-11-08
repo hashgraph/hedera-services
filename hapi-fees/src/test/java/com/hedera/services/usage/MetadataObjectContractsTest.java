@@ -18,8 +18,9 @@ package com.hedera.services.usage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
-import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.services.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.services.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
 import org.junit.jupiter.api.Test;
 
 class MetadataObjectContractsTest {

@@ -19,6 +19,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import com.hedera.services.hapi.fees.usage.token.meta.TokenBurnMeta;
 import org.junit.jupiter.api.Test;
 
 class TokenBurnMetaTest {

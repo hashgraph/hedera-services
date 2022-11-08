@@ -20,7 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.services.hapi.utils.fee.FeeObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

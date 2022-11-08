@@ -23,14 +23,14 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleOpsUsage;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

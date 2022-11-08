@@ -53,7 +53,7 @@ import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
+import com.hedera.services.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;

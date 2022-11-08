@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.keys;
 
-import static com.hedera.services.legacy.proto.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
+import static com.hedera.services.hapi.utils.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;

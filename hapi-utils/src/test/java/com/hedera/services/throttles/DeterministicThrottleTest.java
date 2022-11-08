@@ -15,10 +15,10 @@
  */
 package com.hedera.services.throttles;
 
-import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
-import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_TXN;
-import static com.hedera.services.throttles.BucketThrottle.MTPS_PER_TPS;
-import static com.hedera.services.throttles.BucketThrottle.NTPS_PER_MTPS;
+import static com.hedera.services.hapi.utils.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
+import static com.hedera.services.hapi.utils.throttles.BucketThrottle.CAPACITY_UNITS_PER_TXN;
+import static com.hedera.services.hapi.utils.throttles.BucketThrottle.MTPS_PER_TPS;
+import static com.hedera.services.hapi.utils.throttles.BucketThrottle.NTPS_PER_MTPS;
 import static com.hedera.services.throttles.BucketThrottleTest.NTPS_PER_TPS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,6 +30,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+
+import com.hedera.services.hapi.utils.throttles.BucketThrottle;
+import com.hedera.services.hapi.utils.throttles.DeterministicThrottle;
 import org.junit.jupiter.api.Test;
 
 class DeterministicThrottleTest {

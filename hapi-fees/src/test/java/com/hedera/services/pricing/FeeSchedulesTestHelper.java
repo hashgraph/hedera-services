@@ -15,13 +15,14 @@
  */
 package com.hedera.services.pricing;
 
-import static com.hedera.services.pricing.FeeSchedules.FEE_SCHEDULE_MULTIPLIER;
-import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static com.hedera.services.hapi.fees.pricing.FeeSchedules.FEE_SCHEDULE_MULTIPLIER;
+import static com.hedera.services.hapi.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static java.math.MathContext.DECIMAL128;
 import static java.math.RoundingMode.HALF_EVEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.hapi.fees.pricing.*;
+import com.hedera.services.hapi.fees.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import java.io.IOException;

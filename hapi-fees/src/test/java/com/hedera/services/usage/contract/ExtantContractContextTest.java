@@ -15,11 +15,12 @@
  */
 package com.hedera.services.usage.contract;
 
-import static com.hedera.services.usage.contract.entities.ContractEntitySizes.CONTRACT_ENTITY_SIZES;
+import static com.hedera.services.hapi.fees.usage.contract.entities.ContractEntitySizes.CONTRACT_ENTITY_SIZES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.hapi.fees.usage.contract.ExtantContractContext;
+import com.hedera.services.hapi.fees.usage.crypto.ExtantCryptoContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

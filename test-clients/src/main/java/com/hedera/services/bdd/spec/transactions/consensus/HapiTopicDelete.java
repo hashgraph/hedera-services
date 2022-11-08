@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
+import com.hedera.services.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

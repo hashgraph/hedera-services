@@ -15,7 +15,7 @@
  */
 package com.hedera.services.stream;
 
-import static com.hedera.services.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
+import static com.hedera.services.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
@@ -28,7 +28,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;

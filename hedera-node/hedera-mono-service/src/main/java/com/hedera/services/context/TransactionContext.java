@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context;
 
-import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.EntityId;

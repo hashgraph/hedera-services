@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.hapi.utils.utils.CommonUtils;
 import com.hedera.services.yahcli.commands.files.SysFileUploadCommand;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;

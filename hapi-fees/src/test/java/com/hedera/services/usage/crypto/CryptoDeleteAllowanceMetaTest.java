@@ -16,11 +16,12 @@
 package com.hedera.services.usage.crypto;
 
 import static com.hedera.services.test.IdUtils.asAccount;
-import static com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta.countNftDeleteSerials;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
+import static com.hedera.services.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta.countNftDeleteSerials;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.test.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;

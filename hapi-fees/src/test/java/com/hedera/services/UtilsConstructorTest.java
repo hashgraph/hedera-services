@@ -15,7 +15,7 @@
  */
 package com.hedera.services;
 
-import com.hedera.services.usage.crypto.CryptoContextUtils;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoContextUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;

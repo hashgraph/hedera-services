@@ -18,6 +18,7 @@ package com.hedera.services.usage.crypto;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoCreateMeta;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;

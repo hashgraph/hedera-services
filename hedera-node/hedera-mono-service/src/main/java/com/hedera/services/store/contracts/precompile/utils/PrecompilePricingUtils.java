@@ -16,7 +16,7 @@
 package com.hedera.services.store.contracts.precompile.utils;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static com.hedera.services.hapi.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
@@ -46,7 +46,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.pricing.AssetsLoader;
+import com.hedera.services.hapi.fees.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -59,7 +59,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hedera.services.hapi.utils.fee.FeeBuilder;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;

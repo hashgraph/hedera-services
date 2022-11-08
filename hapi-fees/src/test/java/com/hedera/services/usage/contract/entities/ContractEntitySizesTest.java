@@ -15,11 +15,12 @@
  */
 package com.hedera.services.usage.contract.entities;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BOOL_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.contract.entities.ContractEntitySizes;
 import org.junit.jupiter.api.Test;
 
 class ContractEntitySizesTest {

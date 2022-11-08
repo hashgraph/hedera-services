@@ -17,10 +17,12 @@ package com.hedera.services.usage.consensus;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.consensus.ConsensusOpsUsage;
+import com.hedera.services.hapi.fees.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.test.AdapterUtils;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import org.junit.jupiter.api.Test;

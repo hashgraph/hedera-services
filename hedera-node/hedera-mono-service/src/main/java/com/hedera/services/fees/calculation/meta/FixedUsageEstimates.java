@@ -15,9 +15,9 @@
  */
 package com.hedera.services.fees.calculation.meta;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
-import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.FEE_MATRICES_CONST;
 
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;

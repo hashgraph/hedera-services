@@ -51,7 +51,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
-import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;

@@ -27,7 +27,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.hapi.utils.utils.ByteStringUtils;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.io.IOException;
@@ -190,7 +190,7 @@ public class SysFileUploadSuite extends HapiApiSuite {
 
     private String hexedPrefixHash(final int prefixLen) {
         byte[] hashSoFar =
-                com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf(
+                com.hedera.services.hapi.utils.utils.CommonUtils.noThrowSha384HashOf(
                         ByteStringUtils.unwrapUnsafelyIfPossible(
                                 uploadData.substring(0, prefixLen)));
         return CommonUtils.hex(hashSoFar);

@@ -18,12 +18,12 @@ package com.hedera.services.fees.calculation.schedule.txns;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleOpsUsage;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.services.hapi.utils.fee.SigValueObj;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

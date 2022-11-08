@@ -15,10 +15,12 @@
  */
 package com.hedera.services.legacy.proto.utils;
 
-import static com.hedera.services.legacy.proto.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
+import static com.hedera.services.hapi.utils.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
 
 import java.security.SecureRandom;
 import java.security.spec.ECGenParameterSpec;
+
+import com.hedera.services.hapi.utils.utils.SignatureGenerator;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assertions;

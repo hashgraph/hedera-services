@@ -19,7 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.FeeSchedulesListEntry;
-import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
+import com.hedera.services.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -24,8 +24,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
-import com.hedera.services.sysfiles.validation.ExpectedCustomThrottles;
+import com.hedera.services.hapi.utils.sysfiles.validation.ErrorCodeUtils;
+import com.hedera.services.hapi.utils.sysfiles.validation.ExpectedCustomThrottles;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -62,8 +62,8 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
 
     Function<
                     ThrottleDefinitions,
-                    com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions>
-            toPojo = com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions::fromProto;
+            com.hedera.services.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
+            toPojo = com.hedera.services.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions::fromProto;
 
     public ThrottleDefsManager(
             FileNumbers fileNums,

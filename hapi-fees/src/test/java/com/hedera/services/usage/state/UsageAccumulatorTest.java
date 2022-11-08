@@ -15,28 +15,29 @@
  */
 package com.hedera.services.usage.state;
 
-import static com.hedera.services.pricing.ResourceProvider.NETWORK;
-import static com.hedera.services.pricing.ResourceProvider.NODE;
-import static com.hedera.services.pricing.ResourceProvider.SERVICE;
-import static com.hedera.services.pricing.UsableResource.BPR;
-import static com.hedera.services.pricing.UsableResource.BPT;
-import static com.hedera.services.pricing.UsableResource.CONSTANT;
-import static com.hedera.services.pricing.UsableResource.RBH;
-import static com.hedera.services.pricing.UsableResource.SBH;
-import static com.hedera.services.pricing.UsableResource.SBPR;
-import static com.hedera.services.pricing.UsableResource.VPT;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
-import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
+import static com.hedera.services.hapi.fees.pricing.ResourceProvider.NETWORK;
+import static com.hedera.services.hapi.fees.pricing.ResourceProvider.NODE;
+import static com.hedera.services.hapi.fees.pricing.ResourceProvider.SERVICE;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.BPR;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.BPT;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.CONSTANT;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.RBH;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.SBH;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.SBPR;
+import static com.hedera.services.hapi.fees.pricing.UsableResource.VPT;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.INT_SIZE;
+import static com.hedera.services.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.services.test.AdapterUtils;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.services.hapi.fees.usage.SigUsage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
