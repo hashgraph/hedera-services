@@ -116,7 +116,8 @@ class AccountStoreTest {
     void failsLoadingDetached() throws NegativeAccountBalanceException {
         setupWithAccount(miscMerkleId, miscMerkleAccount);
         miscMerkleAccount.setBalance(0L);
-        given(validator.expiryStatusGiven(0L, 1234567L, false))
+        miscMerkleAccount.setExpiredAndPendingRemoval(true);
+        given(validator.expiryStatusGiven(0L, true, false))
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         assertMiscAccountLoadFailsWith(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
@@ -200,7 +201,8 @@ class AccountStoreTest {
 
         miscMerkleAccount.setDeleted(false);
         miscMerkleAccount.setBalance(0L);
-        given(validator.expiryStatusGiven(0L, expiry, false))
+        miscMerkleAccount.setExpiredAndPendingRemoval(true);
+        given(validator.expiryStatusGiven(0L, true, false))
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         var ex2 =
@@ -258,12 +260,12 @@ class AccountStoreTest {
 
     private void setupWithUnexpiredAccount(EntityNum anId, MerkleAccount anAccount) {
         given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
     }
 
     private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
         given(accounts.getRef(anId.toGrpcAccountId())).willReturn(anAccount);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
     }
 
     private void assertMiscAccountLoadFailsWith(ResponseCodeEnum status) {

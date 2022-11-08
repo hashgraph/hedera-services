@@ -73,10 +73,38 @@ class SynthCreationCustomizerTest {
                         .setContractCreateInstance(
                                 ContractCreateTransactionBody.getDefaultInstance())
                         .build();
-        final var customCreation = subject.customize(origCreation, callerId);
+        final var customCreation = subject.customize(origCreation, callerId, true);
 
         final var customOp = customCreation.getContractCreateInstance();
         assertEquals(grpcCryptoAdminKey, customOp.getAdminKey());
+        assertEquals(memo, customOp.getMemo());
+        assertEquals(autoRenewPeriod, customOp.getAutoRenewPeriod().getSeconds());
+        assertEquals(autoRenewAccount.toGrpcAccountId(), customOp.getAutoRenewAccountId());
+        assertEquals(asAccount("0.0." + stakedId), customOp.getStakedAccountId());
+        assertEquals(STAKED_ACCOUNT_ID_CASE, customOp.getStakedIdCase().name());
+        assertEquals(0, customOp.getStakedNodeId());
+        assertEquals(declineReward, customOp.getDeclineReward());
+    }
+
+    @Test
+    void customizesAsExpectedWithoutKey() {
+        given(accountsLedger.get(callerId, MEMO)).willReturn(memo);
+        given(accountsLedger.get(callerId, EXPIRY)).willReturn(expiry);
+        given(accountsLedger.get(callerId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
+        given(accountsLedger.get(callerId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
+        given(accountsLedger.get(callerId, MAX_AUTOMATIC_ASSOCIATIONS))
+                .willReturn(maxAutoAssociations);
+        given(accountsLedger.get(callerId, STAKED_ID)).willReturn(stakedId);
+        given(accountsLedger.get(callerId, DECLINE_REWARD)).willReturn(declineReward);
+
+        final var origCreation =
+                TransactionBody.newBuilder()
+                        .setContractCreateInstance(
+                                ContractCreateTransactionBody.getDefaultInstance())
+                        .build();
+        final var customCreation = subject.customize(origCreation, callerId, false);
+
+        final var customOp = customCreation.getContractCreateInstance();
         assertEquals(memo, customOp.getMemo());
         assertEquals(autoRenewPeriod, customOp.getAutoRenewPeriod().getSeconds());
         assertEquals(autoRenewAccount.toGrpcAccountId(), customOp.getAutoRenewAccountId());
