@@ -67,8 +67,9 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        validateTrue(stateView.tokenExists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
-        final var tokenInfo = stateView.infoForToken(tokenId).orElse(null);
+        validateTrue(ledgers.tokens().contains(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
+        final var tokenInfo =
+                ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
 
         if (tokenInfo == null) {
             throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID);

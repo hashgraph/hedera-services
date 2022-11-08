@@ -50,7 +50,6 @@ import com.hedera.services.store.contracts.precompile.impl.IsTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
@@ -103,7 +102,10 @@ public class ViewExecutor {
         switch (selector) {
             case ABI_ID_GET_TOKEN_INFO -> {
                 final var wrapper = TokenInfoPrecompile.decodeGetTokenInfo(input);
-                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                final var tokenInfo =
+                        ledgers.infoForToken(
+                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -111,7 +113,10 @@ public class ViewExecutor {
             }
             case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
                 final var wrapper = FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
-                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                final var tokenInfo =
+                        ledgers.infoForToken(
+                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -120,7 +125,10 @@ public class ViewExecutor {
             case ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> {
                 final var wrapper =
                         NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
-                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                final var tokenInfo =
+                        ledgers.infoForToken(
+                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -129,7 +137,9 @@ public class ViewExecutor {
                                 .setTokenID(wrapper.tokenID())
                                 .setSerialNumber(wrapper.serialNumber())
                                 .build();
-                final var nonFungibleTokenInfo = stateView.infoForNft(nftID).orElse(null);
+                final var nonFungibleTokenInfo =
+                        ledgers.infoForNft(nftID, stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
                 validateTrueOrRevert(
                         nonFungibleTokenInfo != null,
                         ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
@@ -164,30 +174,33 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
                 final var wrapper = TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
                 validateTrueOrRevert(
-                        stateView.tokenExists(wrapper.tokenID()),
+                        ledgers.tokens().contains(wrapper.tokenID()),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
-                final var customFees = stateView.tokenCustomFees(wrapper.tokenID());
+                final var customFees = ledgers.tokenCustomFees(wrapper.tokenID());
                 return encoder.encodeTokenGetCustomFees(customFees);
             }
             case ABI_ID_IS_TOKEN -> {
                 final var wrapper = IsTokenPrecompile.decodeIsToken(input);
-                final var isToken = stateView.tokenExists(wrapper.tokenID());
+                final var isToken = ledgers.tokens().contains(wrapper.tokenID());
                 return encoder.encodeIsToken(isToken);
             }
             case ABI_ID_GET_TOKEN_TYPE -> {
                 final var wrapper = GetTokenTypePrecompile.decodeGetTokenType(input);
                 validateTrueOrRevert(
-                        stateView.tokenExists(wrapper.tokenID()),
+                        ledgers.tokens().contains(wrapper.tokenID()),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
-                final var token = stateView.tokens().get(EntityNum.fromTokenId(wrapper.tokenID()));
+                final var token = ledgers.tokens().getImmutableRef(wrapper.tokenID());
                 return encoder.encodeGetTokenType(token.tokenType().ordinal());
             }
             case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
                 final var wrapper = GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
                 validateTrueOrRevert(
-                        stateView.tokenExists(wrapper.tokenID()),
+                        ledgers.tokens().contains(wrapper.tokenID()),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
-                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                final var tokenInfo =
+                        ledgers.infoForToken(
+                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
 
                 if (tokenInfo == null) {
                     throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID, true);
@@ -204,7 +217,7 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_KEY -> {
                 final var wrapper = GetTokenKeyPrecompile.decodeGetTokenKey(input);
                 validateTrueOrRevert(
-                        stateView.tokenExists(wrapper.tokenID()),
+                        ledgers.tokens().contains(wrapper.tokenID()),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
                 JKey key = (JKey) ledgers.tokens().get(wrapper.tokenID(), wrapper.tokenKeyType());
                 return encoder.encodeGetTokenKey(buildKeyValueWrapper(key));

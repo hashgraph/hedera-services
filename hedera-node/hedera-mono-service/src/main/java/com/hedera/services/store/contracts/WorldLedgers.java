@@ -15,6 +15,10 @@
  */
 package com.hedera.services.store.contracts;
 
+import static com.hedera.services.context.primitives.StateView.WILDCARD_OWNER;
+import static com.hedera.services.context.primitives.StateView.tfsFor;
+import static com.hedera.services.context.primitives.StateView.tksFor;
+import static com.hedera.services.context.primitives.StateView.tokenPauseStatusOf;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp;
@@ -38,9 +42,12 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.utils.EntityIdUtils.ECDSA_SECP256K1_ALIAS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static java.util.Collections.emptyList;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
@@ -62,17 +69,32 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public class WorldLedgers {
+    private static final Logger log = LogManager.getLogger(WorldLedgers.class);
     public static final ByteString ECDSA_KEY_ALIAS_PREFIX =
             ByteString.copyFrom(new byte[] {0x3a, 0x21});
 
@@ -131,6 +153,140 @@ public class WorldLedgers {
     public boolean defaultKycStatus(final TokenID tokenId) {
         return propertyOf(
                 tokenId, ACC_KYC_GRANTED_BY_DEFAULT, StaticEntityAccess::defaultKycStatus);
+    }
+
+    public Optional<TokenInfo> infoForToken(final TokenID tokenId, final ByteString ledgerId) {
+        if (staticEntityAccess != null) {
+            return staticEntityAccess.infoForToken(tokenId);
+        } else {
+            try {
+                final var token = tokensLedger.getImmutableRef(tokenId);
+                if (token == null) {
+                    return Optional.empty();
+                }
+                final var info =
+                        TokenInfo.newBuilder()
+                                .setLedgerId(ledgerId)
+                                .setTokenTypeValue(token.tokenType().ordinal())
+                                .setSupplyTypeValue(token.supplyType().ordinal())
+                                .setTokenId(tokenId)
+                                .setDeleted(token.isDeleted())
+                                .setSymbol(token.symbol())
+                                .setName(token.name())
+                                .setMemo(token.memo())
+                                .setTreasury(token.treasury().toGrpcAccountId())
+                                .setTotalSupply(token.totalSupply())
+                                .setMaxSupply(token.maxSupply())
+                                .setDecimals(token.decimals())
+                                .setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
+
+                final var adminCandidate = token.adminKey();
+                adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
+
+                final var freezeCandidate = token.freezeKey();
+                freezeCandidate.ifPresentOrElse(
+                        k -> {
+                            info.setDefaultFreezeStatus(tfsFor(token.accountsAreFrozenByDefault()));
+                            info.setFreezeKey(asKeyUnchecked(k));
+                        },
+                        () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
+
+                final var kycCandidate = token.kycKey();
+                kycCandidate.ifPresentOrElse(
+                        k -> {
+                            info.setDefaultKycStatus(tksFor(token.accountsKycGrantedByDefault()));
+                            info.setKycKey(asKeyUnchecked(k));
+                        },
+                        () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
+
+                final var supplyCandidate = token.supplyKey();
+                supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
+                final var wipeCandidate = token.wipeKey();
+                wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
+                final var feeScheduleCandidate = token.feeScheduleKey();
+                feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
+
+                final var pauseCandidate = token.pauseKey();
+                pauseCandidate.ifPresentOrElse(
+                        k -> {
+                            info.setPauseKey(asKeyUnchecked(k));
+                            info.setPauseStatus(tokenPauseStatusOf(token.isPaused()));
+                        },
+                        () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable));
+
+                if (token.hasAutoRenewAccount()) {
+                    info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());
+                    info.setAutoRenewPeriod(
+                            Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
+                }
+
+                info.addAllCustomFees(token.grpcFeeSchedule());
+
+                return Optional.of(info.build());
+            } catch (Exception unexpected) {
+                log.warn(
+                        "Unexpected failure getting info for token {}!",
+                        readableId(tokenId),
+                        unexpected);
+                return Optional.empty();
+            }
+        }
+    }
+
+    public Optional<TokenNftInfo> infoForNft(final NftID target, final ByteString ledgerId) {
+        if (staticEntityAccess != null) {
+            return staticEntityAccess.infoForNft(target);
+        } else {
+            final var tokenId = EntityNum.fromTokenId(target.getTokenID());
+            final var targetKey =
+                    NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
+            if (!nftsLedger.contains(targetKey)) {
+                return Optional.empty();
+            }
+            final var targetNft = nftsLedger.getImmutableRef(targetKey);
+            var accountId = targetNft.getOwner().toGrpcAccountId();
+
+            if (WILDCARD_OWNER.equals(accountId)) {
+                var merkleToken = tokensLedger.getImmutableRef(target.getTokenID());
+                if (merkleToken == null) {
+                    return Optional.empty();
+                }
+                accountId = merkleToken.treasury().toGrpcAccountId();
+            }
+
+            final var spenderId = targetNft.getSpender().toGrpcAccountId();
+
+            final var info =
+                    TokenNftInfo.newBuilder()
+                            .setLedgerId(ledgerId)
+                            .setNftID(target)
+                            .setAccountID(accountId)
+                            .setCreationTime(targetNft.getCreationTime().toGrpc())
+                            .setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+                            .setSpenderId(spenderId)
+                            .build();
+            return Optional.of(info);
+        }
+    }
+
+    public List<CustomFee> tokenCustomFees(final TokenID tokenId) {
+        if (staticEntityAccess != null) {
+            return staticEntityAccess.tokenCustomFees(tokenId);
+        } else {
+            try {
+                final var token = tokensLedger.getImmutableRef(tokenId);
+                if (token == null) {
+                    return emptyList();
+                }
+                return token.grpcFeeSchedule();
+            } catch (Exception unexpected) {
+                log.warn(
+                        "Unexpected failure getting custom fees for token {}!",
+                        readableId(tokenId),
+                        unexpected);
+                return emptyList();
+            }
+        }
     }
 
     public String nameOf(final TokenID tokenId) {

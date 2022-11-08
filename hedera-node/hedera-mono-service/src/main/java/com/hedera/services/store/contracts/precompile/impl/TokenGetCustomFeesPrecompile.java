@@ -66,8 +66,8 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        validateTrue(stateView.tokenExists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
-        final var customFees = stateView.tokenCustomFees(tokenId);
+        validateTrue(ledgers.tokens().contains(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
+        final var customFees = ledgers.tokenCustomFees(tokenId);
 
         return encoder.encodeTokenGetCustomFees(customFees);
     }

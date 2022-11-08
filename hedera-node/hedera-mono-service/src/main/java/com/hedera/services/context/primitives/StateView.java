@@ -125,13 +125,15 @@ public class StateView {
 
     private final ScheduleStore scheduleStore;
     private final StateChildren stateChildren;
+
     private final NetworkInfo networkInfo;
 
     Map<byte[], byte[]> contractBytecode;
+
     Map<FileID, byte[]> fileContents;
     Map<FileID, HFileMeta> fileAttrs;
-
     private BackingStore<TokenID, MerkleToken> backingTokens = null;
+
     private BackingStore<AccountID, HederaAccount> backingAccounts = null;
     private BackingStore<NftId, UniqueTokenAdapter> backingNfts = null;
     private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingRels = null;
@@ -149,6 +151,10 @@ public class StateView {
         fileContents = DataMapFactory.dataMapFrom(blobStore);
         fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
         contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
+    }
+
+    public NetworkInfo getNetworkInfo() {
+        return networkInfo;
     }
 
     public Optional<HFileMeta> attrOf(final FileID id) {
@@ -721,15 +727,15 @@ public class StateView {
         return backingRels;
     }
 
-    private TokenFreezeStatus tfsFor(final boolean flag) {
+    public static TokenFreezeStatus tfsFor(final boolean flag) {
         return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
     }
 
-    private TokenKycStatus tksFor(final boolean flag) {
+    public static TokenKycStatus tksFor(final boolean flag) {
         return flag ? TokenKycStatus.Granted : TokenKycStatus.Revoked;
     }
 
-    private TokenPauseStatus tokenPauseStatusOf(final boolean flag) {
+    public static TokenPauseStatus tokenPauseStatusOf(final boolean flag) {
         return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
     }
 

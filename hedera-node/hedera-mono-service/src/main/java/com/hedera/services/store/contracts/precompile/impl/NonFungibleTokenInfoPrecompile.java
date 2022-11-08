@@ -67,12 +67,14 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 
-        final var tokenInfo = stateView.infoForToken(tokenId).orElse(null);
+        final var tokenInfo =
+                ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
         final var nftID =
                 NftID.newBuilder().setTokenID(tokenId).setSerialNumber(serialNumber).build();
-        final var nonFungibleTokenInfo = stateView.infoForNft(nftID).orElse(null);
+        final var nonFungibleTokenInfo =
+                ledgers.infoForNft(nftID, stateView.getNetworkInfo().ledgerId()).orElse(null);
         validateTrue(
                 nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 

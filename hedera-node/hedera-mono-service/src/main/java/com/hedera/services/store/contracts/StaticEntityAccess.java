@@ -48,17 +48,26 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
 public class StaticEntityAccess implements EntityAccess {
+    private static final Logger log = LogManager.getLogger(StaticEntityAccess.class);
     private final StateView view;
     private final ContractAliases aliases;
     private final OptionValidator validator;
@@ -284,6 +293,26 @@ public class StaticEntityAccess implements EntityAccess {
         final var isFrozenKey = fromAccountTokenRel(accountId, tokenId);
         final var relStatus = tokenAssociations.get(isFrozenKey);
         return relStatus != null && relStatus.isFrozen();
+    }
+
+    public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
+        lookupToken(tokenId);
+        return view.infoForToken(tokenId);
+    }
+
+    public Optional<TokenNftInfo> infoForNft(final NftID target) {
+        final var nft =
+                nfts.get(
+                        NftId.withDefaultShardRealm(
+                                EntityNum.fromTokenId(target.getTokenID()).longValue(),
+                                target.getSerialNumber()));
+        validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        return view.infoForNft(target);
+    }
+
+    public List<CustomFee> tokenCustomFees(final TokenID tokenId) {
+        lookupToken(tokenId);
+        return view.tokenCustomFees(tokenId);
     }
 
     /**
