@@ -60,16 +60,17 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         if (hederaPrecompile != null) {
             executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
         } else {
+            // Non-precompile execution flow
             if (frame.getValue().greaterThan(Wei.ZERO)) {
                 final var updater = (AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater();
                 if (updater.isTokenAddress(frame.getRecipientAddress())) {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                    return;
                 }
             }
-            if (frame.getState() != EXCEPTIONAL_HALT) {
-                super.start(frame, operationTracer);
-            }
+
+            super.start(frame, operationTracer);
         }
     }
 

@@ -115,7 +115,6 @@ class HederaEvmMessageCallProcessorTest {
         given(frame.getSenderAddress()).willReturn(SENDER_ADDRESS);
         given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
         doCallRealMethod().when(frame).setState(CODE_EXECUTING);
-        doCallRealMethod().when(frame).getState();
 
         subject.start(frame, hederaEvmOperationTracer);
 
@@ -136,7 +135,6 @@ class HederaEvmMessageCallProcessorTest {
         given(updater.getSenderAccount(frame)).willReturn(sender);
         given(updater.getOrCreate(RECIPIENT_ADDRESS)).willReturn(receiver);
         doCallRealMethod().when(frame).setState(CODE_EXECUTING);
-        doCallRealMethod().when(frame).getState();
 
         subject.start(frame, hederaEvmOperationTracer);
 
@@ -167,7 +165,6 @@ class HederaEvmMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
         given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(true);
         doCallRealMethod().when(frame).setState(EXCEPTIONAL_HALT);
-        doCallRealMethod().when(frame).getState();
 
         subject.start(frame, hederaEvmOperationTracer);
 
