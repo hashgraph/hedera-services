@@ -58,15 +58,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-        if (meta.failed()) {
-            return meta;
-        }
-
         addIfNotPayer(deleteAccountId, payer, meta);
-        if (meta.failed()) {
-            return meta;
-        }
-
         addIfNotPayerAndReceiverSigRequired(transferAccountId, payer, meta);
         return meta;
     }
@@ -139,7 +131,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      */
     private void addIfNotPayer(
             final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        if (payer.equals(accountId)) {
+        if (meta.failed() || payer.equals(accountId)) {
             return;
         }
         var result = accountStore.getKey(accountId);
@@ -162,7 +154,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      */
     private void addIfNotPayerAndReceiverSigRequired(
             final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        if (payer.equals(accountId)) {
+        if (meta.failed() || payer.equals(accountId)) {
             return;
         }
         var result = accountStore.getKeyIfReceiverSigRequired(accountId);
