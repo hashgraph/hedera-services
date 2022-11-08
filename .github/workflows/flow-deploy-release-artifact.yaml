@@ -214,7 +214,7 @@ jobs:
       - release-adhoc
       - release-tag
       - release-branch
-    if: (needs.release-tag.result == 'success' || needs.release-branch.result == 'success' || needs.release-adhoc.result == 'success') && needs.prepare-mc-release.result == 'success' && always() }}
+    if: ${{ (needs.release-tag.result == 'success' || needs.release-branch.result == 'success' || needs.release-adhoc.result == 'success') && needs.prepare-mc-release.result == 'success' && always() }}
     steps:
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v2
