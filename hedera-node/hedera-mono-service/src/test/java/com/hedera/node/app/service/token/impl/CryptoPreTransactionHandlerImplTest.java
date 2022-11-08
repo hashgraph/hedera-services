@@ -55,9 +55,9 @@ class CryptoPreTransactionHandlerImplTest {
     private AccountID payer = asAccount("0.0.3");
     private AccountID deleteAccountId = asAccount("0.0.3213");
     private AccountID transferAccountId = asAccount("0.0.32134");
-    private Long payerNum = 3L;
-    private Long deleteAccountNum = 3213L;
-    private Long transferAccountNum = 32134L;
+    private Long payerNum = payer.getAccountNum();
+    private Long deleteAccountNum = deleteAccountId.getAccountNum();
+    private Long transferAccountNum = transferAccountId.getAccountNum();
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
@@ -97,7 +97,7 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void noReceiverSigRequiredPreHandleCreate() {
+    void noReceiverSigRequiredPreHandleCryptoCreate() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn((JKey) hederaKey);
 
@@ -157,7 +157,7 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void doesntAddKeysAccountsSameAsPayer() {
+    void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() {
         final var keyUsed = (JKey) hederaKey;
 
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
@@ -175,7 +175,7 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void doesntAddTransferKeyIfAccountSameAsPayer() {
+    void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() {
         final var keyUsed = (JKey) hederaKey;
 
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
@@ -195,7 +195,7 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void doesntAddDeleteKeyIfAccountSameAsPayer() {
+    void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() {
         final var keyUsed = (JKey) hederaKey;
 
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
@@ -216,7 +216,7 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void failsWithResponseCodeIfAccountMissing() {
+    void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() {
         final var keyUsed = (JKey) hederaKey;
 
         /* ------ payerAccount missing ------ */

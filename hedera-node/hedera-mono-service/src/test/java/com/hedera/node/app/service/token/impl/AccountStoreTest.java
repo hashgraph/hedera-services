@@ -46,6 +46,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+// FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
     @Mock private RebuiltStateImpl aliases;
@@ -151,7 +152,7 @@ class AccountStoreTest {
     }
 
     @Test
-    void getsKeyIfAliasAndReceiverSigRequired() {
+    void getsKeyIfPayerAliasAndReceiverSigRequired() {
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
@@ -165,7 +166,7 @@ class AccountStoreTest {
     }
 
     @Test
-    void getsKeyIfAccountAndReceiverSigRequired() {
+    void getsKeyIfPayerAccountAndReceiverSigRequired() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(true);
@@ -178,7 +179,7 @@ class AccountStoreTest {
     }
 
     @Test
-    void getsNullKeyIfAndReceiverSigRequiredIfMissingAlias() {
+    void getsNullKeyFromReceiverSigRequiredIfMissingAlias() {
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
 
         final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
@@ -225,7 +226,7 @@ class AccountStoreTest {
     }
 
     @Test
-    void failsKeyValidationWhenKeyNull() {
+    void failsKeyValidationWhenKeyReturnedIsNull() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn(null);
 
@@ -244,9 +245,8 @@ class AccountStoreTest {
     }
 
     @Test
-    void failsKeyValidationWhenKeyEmpty() {
+    void failsKeyValidationWhenKeyReturnedIsEmpty() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        // Once we have protobuf generated object need to move to use that instead.
         given(account.getAccountKey()).willReturn(new JKeyList());
 
         var result = subject.getKey(payer);
