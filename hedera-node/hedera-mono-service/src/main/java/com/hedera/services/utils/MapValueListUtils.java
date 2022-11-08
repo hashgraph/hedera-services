@@ -18,7 +18,7 @@ package com.hedera.services.utils;
 import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.common.FastCopyable;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 public class MapValueListUtils {

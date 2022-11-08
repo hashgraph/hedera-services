@@ -25,7 +25,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 public class SerializableSemVers implements SoftwareVersion {

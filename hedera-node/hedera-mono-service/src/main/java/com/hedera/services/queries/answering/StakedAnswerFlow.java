@@ -47,7 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public final class StakedAnswerFlow implements AnswerFlow {
     private final FeeCalculator fees;

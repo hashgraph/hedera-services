@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.services.hapi.utils.fee.SigValueObj;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.codec.DecoderException;

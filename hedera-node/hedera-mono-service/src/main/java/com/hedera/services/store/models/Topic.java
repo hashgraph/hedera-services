@@ -18,7 +18,7 @@ package com.hedera.services.store.models;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
 import java.time.Instant;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents the model of a {@link com.hedera.services.state.merkle.MerkleTopic}.

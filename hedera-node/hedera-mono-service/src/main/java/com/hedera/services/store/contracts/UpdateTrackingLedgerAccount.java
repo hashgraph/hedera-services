@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -40,6 +39,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.jetbrains.annotations.Nullable;
 
 public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount
         implements MutableAccount, EvmAccount {
@@ -49,7 +49,8 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
 
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
-    @Nullable private A account;
+    @Nullable
+    private A account;
     @Nullable private Bytes updatedCode;
     @Nullable private Hash updatedCodeHash;
     private boolean storageWasCleared = false;

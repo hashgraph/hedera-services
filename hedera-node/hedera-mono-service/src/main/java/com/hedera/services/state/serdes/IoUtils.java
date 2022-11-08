@@ -23,7 +23,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public class IoUtils {
     public static void serializeKey(final JKey key, final DataOutputStream out) throws IOException {

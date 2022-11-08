@@ -25,7 +25,7 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.BiConsumer;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Encapsulates storage of <i>payer records</i>, which summarize the results of a transaction and

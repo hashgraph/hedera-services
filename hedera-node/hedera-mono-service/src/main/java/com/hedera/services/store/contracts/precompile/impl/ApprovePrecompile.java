@@ -58,7 +58,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
