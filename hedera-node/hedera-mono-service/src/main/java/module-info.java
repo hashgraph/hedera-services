@@ -9,7 +9,6 @@ module com.hedera.services {
     requires com.swirlds.platform;
     requires com.swirlds.virtualmap;
     requires org.apache.logging.log4j;
-    requires jsr305;
     requires annotations;
     requires dagger;
     requires javax.inject;
