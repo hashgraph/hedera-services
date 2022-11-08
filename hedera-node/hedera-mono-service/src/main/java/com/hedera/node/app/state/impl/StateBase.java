@@ -17,6 +17,8 @@ package com.hedera.node.app.state.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.state.State;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -33,7 +35,7 @@ public abstract class StateBase<K, V> implements State<K, V> {
     private String stateKey;
     private Map<K, V> readKeys = new HashMap<>();
 
-    StateBase(@Nonnull String stateKey) {
+    StateBase(@NotNull String stateKey) {
         this.stateKey = Objects.requireNonNull(stateKey);
     }
 
@@ -51,7 +53,7 @@ public abstract class StateBase<K, V> implements State<K, V> {
     protected abstract V read(K key);
 
     @Override
-    public Optional<V> get(@Nonnull K key) {
+    public Optional<V> get(@NotNull K key) {
         Objects.requireNonNull(key);
         return Optional.ofNullable(readKeys.computeIfAbsent(key, ignore -> read(key)));
     }

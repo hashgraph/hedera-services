@@ -19,9 +19,10 @@ import com.hedera.node.app.spi.state.State;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
+import org.jetbrains.annotations.NotNull;
+
 import java.time.Instant;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * An implementation of {@link State} backed by a {@link MerkleMap}, resulting in a state that is
@@ -35,14 +36,14 @@ public final class InMemoryStateImpl<K, V extends MerkleNode & Keyed<K>> extends
     private final Instant lastModifiedTime;
 
     public InMemoryStateImpl(
-            @Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
+            @NotNull final String stateKey, @NotNull final Instant lastModifiedTime) {
         this(stateKey, new MerkleMap<>(), lastModifiedTime);
     }
 
     public InMemoryStateImpl(
-            @Nonnull String stateKey,
-            @Nonnull MerkleMap<K, V> merkleMap,
-            @Nonnull final Instant lastModifiedTime) {
+            @NotNull String stateKey,
+            @NotNull MerkleMap<K, V> merkleMap,
+            @NotNull final Instant lastModifiedTime) {
         super(stateKey);
         this.merkle = Objects.requireNonNull(merkleMap);
         this.lastModifiedTime = lastModifiedTime;

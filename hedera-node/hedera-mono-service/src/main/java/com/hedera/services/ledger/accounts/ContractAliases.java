@@ -21,9 +21,9 @@ import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.Nullable;
 
 public interface ContractAliases {
     void revert();

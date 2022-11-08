@@ -23,6 +23,7 @@ import com.hedera.services.context.MutableStateChildren;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
 
 public class StatesImpl implements States {
     private final MutableStateChildren children = new MutableStateChildren();
@@ -41,7 +42,7 @@ public class StatesImpl implements States {
     }
 
     @Override
-    public @Nonnull <K, V> State<K, V> get(@Nonnull final String stateKey) {
+    public @NotNull <K, V> State<K, V> get(@NotNull final String stateKey) {
         Objects.requireNonNull(stateKey);
 
         if (stateKey.equals("ACCOUNTS")) {
