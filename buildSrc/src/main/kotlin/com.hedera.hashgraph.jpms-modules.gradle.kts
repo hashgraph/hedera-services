@@ -31,6 +31,8 @@ extraJavaModuleInfo {
     automaticModule("io.grpc:grpc-api", "io.grpc.api")
     automaticModule("io.grpc:grpc-netty", "io.grpc.netty")
 
+    automaticModule("io.grpc:grpc-stub", "io.grpc.stub")
+
     automaticModule("org.openjdk.jmh:jmh-core", "jmh.core")
     automaticModule("org.openjdk.jmh:jmh-generator-asm", "jmh.generator.asm")
     automaticModule("org.openjdk.jmh:jmh-generator-bytecode", "jmh.generator.bytecode")
