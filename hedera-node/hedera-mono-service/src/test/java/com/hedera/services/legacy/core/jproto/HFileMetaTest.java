@@ -18,6 +18,7 @@ package com.hedera.services.legacy.core.jproto;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,12 +29,13 @@ class HFileMetaTest {
     private JKey wacl = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked().getKeyList();
     private String memo = "Remember me?";
     private boolean deleted = true;
+    private final EntityId autoRenewId = new EntityId(0, 0, 666_666L);
 
     HFileMeta subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HFileMeta(deleted, wacl, expiry, memo);
+        subject = new HFileMeta(deleted, wacl, expiry, memo, autoRenewId);
     }
 
     @Test
@@ -52,6 +54,9 @@ class HFileMetaTest {
                         + ", "
                         + "deleted="
                         + deleted
+                        + ", "
+                        + "autoRenewId="
+                        + autoRenewId
                         + "}";
 
         // when:
