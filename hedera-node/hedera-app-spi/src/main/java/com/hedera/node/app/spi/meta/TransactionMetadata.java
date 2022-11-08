@@ -60,8 +60,19 @@ public interface TransactionMetadata {
      */
     List<HederaKey> getReqKeys();
 
+    /**
+     * Sets status on the metadata
+     *
+     * @param status given status
+     */
     void setStatus(final ResponseCodeEnum status);
 
+    /**
+     * Adds a given HederaKey to the list of required keys for signature verification. Throws
+     * NullPointerException if the key is null.
+     *
+     * @param key given key to add for required keys
+     */
     default void addToReqKeys(final HederaKey key) {
         getReqKeys().add(key);
     }
