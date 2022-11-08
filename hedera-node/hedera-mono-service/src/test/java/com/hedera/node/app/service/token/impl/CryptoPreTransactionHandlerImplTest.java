@@ -15,13 +15,17 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.state.impl.InMemoryStateImpl;
@@ -31,12 +35,12 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,9 +50,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerImplTest {
     private Key key = KeyUtils.A_COMPLEX_KEY;
+    private HederaKey hederaKey = asHederaKey(key).get();
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private AccountID payer = asAccount("0.0.3");
+    private AccountID deleteAccountId = asAccount("0.0.3213");
+    private AccountID transferAccountId = asAccount("0.0.32134");
     private Long payerNum = 3L;
+    private Long deleteAccountNum = 3213L;
+    private Long transferAccountNum = 32134L;
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
@@ -56,6 +65,8 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private InMemoryStateImpl accounts;
     @Mock private States states;
     @Mock private MerkleAccount account;
+    @Mock private MerkleAccount deleteAccount;
+    @Mock private MerkleAccount transferAccount;
     private AccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
 
@@ -70,11 +81,9 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void preHandlesCryptoCreate() throws DecoderException {
-        final var jkey = JKey.mapKey(key);
-
+    void preHandlesCryptoCreate() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn(jkey);
+        given(account.getAccountKey()).willReturn((JKey) hederaKey);
 
         final var txn = createAccountTransaction(true);
 
@@ -82,16 +91,15 @@ class CryptoPreTransactionHandlerImplTest {
 
         assertEquals(txn, meta.getTxn());
         assertEquals(2, meta.getReqKeys().size());
-        assertTrue(meta.getReqKeys().contains(jkey));
+        assertTrue(meta.getReqKeys().contains(hederaKey));
         assertFalse(meta.failed());
         assertEquals(OK, meta.status());
     }
 
     @Test
-    void noReceiverSigRequiredPreHandleCreate() throws DecoderException {
-        final var jkey = JKey.mapKey(key);
+    void noReceiverSigRequiredPreHandleCreate() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn(jkey);
+        given(account.getAccountKey()).willReturn((JKey) hederaKey);
 
         final var txn = createAccountTransaction(false);
         final var expectedMeta = new SigTransactionMetadata(store, txn, payer);
@@ -99,8 +107,148 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleCryptoCreate(txn);
 
         assertEquals(expectedMeta.getTxn(), meta.getTxn());
-        assertTrue(meta.getReqKeys().contains(jkey));
+        assertTrue(meta.getReqKeys().contains(hederaKey));
         assertEquals(expectedMeta.failed(), meta.failed());
+    }
+
+    @Test
+    void preHandlesCryptoDeleteIfNoReceiverSigRequired() {
+        final var keyUsed = (JKey) hederaKey;
+
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(keyUsed);
+        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
+        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+        given(transferAccount.isReceiverSigRequired()).willReturn(false);
+
+        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
+
+        final var meta = subject.preHandleCryptoDelete(txn);
+
+        assertEquals(txn, meta.getTxn());
+        assertEquals(2, meta.getReqKeys().size());
+        assertTrue(meta.getReqKeys().contains(keyUsed));
+        assertFalse(meta.failed());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
+    void preHandlesCryptoDeleteIfReceiverSigRequired() {
+        final var keyUsed = (JKey) hederaKey;
+
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(keyUsed);
+        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
+        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+        given(transferAccount.getAccountKey()).willReturn(keyUsed);
+        given(transferAccount.isReceiverSigRequired()).willReturn(true);
+
+        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
+
+        final var meta = subject.preHandleCryptoDelete(txn);
+
+        assertEquals(txn, meta.getTxn());
+        assertEquals(3, meta.getReqKeys().size());
+        assertTrue(meta.getReqKeys().contains(keyUsed));
+        assertFalse(meta.failed());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
+    void doesntAddKeysAccountsSameAsPayer() {
+        final var keyUsed = (JKey) hederaKey;
+
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(keyUsed);
+
+        final var txn = deleteAccountTransaction(payer, payer);
+
+        final var meta = subject.preHandleCryptoDelete(txn);
+
+        assertEquals(txn, meta.getTxn());
+        assertEquals(1, meta.getReqKeys().size());
+        assertTrue(meta.getReqKeys().contains(keyUsed));
+        assertFalse(meta.failed());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
+    void doesntAddTransferKeyIfAccountSameAsPayer() {
+        final var keyUsed = (JKey) hederaKey;
+
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(keyUsed);
+        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
+        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+
+        final var txn = deleteAccountTransaction(deleteAccountId, payer);
+
+        final var meta = subject.preHandleCryptoDelete(txn);
+
+        assertEquals(txn, meta.getTxn());
+        assertEquals(2, meta.getReqKeys().size());
+        assertTrue(meta.getReqKeys().contains(keyUsed));
+        assertFalse(meta.failed());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
+    void doesntAddDeleteKeyIfAccountSameAsPayer() {
+        final var keyUsed = (JKey) hederaKey;
+
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(keyUsed);
+        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(transferAccount.getAccountKey()).willReturn(keyUsed);
+        given(transferAccount.isReceiverSigRequired()).willReturn(true);
+
+        final var txn = deleteAccountTransaction(payer, transferAccountId);
+
+        final var meta = subject.preHandleCryptoDelete(txn);
+
+        assertEquals(txn, meta.getTxn());
+        assertEquals(2, meta.getReqKeys().size());
+        assertTrue(meta.getReqKeys().contains(keyUsed));
+        assertFalse(meta.failed());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
+    void failsWithResponseCodeIfAccountMissing() {
+        final var keyUsed = (JKey) hederaKey;
+
+        /* ------ payerAccount missing ------ */
+        given(accounts.get(payerNum)).willReturn(Optional.empty());
+        var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
+
+        var meta = subject.preHandleCryptoDelete(txn);
+        assertEquals(0, meta.getReqKeys().size());
+        assertTrue(meta.failed());
+        assertEquals(INVALID_PAYER_ACCOUNT_ID, meta.status());
+
+        /* ------ deleteAccount missing ------ */
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn(keyUsed);
+        given(accounts.get(deleteAccountNum)).willReturn(Optional.empty());
+
+        meta = subject.preHandleCryptoDelete(txn);
+
+        assertEquals(1, meta.getReqKeys().size());
+        assertTrue(meta.failed());
+        assertEquals(INVALID_ACCOUNT_ID, meta.status());
+
+        /* ------ transferAccount missing ------ */
+        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
+        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+        given(accounts.get(transferAccountNum)).willReturn(Optional.empty());
+
+        meta = subject.preHandleCryptoDelete(txn);
+
+        assertEquals(2, meta.getReqKeys().size());
+        assertTrue(meta.failed());
+        assertEquals(INVALID_ACCOUNT_ID, meta.status());
     }
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
@@ -118,6 +266,23 @@ class CryptoPreTransactionHandlerImplTest {
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoCreateAccount(createTxnBody)
+                .build();
+    }
+
+    private TransactionBody deleteAccountTransaction(
+            final AccountID deleteAccountId, final AccountID transferAccountId) {
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payer)
+                        .setTransactionValidStart(consensusTimestamp);
+        final var deleteTxBody =
+                CryptoDeleteTransactionBody.newBuilder()
+                        .setDeleteAccountID(deleteAccountId)
+                        .setTransferAccountID(transferAccountId);
+
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setCryptoDelete(deleteTxBody)
                 .build();
     }
 }

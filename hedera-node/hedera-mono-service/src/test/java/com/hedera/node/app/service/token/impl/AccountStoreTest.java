@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,6 +32,7 @@ import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
@@ -52,8 +54,7 @@ class AccountStoreTest {
     @Mock private MerkleAccount account;
     @Mock private States states;
     private Key payerKey = KeyUtils.A_COMPLEX_KEY;
-
-    private Optional<HederaKey> payerHederaKey = asHederaKey(payerKey);
+    private HederaKey payerHederaKey = asHederaKey(payerKey).get();
     private AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));
     private AccountID payer = asAccount("0.0.3");
     private Long payerNum = 3L;
@@ -73,25 +74,25 @@ class AccountStoreTest {
     void getsKeyIfAlias() {
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
 
         final var result = subject.getKey(payerAlias);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey.get(), result.key());
+        assertEquals(payerHederaKey, result.key());
     }
 
     @Test
     void getsKeyIfAccount() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
 
         final var result = subject.getKey(payer);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey.get(), result.key());
+        assertEquals(payerHederaKey, result.key());
     }
 
     @Test
@@ -124,13 +125,13 @@ class AccountStoreTest {
                 asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
 
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
 
         final var result = subject.getKey(mirrorAccount);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey.get(), result.key());
+        assertEquals(payerHederaKey, result.key());
     }
 
     @Test
@@ -153,27 +154,27 @@ class AccountStoreTest {
     void getsKeyIfAliasAndReceiverSigRequired() {
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(true);
 
         final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey.get(), result.key());
+        assertEquals(payerHederaKey, result.key());
     }
 
     @Test
     void getsKeyIfAccountAndReceiverSigRequired() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(true);
 
         final var result = subject.getKeyIfReceiverSigRequired(payer);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey.get(), result.key());
+        assertEquals(payerHederaKey, result.key());
     }
 
     @Test
@@ -222,15 +223,43 @@ class AccountStoreTest {
         assertNull(result.failureReason());
         assertNull(result.key());
     }
+
     @Test
-    void validatesKeyLookedUp(){
+    void failsKeyValidationWhenKeyNull() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey.get());
+        given(account.getAccountKey()).willReturn(null);
 
-        final var result = subject.getKey(payer);
+        var result = subject.getKey(payer);
 
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-        assertEquals(payerHederaKey.get(), result.key());
+        assertTrue(result.failed());
+        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
+        assertNull(result.key());
+
+        given(account.isReceiverSigRequired()).willReturn(true);
+        result = subject.getKeyIfReceiverSigRequired(payer);
+
+        assertTrue(result.failed());
+        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
+        assertNull(result.key());
+    }
+
+    @Test
+    void failsKeyValidationWhenKeyEmpty() {
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        // Once we have protobuf generated object need to move to use that instead.
+        given(account.getAccountKey()).willReturn(new JKeyList());
+
+        var result = subject.getKey(payer);
+
+        assertTrue(result.failed());
+        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
+        assertNull(result.key());
+
+        given(account.isReceiverSigRequired()).willReturn(true);
+        result = subject.getKeyIfReceiverSigRequired(payer);
+
+        assertTrue(result.failed());
+        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
+        assertNull(result.key());
     }
 }

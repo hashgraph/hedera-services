@@ -58,10 +58,15 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-        addIfNotPayer(deleteAccountId, payer, meta);
-        if(meta.failed()){
+        if (meta.failed()) {
             return meta;
         }
+
+        addIfNotPayer(deleteAccountId, payer, meta);
+        if (meta.failed()) {
+            return meta;
+        }
+
         addIfNotPayerAndReceiverSigRequired(transferAccountId, payer, meta);
         return meta;
     }
@@ -77,7 +82,6 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     public TransactionMetadata preHandleCryptoTransfer(TransactionBody txn) {
         throw new NotImplementedException();
     }
-
 
     @Override
     /** {@inheritDoc} */
@@ -115,9 +119,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     }
 
     private void addIfNotPayer(
-            final AccountID accountId,
-            final AccountID payer,
-            final SigTransactionMetadata meta) {
+            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
         if (payer.equals(accountId)) {
             return;
         }
@@ -130,16 +132,14 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     }
 
     private void addIfNotPayerAndReceiverSigRequired(
-            final AccountID accountId,
-            final AccountID payer,
-            final SigTransactionMetadata meta) {
+            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
         if (payer.equals(accountId)) {
             return;
         }
         var result = accountStore.getKeyIfReceiverSigRequired(accountId);
         if (result.failed()) {
             meta.setStatus(result.failureReason());
-        } else{
+        } else if (result.key() != null) {
             meta.addToReqKeys(result.key());
         }
     }

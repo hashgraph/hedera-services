@@ -79,7 +79,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
     }
 
     @Override
-    public void setStatus(final ResponseCodeEnum status){
+    public void setStatus(final ResponseCodeEnum status) {
         this.status = status;
     }
 }

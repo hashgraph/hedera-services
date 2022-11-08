@@ -84,21 +84,21 @@ public final class AccountStore {
     }
 
     /**
-     * Fetches the account's key from given {@link MerkleAccount} if the
-     * {@code receiverSigRequired} is true. If the key could not be fetched
-     * as the given accountId is invalid or doesn't exist provides information about the failure
-     * failureReason. If there is no failure failureReason will be null.
+     * Fetches the account's key from given {@link MerkleAccount} if the {@code receiverSigRequired}
+     * is true. If the key could not be fetched as the given accountId is invalid or doesn't exist
+     * provides information about the failure failureReason. If there is no failure failureReason
+     * will be null.
      *
      * @param idOrAlias account id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
      */
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final AccountID idOrAlias) {
         final var account = getAccountLeaf(idOrAlias);
-        if(account.isEmpty()){
+        if (account.isEmpty()) {
             return new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID);
         }
 
-        if(!account.get().isReceiverSigRequired()){
+        if (!account.get().isReceiverSigRequired()) {
             return new KeyOrLookupFailureReason(null, null);
         }
         return validateKey(account.get().getAccountKey());
@@ -140,8 +140,8 @@ public final class AccountStore {
         return id.getAccountNum();
     }
 
-    private KeyOrLookupFailureReason validateKey(final JKey key){
-        if(key == null || key.isEmpty()){
+    private KeyOrLookupFailureReason validateKey(final JKey key) {
+        if (key == null || key.isEmpty()) {
             // need new response code ACCOUNT_IS_IMMUTABLE?
             return new KeyOrLookupFailureReason(null, ALIAS_IS_IMMUTABLE);
         }

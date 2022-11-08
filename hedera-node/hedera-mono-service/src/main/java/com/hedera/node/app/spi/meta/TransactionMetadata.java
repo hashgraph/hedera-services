@@ -62,7 +62,7 @@ public interface TransactionMetadata {
 
     void setStatus(final ResponseCodeEnum status);
 
-    default void addToReqKeys(final HederaKey key){
+    default void addToReqKeys(final HederaKey key) {
         getReqKeys().add(key);
-    };
+    }
 }
