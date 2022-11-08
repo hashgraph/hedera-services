@@ -153,6 +153,7 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
         resetLastAllowedUse();
         final var bucket = delegate.bucket();
         bucket.resetUsed(0);
+        lastDecisionTime = null;
     }
 
     public void reclaimLastAllowedUse() {
