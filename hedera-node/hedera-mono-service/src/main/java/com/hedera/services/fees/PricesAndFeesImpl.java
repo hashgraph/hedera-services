@@ -29,18 +29,19 @@ import javax.inject.Singleton;
 @Singleton
 public class PricesAndFeesImpl implements PricesAndFeesProvider {
 
-    private final LivePricesSource livePricesSource;
-    private final HbarCentExchange exchange;
-    private final UsagePricesProvider usagePrices;
+    private final LivePricesSource livePricesSource = null;
+    private final HbarCentExchange exchange = null;
+    private final UsagePricesProvider usagePrices = null;
 
     @Inject
     public PricesAndFeesImpl(
-            LivePricesSource livePricesSource,
-            HbarCentExchange exchange,
-            UsagePricesProvider usagePrices) {
-        this.livePricesSource = livePricesSource;
-        this.exchange = exchange;
-        this.usagePrices = usagePrices;
+//            LivePricesSource livePricesSource,
+//            HbarCentExchange exchange,
+//            UsagePricesProvider usagePrices
+                ) {
+//        this.livePricesSource = livePricesSource;
+//        this.exchange = exchange;
+//        this.usagePrices = usagePrices;
     }
 
     @Override

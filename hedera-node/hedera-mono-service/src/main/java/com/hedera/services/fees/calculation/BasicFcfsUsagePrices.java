@@ -20,8 +20,9 @@ import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.evm.contracts.execution.RequiredPriceTypes;
+import com.hedera.services.evm.contracts.loader.impl.PricesAndFeesLoaderImpl;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.pricing.RequiredPriceTypes;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -50,6 +51,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class BasicFcfsUsagePrices implements UsagePricesProvider {
     private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
+    com.hedera.services.evm.contracts.loader.impl.PricesAndFeesLoaderImpl pricesAndFeesLoader = new PricesAndFeesLoaderImpl();
 
     private static final long DEFAULT_FEE = 100_000L;
     private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES =
@@ -131,7 +133,7 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     public Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
         try {
             Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices =
-                    applicableUsagePrices(at);
+                    pricesAndFeesLoader.applicableUsagePrices(at);
             Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
             Objects.requireNonNull(usagePrices);
             return usagePrices;
@@ -159,20 +161,6 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
                         currFunctionUsagePricesExpiry.getSeconds(),
                         currFunctionUsagePricesExpiry.getNanos()),
                 nextFunctionUsagePrices.get(function));
-    }
-
-    private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(
-            final Timestamp at) {
-        if (onlyNextScheduleApplies(at)) {
-            return nextFunctionUsagePrices;
-        } else {
-            return currFunctionUsagePrices;
-        }
-    }
-
-    private boolean onlyNextScheduleApplies(final Timestamp at) {
-        return at.getSeconds() >= currFunctionUsagePricesExpiry.getSeconds()
-                && at.getSeconds() < nextFunctionUsagePricesExpiry.getSeconds();
     }
 
     public void setFeeSchedules(final CurrentAndNextFeeSchedule feeSchedules) {

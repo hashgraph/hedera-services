@@ -16,11 +16,22 @@
 package com.hedera.services.evm.contracts.loader;
 
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import java.util.EnumMap;
+import java.util.Map;
 
 public interface PricesAndFeesLoader {
 
-    ExchangeRateSet getExchangeRates();
+    Timestamp currFunctionUsagePricesExpiry();
 
-    CurrentAndNextFeeSchedule getFeeSchedules();
+    Timestamp nextFunctionUsagePricesExpiry();
+
+    EnumMap<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices();
+
+    EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices();
+
+    CurrentAndNextFeeSchedule getFeeSchedules(final long now);
 }

@@ -47,7 +47,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
     @Inject
     public CallEvmTxProcessor(
             final HederaMutableWorldState worldState,
-            final PricesAndFeesImpl pricesAndFees,
+            PricesAndFeesImpl pricesAndFees,
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
@@ -65,6 +65,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
                 blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
+        new PricesAndFeesImpl();
     }
 
     public TransactionProcessingResult execute(

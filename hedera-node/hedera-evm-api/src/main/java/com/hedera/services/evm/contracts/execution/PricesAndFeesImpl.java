@@ -17,24 +17,31 @@ package com.hedera.services.evm.contracts.execution;
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
+import com.hedera.services.evm.contracts.loader.impl.PricesAndFeesLoaderImpl;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
-@Singleton
 public class PricesAndFeesImpl implements PricesAndFeesProvider {
     private final PricesAndFeesUtils utils;
+    private final PricesAndFeesLoaderImpl pricesAndFeesLoader;
 
-    @Inject
-    public PricesAndFeesImpl(PricesAndFeesUtils utils) {
+    private final CurrentAndNextFeeSchedule feeSchedules;
+
+    public PricesAndFeesImpl(
+            PricesAndFeesUtils utils,
+            PricesAndFeesLoaderImpl pricesAndFeesLoader,
+            CurrentAndNextFeeSchedule feeSchedules) {
         this.utils = utils;
+        this.pricesAndFeesLoader = pricesAndFeesLoader;
+        this.feeSchedules = feeSchedules;
     }
 
     public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
+        pricesAndFeesLoader.loadFeeSchedules(at.getSeconds());
         return utils.pricesGiven(function, at).get(DEFAULT);
     }
 
