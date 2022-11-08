@@ -41,6 +41,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -111,6 +112,7 @@ class ViewExecutorTest {
     @Mock private JKey key;
     @Mock private MerkleMap<EntityNum, MerkleToken> merkleTokens;
     @Mock private MerkleToken token;
+    @Mock private NetworkInfo networkInfo;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
     public static final AccountID spender = IdUtils.asAccount("0.0.888");
@@ -265,7 +267,10 @@ class ViewExecutorTest {
                 .when(() -> TokenInfoPrecompile.decodeGetTokenInfo(input))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo));
         given(encodingFacade.encodeGetTokenInfo(any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
@@ -280,7 +285,11 @@ class ViewExecutorTest {
                 .when(() -> FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo));
+
         given(encodingFacade.encodeGetFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
@@ -296,13 +305,17 @@ class ViewExecutorTest {
                 .when(() -> NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(nonfungibletoken)).willReturn(Optional.of(tokenInfo));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(ledgers.infoForToken(nonfungibletoken, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo));
         given(
-                        stateView.infoForNft(
+                        ledgers.infoForNft(
                                 NftID.newBuilder()
                                         .setTokenID(nonfungibletoken)
                                         .setSerialNumber(1L)
-                                        .build()))
+                                        .build(),
+                                networkInfo.ledgerId()))
                 .willReturn(Optional.of(TokenNftInfo.newBuilder().build()));
         given(encodingFacade.encodeGetNonFungibleTokenInfo(any(), any()))
                 .willReturn(tokenInfoEncoded);
@@ -334,8 +347,9 @@ class ViewExecutorTest {
         tokenGetCustomFeesPrecompile
                 .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
                 .thenReturn(new TokenGetCustomFeesWrapper(fungible));
-        given(stateView.tokenCustomFees(fungible)).willReturn(getCustomFees());
-        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(ledgers.tokens()).willReturn(tokens);
+        given(tokens.contains(fungible)).willReturn(true);
+        given(ledgers.tokenCustomFees(fungible)).willReturn(getCustomFees());
         given(encodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
 
         assertEquals(Pair.of(gas, tokenCustomFeesEncoded), subject.computeCosted());
@@ -350,7 +364,7 @@ class ViewExecutorTest {
         getTokenKeyPrecompile
                 .when(() -> GetTokenKeyPrecompile.decodeGetTokenKey(input))
                 .thenReturn(new GetTokenKeyWrapper(fungible, 1));
-        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(tokens.contains(fungible)).willReturn(true);
         given(ledgers.tokens()).willReturn(tokens);
         given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
@@ -373,6 +387,7 @@ class ViewExecutorTest {
         tokenGetCustomFeesPrecompile
                 .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
                 .thenReturn(new TokenGetCustomFeesWrapper(fungible));
+        given(ledgers.tokens()).willReturn(tokens);
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
     }
@@ -384,7 +399,8 @@ class ViewExecutorTest {
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(input))
                 .thenReturn(isTokenWrapper);
-        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(ledgers.tokens()).willReturn(tokens);
+        given(tokens.contains(fungible)).willReturn(true);
         given(encodingFacade.encodeIsToken(true)).willReturn(RETURN_SUCCESS_TRUE);
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }
@@ -396,9 +412,9 @@ class ViewExecutorTest {
         getTokenTypePrecompile
                 .when(() -> GetTokenTypePrecompile.decodeGetTokenType(input))
                 .thenReturn(wrapper);
-        given(stateView.tokenExists(fungible)).willReturn(true);
-        given(stateView.tokens()).willReturn(merkleTokens);
-        given(merkleTokens.get(EntityNum.fromTokenId(wrapper.tokenID()))).willReturn(token);
+        given(ledgers.tokens()).willReturn(tokens);
+        given(tokens.contains(fungible)).willReturn(true);
+        given(tokens.getImmutableRef(wrapper.tokenID())).willReturn(token);
         given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encodingFacade.encodeGetTokenType(TokenType.FUNGIBLE_COMMON.ordinal()))
                 .willReturn(RETURN_SUCCESS_TRUE);
@@ -420,7 +436,9 @@ class ViewExecutorTest {
                 .when(() -> TokenInfoPrecompile.decodeGetTokenInfo(input))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(any())).willReturn(Optional.empty());
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(ledgers.infoForToken(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -435,7 +453,9 @@ class ViewExecutorTest {
                 .when(() -> FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(any())).willReturn(Optional.empty());
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(ledgers.infoForToken(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -451,7 +471,9 @@ class ViewExecutorTest {
                 .when(() -> NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(any())).willReturn(Optional.empty());
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(ledgers.infoForToken(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -467,8 +489,10 @@ class ViewExecutorTest {
                 .when(() -> NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(any())).willReturn(Optional.of(tokenInfo));
-        given(stateView.infoForNft(any())).willReturn(Optional.empty());
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(ledgers.infoForToken(any(), any())).willReturn(Optional.of(tokenInfo));
+        given(ledgers.infoForNft(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -484,8 +508,12 @@ class ViewExecutorTest {
         getTokenExpiryInfoPrecompile
                 .when(() -> GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
                 .thenReturn(new GetTokenExpiryInfoWrapper(fungible));
-        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
-        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(ledgers.tokens()).willReturn(tokens);
+        given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo));
+        given(tokens.contains(fungible)).willReturn(true);
         given(encodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenExpiryInfoEncoded), subject.computeCosted());
@@ -498,8 +526,11 @@ class ViewExecutorTest {
         getTokenExpiryInfoPrecompile
                 .when(() -> GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
                 .thenReturn(new GetTokenExpiryInfoWrapper(fungible));
-        given(stateView.infoForToken(fungible)).willReturn(Optional.empty());
-        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(ledgers.tokens()).willReturn(tokens);
+        given(ledgers.infoForToken(fungible, networkInfo.ledgerId())).willReturn(Optional.empty());
+        given(tokens.contains(fungible)).willReturn(true);
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
