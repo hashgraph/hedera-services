@@ -116,6 +116,10 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
                 txnCtx.setStatus(validity);
                 return;
             }
+            if (ledger.isDetached(target)) {
+                // We can only get here if with a valid extension
+                customizer.isExpiredAndPendingRemoval(false);
+            }
 
             ledger.customize(target, customizer);
             sigImpactHistorian.markEntityChanged(target.getAccountNum());

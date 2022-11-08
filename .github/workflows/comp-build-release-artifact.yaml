@@ -253,7 +253,7 @@ jobs:
           if [[ "${POLICY}" == "branch-commit"  ]]; then
             ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}"
           else
-            ARTIFACT_NAME="build-v${{ steps.effective-version.outputs.number }}" 
+            ARTIFACT_NAME="build-v${{ steps.effective-version.outputs.number }}"
           fi
 
           ARTIFACT_FILE="${ARTIFACT_BASE_DIR}/${ARTIFACT_NAME}.zip"

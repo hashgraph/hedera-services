@@ -139,7 +139,8 @@ class ToStringAccountsExporterTest {
                     + " numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0, ethereumNonce=1,"
                     + " autoRenewAccount=null, headNftId=0, headNftSerialNum=0, stakedToMe=0,"
                     + " stakePeriodStart=-1, stakedNum=0, declineReward=false,"
-                    + " balanceAtStartOfLastRewardedPeriod=-1}, # records=0}\n"
+                    + " balanceAtStartOfLastRewardedPeriod=-1, expiredAndPendingRemoval=false}, #"
+                    + " records=0}\n"
                     + "\n"
                     + "0.0.2\n"
                     + "---\n"
@@ -153,8 +154,8 @@ class ToStringAccountsExporterTest {
                     + " firstContractStorageKey=<N/A>, numAssociations=1, numPositiveBalances=0,"
                     + " headTokenId=0, numTreasuryTitles=0, ethereumNonce=2, autoRenewAccount=null,"
                     + " headNftId=0, headNftSerialNum=0, stakedToMe=0, stakePeriodStart=-1,"
-                    + " stakedNum=0, declineReward=false, balanceAtStartOfLastRewardedPeriod=-1}, #"
-                    + " records=0}\n";
+                    + " stakedNum=0, declineReward=false, balanceAtStartOfLastRewardedPeriod=-1,"
+                    + " expiredAndPendingRemoval=false}, # records=0}\n";
 
         // given:
         AccountStorageAdapter accounts = AccountStorageAdapter.fromInMemory(new MerkleMap<>());

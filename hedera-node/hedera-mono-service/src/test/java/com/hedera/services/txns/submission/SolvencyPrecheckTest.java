@@ -246,7 +246,7 @@ class SolvencyPrecheckTest {
 
     @Test
     void refinesInsufficientPayerBalanceToDetachedResponseIfExpired() {
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean()))
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         givenInsolventPayer();
         givenValidSigs();
@@ -267,7 +267,7 @@ class SolvencyPrecheckTest {
         givenInsolventPayer();
         givenValidSigs();
         givenAcceptableFees();
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
         given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now))
                 .willReturn(+payerBalance);
 
@@ -285,7 +285,7 @@ class SolvencyPrecheckTest {
         givenAcceptableFees();
         given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now))
                 .willReturn(+payerBalance);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
 
         // when:
         var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -299,7 +299,7 @@ class SolvencyPrecheckTest {
         givenSolventPayer();
         givenValidSigs();
         givenAcceptableFees();
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
         given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now))
                 .willReturn(-payerBalance);
 

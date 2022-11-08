@@ -55,9 +55,11 @@ public class ExpiryProcess implements SystemTask {
         return switch (result) {
             case COME_BACK_LATER -> NO_CAPACITY_LEFT;
 
+            case DETACHED_ACCOUNT -> removalWork.tryToMarkDetached(entityNum, false);
             case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(entityNum, now);
             case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);
 
+            case DETACHED_CONTRACT -> removalWork.tryToMarkDetached(entityNum, true);
             case EXPIRED_CONTRACT_READY_TO_RENEW -> renewalWork.tryToRenewContract(entityNum, now);
             case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
 

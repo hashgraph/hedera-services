@@ -83,6 +83,11 @@ public class AccountGC {
         }
     }
 
+    public void markDetached(final EntityNum num) {
+        final var mutableAccount = backingAccounts.getRef(num.toGrpcAccountId());
+        mutableAccount.setExpiredAndPendingRemoval(true);
+    }
+
     private void completeRemoval(final EntityNum num, final HederaAccount expiredAccount) {
         backingAccounts.remove(num.toGrpcAccountId());
         sigImpactHistorian.markEntityChanged(num.longValue());

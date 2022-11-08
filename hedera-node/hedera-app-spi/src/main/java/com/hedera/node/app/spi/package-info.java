@@ -5,4 +5,4 @@
  *
  * <p><b>There should be no implementation code inside this package.</b>
  */
-package com.hedera.services.api;
+package com.hedera.node.app.spi;

@@ -119,7 +119,9 @@ public class StaticEntityAccess implements EntityAccess {
             return false;
         }
         return validator.expiryStatusGiven(
-                        account.getBalance(), account.getExpiry(), account.isSmartContract())
+                        account.getBalance(),
+                        account.isExpiredAndPendingRemoval(),
+                        account.isSmartContract())
                 == OK;
     }
 
