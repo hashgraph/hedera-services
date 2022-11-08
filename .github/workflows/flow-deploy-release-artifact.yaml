@@ -204,7 +204,7 @@ jobs:
                       '{"ref": $ref, "java": {"distribution": $jdist, "version": $jver}, "gradle": {"version": $gver}, "release": {"version": {"policy": $vpol, "number": $vnum}}}')"
 
           echo "payload=${REQ_JSON}" >>"${GITHUB_OUTPUT}"
-          printf "## Dispatch Payload\n```json\n%s\n```\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
+          printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
 
   dispatch-mc-release:
     name: Release / MC / Dispatch
