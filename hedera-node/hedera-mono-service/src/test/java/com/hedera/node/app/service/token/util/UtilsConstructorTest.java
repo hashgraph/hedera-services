@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.token.util;
 
+import com.hederahashgraph.fee.FeeUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -23,7 +24,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(AliasUtils.class));
+    private static final Set<Class<?>> toBeTested =
+            new HashSet<>(Arrays.asList(AliasUtils.class, FeeUtils.class));
 
     @Test
     void throwsInConstructor() {
