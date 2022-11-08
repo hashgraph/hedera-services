@@ -219,8 +219,10 @@ class CryptoPreTransactionHandlerImplTest {
     void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() {
         final var keyUsed = (JKey) hederaKey;
 
-        /* ------ payerAccount missing ------ */
+        /* ------ payerAccount missing, so deleteAccount and transferAccount will not be added  ------ */
         given(accounts.get(payerNum)).willReturn(Optional.empty());
+        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
+        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
         var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
         var meta = subject.preHandleCryptoDelete(txn);
@@ -228,10 +230,11 @@ class CryptoPreTransactionHandlerImplTest {
         assertTrue(meta.failed());
         assertEquals(INVALID_PAYER_ACCOUNT_ID, meta.status());
 
-        /* ------ deleteAccount missing ------ */
+        /* ------ deleteAccount missing, so transferAccount will not be added ------ */
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn(keyUsed);
         given(accounts.get(deleteAccountNum)).willReturn(Optional.empty());
+        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
 
         meta = subject.preHandleCryptoDelete(txn);
 
