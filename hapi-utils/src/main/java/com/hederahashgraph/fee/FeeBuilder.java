@@ -152,6 +152,7 @@ public class FeeBuilder {
 
     public static FeeObject getFeeObject(
             FeeData feeData, FeeData feeMatrices, ExchangeRate exchangeRate, long multiplier) {
+        // since there are no expected secondary fees, adds zero secondary fees to the fee object
         return internalGetFeeObject(feeData, feeMatrices, exchangeRate, multiplier, 0L, 0L, 0L);
     }
 
@@ -161,6 +162,7 @@ public class FeeBuilder {
             FeeObject secondaryFees,
             ExchangeRate exchangeRate,
             long multiplier) {
+        // since there are expected secondary fees, adds secondary fees components to the fee object
         return internalGetFeeObject(
                 feeData,
                 feeMatrices,

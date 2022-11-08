@@ -269,7 +269,7 @@ class AccessorBasedUsagesTest {
     void worksAsExpectedForTokenMint() {
         final var baseMeta = new BaseTransactionMeta(100, 2);
         final var tokenMintMeta =
-                new TokenMintMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 2000);
+                new TokenMintMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 20000);
         final var accumulator = new UsageAccumulator();
         given(txnAccessor.getFunction()).willReturn(TokenMint);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
