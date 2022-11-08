@@ -20,6 +20,11 @@ plugins {
 
 description = "Hedera Application - MONO Service Implementation"
 
+configurations.all {
+    exclude("com.google.code.findbugs", "jsr305")
+}
+
+
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 

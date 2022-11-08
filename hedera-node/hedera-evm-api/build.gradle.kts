@@ -21,16 +21,16 @@ plugins {
 group = "com.hedera.evm"
 description = "Hedera EVM - API"
 
+configurations.all {
+    exclude("com.google.code.findbugs", "jsr305")
+}
+
 dependencies {
     api(libs.besu.evm)
-    api(libs.besu.datatypes) {
-        exclude("com.google.code.findbugs", "jsr305")
-    }
+    api(libs.besu.datatypes)
     api(libs.swirlds.common)
     implementation(libs.caffeine)
-    implementation(libs.hapi) {
-        exclude("com.google.code.findbugs", "jsr305")
-    }
+    implementation(libs.hapi)
     implementation(libs.javax.inject)
 
     testImplementation(testLibs.mockito.jupiter)
