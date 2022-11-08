@@ -22,7 +22,7 @@ module com.hedera.services {
     requires com.swirlds.fcqueue;
     requires com.hedera.services.hapi.fees;
     requires org.bouncycastle.provider;
-    requires grpc.stub;
+    requires io.grpc.stub;
     requires org.eclipse.collections.impl;
     requires org.eclipse.collections.api;
     requires org.apache.commons.io;
