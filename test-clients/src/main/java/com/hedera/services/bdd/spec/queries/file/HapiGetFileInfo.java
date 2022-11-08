@@ -37,6 +37,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+import javax.annotation.Nullable;
+
 public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     private static final Logger LOG = LogManager.getLogger(HapiGetFileInfo.class);
 
@@ -49,6 +51,9 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     private Optional<Boolean> expectedDeleted = Optional.empty();
     private Optional<String> expectedWacl = Optional.empty();
     private Optional<String> expectedMemo = Optional.empty();
+    @Nullable
+    private String expectedAutoRenewAccount;
+    private boolean hasNoAutoRenewAccount;
 
     @SuppressWarnings("java:S1068")
     private Optional<String> expectedKeyRepr = Optional.empty();
@@ -86,6 +91,16 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 
     public HapiGetFileInfo hasMemo(String v) {
         expectedMemo = Optional.of(v);
+        return this;
+    }
+
+    public HapiGetFileInfo hasAutoRenewAccount(final String v) {
+        expectedAutoRenewAccount = v;
+        return this;
+    }
+
+    public HapiGetFileInfo hasNoAutoRenewAccount() {
+        hasNoAutoRenewAccount = false;
         return this;
     }
 
@@ -147,6 +162,14 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
         var info = response.getFileGetInfo().getFileInfo();
+
+        if (expectedAutoRenewAccount != null) {
+            final var expectedId = TxnUtils.asId(expectedAutoRenewAccount, spec);
+            Assertions.assertEquals(expectedId, info.getAutoRenewAccount(), "Wrong auto-renew account");
+        }
+        if (hasNoAutoRenewAccount) {
+            Assertions.assertFalse(info.hasAutoRenewAccount(), "Should have no auto-renew account");
+        }
 
         Assertions.assertEquals(TxnUtils.asFileId(file, spec), info.getFileID(), "Wrong file id!");
         keyReprObserver.ifPresent(

@@ -15,6 +15,7 @@
  */
 package com.hedera.services.files;
 
+import static com.hedera.services.files.HFileMetaSerde.AUTO_RENEW_VERSION;
 import static com.hedera.services.files.HFileMetaSerde.MEMO_VERSION;
 import static com.hedera.services.files.HFileMetaSerde.deserialize;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -25,6 +26,8 @@ import static org.mockito.BDDMockito.mock;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JObjectType;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.SeededPropertySource;
@@ -34,6 +37,10 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -71,14 +78,37 @@ class HFileMetaSerdeTest {
     }
 
     @Test
-    void deserializesWithMemoAndNullKey() throws IOException {
-        final var propertySource = SeededPropertySource.forSerdeTest((int) MEMO_VERSION, 2);
+    void deserializesWithMemoAndNullKeyAndNullEntityId() throws IOException {
+        final var propertySource = SeededPropertySource.forSerdeTest((int) AUTO_RENEW_VERSION, 2);
         final var expected =
                 new HFileMeta(
                         propertySource.nextBoolean(),
                         null,
                         propertySource.nextUnsignedLong(),
                         propertySource.nextString(42));
+
+        final var serializedForm = HFileMetaSerde.serialize(expected);
+        final var actual =
+                HFileMetaSerde.deserialize(
+                        new DataInputStream(new ByteArrayInputStream(serializedForm)));
+
+        assertEquals(expected.toString(), actual.toString());
+    }
+
+    @Test
+    void deserializesWithMemoAndKeyAndAutoRenewAccount() throws IOException, ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(
+                                EntityId.class, EntityId::new));
+        final var propertySource = SeededPropertySource.forSerdeTest((int) AUTO_RENEW_VERSION, 1);
+        final var expected =
+                new HFileMeta(
+                        propertySource.nextBoolean(),
+                        propertySource.nextKeyList(2),
+                        propertySource.nextUnsignedLong(),
+                        propertySource.nextString(69),
+                        propertySource.nextEntityId());
 
         final var serializedForm = HFileMetaSerde.serialize(expected);
         final var actual =

@@ -144,6 +144,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class StateViewTest {
     private static final int wellKnownNumKvPairs = 144;
     private final Instant resolutionTime = Instant.ofEpochSecond(123L);
+    private final EntityId autoRenewId = new EntityId(0, 0, 666_666L);
     private final RichInstant now =
             RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
     private final int maxTokensFprAccountInfo = 10;
@@ -222,7 +223,7 @@ class StateViewTest {
     public void setup() throws Throwable {
         metadata =
                 new HFileMeta(
-                        false, TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(), expiry, fileMemo);
+                        false, TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(), expiry, fileMemo, autoRenewId);
         immutableMetadata = new HFileMeta(false, StateView.EMPTY_WACL, expiry);
 
         expectedImmutable =
@@ -237,6 +238,7 @@ class StateViewTest {
                 expectedImmutable.toBuilder()
                         .setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
                         .setMemo(fileMemo)
+                        .setAutoRenewAccount(autoRenewId.toGrpcAccountId())
                         .build();
 
         tokenAccount =

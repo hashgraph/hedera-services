@@ -204,6 +204,7 @@ public abstract class HapiSpecOperation {
                 updateStateOf(spec);
             }
         } catch (Throwable t) {
+            t.printStackTrace();
             if (unavailableNode && t.getMessage().startsWith("UNAVAILABLE")) {
                 log.info(
                         "Node {} is unavailable as expected!",

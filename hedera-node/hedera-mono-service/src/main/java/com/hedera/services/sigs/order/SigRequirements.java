@@ -522,6 +522,7 @@ public class SigRequirements {
             }
             if (needsAutoRenewSignature(
                     op,
+                    true,
                     FileUpdateTransactionBody::hasAutoRenewAccount,
                     FileUpdateTransactionBody::getAutoRenewAccount)) {
                 final var autoRenewResult =
@@ -566,6 +567,7 @@ public class SigRequirements {
         final var needsAutoRenew =
                 needsAutoRenewSignature(
                         op,
+                        false,
                         FileCreateTransactionBody::hasAutoRenewAccount,
                         FileCreateTransactionBody::getAutoRenewAccount);
         final var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
@@ -691,6 +693,7 @@ public class SigRequirements {
             }
             if (needsAutoRenewSignature(
                     op,
+                    true,
                     CryptoUpdateTransactionBody::hasAutoRenewAccount,
                     CryptoUpdateTransactionBody::getAutoRenewAccount)) {
                 final var autoRenewResult =
@@ -816,6 +819,7 @@ public class SigRequirements {
         final var needsAutoRenew =
                 needsAutoRenewSignature(
                         op,
+                        false,
                         CryptoCreateTransactionBody::hasAutoRenewAccount,
                         CryptoCreateTransactionBody::getAutoRenewAccount);
         if (!op.getReceiverSigRequired() && !needsAutoRenew) {
@@ -1529,9 +1533,11 @@ public class SigRequirements {
 
     private <T> boolean needsAutoRenewSignature(
             final T op,
+            final boolean permitsRemoval,
             final Predicate<T> autoRenewTest,
             final Function<T, AccountID> autoRenewGetter) {
-        return autoRenewTest.test(op) && !designatesAccountRemoval(autoRenewGetter.apply(op));
+        return autoRenewTest.test(op)
+                && !(permitsRemoval && designatesAccountRemoval(autoRenewGetter.apply(op)));
     }
 
     private boolean tryToAddAutoRenew(

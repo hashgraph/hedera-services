@@ -144,11 +144,11 @@ public class TxnUtils {
 
     public static List<Function<HapiApiSpec, Key>> payerOptionalAndMaybeAutoRenewSigners(
             final Function<HapiApiSpec, String> effectivePayer,
-            final Key key,
+            @Nullable final Key key,
             @Nullable String autoRenewAccount) {
         final List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer.apply(spec)));
-        signers.add(ignore -> key);
+        signers.add(ignore -> Optional.ofNullable(key).orElse(Key.getDefaultInstance()));
         if (autoRenewAccount != null) {
             signers.add(spec -> spec.registry().getKey(autoRenewAccount));
         }

@@ -161,6 +161,7 @@ import static com.hedera.test.factories.scenarios.FileAppendScenarios.TREASURY_S
 import static com.hedera.test.factories.scenarios.FileAppendScenarios.VANILLA_FILE_APPEND_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileCreateScenarios.FILE_CREATE_WITH_AUTO_RENEW_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileCreateScenarios.FILE_CREATE_WITH_MISSING_AUTO_RENEW_SCENARIO;
+import static com.hedera.test.factories.scenarios.FileCreateScenarios.IMMUTABLE_FILE_CREATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileCreateScenarios.VANILLA_FILE_CREATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.IMMUTABLE_FILE_DELETE_SCENARIO;
 import static com.hedera.test.factories.scenarios.FileDeleteScenarios.MISSING_FILE_DELETE_SCENARIO;
@@ -545,6 +546,17 @@ class SigRequirementsTest {
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
                 contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+    }
+
+    @Test
+    void getsCryptoCreateNoReceiverSigReqOrAutoRenew() throws Throwable {
+        setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO);
+        final var linkedRefs = new LinkedRefs();
+
+        final var summary =
+                subject.keysForOtherParties(txn, summaryFactory, linkedRefs, CUSTOM_PAYER_ACCOUNT);
+
+        assertThat(summary.getOrderedKeys(), iterableWithSize(0));
     }
 
     @Test
@@ -2349,6 +2361,18 @@ class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_WACL_KT.asKey()));
+    }
+
+    @Test
+    void getsImmutableFileCreate() throws Throwable {
+        // given:
+        setupFor(IMMUTABLE_FILE_CREATE_SCENARIO);
+
+        // when:
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        // then:
+        assertThat(summary.getOrderedKeys(), iterableWithSize(0));
     }
 
     @Test

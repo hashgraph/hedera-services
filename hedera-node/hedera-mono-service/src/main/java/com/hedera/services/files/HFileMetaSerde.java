@@ -23,6 +23,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JObjectType;
 import com.hedera.services.state.serdes.IoUtils;
+import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
@@ -33,16 +34,18 @@ public class HFileMetaSerde {
     public static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
     public static final long PRE_MEMO_VERSION = 1;
     public static final long MEMO_VERSION = 2;
+    public static final long AUTO_RENEW_VERSION = 3;
 
     public static byte[] serialize(HFileMeta meta) throws IOException {
         return byteStream(
                 out -> {
                     final var serOut = new SerializableDataOutputStream(out);
-                    serOut.writeLong(MEMO_VERSION);
+                    serOut.writeLong(AUTO_RENEW_VERSION);
                     serOut.writeBoolean(meta.isDeleted());
                     serOut.writeLong(meta.getExpiry());
                     serOut.writeNormalisedString(meta.getMemo());
                     writeNullable(meta.getWacl(), serOut, IoUtils::serializeKey);
+                    serOut.writeSerializable(meta.getAutoRenewId(), true);
                 });
     }
 
@@ -51,7 +54,7 @@ public class HFileMetaSerde {
         if (version == PRE_MEMO_VERSION) {
             return readPreMemoMeta(in);
         } else {
-            return readMemoMeta(in);
+            return readSerializableMeta(in, version);
         }
     }
 
@@ -66,13 +69,19 @@ public class HFileMetaSerde {
         return unpack(in);
     }
 
-    private static HFileMeta readMemoMeta(DataInputStream in) throws IOException {
+    private static HFileMeta readSerializableMeta(
+            final DataInputStream in, final long version) throws IOException {
         final var serIn = new SerializableDataInputStream(in);
         final var isDeleted = serIn.readBoolean();
         final var expiry = serIn.readLong();
         final var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
         final JKey wacl = readNullable(serIn, JKeySerializer::deserialize);
-        return new HFileMeta(isDeleted, wacl, expiry, memo);
+        if (version < AUTO_RENEW_VERSION) {
+            return new HFileMeta(isDeleted, wacl, expiry, memo);
+        } else {
+            final EntityId autoRenewId = serIn.readSerializable();
+            return new HFileMeta(isDeleted, wacl, expiry, memo, autoRenewId);
+        }
     }
 
     private static HFileMeta unpack(DataInputStream stream) throws IOException {

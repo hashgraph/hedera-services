@@ -421,6 +421,9 @@ public class StateView {
         }
         if (!stateChildren.specialFiles().contains(id)) {
             info.setMemo(attr.getMemo());
+            if (attr.getAutoRenewId() != null) {
+                info.setAutoRenewAccount(attr.getAutoRenewId().toGrpcAccountId());
+            }
         } else {
             // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
             final var upgradeHash =

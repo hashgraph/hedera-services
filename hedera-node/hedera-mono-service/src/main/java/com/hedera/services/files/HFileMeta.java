@@ -19,7 +19,10 @@ import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
+
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -29,6 +32,7 @@ public class HFileMeta {
     private long expiry;
     private String memo = DEFAULT_MEMO;
     private boolean deleted;
+    private EntityId autoRenewId;
 
     public HFileMeta(boolean deleted, JKey wacl, long expiry) {
         this.deleted = deleted;
@@ -41,6 +45,14 @@ public class HFileMeta {
         this.memo = memo;
         this.deleted = deleted;
         this.expiry = expiry;
+    }
+
+    public HFileMeta(boolean deleted, JKey wacl, long expiry, String memo, EntityId autoRenewId) {
+        this.wacl = wacl;
+        this.memo = memo;
+        this.deleted = deleted;
+        this.expiry = expiry;
+        this.autoRenewId = autoRenewId;
     }
 
     public byte[] serialize() throws IOException {
@@ -85,6 +97,19 @@ public class HFileMeta {
         this.memo = memo;
     }
 
+    @Nullable
+    public EntityId getAutoRenewId() {
+        return autoRenewId;
+    }
+
+    public void setAutoRenewId(EntityId autoRenewId) {
+        this.autoRenewId = autoRenewId;
+    }
+
+    public void removeAutoRenewId() {
+        this.autoRenewId = null;
+    }
+
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
@@ -92,6 +117,7 @@ public class HFileMeta {
                 .add("wacl", MiscUtils.describe(wacl))
                 .add("expiry", expiry)
                 .add("deleted", deleted)
+                .add("autoRenewId", autoRenewId)
                 .toString();
     }
 }

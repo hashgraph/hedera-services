@@ -45,6 +45,7 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
@@ -73,10 +74,12 @@ class FileCreateTransitionLogicTest {
         KEY,
         EXPIRY,
         CONTENTS,
-        MEMO
+        MEMO,
+        AUTO_RENEW_ID
     }
 
     String memo = "Originally I thought";
+    EntityId autoRenewId = new EntityId(0, 0, 666_666L);
     long lifetime = 1_234_567L;
     long txnValidDuration = 180;
     long now = Instant.now().getEpochSecond();
@@ -153,7 +156,8 @@ class FileCreateTransitionLogicTest {
                                 info ->
                                         info.getWacl().toString().equals(hederaWacl.toString())
                                                 && info.getExpiry() == expiry
-                                                && memo.equals(info.getMemo())),
+                                                && memo.equals(info.getMemo())
+                                                && autoRenewId.equals(info.getAutoRenewId())),
                         argThat(genesis::equals));
         inOrder.verify(txnCtx).setCreated(created);
         inOrder.verify(txnCtx).setStatus(SUCCESS);
@@ -291,6 +295,9 @@ class FileCreateTransitionLogicTest {
         }
         if (validProps.contains(ValidProperty.MEMO)) {
             op.setMemo(memo);
+        }
+        if (validProps.contains(ValidProperty.AUTO_RENEW_ID)) {
+            op.setAutoRenewAccount(autoRenewId.toGrpcAccountId());
         }
 
         txnId =

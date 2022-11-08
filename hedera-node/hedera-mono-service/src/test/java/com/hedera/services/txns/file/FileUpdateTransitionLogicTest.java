@@ -53,6 +53,7 @@ import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -80,7 +81,9 @@ class FileUpdateTransitionLogicTest {
         KEY,
         EXPIRY,
         CONTENTS,
-        MEMO
+        MEMO,
+        AUTO_RENEW_ID,
+        SENTINEL_AUTO_RENEW_ACCOUNT_ID,
     }
 
     long lifetime = 1_234_567L;
@@ -88,6 +91,7 @@ class FileUpdateTransitionLogicTest {
     long now = Instant.now().getEpochSecond();
     long oldExpiry = now + lifetime;
     long newExpiry = oldExpiry + 2_345_678L;
+    final EntityId newAutoRenewId = new EntityId(0, 0, 666_666L);
     Duration expectedDuration = Duration.newBuilder().setSeconds(newExpiry - now).build();
     FileID nonSysFileTarget = IdUtils.asFile("0.1.2222");
     FileID sysFileTarget = IdUtils.asFile("0.1.121");
@@ -121,7 +125,7 @@ class FileUpdateTransitionLogicTest {
         immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, oldExpiry);
 
         actionableNewWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-        newAttr = new HFileMeta(false, actionableNewWacl, newExpiry, newMemo);
+        newAttr = new HFileMeta(false, actionableNewWacl, newExpiry, newMemo, newAutoRenewId);
 
         accessor = mock(SignedTxnAccessor.class);
         txnCtx = mock(TransactionContext.class);
@@ -334,6 +338,28 @@ class FileUpdateTransitionLogicTest {
     }
 
     @Test
+    void canRemoveAutoRenewAccount() {
+        // setup:
+        InOrder inOrder = inOrder(hfs, txnCtx, sigImpactHistorian);
+
+        givenTxnCtxUpdating(EnumSet.of(UpdateTarget.SENTINEL_AUTO_RENEW_ACCOUNT_ID));
+        // and:
+        given(hfs.setattr(any(), any())).willReturn(new SimpleUpdateResult(true, false, SUCCESS));
+        given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
+
+        // when:
+        subject.doStateTransition();
+
+        // then:
+        inOrder.verify(hfs)
+                .setattr(
+                        argThat(nonSysFileTarget::equals),
+                        argThat(attr -> attr.getAutoRenewId() == null));
+        inOrder.verify(txnCtx).setStatus(SUCCESS);
+        inOrder.verify(sigImpactHistorian).markEntityChanged(nonSysFileTarget.getFileNum());
+    }
+
+    @Test
     void transitionValidatesKeyIfPresent() {
         givenTxnCtxUpdating(EnumSet.of(UpdateTarget.KEY));
         // and:
@@ -523,6 +549,11 @@ class FileUpdateTransitionLogicTest {
         }
         if (targets.contains(UpdateTarget.MEMO)) {
             op.setMemo(StringValue.newBuilder().setValue(newMemo).build());
+        }
+        if (targets.contains(UpdateTarget.AUTO_RENEW_ID)) {
+            op.setAutoRenewAccount(newAutoRenewId.toGrpcAccountId());
+        } else if (targets.contains(UpdateTarget.SENTINEL_AUTO_RENEW_ACCOUNT_ID)) {
+            op.setAutoRenewAccount(EntityId.MISSING_ENTITY_ID.toGrpcAccountId());
         }
 
         txnId =

@@ -62,6 +62,8 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
+
 public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiQueryOp.class);
 

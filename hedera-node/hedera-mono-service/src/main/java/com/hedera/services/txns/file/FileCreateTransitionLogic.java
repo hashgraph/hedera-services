@@ -32,6 +32,7 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -124,10 +125,15 @@ public class FileCreateTransitionLogic implements TransitionLogic {
     private HFileMeta asAttr(FileCreateTransactionBody op) {
         JKey wacl = op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : StateView.EMPTY_WACL;
 
-        return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewId = EntityId.fromGrpcAccountId(op.getAutoRenewAccount());
+            return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo(), autoRenewId);
+        } else {
+            return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
+        }
     }
 
-    private ResponseCodeEnum validate(TransactionBody fileCreateTxn) {
+    private ResponseCodeEnum validate(final TransactionBody fileCreateTxn) {
         var op = fileCreateTxn.getFileCreate();
 
         var memoValidity = validator.memoCheck(op.getMemo());

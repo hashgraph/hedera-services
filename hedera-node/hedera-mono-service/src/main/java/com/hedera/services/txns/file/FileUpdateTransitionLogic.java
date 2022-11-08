@@ -17,6 +17,7 @@ package com.hedera.services.txns.file;
 
 import static com.hedera.services.files.TieredHederaFs.firstUnsuccessful;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.designatesAccountRemoval;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -36,8 +37,10 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
@@ -141,6 +144,13 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
         }
         if (op.hasMemo()) {
             attr.setMemo(op.getMemo().getValue());
+        }
+        if (op.hasAutoRenewAccount()) {
+            if (designatesAccountRemoval(op.getAutoRenewAccount())) {
+                attr.removeAutoRenewId();
+            } else {
+                attr.setAutoRenewId(EntityId.fromGrpcAccountId(op.getAutoRenewAccount()));
+            }
         }
     }
 

@@ -30,6 +30,7 @@ public class FileCreateFactory extends SignedTxnFactory<FileCreateFactory> {
 
     private KeyTree waclKt = DEFAULT_WACL_KT;
     @Nullable private String autoRenewAccount;
+    private boolean immutable;
 
     private FileCreateFactory() {}
 
@@ -50,12 +51,19 @@ public class FileCreateFactory extends SignedTxnFactory<FileCreateFactory> {
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
         FileCreateTransactionBody.Builder op =
-                FileCreateTransactionBody.newBuilder()
-                        .setKeys(waclKt.asKey(keyFactory).getKeyList());
+                FileCreateTransactionBody.newBuilder();
+        if (!immutable) {
+            op.setKeys(waclKt.asKey(keyFactory).getKeyList());
+        }
         if (autoRenewAccount != null) {
             op.setAutoRenewAccount(asAccount(autoRenewAccount));
         }
         txn.setFileCreate(op);
+    }
+
+    public FileCreateFactory immutable() {
+        this.immutable = true;
+        return this;
     }
 
     public FileCreateFactory waclKt(KeyTree waclKt) {
