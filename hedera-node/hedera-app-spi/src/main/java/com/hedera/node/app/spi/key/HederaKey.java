@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+package com.hedera.node.app.spi.key;
 
-description = "Hedera Application - API"
+/** Placeholder implementation for moving JKey */
+public interface HederaKey {}
