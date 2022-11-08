@@ -150,6 +150,9 @@ jobs:
     runs-on: [self-hosted, Linux, services, standard, ephemeral]
     needs:
       - prepare-tag-release
+      - release-adhoc
+      - release-tag
+      - release-branch
     outputs:
       payload: ${{ steps.dispatch.outputs.payload }}
     if: ${{ always() }}
