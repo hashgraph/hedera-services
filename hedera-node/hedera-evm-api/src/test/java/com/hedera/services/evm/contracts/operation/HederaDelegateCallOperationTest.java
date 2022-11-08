@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.operation;
+package com.hedera.services.evm.contracts.operation;
 
 /*
  * -
@@ -37,7 +37,6 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,6 +45,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
+import com.hedera.services.evm.contracts.operations.HederaDelegateCallOperation;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -79,7 +80,8 @@ class HederaDelegateCallOperationTest {
     @BeforeEach
     void setup() {
         subject = new HederaDelegateCallOperation(calc, addressValidator);
-        commonSetup(evmMsgFrame, worldUpdater, acc);
+        given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(any())).willReturn(acc);
     }
 
     @Test

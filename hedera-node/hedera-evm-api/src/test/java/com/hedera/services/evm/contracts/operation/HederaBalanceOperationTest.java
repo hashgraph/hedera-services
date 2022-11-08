@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.operation;
+package com.hedera.services.evm.contracts.operation;
 
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.services.evm.contracts.operations.HederaBalanceOperation;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -35,13 +35,11 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
-import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,8 +51,6 @@ class HederaBalanceOperationTest {
     @Mock private WorldUpdater worldUpdater;
     @Mock private Account account;
     @Mock private BiPredicate<Address, MessageFrame> addressValidator;
-
-    private final long gas = 100L;
 
     private HederaBalanceOperation subject;
 
@@ -121,9 +117,6 @@ class HederaBalanceOperationTest {
 
     private void givenAddress() {
         given(frame.getStackItem(anyInt())).willReturn(Bytes.EMPTY);
-        try (MockedStatic<Words> theMock = mockStatic(Words.class)) {
-            theMock.when(() -> Words.toAddress(Bytes.EMPTY)).thenReturn(Address.ZERO);
-        }
     }
 
     private void thenOperationWillFailWithReason(ExceptionalHaltReason reason) {

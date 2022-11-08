@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.operation;
+package com.hedera.services.evm.contracts.operation;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.services.evm.contracts.operations.HederaExtCodeCopyOperation;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiPredicate;
