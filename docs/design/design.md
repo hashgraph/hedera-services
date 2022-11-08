@@ -52,7 +52,7 @@ transaction records, and for all error conditions, without needing any of the ac
 
 ## High Level Architecture
 
-![High Level Architecture](images/hedera-high-level-architecture.svg)
+![High Level Architecture](images/hedera-high-level-architecture.png)
 
 Our system comprises "Consensus Nodes" and "Mirror Nodes". A consensus node is responsible for gossiping with all other
 consensus nodes to "come to consensus" on which transactions should be executed, and the order in which they should
