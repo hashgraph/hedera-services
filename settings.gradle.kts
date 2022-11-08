@@ -57,7 +57,7 @@ dependencyResolutionManagement {
             version("commons-lang3-version", "3.12.0")
             version("dagger-version", "2.42")
             version("eddsa-version", "0.3.0")
-            version("grpc-version", "1.39.0")
+            version("grpc-version", "1.50.2")
             version("guava-version", "31.1-jre")
             version("hapi-version", "0.32.0-SNAPSHOT")
             version("headlong-version", "6.1.1")
