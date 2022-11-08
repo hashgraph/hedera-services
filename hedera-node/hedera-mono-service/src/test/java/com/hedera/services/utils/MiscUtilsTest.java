@@ -124,7 +124,6 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
-
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -136,7 +135,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
-
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -161,8 +159,7 @@ class MiscUtilsTest {
     void canRunWithLoggedDuration() {
         final var mockLogger = mock(Logger.class);
         final var desc = "nothing";
-        MiscUtils.withLoggedDuration(() -> {
-        }, mockLogger, desc);
+        MiscUtils.withLoggedDuration(() -> {}, mockLogger, desc);
         verify(mockLogger).info("Starting {}", desc);
         verify(mockLogger).info("Done with {} in {}ms", desc, 0L);
     }
@@ -180,7 +177,8 @@ class MiscUtilsTest {
     void forEachDropInWorksAsExpected() {
         // setup:
         final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> testMm = new MerkleMap<>();
-        @SuppressWarnings("unchecked") final BiConsumer<FcLong, KeyedMerkleLong<FcLong>> mockConsumer =
+        @SuppressWarnings("unchecked")
+        final BiConsumer<FcLong, KeyedMerkleLong<FcLong>> mockConsumer =
                 BDDMockito.mock(BiConsumer.class);
         // and:
         final var key1 = new FcLong(1L);
@@ -246,9 +244,9 @@ class MiscUtilsTest {
     void asFcKeyReturnsEmptyOnInvalidKey() {
         assertTrue(
                 asUsableFcKey(
-                        Key.newBuilder()
-                                .setEd25519(ByteString.copyFrom("1".getBytes()))
-                                .build())
+                                Key.newBuilder()
+                                        .setEd25519(ByteString.copyFrom("1".getBytes()))
+                                        .build())
                         .isEmpty());
     }
 
@@ -402,120 +400,120 @@ class MiscUtilsTest {
     @Test
     void getExpectedOrdinaryTxn() {
         final Map<
-                String,
-                BodySetter<
-                        ? extends GeneratedMessageV3, SchedulableTransactionBody.Builder>>
+                        String,
+                        BodySetter<
+                                ? extends GeneratedMessageV3, SchedulableTransactionBody.Builder>>
                 setters =
-                new HashMap<>() {
-                    {
-                        put(
-                                "ContractCall",
-                                new BodySetter<>(ContractCallTransactionBody.class));
-                        put(
-                                "ContractCreateInstance",
-                                new BodySetter<>(ContractCreateTransactionBody.class));
-                        put(
-                                "ContractUpdateInstance",
-                                new BodySetter<>(ContractUpdateTransactionBody.class));
-                        put(
-                                "ContractDeleteInstance",
-                                new BodySetter<>(ContractDeleteTransactionBody.class));
-                        put(
-                                "CryptoCreateAccount",
-                                new BodySetter<>(CryptoCreateTransactionBody.class));
-                        put(
-                                "CryptoDelete",
-                                new BodySetter<>(CryptoDeleteTransactionBody.class));
-                        put(
-                                "CryptoTransfer",
-                                new BodySetter<>(CryptoTransferTransactionBody.class));
-                        put(
-                                "CryptoUpdateAccount",
-                                new BodySetter<>(CryptoUpdateTransactionBody.class));
-                        put(
-                                "FileAppend",
-                                new BodySetter<>(FileAppendTransactionBody.class));
-                        put(
-                                "FileCreate",
-                                new BodySetter<>(FileCreateTransactionBody.class));
-                        put(
-                                "FileDelete",
-                                new BodySetter<>(FileDeleteTransactionBody.class));
-                        put(
-                                "FileUpdate",
-                                new BodySetter<>(FileUpdateTransactionBody.class));
-                        put(
-                                "SystemDelete",
-                                new BodySetter<>(SystemDeleteTransactionBody.class));
-                        put(
-                                "SystemUndelete",
-                                new BodySetter<>(SystemUndeleteTransactionBody.class));
-                        put("Freeze", new BodySetter<>(FreezeTransactionBody.class));
-                        put(
-                                "ConsensusCreateTopic",
-                                new BodySetter<>(
-                                        ConsensusCreateTopicTransactionBody.class));
-                        put(
-                                "ConsensusUpdateTopic",
-                                new BodySetter<>(
-                                        ConsensusUpdateTopicTransactionBody.class));
-                        put(
-                                "ConsensusDeleteTopic",
-                                new BodySetter<>(
-                                        ConsensusDeleteTopicTransactionBody.class));
-                        put(
-                                "ConsensusSubmitMessage",
-                                new BodySetter<>(
-                                        ConsensusSubmitMessageTransactionBody.class));
-                        put(
-                                "TokenCreation",
-                                new BodySetter<>(TokenCreateTransactionBody.class));
-                        put(
-                                "TokenFreeze",
-                                new BodySetter<>(TokenFreezeAccountTransactionBody.class));
-                        put(
-                                "TokenUnfreeze",
-                                new BodySetter<>(
-                                        TokenUnfreezeAccountTransactionBody.class));
-                        put(
-                                "TokenGrantKyc",
-                                new BodySetter<>(TokenGrantKycTransactionBody.class));
-                        put(
-                                "TokenRevokeKyc",
-                                new BodySetter<>(TokenRevokeKycTransactionBody.class));
-                        put(
-                                "TokenDeletion",
-                                new BodySetter<>(TokenDeleteTransactionBody.class));
-                        put(
-                                "TokenUpdate",
-                                new BodySetter<>(TokenUpdateTransactionBody.class));
-                        put("TokenMint", new BodySetter<>(TokenMintTransactionBody.class));
-                        put("TokenBurn", new BodySetter<>(TokenBurnTransactionBody.class));
-                        put(
-                                "TokenWipe",
-                                new BodySetter<>(TokenWipeAccountTransactionBody.class));
-                        put(
-                                "TokenAssociate",
-                                new BodySetter<>(TokenAssociateTransactionBody.class));
-                        put(
-                                "TokenDissociate",
-                                new BodySetter<>(TokenDissociateTransactionBody.class));
-                        put(
-                                "TokenUnpause",
-                                new BodySetter<>(TokenUnpauseTransactionBody.class));
-                        put(
-                                "TokenPause",
-                                new BodySetter<>(TokenPauseTransactionBody.class));
-                        put(
-                                "ScheduleDelete",
-                                new BodySetter<>(ScheduleDeleteTransactionBody.class));
-                        put("UtilPrng", new BodySetter<>(UtilPrngTransactionBody.class));
-                        put(
-                                "CryptoApproveAllowance",
-                                new BodySetter<>(
-                                        CryptoApproveAllowanceTransactionBody.class));
-                    }
-                };
+                        new HashMap<>() {
+                            {
+                                put(
+                                        "ContractCall",
+                                        new BodySetter<>(ContractCallTransactionBody.class));
+                                put(
+                                        "ContractCreateInstance",
+                                        new BodySetter<>(ContractCreateTransactionBody.class));
+                                put(
+                                        "ContractUpdateInstance",
+                                        new BodySetter<>(ContractUpdateTransactionBody.class));
+                                put(
+                                        "ContractDeleteInstance",
+                                        new BodySetter<>(ContractDeleteTransactionBody.class));
+                                put(
+                                        "CryptoCreateAccount",
+                                        new BodySetter<>(CryptoCreateTransactionBody.class));
+                                put(
+                                        "CryptoDelete",
+                                        new BodySetter<>(CryptoDeleteTransactionBody.class));
+                                put(
+                                        "CryptoTransfer",
+                                        new BodySetter<>(CryptoTransferTransactionBody.class));
+                                put(
+                                        "CryptoUpdateAccount",
+                                        new BodySetter<>(CryptoUpdateTransactionBody.class));
+                                put(
+                                        "FileAppend",
+                                        new BodySetter<>(FileAppendTransactionBody.class));
+                                put(
+                                        "FileCreate",
+                                        new BodySetter<>(FileCreateTransactionBody.class));
+                                put(
+                                        "FileDelete",
+                                        new BodySetter<>(FileDeleteTransactionBody.class));
+                                put(
+                                        "FileUpdate",
+                                        new BodySetter<>(FileUpdateTransactionBody.class));
+                                put(
+                                        "SystemDelete",
+                                        new BodySetter<>(SystemDeleteTransactionBody.class));
+                                put(
+                                        "SystemUndelete",
+                                        new BodySetter<>(SystemUndeleteTransactionBody.class));
+                                put("Freeze", new BodySetter<>(FreezeTransactionBody.class));
+                                put(
+                                        "ConsensusCreateTopic",
+                                        new BodySetter<>(
+                                                ConsensusCreateTopicTransactionBody.class));
+                                put(
+                                        "ConsensusUpdateTopic",
+                                        new BodySetter<>(
+                                                ConsensusUpdateTopicTransactionBody.class));
+                                put(
+                                        "ConsensusDeleteTopic",
+                                        new BodySetter<>(
+                                                ConsensusDeleteTopicTransactionBody.class));
+                                put(
+                                        "ConsensusSubmitMessage",
+                                        new BodySetter<>(
+                                                ConsensusSubmitMessageTransactionBody.class));
+                                put(
+                                        "TokenCreation",
+                                        new BodySetter<>(TokenCreateTransactionBody.class));
+                                put(
+                                        "TokenFreeze",
+                                        new BodySetter<>(TokenFreezeAccountTransactionBody.class));
+                                put(
+                                        "TokenUnfreeze",
+                                        new BodySetter<>(
+                                                TokenUnfreezeAccountTransactionBody.class));
+                                put(
+                                        "TokenGrantKyc",
+                                        new BodySetter<>(TokenGrantKycTransactionBody.class));
+                                put(
+                                        "TokenRevokeKyc",
+                                        new BodySetter<>(TokenRevokeKycTransactionBody.class));
+                                put(
+                                        "TokenDeletion",
+                                        new BodySetter<>(TokenDeleteTransactionBody.class));
+                                put(
+                                        "TokenUpdate",
+                                        new BodySetter<>(TokenUpdateTransactionBody.class));
+                                put("TokenMint", new BodySetter<>(TokenMintTransactionBody.class));
+                                put("TokenBurn", new BodySetter<>(TokenBurnTransactionBody.class));
+                                put(
+                                        "TokenWipe",
+                                        new BodySetter<>(TokenWipeAccountTransactionBody.class));
+                                put(
+                                        "TokenAssociate",
+                                        new BodySetter<>(TokenAssociateTransactionBody.class));
+                                put(
+                                        "TokenDissociate",
+                                        new BodySetter<>(TokenDissociateTransactionBody.class));
+                                put(
+                                        "TokenUnpause",
+                                        new BodySetter<>(TokenUnpauseTransactionBody.class));
+                                put(
+                                        "TokenPause",
+                                        new BodySetter<>(TokenPauseTransactionBody.class));
+                                put(
+                                        "ScheduleDelete",
+                                        new BodySetter<>(ScheduleDeleteTransactionBody.class));
+                                put("UtilPrng", new BodySetter<>(UtilPrngTransactionBody.class));
+                                put(
+                                        "CryptoApproveAllowance",
+                                        new BodySetter<>(
+                                                CryptoApproveAllowanceTransactionBody.class));
+                            }
+                        };
 
         setters.forEach(
                 (bodyType, setter) -> {
@@ -558,137 +556,137 @@ class MiscUtilsTest {
     void getExpectedTxnStat() {
         final Map<String, BodySetter<? extends GeneratedMessageV3, TransactionBody.Builder>>
                 setters =
-                new HashMap<>() {
-                    {
-                        put(
-                                CryptoController.CRYPTO_CREATE_METRIC,
-                                new BodySetter<>(CryptoCreateTransactionBody.class));
-                        put(
-                                CryptoController.CRYPTO_UPDATE_METRIC,
-                                new BodySetter<>(CryptoUpdateTransactionBody.class));
-                        put(
-                                CryptoController.CRYPTO_TRANSFER_METRIC,
-                                new BodySetter<>(CryptoTransferTransactionBody.class));
-                        put(
-                                CryptoController.CRYPTO_DELETE_METRIC,
-                                new BodySetter<>(CryptoDeleteTransactionBody.class));
-                        put(
-                                ContractController.CREATE_CONTRACT_METRIC,
-                                new BodySetter<>(ContractCreateTransactionBody.class));
-                        put(
-                                ContractController.CALL_CONTRACT_METRIC,
-                                new BodySetter<>(ContractCallTransactionBody.class));
-                        put(
-                                ContractController.UPDATE_CONTRACT_METRIC,
-                                new BodySetter<>(ContractUpdateTransactionBody.class));
-                        put(
-                                ContractController.DELETE_CONTRACT_METRIC,
-                                new BodySetter<>(ContractDeleteTransactionBody.class));
-                        put(
-                                CryptoController.ADD_LIVE_HASH_METRIC,
-                                new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
-                        put(
-                                CryptoController.DELETE_LIVE_HASH_METRIC,
-                                new BodySetter<>(
-                                        CryptoDeleteLiveHashTransactionBody.class));
-                        put(
-                                FileController.CREATE_FILE_METRIC,
-                                new BodySetter<>(FileCreateTransactionBody.class));
-                        put(
-                                FileController.FILE_APPEND_METRIC,
-                                new BodySetter<>(FileAppendTransactionBody.class));
-                        put(
-                                FileController.UPDATE_FILE_METRIC,
-                                new BodySetter<>(FileUpdateTransactionBody.class));
-                        put(
-                                FileController.DELETE_FILE_METRIC,
-                                new BodySetter<>(FileDeleteTransactionBody.class));
-                        put(
-                                FreezeController.FREEZE_METRIC,
-                                new BodySetter<>(FreezeTransactionBody.class));
-                        put(
-                                ServicesStatsConfig.SYSTEM_DELETE_METRIC,
-                                new BodySetter<>(SystemDeleteTransactionBody.class));
-                        put(
-                                ServicesStatsConfig.SYSTEM_UNDELETE_METRIC,
-                                new BodySetter<>(SystemUndeleteTransactionBody.class));
-                        put(
-                                ConsensusController.CREATE_TOPIC_METRIC,
-                                new BodySetter<>(
-                                        ConsensusCreateTopicTransactionBody.class));
-                        put(
-                                ConsensusController.UPDATE_TOPIC_METRIC,
-                                new BodySetter<>(
-                                        ConsensusUpdateTopicTransactionBody.class));
-                        put(
-                                ConsensusController.DELETE_TOPIC_METRIC,
-                                new BodySetter<>(
-                                        ConsensusDeleteTopicTransactionBody.class));
-                        put(
-                                ConsensusController.SUBMIT_MESSAGE_METRIC,
-                                new BodySetter<>(
-                                        ConsensusSubmitMessageTransactionBody.class));
-                        put(
-                                TOKEN_CREATE_METRIC,
-                                new BodySetter<>(TokenCreateTransactionBody.class));
-                        put(
-                                TOKEN_FREEZE_METRIC,
-                                new BodySetter<>(TokenFreezeAccountTransactionBody.class));
-                        put(
-                                TOKEN_UNFREEZE_METRIC,
-                                new BodySetter<>(
-                                        TokenUnfreezeAccountTransactionBody.class));
-                        put(
-                                TOKEN_GRANT_KYC_METRIC,
-                                new BodySetter<>(TokenGrantKycTransactionBody.class));
-                        put(
-                                TOKEN_REVOKE_KYC_METRIC,
-                                new BodySetter<>(TokenRevokeKycTransactionBody.class));
-                        put(
-                                TOKEN_DELETE_METRIC,
-                                new BodySetter<>(TokenDeleteTransactionBody.class));
-                        put(
-                                TOKEN_UPDATE_METRIC,
-                                new BodySetter<>(TokenUpdateTransactionBody.class));
-                        put(
-                                TOKEN_MINT_METRIC,
-                                new BodySetter<>(TokenMintTransactionBody.class));
-                        put(
-                                TOKEN_BURN_METRIC,
-                                new BodySetter<>(TokenBurnTransactionBody.class));
-                        put(
-                                TOKEN_WIPE_ACCOUNT_METRIC,
-                                new BodySetter<>(TokenWipeAccountTransactionBody.class));
-                        put(
-                                TOKEN_ASSOCIATE_METRIC,
-                                new BodySetter<>(TokenAssociateTransactionBody.class));
-                        put(
-                                TOKEN_DISSOCIATE_METRIC,
-                                new BodySetter<>(TokenDissociateTransactionBody.class));
-                        put(
-                                TOKEN_FEE_SCHEDULE_UPDATE_METRIC,
-                                new BodySetter<>(
-                                        TokenFeeScheduleUpdateTransactionBody.class));
-                        put(
-                                TOKEN_UNPAUSE_METRIC,
-                                new BodySetter<>(TokenUnpauseTransactionBody.class));
-                        put(
-                                TOKEN_PAUSE_METRIC,
-                                new BodySetter<>(TokenPauseTransactionBody.class));
-                        put(
-                                SCHEDULE_CREATE_METRIC,
-                                new BodySetter<>(ScheduleCreateTransactionBody.class));
-                        put(
-                                SCHEDULE_SIGN_METRIC,
-                                new BodySetter<>(ScheduleSignTransactionBody.class));
-                        put(
-                                SCHEDULE_DELETE_METRIC,
-                                new BodySetter<>(ScheduleDeleteTransactionBody.class));
-                        put(
-                                UTIL_PRNG_METRIC,
-                                new BodySetter<>(UtilPrngTransactionBody.class));
-                    }
-                };
+                        new HashMap<>() {
+                            {
+                                put(
+                                        CryptoController.CRYPTO_CREATE_METRIC,
+                                        new BodySetter<>(CryptoCreateTransactionBody.class));
+                                put(
+                                        CryptoController.CRYPTO_UPDATE_METRIC,
+                                        new BodySetter<>(CryptoUpdateTransactionBody.class));
+                                put(
+                                        CryptoController.CRYPTO_TRANSFER_METRIC,
+                                        new BodySetter<>(CryptoTransferTransactionBody.class));
+                                put(
+                                        CryptoController.CRYPTO_DELETE_METRIC,
+                                        new BodySetter<>(CryptoDeleteTransactionBody.class));
+                                put(
+                                        ContractController.CREATE_CONTRACT_METRIC,
+                                        new BodySetter<>(ContractCreateTransactionBody.class));
+                                put(
+                                        ContractController.CALL_CONTRACT_METRIC,
+                                        new BodySetter<>(ContractCallTransactionBody.class));
+                                put(
+                                        ContractController.UPDATE_CONTRACT_METRIC,
+                                        new BodySetter<>(ContractUpdateTransactionBody.class));
+                                put(
+                                        ContractController.DELETE_CONTRACT_METRIC,
+                                        new BodySetter<>(ContractDeleteTransactionBody.class));
+                                put(
+                                        CryptoController.ADD_LIVE_HASH_METRIC,
+                                        new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
+                                put(
+                                        CryptoController.DELETE_LIVE_HASH_METRIC,
+                                        new BodySetter<>(
+                                                CryptoDeleteLiveHashTransactionBody.class));
+                                put(
+                                        FileController.CREATE_FILE_METRIC,
+                                        new BodySetter<>(FileCreateTransactionBody.class));
+                                put(
+                                        FileController.FILE_APPEND_METRIC,
+                                        new BodySetter<>(FileAppendTransactionBody.class));
+                                put(
+                                        FileController.UPDATE_FILE_METRIC,
+                                        new BodySetter<>(FileUpdateTransactionBody.class));
+                                put(
+                                        FileController.DELETE_FILE_METRIC,
+                                        new BodySetter<>(FileDeleteTransactionBody.class));
+                                put(
+                                        FreezeController.FREEZE_METRIC,
+                                        new BodySetter<>(FreezeTransactionBody.class));
+                                put(
+                                        ServicesStatsConfig.SYSTEM_DELETE_METRIC,
+                                        new BodySetter<>(SystemDeleteTransactionBody.class));
+                                put(
+                                        ServicesStatsConfig.SYSTEM_UNDELETE_METRIC,
+                                        new BodySetter<>(SystemUndeleteTransactionBody.class));
+                                put(
+                                        ConsensusController.CREATE_TOPIC_METRIC,
+                                        new BodySetter<>(
+                                                ConsensusCreateTopicTransactionBody.class));
+                                put(
+                                        ConsensusController.UPDATE_TOPIC_METRIC,
+                                        new BodySetter<>(
+                                                ConsensusUpdateTopicTransactionBody.class));
+                                put(
+                                        ConsensusController.DELETE_TOPIC_METRIC,
+                                        new BodySetter<>(
+                                                ConsensusDeleteTopicTransactionBody.class));
+                                put(
+                                        ConsensusController.SUBMIT_MESSAGE_METRIC,
+                                        new BodySetter<>(
+                                                ConsensusSubmitMessageTransactionBody.class));
+                                put(
+                                        TOKEN_CREATE_METRIC,
+                                        new BodySetter<>(TokenCreateTransactionBody.class));
+                                put(
+                                        TOKEN_FREEZE_METRIC,
+                                        new BodySetter<>(TokenFreezeAccountTransactionBody.class));
+                                put(
+                                        TOKEN_UNFREEZE_METRIC,
+                                        new BodySetter<>(
+                                                TokenUnfreezeAccountTransactionBody.class));
+                                put(
+                                        TOKEN_GRANT_KYC_METRIC,
+                                        new BodySetter<>(TokenGrantKycTransactionBody.class));
+                                put(
+                                        TOKEN_REVOKE_KYC_METRIC,
+                                        new BodySetter<>(TokenRevokeKycTransactionBody.class));
+                                put(
+                                        TOKEN_DELETE_METRIC,
+                                        new BodySetter<>(TokenDeleteTransactionBody.class));
+                                put(
+                                        TOKEN_UPDATE_METRIC,
+                                        new BodySetter<>(TokenUpdateTransactionBody.class));
+                                put(
+                                        TOKEN_MINT_METRIC,
+                                        new BodySetter<>(TokenMintTransactionBody.class));
+                                put(
+                                        TOKEN_BURN_METRIC,
+                                        new BodySetter<>(TokenBurnTransactionBody.class));
+                                put(
+                                        TOKEN_WIPE_ACCOUNT_METRIC,
+                                        new BodySetter<>(TokenWipeAccountTransactionBody.class));
+                                put(
+                                        TOKEN_ASSOCIATE_METRIC,
+                                        new BodySetter<>(TokenAssociateTransactionBody.class));
+                                put(
+                                        TOKEN_DISSOCIATE_METRIC,
+                                        new BodySetter<>(TokenDissociateTransactionBody.class));
+                                put(
+                                        TOKEN_FEE_SCHEDULE_UPDATE_METRIC,
+                                        new BodySetter<>(
+                                                TokenFeeScheduleUpdateTransactionBody.class));
+                                put(
+                                        TOKEN_UNPAUSE_METRIC,
+                                        new BodySetter<>(TokenUnpauseTransactionBody.class));
+                                put(
+                                        TOKEN_PAUSE_METRIC,
+                                        new BodySetter<>(TokenPauseTransactionBody.class));
+                                put(
+                                        SCHEDULE_CREATE_METRIC,
+                                        new BodySetter<>(ScheduleCreateTransactionBody.class));
+                                put(
+                                        SCHEDULE_SIGN_METRIC,
+                                        new BodySetter<>(ScheduleSignTransactionBody.class));
+                                put(
+                                        SCHEDULE_DELETE_METRIC,
+                                        new BodySetter<>(ScheduleDeleteTransactionBody.class));
+                                put(
+                                        UTIL_PRNG_METRIC,
+                                        new BodySetter<>(UtilPrngTransactionBody.class));
+                            }
+                        };
 
         setters.forEach(
                 (stat, setter) -> {
@@ -709,54 +707,54 @@ class MiscUtilsTest {
     void getsExpectedQueryFunctionality() {
         final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, Query.Builder>>
                 setters =
-                new HashMap<>() {
-                    {
-                        put(
-                                GetVersionInfo,
-                                new BodySetter<>(NetworkGetVersionInfoQuery.class));
-                        put(GetByKey, new BodySetter<>(GetByKeyQuery.class));
-                        put(
-                                ConsensusGetTopicInfo,
-                                new BodySetter<>(ConsensusGetTopicInfoQuery.class));
-                        put(GetBySolidityID, new BodySetter<>(GetBySolidityIDQuery.class));
-                        put(
-                                ContractCallLocal,
-                                new BodySetter<>(ContractCallLocalQuery.class));
-                        put(ContractGetInfo, new BodySetter<>(ContractGetInfoQuery.class));
-                        put(
-                                ContractGetBytecode,
-                                new BodySetter<>(ContractGetBytecodeQuery.class));
-                        put(
-                                ContractGetRecords,
-                                new BodySetter<>(ContractGetRecordsQuery.class));
-                        put(
-                                CryptoGetAccountBalance,
-                                new BodySetter<>(CryptoGetAccountBalanceQuery.class));
-                        put(
-                                CryptoGetAccountRecords,
-                                new BodySetter<>(CryptoGetAccountRecordsQuery.class));
-                        put(CryptoGetInfo, new BodySetter<>(CryptoGetInfoQuery.class));
-                        put(
-                                CryptoGetLiveHash,
-                                new BodySetter<>(CryptoGetLiveHashQuery.class));
-                        put(FileGetContents, new BodySetter<>(FileGetContentsQuery.class));
-                        put(FileGetInfo, new BodySetter<>(FileGetInfoQuery.class));
-                        put(
-                                TransactionGetReceipt,
-                                new BodySetter<>(TransactionGetReceiptQuery.class));
-                        put(
-                                TransactionGetRecord,
-                                new BodySetter<>(TransactionGetRecordQuery.class));
-                        put(TokenGetInfo, new BodySetter<>(TokenGetInfoQuery.class));
-                        put(ScheduleGetInfo, new BodySetter<>(ScheduleGetInfoQuery.class));
-                        put(
-                                NetworkGetExecutionTime,
-                                new BodySetter<>(NetworkGetExecutionTimeQuery.class));
-                        put(
-                                GetAccountDetails,
-                                new BodySetter<>(GetAccountDetailsQuery.class));
-                    }
-                };
+                        new HashMap<>() {
+                            {
+                                put(
+                                        GetVersionInfo,
+                                        new BodySetter<>(NetworkGetVersionInfoQuery.class));
+                                put(GetByKey, new BodySetter<>(GetByKeyQuery.class));
+                                put(
+                                        ConsensusGetTopicInfo,
+                                        new BodySetter<>(ConsensusGetTopicInfoQuery.class));
+                                put(GetBySolidityID, new BodySetter<>(GetBySolidityIDQuery.class));
+                                put(
+                                        ContractCallLocal,
+                                        new BodySetter<>(ContractCallLocalQuery.class));
+                                put(ContractGetInfo, new BodySetter<>(ContractGetInfoQuery.class));
+                                put(
+                                        ContractGetBytecode,
+                                        new BodySetter<>(ContractGetBytecodeQuery.class));
+                                put(
+                                        ContractGetRecords,
+                                        new BodySetter<>(ContractGetRecordsQuery.class));
+                                put(
+                                        CryptoGetAccountBalance,
+                                        new BodySetter<>(CryptoGetAccountBalanceQuery.class));
+                                put(
+                                        CryptoGetAccountRecords,
+                                        new BodySetter<>(CryptoGetAccountRecordsQuery.class));
+                                put(CryptoGetInfo, new BodySetter<>(CryptoGetInfoQuery.class));
+                                put(
+                                        CryptoGetLiveHash,
+                                        new BodySetter<>(CryptoGetLiveHashQuery.class));
+                                put(FileGetContents, new BodySetter<>(FileGetContentsQuery.class));
+                                put(FileGetInfo, new BodySetter<>(FileGetInfoQuery.class));
+                                put(
+                                        TransactionGetReceipt,
+                                        new BodySetter<>(TransactionGetReceiptQuery.class));
+                                put(
+                                        TransactionGetRecord,
+                                        new BodySetter<>(TransactionGetRecordQuery.class));
+                                put(TokenGetInfo, new BodySetter<>(TokenGetInfoQuery.class));
+                                put(ScheduleGetInfo, new BodySetter<>(ScheduleGetInfoQuery.class));
+                                put(
+                                        NetworkGetExecutionTime,
+                                        new BodySetter<>(NetworkGetExecutionTimeQuery.class));
+                                put(
+                                        GetAccountDetails,
+                                        new BodySetter<>(GetAccountDetailsQuery.class));
+                            }
+                        };
 
         setters.forEach(
                 (function, setter) -> {
@@ -813,130 +811,130 @@ class MiscUtilsTest {
     @Test
     void getsExpectedTxnFunctionality() {
         final Map<
-                HederaFunctionality,
-                BodySetter<? extends GeneratedMessageV3, TransactionBody.Builder>>
+                        HederaFunctionality,
+                        BodySetter<? extends GeneratedMessageV3, TransactionBody.Builder>>
                 setters =
-                new HashMap<>() {
-                    {
-                        put(
-                                SystemDelete,
-                                new BodySetter<>(SystemDeleteTransactionBody.class));
-                        put(
-                                SystemUndelete,
-                                new BodySetter<>(SystemUndeleteTransactionBody.class));
-                        put(
-                                ContractCall,
-                                new BodySetter<>(ContractCallTransactionBody.class));
-                        put(
-                                ContractCreate,
-                                new BodySetter<>(ContractCreateTransactionBody.class));
-                        put(
-                                EthereumTransaction,
-                                new BodySetter<>(EthereumTransactionBody.class));
-                        put(
-                                ContractUpdate,
-                                new BodySetter<>(ContractUpdateTransactionBody.class));
-                        put(
-                                CryptoAddLiveHash,
-                                new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
-                        put(
-                                CryptoCreate,
-                                new BodySetter<>(CryptoCreateTransactionBody.class));
-                        put(
-                                CryptoDelete,
-                                new BodySetter<>(CryptoDeleteTransactionBody.class));
-                        put(
-                                CryptoDeleteLiveHash,
-                                new BodySetter<>(
-                                        CryptoDeleteLiveHashTransactionBody.class));
-                        put(
-                                CryptoTransfer,
-                                new BodySetter<>(CryptoTransferTransactionBody.class));
-                        put(
-                                CryptoUpdate,
-                                new BodySetter<>(CryptoUpdateTransactionBody.class));
-                        put(FileAppend, new BodySetter<>(FileAppendTransactionBody.class));
-                        put(FileCreate, new BodySetter<>(FileCreateTransactionBody.class));
-                        put(FileDelete, new BodySetter<>(FileDeleteTransactionBody.class));
-                        put(FileUpdate, new BodySetter<>(FileUpdateTransactionBody.class));
-                        put(
-                                ContractDelete,
-                                new BodySetter<>(ContractDeleteTransactionBody.class));
-                        put(
-                                TokenCreate,
-                                new BodySetter<>(TokenCreateTransactionBody.class));
-                        put(
-                                TokenFreezeAccount,
-                                new BodySetter<>(TokenFreezeAccountTransactionBody.class));
-                        put(
-                                TokenUnfreezeAccount,
-                                new BodySetter<>(
-                                        TokenUnfreezeAccountTransactionBody.class));
-                        put(
-                                TokenGrantKycToAccount,
-                                new BodySetter<>(TokenGrantKycTransactionBody.class));
-                        put(
-                                TokenRevokeKycFromAccount,
-                                new BodySetter<>(TokenRevokeKycTransactionBody.class));
-                        put(
-                                TokenDelete,
-                                new BodySetter<>(TokenDeleteTransactionBody.class));
-                        put(
-                                TokenUpdate,
-                                new BodySetter<>(TokenUpdateTransactionBody.class));
-                        put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
-                        put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
-                        put(
-                                TokenAccountWipe,
-                                new BodySetter<>(TokenWipeAccountTransactionBody.class));
-                        put(
-                                TokenAssociateToAccount,
-                                new BodySetter<>(TokenAssociateTransactionBody.class));
-                        put(
-                                TokenDissociateFromAccount,
-                                new BodySetter<>(TokenDissociateTransactionBody.class));
-                        put(
-                                TokenUnpause,
-                                new BodySetter<>(TokenUnpauseTransactionBody.class));
-                        put(TokenPause, new BodySetter<>(TokenPauseTransactionBody.class));
-                        put(
-                                ScheduleCreate,
-                                new BodySetter<>(ScheduleCreateTransactionBody.class));
-                        put(
-                                ScheduleSign,
-                                new BodySetter<>(ScheduleSignTransactionBody.class));
-                        put(
-                                ScheduleDelete,
-                                new BodySetter<>(ScheduleDeleteTransactionBody.class));
-                        put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
-                        put(
-                                ConsensusCreateTopic,
-                                new BodySetter<>(
-                                        ConsensusCreateTopicTransactionBody.class));
-                        put(
-                                ConsensusUpdateTopic,
-                                new BodySetter<>(
-                                        ConsensusUpdateTopicTransactionBody.class));
-                        put(
-                                ConsensusDeleteTopic,
-                                new BodySetter<>(
-                                        ConsensusDeleteTopicTransactionBody.class));
-                        put(
-                                ConsensusSubmitMessage,
-                                new BodySetter<>(
-                                        ConsensusSubmitMessageTransactionBody.class));
-                        put(UncheckedSubmit, new BodySetter<>(UncheckedSubmitBody.class));
-                        put(
-                                TokenFeeScheduleUpdate,
-                                new BodySetter<>(
-                                        TokenFeeScheduleUpdateTransactionBody.class));
-                        put(UtilPrng, new BodySetter<>(UtilPrngTransactionBody.class));
-                        put(
-                                CryptoApproveAllowance,
-                                new BodySetter<>(
-                                        CryptoApproveAllowanceTransactionBody.class));
-                    }
-                };
+                        new HashMap<>() {
+                            {
+                                put(
+                                        SystemDelete,
+                                        new BodySetter<>(SystemDeleteTransactionBody.class));
+                                put(
+                                        SystemUndelete,
+                                        new BodySetter<>(SystemUndeleteTransactionBody.class));
+                                put(
+                                        ContractCall,
+                                        new BodySetter<>(ContractCallTransactionBody.class));
+                                put(
+                                        ContractCreate,
+                                        new BodySetter<>(ContractCreateTransactionBody.class));
+                                put(
+                                        EthereumTransaction,
+                                        new BodySetter<>(EthereumTransactionBody.class));
+                                put(
+                                        ContractUpdate,
+                                        new BodySetter<>(ContractUpdateTransactionBody.class));
+                                put(
+                                        CryptoAddLiveHash,
+                                        new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
+                                put(
+                                        CryptoCreate,
+                                        new BodySetter<>(CryptoCreateTransactionBody.class));
+                                put(
+                                        CryptoDelete,
+                                        new BodySetter<>(CryptoDeleteTransactionBody.class));
+                                put(
+                                        CryptoDeleteLiveHash,
+                                        new BodySetter<>(
+                                                CryptoDeleteLiveHashTransactionBody.class));
+                                put(
+                                        CryptoTransfer,
+                                        new BodySetter<>(CryptoTransferTransactionBody.class));
+                                put(
+                                        CryptoUpdate,
+                                        new BodySetter<>(CryptoUpdateTransactionBody.class));
+                                put(FileAppend, new BodySetter<>(FileAppendTransactionBody.class));
+                                put(FileCreate, new BodySetter<>(FileCreateTransactionBody.class));
+                                put(FileDelete, new BodySetter<>(FileDeleteTransactionBody.class));
+                                put(FileUpdate, new BodySetter<>(FileUpdateTransactionBody.class));
+                                put(
+                                        ContractDelete,
+                                        new BodySetter<>(ContractDeleteTransactionBody.class));
+                                put(
+                                        TokenCreate,
+                                        new BodySetter<>(TokenCreateTransactionBody.class));
+                                put(
+                                        TokenFreezeAccount,
+                                        new BodySetter<>(TokenFreezeAccountTransactionBody.class));
+                                put(
+                                        TokenUnfreezeAccount,
+                                        new BodySetter<>(
+                                                TokenUnfreezeAccountTransactionBody.class));
+                                put(
+                                        TokenGrantKycToAccount,
+                                        new BodySetter<>(TokenGrantKycTransactionBody.class));
+                                put(
+                                        TokenRevokeKycFromAccount,
+                                        new BodySetter<>(TokenRevokeKycTransactionBody.class));
+                                put(
+                                        TokenDelete,
+                                        new BodySetter<>(TokenDeleteTransactionBody.class));
+                                put(
+                                        TokenUpdate,
+                                        new BodySetter<>(TokenUpdateTransactionBody.class));
+                                put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
+                                put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
+                                put(
+                                        TokenAccountWipe,
+                                        new BodySetter<>(TokenWipeAccountTransactionBody.class));
+                                put(
+                                        TokenAssociateToAccount,
+                                        new BodySetter<>(TokenAssociateTransactionBody.class));
+                                put(
+                                        TokenDissociateFromAccount,
+                                        new BodySetter<>(TokenDissociateTransactionBody.class));
+                                put(
+                                        TokenUnpause,
+                                        new BodySetter<>(TokenUnpauseTransactionBody.class));
+                                put(TokenPause, new BodySetter<>(TokenPauseTransactionBody.class));
+                                put(
+                                        ScheduleCreate,
+                                        new BodySetter<>(ScheduleCreateTransactionBody.class));
+                                put(
+                                        ScheduleSign,
+                                        new BodySetter<>(ScheduleSignTransactionBody.class));
+                                put(
+                                        ScheduleDelete,
+                                        new BodySetter<>(ScheduleDeleteTransactionBody.class));
+                                put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
+                                put(
+                                        ConsensusCreateTopic,
+                                        new BodySetter<>(
+                                                ConsensusCreateTopicTransactionBody.class));
+                                put(
+                                        ConsensusUpdateTopic,
+                                        new BodySetter<>(
+                                                ConsensusUpdateTopicTransactionBody.class));
+                                put(
+                                        ConsensusDeleteTopic,
+                                        new BodySetter<>(
+                                                ConsensusDeleteTopicTransactionBody.class));
+                                put(
+                                        ConsensusSubmitMessage,
+                                        new BodySetter<>(
+                                                ConsensusSubmitMessageTransactionBody.class));
+                                put(UncheckedSubmit, new BodySetter<>(UncheckedSubmitBody.class));
+                                put(
+                                        TokenFeeScheduleUpdate,
+                                        new BodySetter<>(
+                                                TokenFeeScheduleUpdateTransactionBody.class));
+                                put(UtilPrng, new BodySetter<>(UtilPrngTransactionBody.class));
+                                put(
+                                        CryptoApproveAllowance,
+                                        new BodySetter<>(
+                                                CryptoApproveAllowanceTransactionBody.class));
+                            }
+                        };
 
         setters.forEach(
                 (function, setter) -> {
@@ -1237,18 +1235,16 @@ class MiscUtilsTest {
 
     @Test
     void sentinelDetectedCorrectly() {
-        assertFalse(MiscUtils.designatesAccountRemoval(AccountID.newBuilder()
-                .setShardNum(1L)
-                .build()));
-        assertFalse(MiscUtils.designatesAccountRemoval(AccountID.newBuilder()
-                .setRealmNum(1L)
-                .build()));
-        assertFalse(MiscUtils.designatesAccountRemoval(AccountID.newBuilder()
-                .setAccountNum(1L)
-                .build()));
-        assertFalse(MiscUtils.designatesAccountRemoval(AccountID.newBuilder()
-                .setAlias(ByteString.copyFromUtf8("abcd"))
-                .build()));
+        assertFalse(
+                MiscUtils.designatesAccountRemoval(AccountID.newBuilder().setShardNum(1L).build()));
+        assertFalse(
+                MiscUtils.designatesAccountRemoval(AccountID.newBuilder().setRealmNum(1L).build()));
+        assertFalse(
+                MiscUtils.designatesAccountRemoval(
+                        AccountID.newBuilder().setAccountNum(1L).build()));
+        assertFalse(
+                MiscUtils.designatesAccountRemoval(
+                        AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("abcd")).build()));
     }
 
     public static String byteArrayToBinaryString(byte[] bytes) {

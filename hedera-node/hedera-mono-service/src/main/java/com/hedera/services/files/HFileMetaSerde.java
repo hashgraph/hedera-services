@@ -69,8 +69,8 @@ public class HFileMetaSerde {
         return unpack(in);
     }
 
-    private static HFileMeta readSerializableMeta(
-            final DataInputStream in, final long version) throws IOException {
+    private static HFileMeta readSerializableMeta(final DataInputStream in, final long version)
+            throws IOException {
         final var serIn = new SerializableDataInputStream(in);
         final var isDeleted = serIn.readBoolean();
         final var expiry = serIn.readLong();

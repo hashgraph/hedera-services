@@ -223,7 +223,11 @@ class StateViewTest {
     public void setup() throws Throwable {
         metadata =
                 new HFileMeta(
-                        false, TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(), expiry, fileMemo, autoRenewId);
+                        false,
+                        TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(),
+                        expiry,
+                        fileMemo,
+                        autoRenewId);
         immutableMetadata = new HFileMeta(false, StateView.EMPTY_WACL, expiry);
 
         expectedImmutable =

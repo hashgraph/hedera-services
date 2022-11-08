@@ -17,6 +17,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
@@ -176,6 +177,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                     nestedFractionalCaseStudy(),
                     nestedHtsCaseStudy(),
                     treasuriesAreExemptFromAllCustomFees(),
+                    treasuriesAreExemptFromFallbackFeesWhenReceivingNfts(),
                     collectorsAreExemptFromTheirOwnFeesButNotOthers(),
                     multipleRoyaltyFallbackCaseStudy(),
                     normalRoyaltyCaseStudy(),
@@ -2142,6 +2144,51 @@ public class TokenTransactSpecs extends HapiApiSuite {
                         getAccountBalance(nonTreasury)
                                 .hasTokenBalance(topLevelToken, 0L)
                                 .hasTokenBalance(feeToken, 1_000L - 50L));
+    }
+
+    public HapiApiSpec treasuriesAreExemptFromFallbackFeesWhenReceivingNfts() {
+        final var edgar = EDGAR;
+        final var topLevelToken = "TopLevelToken";
+        final var returnTransfer = "returnTransfer";
+        final var multiKey = "multiKey";
+
+        return onlyDefaultHapiSpec("TreasuriesAreExemptFromFallbackFeesWhenReceivingNfts")
+                .given(
+                        newKeyNamed(multiKey),
+                        cryptoCreate(edgar),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(topLevelToken)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(multiKey)
+                                .initialSupply(0L)
+                                .treasury(TOKEN_TREASURY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                5,
+                                                10,
+                                                fixedHbarFeeInheritingRoyaltyCollector(ONE_HBAR),
+                                                TOKEN_TREASURY))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY))
+                .when(
+                        mintToken(
+                                topLevelToken,
+                                List.of(
+                                        ByteString.copyFromUtf8("FIRST"),
+                                        ByteString.copyFromUtf8("SECOND"),
+                                        ByteString.copyFromUtf8("THIRD"))),
+                        tokenAssociate(edgar, topLevelToken),
+                        cryptoTransfer(
+                                        movingUnique(topLevelToken, 2L)
+                                                .between(TOKEN_TREASURY, edgar))
+                                .fee(ONE_HBAR))
+                .then(
+                        cryptoTransfer(
+                                        movingUnique(topLevelToken, 2L)
+                                                .between(edgar, TOKEN_TREASURY))
+                                .signedBy(DEFAULT_PAYER, edgar)
+                                .fee(ONE_HBAR)
+                                .via(returnTransfer),
+                        getTxnRecord(returnTransfer).logged());
     }
 
     public HapiApiSpec collectorsAreExemptFromTheirOwnFeesButNotOthers() {

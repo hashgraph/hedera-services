@@ -33,11 +33,10 @@ import java.util.function.Consumer;
 import java.util.function.LongPredicate;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
-
-import javax.annotation.Nullable;
 
 public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     private static final Logger LOG = LogManager.getLogger(HapiGetFileInfo.class);
@@ -51,8 +50,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     private Optional<Boolean> expectedDeleted = Optional.empty();
     private Optional<String> expectedWacl = Optional.empty();
     private Optional<String> expectedMemo = Optional.empty();
-    @Nullable
-    private String expectedAutoRenewAccount;
+    @Nullable private String expectedAutoRenewAccount;
     private boolean hasNoAutoRenewAccount;
 
     @SuppressWarnings("java:S1068")
@@ -165,7 +163,8 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 
         if (expectedAutoRenewAccount != null) {
             final var expectedId = TxnUtils.asId(expectedAutoRenewAccount, spec);
-            Assertions.assertEquals(expectedId, info.getAutoRenewAccount(), "Wrong auto-renew account");
+            Assertions.assertEquals(
+                    expectedId, info.getAutoRenewAccount(), "Wrong auto-renew account");
         }
         if (hasNoAutoRenewAccount) {
             Assertions.assertFalse(info.hasAutoRenewAccount(), "Should have no auto-renew account");

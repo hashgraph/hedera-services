@@ -50,8 +50,7 @@ public class FileCreateFactory extends SignedTxnFactory<FileCreateFactory> {
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        FileCreateTransactionBody.Builder op =
-                FileCreateTransactionBody.newBuilder();
+        FileCreateTransactionBody.Builder op = FileCreateTransactionBody.newBuilder();
         if (!immutable) {
             op.setKeys(waclKt.asKey(keyFactory).getKeyList());
         }

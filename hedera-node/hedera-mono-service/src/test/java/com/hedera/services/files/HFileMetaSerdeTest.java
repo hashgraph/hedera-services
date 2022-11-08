@@ -27,20 +27,18 @@ import static org.mockito.BDDMockito.mock;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JObjectType;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -96,11 +94,10 @@ class HFileMetaSerdeTest {
     }
 
     @Test
-    void deserializesWithMemoAndKeyAndAutoRenewAccount() throws IOException, ConstructableRegistryException {
+    void deserializesWithMemoAndKeyAndAutoRenewAccount()
+            throws IOException, ConstructableRegistryException {
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(
-                                EntityId.class, EntityId::new));
+                .registerConstructable(new ClassConstructorPair(EntityId.class, EntityId::new));
         final var propertySource = SeededPropertySource.forSerdeTest((int) AUTO_RENEW_VERSION, 1);
         final var expected =
                 new HFileMeta(
