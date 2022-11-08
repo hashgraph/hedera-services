@@ -101,6 +101,14 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
                 txnCtx.setStatus(FILE_DELETED);
                 return;
             }
+            if (updatesAutoRenewAccountButNotPeriod(op)) {
+                // Now any existing auto-renew period in state must be valid, since we
+                // are certainly going to have an auto-renew account now
+                if (!validator.isValidAutoRenewPeriod(attr.getTypedAutoRenewPeriod())) {
+                    txnCtx.setStatus(AUTORENEW_DURATION_NOT_IN_RANGE);
+                    return;
+                }
+            }
 
             if (!isAuthorizedToProcessFile(op, attr, target)) {
                 return;
@@ -137,7 +145,14 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
         }
     }
 
+    private boolean updatesAutoRenewAccountButNotPeriod(final FileUpdateTransactionBody op) {
+        return op.hasAutoRenewAccount()
+                && !designatesAccountRemoval(op.getAutoRenewAccount())
+                && !op.hasAutoRenewPeriod();
+    }
+
     private void updateAttrBased(final HFileMeta attr, final FileUpdateTransactionBody op) {
+        // All fields have already been validated at this point
         if (op.hasKeys()) {
             attr.setWacl(asFcKeyUnchecked(wrapped(op.getKeys())));
         }
@@ -150,6 +165,9 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
             } else {
                 attr.setAutoRenewId(EntityId.fromGrpcAccountId(op.getAutoRenewAccount()));
             }
+        }
+        if (op.hasAutoRenewPeriod()) {
+            attr.setAutoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
         }
     }
 
@@ -198,6 +216,12 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 
         if (op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys()))) {
             return BAD_ENCODING;
+        }
+
+        if (op.hasAutoRenewPeriod()) {
+            return validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())
+                    ? OK
+                    : AUTORENEW_DURATION_NOT_IN_RANGE;
         }
 
         return OK;

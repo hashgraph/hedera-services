@@ -30,12 +30,13 @@ class HFileMetaTest {
     private String memo = "Remember me?";
     private boolean deleted = true;
     private final EntityId autoRenewId = new EntityId(0, 0, 666_666L);
+    private final long autoRenewPeriod = 424242L;
 
     HFileMeta subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HFileMeta(deleted, wacl, expiry, memo, autoRenewId);
+        subject = new HFileMeta(deleted, wacl, expiry, memo, autoRenewId, autoRenewPeriod);
     }
 
     @Test
@@ -57,6 +58,9 @@ class HFileMetaTest {
                         + ", "
                         + "autoRenewId="
                         + autoRenewId
+                        + ", "
+                        + "autoRenewPeriod="
+                        + autoRenewPeriod
                         + "}";
 
         // when:

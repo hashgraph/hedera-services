@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.file;
 
+import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.CONTENTS;
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.EXPIRY;
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.KEY;
@@ -75,12 +76,14 @@ class FileCreateTransitionLogicTest {
         EXPIRY,
         CONTENTS,
         MEMO,
-        AUTO_RENEW_ID
+        AUTO_RENEW_ID,
+        AUTO_RENEW_PERIOD
     }
 
     String memo = "Originally I thought";
     EntityId autoRenewId = new EntityId(0, 0, 666_666L);
     long lifetime = 1_234_567L;
+    long autoRenewPeriod = 7776000L;
     long txnValidDuration = 180;
     long now = Instant.now().getEpochSecond();
     long expiry = now + lifetime;
@@ -140,7 +143,7 @@ class FileCreateTransitionLogicTest {
         InOrder inOrder = inOrder(hfs, txnCtx, sigImpactHistorian, usageLimits);
         given(usageLimits.areCreatableFiles(1)).willReturn(true);
 
-        givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
+        givenTxnCtxCreating(EnumSet.complementOf(EnumSet.of(AUTO_RENEW_PERIOD)));
         // and:
         given(hfs.create(any(), any(), any())).willReturn(created);
 
@@ -298,6 +301,9 @@ class FileCreateTransitionLogicTest {
         }
         if (validProps.contains(ValidProperty.AUTO_RENEW_ID)) {
             op.setAutoRenewAccount(autoRenewId.toGrpcAccountId());
+        }
+        if (validProps.contains(AUTO_RENEW_PERIOD)) {
+            op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod).build());
         }
 
         txnId =

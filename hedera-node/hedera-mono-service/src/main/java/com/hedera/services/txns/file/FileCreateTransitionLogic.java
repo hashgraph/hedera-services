@@ -128,7 +128,12 @@ public class FileCreateTransitionLogic implements TransitionLogic {
         if (op.hasAutoRenewAccount()) {
             final var autoRenewId = EntityId.fromGrpcAccountId(op.getAutoRenewAccount());
             return new HFileMeta(
-                    false, wacl, op.getExpirationTime().getSeconds(), op.getMemo(), autoRenewId);
+                    false,
+                    wacl,
+                    op.getExpirationTime().getSeconds(),
+                    op.getMemo(),
+                    autoRenewId,
+                    op.getAutoRenewPeriod().getSeconds());
         } else {
             return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
         }

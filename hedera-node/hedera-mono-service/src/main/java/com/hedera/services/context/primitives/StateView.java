@@ -424,6 +424,10 @@ public class StateView {
             if (attr.getAutoRenewId() != null) {
                 info.setAutoRenewAccount(attr.getAutoRenewId().toGrpcAccountId());
             }
+            if (attr.getAutoRenewPeriod() != 0) {
+                info.setAutoRenewPeriod(
+                        Duration.newBuilder().setSeconds(attr.getAutoRenewPeriod()).build());
+            }
         } else {
             // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
             final var upgradeHash =

@@ -105,7 +105,8 @@ class HFileMetaSerdeTest {
                         propertySource.nextKeyList(2),
                         propertySource.nextUnsignedLong(),
                         propertySource.nextString(69),
-                        propertySource.nextEntityId());
+                        propertySource.nextEntityId(),
+                        666_666L);
 
         final var serializedForm = HFileMetaSerde.serialize(expected);
         final var actual =

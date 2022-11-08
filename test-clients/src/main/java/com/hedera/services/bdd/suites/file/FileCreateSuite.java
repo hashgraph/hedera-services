@@ -105,25 +105,41 @@ public class FileCreateSuite extends HapiApiSuite {
                                 .autoRenewAccount(CIVILIAN)
                                 .signedBy(DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_SIGNATURE))
-                .when(fileCreate("ok").unmodifiable().autoRenewAccount(CIVILIAN))
-                .then(getFileInfo("ok").hasAutoRenewAccount(CIVILIAN));
+                .when(
+                        fileCreate("ok")
+                                .unmodifiable()
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
+                                .autoRenewAccount(CIVILIAN))
+                .then(
+                        getFileInfo("ok")
+                                .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
+                                .hasAutoRenewAccount(CIVILIAN));
     }
 
     private HapiApiSpec updateWithAutoRenewWorks() {
         final var target = "someFile";
         final var replAutoRenew = "replAutoRenew";
+        final var firstAutoRenewPeriod = 7776666L;
+        final var secondAutoRenewPeriod = 7777777L;
         return defaultHapiSpec("UpdateWithAutoRenewWorks")
                 .given(
                         cryptoCreate(CIVILIAN),
                         cryptoCreate(replAutoRenew),
-                        fileCreate(target).autoRenewAccount(CIVILIAN))
+                        fileCreate(target)
+                                .autoRenewPeriod(firstAutoRenewPeriod)
+                                .autoRenewAccount(CIVILIAN))
                 .when(
                         fileUpdate(target)
                                 .autoRenewAccount(replAutoRenew)
+                                .autoRenewPeriod(secondAutoRenewPeriod)
                                 .signedBy(DEFAULT_PAYER, target)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        fileUpdate(target).autoRenewAccount(replAutoRenew),
-                        getFileInfo(target).hasAutoRenewAccount(replAutoRenew))
+                        fileUpdate(target)
+                                .autoRenewPeriod(secondAutoRenewPeriod)
+                                .autoRenewAccount(replAutoRenew),
+                        getFileInfo(target)
+                                .hasAutoRenewPeriod(secondAutoRenewPeriod)
+                                .hasAutoRenewAccount(replAutoRenew))
                 .then(
                         fileUpdate(target)
                                 .autoRenewAccount("0.0.0")

@@ -46,6 +46,7 @@ public class HFileMetaSerde {
                     serOut.writeNormalisedString(meta.getMemo());
                     writeNullable(meta.getWacl(), serOut, IoUtils::serializeKey);
                     serOut.writeSerializable(meta.getAutoRenewId(), true);
+                    serOut.writeLong(meta.getAutoRenewPeriod());
                 });
     }
 
@@ -80,7 +81,8 @@ public class HFileMetaSerde {
             return new HFileMeta(isDeleted, wacl, expiry, memo);
         } else {
             final EntityId autoRenewId = serIn.readSerializable();
-            return new HFileMeta(isDeleted, wacl, expiry, memo, autoRenewId);
+            final long autoRenewPeriod = serIn.readLong();
+            return new HFileMeta(isDeleted, wacl, expiry, memo, autoRenewId, autoRenewPeriod);
         }
     }
 

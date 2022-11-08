@@ -21,6 +21,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.Duration;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -32,6 +33,7 @@ public class HFileMeta {
     private String memo = DEFAULT_MEMO;
     private boolean deleted;
     private EntityId autoRenewId;
+    private long autoRenewPeriod;
 
     public HFileMeta(boolean deleted, JKey wacl, long expiry) {
         this.deleted = deleted;
@@ -46,12 +48,19 @@ public class HFileMeta {
         this.expiry = expiry;
     }
 
-    public HFileMeta(boolean deleted, JKey wacl, long expiry, String memo, EntityId autoRenewId) {
+    public HFileMeta(
+            boolean deleted,
+            JKey wacl,
+            long expiry,
+            String memo,
+            EntityId autoRenewId,
+            long autoRenewPeriod) {
         this.wacl = wacl;
         this.memo = memo;
         this.deleted = deleted;
         this.expiry = expiry;
         this.autoRenewId = autoRenewId;
+        this.autoRenewPeriod = autoRenewPeriod;
     }
 
     public byte[] serialize() throws IOException {
@@ -109,6 +118,18 @@ public class HFileMeta {
         this.autoRenewId = null;
     }
 
+    public long getAutoRenewPeriod() {
+        return autoRenewPeriod;
+    }
+
+    public Duration getTypedAutoRenewPeriod() {
+        return Duration.newBuilder().setSeconds(autoRenewPeriod).build();
+    }
+
+    public void setAutoRenewPeriod(long autoRenewPeriod) {
+        this.autoRenewPeriod = autoRenewPeriod;
+    }
+
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
@@ -117,6 +138,7 @@ public class HFileMeta {
                 .add("expiry", expiry)
                 .add("deleted", deleted)
                 .add("autoRenewId", autoRenewId)
+                .add("autoRenewPeriod", autoRenewPeriod)
                 .toString();
     }
 }

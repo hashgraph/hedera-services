@@ -227,7 +227,8 @@ class StateViewTest {
                         TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(),
                         expiry,
                         fileMemo,
-                        autoRenewId);
+                        autoRenewId,
+                        autoRenewPeriod);
         immutableMetadata = new HFileMeta(false, StateView.EMPTY_WACL, expiry);
 
         expectedImmutable =
@@ -243,6 +244,8 @@ class StateViewTest {
                         .setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
                         .setMemo(fileMemo)
                         .setAutoRenewAccount(autoRenewId.toGrpcAccountId())
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(autoRenewPeriod).build())
                         .build();
 
         tokenAccount =

@@ -84,6 +84,7 @@ class FileUpdateTransitionLogicTest {
         MEMO,
         AUTO_RENEW_ID,
         SENTINEL_AUTO_RENEW_ACCOUNT_ID,
+        AUTO_RENEW_PERIOD,
     }
 
     long lifetime = 1_234_567L;
@@ -92,6 +93,7 @@ class FileUpdateTransitionLogicTest {
     long oldExpiry = now + lifetime;
     long newExpiry = oldExpiry + 2_345_678L;
     final EntityId newAutoRenewId = new EntityId(0, 0, 666_666L);
+    final long newAutoRenewPeriod = 424242L;
     Duration expectedDuration = Duration.newBuilder().setSeconds(newExpiry - now).build();
     FileID nonSysFileTarget = IdUtils.asFile("0.1.2222");
     FileID sysFileTarget = IdUtils.asFile("0.1.121");
@@ -125,7 +127,14 @@ class FileUpdateTransitionLogicTest {
         immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, oldExpiry);
 
         actionableNewWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
-        newAttr = new HFileMeta(false, actionableNewWacl, newExpiry, newMemo, newAutoRenewId);
+        newAttr =
+                new HFileMeta(
+                        false,
+                        actionableNewWacl,
+                        newExpiry,
+                        newMemo,
+                        newAutoRenewId,
+                        newAutoRenewPeriod);
 
         accessor = mock(SignedTxnAccessor.class);
         txnCtx = mock(TransactionContext.class);
@@ -463,6 +472,30 @@ class FileUpdateTransitionLogicTest {
     }
 
     @Test
+    void transitionCatchesInvalidAutoRenewPeriodIfPresent() {
+        givenTxnCtxUpdating(EnumSet.of(UpdateTarget.AUTO_RENEW_PERIOD));
+        given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
+
+        // when:
+        subject.doStateTransition();
+
+        // expect:
+        verify(txnCtx).setStatus(AUTORENEW_DURATION_NOT_IN_RANGE);
+    }
+
+    @Test
+    void transitionCatchesInvalidAutoRenewPeriodIfNewIdSet() {
+        givenTxnCtxUpdating(EnumSet.of(UpdateTarget.AUTO_RENEW_ID));
+        given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
+
+        // when:
+        subject.doStateTransition();
+
+        // expect:
+        verify(txnCtx).setStatus(AUTORENEW_DURATION_NOT_IN_RANGE);
+    }
+
+    @Test
     void transitionCatchesBadlyEncodedKey() {
         givenTxnCtxUpdating(EnumSet.of(UpdateTarget.KEY));
         // and:
@@ -554,6 +587,12 @@ class FileUpdateTransitionLogicTest {
             op.setAutoRenewAccount(newAutoRenewId.toGrpcAccountId());
         } else if (targets.contains(UpdateTarget.SENTINEL_AUTO_RENEW_ACCOUNT_ID)) {
             op.setAutoRenewAccount(EntityId.MISSING_ENTITY_ID.toGrpcAccountId());
+        }
+
+        if (targets.contains(UpdateTarget.AUTO_RENEW_PERIOD)) {
+            final var duration = Duration.newBuilder().setSeconds(newAutoRenewPeriod).build();
+            op.setAutoRenewPeriod(duration);
+            given(validator.isValidAutoRenewPeriod(duration)).willReturn(true);
         }
 
         txnId =
