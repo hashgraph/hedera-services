@@ -2152,7 +2152,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
         final var returnTransfer = "returnTransfer";
         final var multiKey = "multiKey";
 
-        return onlyDefaultHapiSpec("TreasuriesAreExemptFromFallbackFeesWhenReceivingNfts")
+        return defaultHapiSpec("TreasuriesAreExemptFromFallbackFeesWhenReceivingNfts")
                 .given(
                         newKeyNamed(multiKey),
                         cryptoCreate(edgar),

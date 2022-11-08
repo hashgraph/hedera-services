@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.file.ExtantFileContext;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -98,6 +99,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     Optional<Consumer<ResponseCodeEnum>> postUpdateCb = Optional.empty();
 
     @Nullable private String autoRenewAccount;
+    private long autoRenewPeriod = -1;
 
     public HapiFileUpdate(String file) {
         this.file = file;
@@ -140,6 +142,11 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 
     public HapiFileUpdate autoRenewAccount(final String autoRenewAccount) {
         this.autoRenewAccount = autoRenewAccount;
+        return this;
+    }
+
+    public HapiFileUpdate autoRenewPeriod(final long p) {
+        this.autoRenewPeriod = p;
         return this;
     }
 
@@ -325,6 +332,12 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
                                     builder.setFileID(fid);
                                     if (autoRenewAccount != null) {
                                         builder.setAutoRenewAccount(asId(autoRenewAccount, spec));
+                                    }
+                                    if (autoRenewPeriod != -1) {
+                                        builder.setAutoRenewPeriod(
+                                                Duration.newBuilder()
+                                                        .setSeconds(autoRenewPeriod)
+                                                        .build());
                                     }
                                     newMemo.ifPresent(
                                             s ->

@@ -52,6 +52,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     private Optional<String> expectedMemo = Optional.empty();
     @Nullable private String expectedAutoRenewAccount;
     private boolean hasNoAutoRenewAccount;
+    private long expectedAutoRenewPeriod = -1;
 
     @SuppressWarnings("java:S1068")
     private Optional<String> expectedKeyRepr = Optional.empty();
@@ -94,6 +95,11 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 
     public HapiGetFileInfo hasAutoRenewAccount(final String v) {
         expectedAutoRenewAccount = v;
+        return this;
+    }
+
+    public HapiGetFileInfo hasAutoRenewPeriod(final long l) {
+        expectedAutoRenewPeriod = l;
         return this;
     }
 
@@ -168,6 +174,12 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
         }
         if (hasNoAutoRenewAccount) {
             Assertions.assertFalse(info.hasAutoRenewAccount(), "Should have no auto-renew account");
+        }
+        if (expectedAutoRenewPeriod != -1) {
+            Assertions.assertEquals(
+                    expectedAutoRenewPeriod,
+                    info.getAutoRenewPeriod().getSeconds(),
+                    "Wrong auto-renew account period");
         }
 
         Assertions.assertEquals(TxnUtils.asFileId(file, spec), info.getFileID(), "Wrong file id!");

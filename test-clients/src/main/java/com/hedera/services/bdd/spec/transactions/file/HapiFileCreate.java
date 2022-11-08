@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -61,6 +62,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
     private final String fileName;
     private boolean immutable = false;
     private boolean advertiseCreation = false;
+    private long autoRenewPeriod = -1;
     OptionalLong expiry = OptionalLong.empty();
     OptionalLong lifetime = OptionalLong.empty();
     Optional<String> contentsPath = Optional.empty();
@@ -89,6 +91,11 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
     public HapiFileCreate autoRenewAccount(final String autoRenewAccount) {
         this.autoRenewAccount = autoRenewAccount;
+        return this;
+    }
+
+    public HapiFileCreate autoRenewPeriod(final long p) {
+        this.autoRenewPeriod = p;
         return this;
     }
 
@@ -200,6 +207,12 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
                                     if (autoRenewAccount != null) {
                                         builder.setAutoRenewAccount(asId(autoRenewAccount, spec));
+                                    }
+                                    if (autoRenewPeriod != -1) {
+                                        builder.setAutoRenewPeriod(
+                                                Duration.newBuilder()
+                                                        .setSeconds(autoRenewPeriod)
+                                                        .build());
                                     }
                                     memo.ifPresent(builder::setMemo);
                                     contents.ifPresent(
