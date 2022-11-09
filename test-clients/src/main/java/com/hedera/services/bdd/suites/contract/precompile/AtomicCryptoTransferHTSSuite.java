@@ -99,6 +99,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     private static final String TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
     private static final String BASE_APPROVAL_TXN = "baseApproveTxn";
 
+    public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
+
     public static void main(String... args) {
         new AtomicCryptoTransferHTSSuite().runSuiteAsync();
     }
@@ -112,13 +114,14 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    cryptoTransferForHbarOnly(),
-                    cryptoTransferForFungibleTokenOnly(),
-                    cryptoTransferForNonFungibleTokenOnly(),
-                    cryptoTransferHBarFungibleNft(),
-                    cryptoTransferAllowanceHbarToken(),
-                    cryptoTransferAllowanceFungibleToken(),
-                    cryptoTransferAllowanceNft()
+                    //                    cryptoTransferForHbarOnly(),
+                    //                    cryptoTransferForFungibleTokenOnly(),
+                    //                    cryptoTransferForNonFungibleTokenOnly(),
+                    //                    cryptoTransferHBarFungibleNft(),
+                    //                    cryptoTransferAllowanceHbarToken(),
+                    //                    cryptoTransferAllowanceFungibleToken(),
+                    //                    cryptoTransferAllowanceNft(),
+                    cryptoTransferSpecialAccounts()
                 });
     }
 
@@ -1209,6 +1212,93 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                 NonFungibleTransfers.changingNFTBalances()
                                                         .including(
                                                                 NFT_TOKEN, OWNER, RECEIVER, 2L))));
+    }
+
+    private HapiApiSpec cryptoTransferSpecialAccounts() {
+        final var cryptoTransferTxn = "cryptoTransferTxn";
+
+        return defaultHapiSpec("cryptoTransferEmptyKeyList")
+                .given(
+                        cryptoCreate(RECEIVER)
+                                .balance(1 * ONE_HUNDRED_HBARS)
+                                .receiverSigRequired(true),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
+                        getContractInfo(CONTRACT)
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                                .logged())
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var senderStaking = spec.setup().stakingRewardAccount();
+                                    final var senderReward = spec.setup().nodeRewardAccount();
+                                    final var receiver = spec.registry().getAccountID(RECEIVER);
+                                    final var amountToBeSent = 50 * ONE_HBAR;
+
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            CONTRACT,
+                                                            TRANSFER_MULTIPLE_TOKENS,
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    senderStaking,
+                                                                                    -amountToBeSent,
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    amountToBeSent,
+                                                                                    false))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
+                                                    .payingWith(GENESIS)
+                                                    .via(cryptoTransferTxn)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            TRANSFER_MULTIPLE_TOKENS,
+                                                            transferList()
+                                                                    .withAccountAmounts(
+                                                                            accountAmount(
+                                                                                    senderReward,
+                                                                                    -amountToBeSent,
+                                                                                    false),
+                                                                            accountAmount(
+                                                                                    receiver,
+                                                                                    amountToBeSent,
+                                                                                    false))
+                                                                    .build(),
+                                                            EMPTY_TUPLE_ARRAY)
+                                                    .payingWith(GENESIS)
+                                                    .via(cryptoTransferTxn)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                                }),
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                .then(
+                        getAccountBalance(RECEIVER).hasTinyBars(1 * ONE_HUNDRED_HBARS),
+                        childRecordsCheck(
+                                cryptoTransferTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                cryptoTransferTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
     }
 
     @Override
