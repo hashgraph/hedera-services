@@ -32,6 +32,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
     private Instant lastDecisionTime;
 
     public static DeterministicThrottle withTps(final int tps) {
+        System.out.println("spotlessJava test");
         return new DeterministicThrottle(BucketThrottle.withTps(tps), NO_NAME);
     }
 
