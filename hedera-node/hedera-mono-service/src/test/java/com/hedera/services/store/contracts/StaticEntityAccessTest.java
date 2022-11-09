@@ -31,6 +31,7 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -64,10 +65,12 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -92,6 +95,7 @@ class StaticEntityAccessTest {
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
     @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+    @Mock private TokenInfo tokenInfo;
 
     private StaticEntityAccess subject;
 
@@ -194,6 +198,14 @@ class StaticEntityAccessTest {
         given(nfts.get(nftKey)).willReturn(treasuryOwned);
         final var actual = subject.metadataOf(nft);
         assertEquals("There, the eyes are", actual);
+    }
+
+    @Test
+    void infoForToken() {
+        given(stateView.infoForToken(tokenId)).willReturn(Optional.of(tokenInfo));
+
+        final var tokenInfo = subject.infoForToken(tokenId);
+        assertNotNull(tokenInfo.get());
     }
 
     @Test

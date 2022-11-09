@@ -16,8 +16,8 @@
 package com.hedera.services.store.contracts;
 
 import static com.hedera.services.context.primitives.StateView.WILDCARD_OWNER;
-import static com.hedera.services.context.primitives.StateView.tfsFor;
-import static com.hedera.services.context.primitives.StateView.tksFor;
+import static com.hedera.services.context.primitives.StateView.tokenFreeStatusFor;
+import static com.hedera.services.context.primitives.StateView.tokenKycStatusFor;
 import static com.hedera.services.context.primitives.StateView.tokenPauseStatusOf;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
@@ -47,7 +47,6 @@ import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static java.util.Collections.emptyList;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
@@ -61,6 +60,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
@@ -186,7 +186,8 @@ public class WorldLedgers {
                 final var freezeCandidate = token.freezeKey();
                 freezeCandidate.ifPresentOrElse(
                         k -> {
-                            info.setDefaultFreezeStatus(tfsFor(token.accountsAreFrozenByDefault()));
+                            info.setDefaultFreezeStatus(
+                                    tokenFreeStatusFor(token.accountsAreFrozenByDefault()));
                             info.setFreezeKey(asKeyUnchecked(k));
                         },
                         () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
@@ -194,7 +195,8 @@ public class WorldLedgers {
                 final var kycCandidate = token.kycKey();
                 kycCandidate.ifPresentOrElse(
                         k -> {
-                            info.setDefaultKycStatus(tksFor(token.accountsKycGrantedByDefault()));
+                            info.setDefaultKycStatus(
+                                    tokenKycStatusFor(token.accountsKycGrantedByDefault()));
                             info.setKycKey(asKeyUnchecked(k));
                         },
                         () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
@@ -269,22 +271,22 @@ public class WorldLedgers {
         }
     }
 
-    public List<CustomFee> tokenCustomFees(final TokenID tokenId) {
+    public Optional<List<CustomFee>> infoForTokenCustomFees(final TokenID tokenId) {
         if (staticEntityAccess != null) {
-            return staticEntityAccess.tokenCustomFees(tokenId);
+            return Optional.of(staticEntityAccess.tokenCustomFees(tokenId));
         } else {
             try {
                 final var token = tokensLedger.getImmutableRef(tokenId);
                 if (token == null) {
-                    return emptyList();
+                    return Optional.empty();
                 }
-                return token.grpcFeeSchedule();
+                return Optional.of(token.grpcFeeSchedule());
             } catch (Exception unexpected) {
                 log.warn(
                         "Unexpected failure getting custom fees for token {}!",
                         readableId(tokenId),
                         unexpected);
-                return emptyList();
+                return Optional.empty();
             }
         }
     }
@@ -411,6 +413,13 @@ public class WorldLedgers {
         return nftsLedger.exists(nftId)
                 ? new String((byte[]) nftsLedger.get(nftId, METADATA))
                 : URI_QUERY_NON_EXISTING_TOKEN_ERROR;
+    }
+
+    public JKey keyOf(final TokenID tokenId, final TokenProperty keyType) {
+        if (!areMutable()) {
+            return staticEntityAccess.keyOf(tokenId, keyType);
+        }
+        return (JKey) tokensLedger.get(tokenId, keyType);
     }
 
     public Address canonicalAddress(final Address addressOrAlias) {

@@ -207,7 +207,8 @@ public class StateView {
             final var freezeCandidate = token.freezeKey();
             freezeCandidate.ifPresentOrElse(
                     k -> {
-                        info.setDefaultFreezeStatus(tfsFor(token.accountsAreFrozenByDefault()));
+                        info.setDefaultFreezeStatus(
+                                tokenFreeStatusFor(token.accountsAreFrozenByDefault()));
                         info.setFreezeKey(asKeyUnchecked(k));
                     },
                     () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
@@ -215,7 +216,8 @@ public class StateView {
             final var kycCandidate = token.kycKey();
             kycCandidate.ifPresentOrElse(
                     k -> {
-                        info.setDefaultKycStatus(tksFor(token.accountsKycGrantedByDefault()));
+                        info.setDefaultKycStatus(
+                                tokenKycStatusFor(token.accountsKycGrantedByDefault()));
                         info.setKycKey(asKeyUnchecked(k));
                     },
                     () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
@@ -727,11 +729,11 @@ public class StateView {
         return backingRels;
     }
 
-    public static TokenFreezeStatus tfsFor(final boolean flag) {
+    public static TokenFreezeStatus tokenFreeStatusFor(final boolean flag) {
         return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
     }
 
-    public static TokenKycStatus tksFor(final boolean flag) {
+    public static TokenKycStatus tokenKycStatusFor(final boolean flag) {
         return flag ? TokenKycStatus.Granted : TokenKycStatus.Revoked;
     }
 

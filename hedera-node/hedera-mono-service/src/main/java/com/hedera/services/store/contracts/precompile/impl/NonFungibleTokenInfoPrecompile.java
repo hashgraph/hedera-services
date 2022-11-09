@@ -66,7 +66,6 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-
         final var tokenInfo =
                 ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);

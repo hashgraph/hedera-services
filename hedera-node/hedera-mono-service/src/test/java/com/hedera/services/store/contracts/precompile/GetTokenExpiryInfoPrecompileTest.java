@@ -183,8 +183,6 @@ class GetTokenExpiryInfoPrecompileTest {
                 .thenReturn(getTokenExpiryInfoWrapper);
 
         given(encoder.encodeGetTokenExpiryInfo(any())).willReturn(successResult);
-        given(wrappedLedgers.tokens()).willReturn(tokensLedger);
-        given(tokensLedger.contains(tokenMerkleId)).willReturn(true);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
         given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
@@ -222,8 +220,6 @@ class GetTokenExpiryInfoPrecompileTest {
                 .when(() -> decodeGetTokenExpiryInfo(pretendArguments))
                 .thenReturn(getTokenExpiryInfoWrapper);
 
-        given(wrappedLedgers.tokens()).willReturn(tokensLedger);
-        given(tokensLedger.contains(tokenMerkleId)).willReturn(true);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
         given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))

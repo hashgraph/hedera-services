@@ -184,9 +184,8 @@ class TokenGetCustomFeesPrecompileTest {
                 .when(() -> decodeTokenGetCustomFees(pretendArguments))
                 .thenReturn(tokenCustomFeesWrapper);
 
-        given(wrappedLedgers.tokenCustomFees(tokenMerkleId)).willReturn(List.of(fractionalFee));
-        given(wrappedLedgers.tokens()).willReturn(tokensLedger);
-        given(tokensLedger.contains(tokenMerkleId)).willReturn(true);
+        given(wrappedLedgers.infoForTokenCustomFees(tokenMerkleId))
+                .willReturn(Optional.of(List.of(fractionalFee)));
         given(encoder.encodeTokenGetCustomFees(List.of(fractionalFee))).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -211,7 +210,6 @@ class TokenGetCustomFeesPrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(wrappedLedgers.tokens()).willReturn(tokensLedger);
 
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
         final Bytes pretendArguments =

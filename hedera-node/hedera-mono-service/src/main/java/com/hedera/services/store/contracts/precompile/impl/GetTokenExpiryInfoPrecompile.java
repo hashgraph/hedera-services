@@ -25,7 +25,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -67,13 +66,10 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        validateTrue(ledgers.tokens().contains(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
         final var tokenInfo =
                 ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
 
-        if (tokenInfo == null) {
-            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID);
-        }
+        validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
         final var expiryInfo =
                 new TokenExpiryWrapper(
