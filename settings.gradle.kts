@@ -64,7 +64,7 @@ dependencyResolutionManagement {
             version("jackson-version", "2.12.6.1")
             version("javax-annotation-version", "1.3.2")
             version("javax-inject-version", "1")
-            version("jetbrains-annotation-version", "16.0.2")
+            version("jetbrains-annotation-version", "17.0.0")
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
@@ -85,16 +85,16 @@ dependencyResolutionManagement {
             bundle("netty", listOf("netty-handler", "netty-transport-native-epoll"))
             // Use when you depend upon all or swirlds
             bundle(
-                "swirlds",
-                listOf(
-                    "swirlds-common",
-                    "swirlds-platform-core",
-                    "swirlds-fchashmap",
-                    "swirlds-merkle",
-                    "swirlds-fcqueue",
-                    "swirlds-jasperdb",
-                    "swirlds-virtualmap"
-                )
+                    "swirlds",
+                    listOf(
+                            "swirlds-common",
+                            "swirlds-platform-core",
+                            "swirlds-fchashmap",
+                            "swirlds-merkle",
+                            "swirlds-fcqueue",
+                            "swirlds-jasperdb",
+                            "swirlds-virtualmap"
+                    )
             )
 
             // Define the individual libraries
