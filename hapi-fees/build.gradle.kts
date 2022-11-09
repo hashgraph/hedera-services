@@ -28,6 +28,6 @@ dependencies {
     }
     implementation(libs.javax.inject)
     implementation(libs.jackson)
-    implementation(libs.jetbrains.annotation)
+    compileOnly(libs.jetbrains.annotation)
     testImplementation(testLibs.bundles.testing)
 }
