@@ -155,7 +155,7 @@ public class WorldLedgers {
                 if (token == null) {
                     return Optional.empty();
                 }
-                return token.asTokenInfo(ledgerId);
+                return token.asTokenInfo(tokenId, ledgerId);
             } catch (Exception unexpected) {
                 log.warn(
                         "Unexpected failure getting info for token {}!",
@@ -204,7 +204,7 @@ public class WorldLedgers {
 
     public Optional<List<CustomFee>> infoForTokenCustomFees(final TokenID tokenId) {
         if (staticEntityAccess != null) {
-            return Optional.of(staticEntityAccess.tokenCustomFees(tokenId));
+            return Optional.of(staticEntityAccess.infoForTokenCustomFees(tokenId));
         } else {
             try {
                 final var token = tokensLedger.getImmutableRef(tokenId);

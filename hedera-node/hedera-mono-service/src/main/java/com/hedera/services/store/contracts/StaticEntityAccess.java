@@ -328,8 +328,8 @@ public class StaticEntityAccess implements EntityAccess {
         return view.infoForNft(target);
     }
 
-    public List<CustomFee> tokenCustomFees(final TokenID tokenId) {
-        return view.tokenCustomFees(tokenId);
+    public List<CustomFee> infoForTokenCustomFees(final TokenID tokenId) {
+        return view.infoForTokenCustomFees(tokenId);
     }
 
     /**

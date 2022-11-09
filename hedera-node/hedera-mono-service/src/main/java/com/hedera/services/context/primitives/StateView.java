@@ -185,7 +185,7 @@ public class StateView {
             if (token == null) {
                 return Optional.empty();
             }
-            return token.asTokenInfo(networkInfo.ledgerId());
+            return token.asTokenInfo(tokenId, networkInfo.ledgerId());
         } catch (Exception unexpected) {
             log.warn(
                     "Unexpected failure getting info for token {}!",
@@ -462,7 +462,7 @@ public class StateView {
         return stakingInfo.build();
     }
 
-    public List<CustomFee> tokenCustomFees(final TokenID tokenId) {
+    public List<CustomFee> infoForTokenCustomFees(final TokenID tokenId) {
         try {
             final var tokens = stateChildren.tokens();
             final var token = tokens.get(EntityNum.fromTokenId(tokenId));

@@ -718,13 +718,13 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return grpcList;
     }
 
-    public Optional<TokenInfo> asTokenInfo(final ByteString ledgerId) {
+    public Optional<TokenInfo> asTokenInfo(final TokenID tokenId, final ByteString ledgerId) {
         final var info =
                 TokenInfo.newBuilder()
                         .setLedgerId(ledgerId)
                         .setTokenTypeValue(tokenType().ordinal())
                         .setSupplyTypeValue(supplyType().ordinal())
-                        .setTokenId(grpcId())
+                        .setTokenId(tokenId)
                         .setDeleted(isDeleted())
                         .setSymbol(symbol())
                         .setName(name())

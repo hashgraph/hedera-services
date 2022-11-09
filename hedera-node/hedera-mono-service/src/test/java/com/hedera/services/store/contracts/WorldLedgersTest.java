@@ -29,6 +29,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRAN
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -41,6 +42,7 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -72,6 +74,7 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
@@ -84,9 +87,12 @@ import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCHashMap;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -105,7 +111,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WorldLedgersTest {
     private static final NftId target = new NftId(0, 0, 123, 456);
     private static final TokenID nft = target.tokenId();
-    private static final TokenID fungibleToken = TokenID.newBuilder().setTokenNum(789).build();
+    private static final TokenID fungibleToken =
+            TokenID.newBuilder().setShardNum(0L).setRealmNum(0L).setTokenNum(789).build();
     private static final EntityId treasury = new EntityId(0, 0, 666);
     private static final EntityId notTreasury = new EntityId(0, 0, 777);
     private static final AccountID accountID = treasury.toGrpcAccountId();
@@ -138,6 +145,14 @@ class WorldLedgersTest {
     private static final AccountID payerAccountId = asAccount("0.0.9");
     private static final AccountID autoRenew = asAccount("0.0.6");
     private static final TokenID denomTokenId = asToken("0.0.5");
+    private static final TokenID nftTokenId = asToken("0.0.3");
+    private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
+    private final byte[] nftMeta = "abcdefgh".getBytes();
+
+    private final UniqueTokenAdapter targetNft =
+            UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(
+                            EntityId.fromGrpcAccountId(accountID), nftMeta, fromJava(nftCreation)));
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
@@ -151,13 +166,13 @@ class WorldLedgersTest {
     @Mock private StaticEntityAccess staticEntityAccess;
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private TokenInfo tokenInfo;
+    @Mock private TokenNftInfo tokenNftInfo;
+    @Mock private List<CustomFee> customFees;
 
     private WorldLedgers subject;
     private MerkleToken token;
     private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
     private final String tokenMemo = "Goodbye and keep cold";
-    private final long expiry = 2_000_000L;
-    private final long autoRenewPeriod = 1_234_567;
     private final CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);
     private final CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
     private final CustomFee customFixedFeeInHts =
@@ -365,6 +380,98 @@ class WorldLedgersTest {
         assertEquals(token.totalSupply(), tokenInfo.getTotalSupply());
         assertEquals(token.decimals(), tokenInfo.getDecimals());
         assertEquals(token.grpcFeeSchedule(), tokenInfo.getCustomFeesList());
+    }
+
+    @Test
+    void nonStaticTokenInfoWorksForMissingToken() {
+        given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(null);
+
+        final var tokenInfo = subject.infoForToken(fungibleToken, ledgerId);
+        assertEquals(Optional.empty(), tokenInfo);
+    }
+
+    @Test
+    void nonStaticTokenInfoWorksOnThrownException() {
+        given(tokensLedger.getImmutableRef(fungibleToken)).willThrow(NullPointerException.class);
+
+        final var tokenInfo = subject.infoForToken(fungibleToken, ledgerId);
+        assertEquals(Optional.empty(), tokenInfo);
+    }
+
+    @Test
+    void staticNftTokenInfoWorks() {
+        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+
+        given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
+
+        given(tokenNftInfo.getLedgerId()).willReturn(ledgerId);
+        given(tokenNftInfo.getNftID()).willReturn(nftId);
+        given(tokenNftInfo.getAccountID()).willReturn(accountID);
+        given(tokenNftInfo.getSpenderId()).willReturn(null);
+        given(tokenNftInfo.getCreationTime()).willReturn(fromJava(nftCreation).toGrpc());
+        given(tokenNftInfo.getMetadata()).willReturn(ByteString.copyFrom(nftMeta));
+
+        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId).get();
+
+        assertEquals(ledgerId, tokenNftInfo.getLedgerId());
+        assertEquals(nftId, tokenNftInfo.getNftID());
+        assertEquals(accountID, tokenNftInfo.getAccountID());
+        assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(tokenNftInfo.getSpenderId()));
+        assertEquals(fromJava(nftCreation).toGrpc(), tokenNftInfo.getCreationTime());
+        assertArrayEquals(nftMeta, tokenNftInfo.getMetadata().toByteArray());
+    }
+
+    @Test
+    void nonStaticNftTokenInfoWorks() {
+        final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+        final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
+        given(nftsLedger.contains(targetKey)).willReturn(true);
+        given(nftsLedger.getImmutableRef(targetKey)).willReturn(targetNft);
+
+        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId).get();
+
+        assertEquals(ledgerId, tokenNftInfo.getLedgerId());
+        assertEquals(nftId, tokenNftInfo.getNftID());
+        assertEquals(accountID, tokenNftInfo.getAccountID());
+        assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(tokenNftInfo.getSpenderId()));
+        assertEquals(fromJava(nftCreation).toGrpc(), tokenNftInfo.getCreationTime());
+        assertArrayEquals(nftMeta, tokenNftInfo.getMetadata().toByteArray());
+    }
+
+    @Test
+    void staticTokenCustomFeesInfoWorks() {
+        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+        given(customFees.size()).willReturn(3);
+        given(staticEntityAccess.infoForTokenCustomFees(fungibleToken)).willReturn(customFees);
+
+        final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken).get();
+        assertEquals(3, customFeesInfo.size());
+    }
+
+    @Test
+    void nonStaticTokenCustomFeesInfoWorks() {
+        given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
+
+        final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken).get();
+        assertEquals(4, customFeesInfo.size());
+    }
+
+    @Test
+    void nonStaticTokenCustomFeesInfoWorksWithMissingToken() {
+        given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(null);
+
+        final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken);
+        assertEquals(Optional.empty(), customFeesInfo);
+    }
+
+    @Test
+    void nonStaticTokenCustomFeesInfoWorkOnThrownException() {
+        given(tokensLedger.getImmutableRef(fungibleToken)).willThrow(NullPointerException.class);
+
+        final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken);
+        assertEquals(Optional.empty(), customFeesInfo);
     }
 
     @Test
@@ -726,7 +833,9 @@ class WorldLedgersTest {
         token.setFeeScheduleKey(MISC_ACCOUNT_KT.asJKey());
         token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
         token.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenew));
+        long expiry = 2_000_000L;
         token.setExpiry(expiry);
+        long autoRenewPeriod = 1_234_567;
         token.setAutoRenewPeriod(autoRenewPeriod);
         token.setDeleted(true);
         token.setPaused(true);

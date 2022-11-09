@@ -40,8 +40,10 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
@@ -64,12 +66,16 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
@@ -96,6 +102,8 @@ class StaticEntityAccessTest {
     @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
     @Mock private TokenInfo tokenInfo;
+    @Mock private TokenNftInfo tokenNftInfo;
+    @Mock private List<CustomFee> customFees;
 
     private StaticEntityAccess subject;
 
@@ -209,6 +217,28 @@ class StaticEntityAccessTest {
     }
 
     @Test
+    void infoForNftToken() {
+        final var nftId =
+                NftID.newBuilder()
+                        .setTokenID(nft.tokenId())
+                        .setSerialNumber(nft.serialNo())
+                        .build();
+        given(nfts.get(EntityNumPair.fromNftId(nft))).willReturn(treasuryOwned);
+        given(stateView.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
+
+        final var tokenNftInfo = subject.infoForNft(nftId);
+        assertNotNull(tokenNftInfo.get());
+    }
+
+    @Test
+    void infoForTokenCustomFees() {
+        given(stateView.infoForTokenCustomFees(tokenId)).willReturn(customFees);
+
+        final var customFees = subject.infoForTokenCustomFees(tokenId);
+        assertNotNull(customFees);
+    }
+
+    @Test
     void nonMutatorsWork() {
         given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
         given(accounts.get(EntityNum.fromAccountId(nonExtantId))).willReturn(null);
@@ -305,6 +335,35 @@ class StaticEntityAccessTest {
         given(tokens.get(tokenNum)).willReturn(token);
         given(accounts.containsKey(accountNum)).willReturn(true);
         assertEquals(0, subject.balanceOf(accountId, tokenId));
+    }
+
+    @Test
+    void getKeys() {
+        token.setAdminKey(key);
+        token.setKycKey(key);
+        token.setFreezeKey(key);
+        token.setWipeKey(key);
+        token.setSupplyKey(key);
+        token.setFeeScheduleKey(key);
+        token.setPauseKey(key);
+        given(tokens.get(tokenNum)).willReturn(token);
+
+        assertEquals(key, subject.keyOf(tokenId, TokenProperty.ADMIN_KEY));
+        assertEquals(key, subject.keyOf(tokenId, TokenProperty.KYC_KEY));
+        assertEquals(key, subject.keyOf(tokenId, TokenProperty.FREEZE_KEY));
+        assertEquals(key, subject.keyOf(tokenId, TokenProperty.WIPE_KEY));
+        assertEquals(key, subject.keyOf(tokenId, TokenProperty.SUPPLY_KEY));
+        assertEquals(key, subject.keyOf(tokenId, TokenProperty.FEE_SCHEDULE_KEY));
+        assertEquals(key, subject.keyOf(tokenId, TokenProperty.PAUSE_KEY));
+    }
+
+    @Test
+    void getInvalidTypeOfKeyFails() {
+        given(tokens.get(tokenNum)).willReturn(token);
+
+        assertThrows(
+                InvalidTransactionException.class,
+                () -> subject.keyOf(tokenId, TokenProperty.TOKEN_TYPE));
     }
 
     @Test

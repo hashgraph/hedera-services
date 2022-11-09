@@ -1272,24 +1272,24 @@ class StateViewTest {
     @Test
     void tokenCustomFeesWorks() {
         given(tokens.get(tokenNum)).willReturn(token);
-        assertEquals(grpcCustomFees, subject.tokenCustomFees(tokenId));
+        assertEquals(grpcCustomFees, subject.infoForTokenCustomFees(tokenId));
     }
 
     @Test
     void tokenCustomFeesFailsGracefully() {
         given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
-        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(tokenId).isEmpty());
     }
 
     @Test
     void tokenCustomFeesMissingTokenIdReturnsEmptyList() {
-        assertTrue(subject.tokenCustomFees(missingTokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(missingTokenId).isEmpty());
     }
 
     @Test
     void tokenCustomFeesWorksForMissing() {
         subject = new StateView(null, null, null);
-        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(tokenId).isEmpty());
     }
 
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
