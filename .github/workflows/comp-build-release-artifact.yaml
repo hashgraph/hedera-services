@@ -299,7 +299,7 @@ jobs:
         if: ${{ inputs.trigger-env-deploy == 'integration' || inputs.trigger-env-deploy == 'preview' }}
         run: |
           jq '.' <<<"${JSON_RESPONSE}"
-          printf "## Jenkins Response Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${JSON_RESPONSE}")" >>"${GITHUB_STEP_SUMMARY}"
+          printf "### Jenkins Response Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${JSON_RESPONSE}")" >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Check for Jenkins Failures (Integration)
         if: ${{ inputs.trigger-env-deploy == 'integration' }}
