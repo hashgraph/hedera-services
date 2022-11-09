@@ -1,16 +1,30 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.QueryHandler;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.*;
+import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Optional;
-
 /**
- * Defines APIs for responding to queries on state. Most of these APIs are defined in "CryptoService"
- * in the protobuf. Some APIs are defined for the use of other modules, or the Hedera application.
- * Some queries are paid, some, some are free.
+ * Defines APIs for responding to queries on state. Most of these APIs are defined in
+ * "CryptoService" in the protobuf. Some APIs are defined for the use of other modules, or the
+ * Hedera application. Some queries are paid, some, some are free.
  */
 public interface CryptoQueryHandler extends QueryHandler {
     /**
@@ -18,8 +32,8 @@ public interface CryptoQueryHandler extends QueryHandler {
      * "CryptoService", but exists for the use of other modules, including the Hedera application.
      *
      * @param id The id. Cannot be null.
-     * @return A non-null {@link Optional} with a reference to the {@link Account}, or empty if there is not one
-     *         matching the given ID.
+     * @return A non-null {@link Optional} with a reference to the {@link Account}, or empty if
+     *     there is not one matching the given ID.
      */
     Optional<Account> getAccountById(@NonNull AccountID id);
 
@@ -30,14 +44,10 @@ public interface CryptoQueryHandler extends QueryHandler {
      */
     void getAccountRecords(@NonNull CryptoGetAccountRecordsQuery query);
 
-    /**
-     * Retrieves the balance of an account
-     */
+    /** Retrieves the balance of an account */
     void cryptoGetBalance(@NonNull CryptoGetAccountBalanceQuery query);
 
-    /**
-     * Retrieves the metadata of an account
-     */
+    /** Retrieves the metadata of an account */
     void getAccountInfo(@NonNull GetAccountDetailsQuery query);
 
     /**
