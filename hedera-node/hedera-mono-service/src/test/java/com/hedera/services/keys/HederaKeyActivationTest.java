@@ -300,13 +300,19 @@ class HederaKeyActivationTest {
     }
 
     @Test
-    void checksEqualityForBothEd25519AndUncompressedSecp256k1Bytes() {
+    void checksEqualityForEd25519Bytes() {
         final var ed25519Bytes = "01234567890123456789012345678901".getBytes();
+        final var sigBytes = "sig".getBytes();
+
+        assertFalse(HederaKeyActivation.keysMatch(ed25519Bytes, sigBytes));
+    }
+
+    @Test
+    void checksEqualityForUncompressedSecp256k1Bytes() {
         final var secp256k1Bytes =
                 "0123456789012345678901234567890123456789012345678901234567890123".getBytes();
         final var sigBytes = "sig".getBytes();
 
-        assertFalse(HederaKeyActivation.keysMatch(ed25519Bytes, sigBytes));
         assertFalse(HederaKeyActivation.keysMatch(secp256k1Bytes, sigBytes));
     }
 }
