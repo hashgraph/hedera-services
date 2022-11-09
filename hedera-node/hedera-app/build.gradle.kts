@@ -21,4 +21,8 @@ description = "Hedera Application - Implementation"
 
 dependencies {
     api(project(":hedera-node:hedera-app-spi"))
+
+    implementation(libs.hapi)
+    implementation(project(":hedera-node:hedera-mono-service"))
+
 }

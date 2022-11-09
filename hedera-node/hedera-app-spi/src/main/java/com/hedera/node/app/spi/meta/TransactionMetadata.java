@@ -19,6 +19,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
@@ -59,4 +60,31 @@ public interface TransactionMetadata {
      * @return keys needed for validating signing requirements
      */
     List<HederaKey> getReqKeys();
+
+    final class UnknownErrorTransactionMetadata implements TransactionMetadata {
+        private final Throwable throwable;
+
+        public UnknownErrorTransactionMetadata(Throwable th) {
+            this.throwable = Objects.requireNonNull(th);
+        }
+
+        public Throwable cause() {
+            return throwable;
+        }
+
+        @Override
+        public ResponseCodeEnum status() {
+            return ResponseCodeEnum.UNKNOWN;
+        }
+
+        @Override
+        public TransactionBody getTxn() {
+            return null;
+        }
+
+        @Override
+        public List<HederaKey> getReqKeys() {
+            return List.of();
+        }
+    }
 }

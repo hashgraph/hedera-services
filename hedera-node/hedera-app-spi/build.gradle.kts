@@ -20,5 +20,7 @@ plugins {
 description = "Hedera Application - SPI"
 
 dependencies {
+    api(libs.bundles.swirlds)
+
     implementation(libs.hapi)
 }
