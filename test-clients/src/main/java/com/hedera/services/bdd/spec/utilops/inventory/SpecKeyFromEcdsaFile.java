@@ -33,11 +33,11 @@ import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.util.Optional;
-import org.jetbrains.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.spec.ECPrivateKeySpec;
+import org.jetbrains.annotations.Nullable;
 
 public class SpecKeyFromEcdsaFile extends UtilOp {
     private static final Logger log = LogManager.getLogger(SpecKeyFromEcdsaFile.class);

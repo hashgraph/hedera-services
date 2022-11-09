@@ -24,8 +24,8 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.Objects;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class IterableStorageUtils {
     private static final String NO_ITERABLE_NFTS = "[]";

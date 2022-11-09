@@ -28,9 +28,9 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import java.util.Map;
 import java.util.function.Function;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public final class GetContractInfoResourceUsage implements QueryResourceUsageEstimator {

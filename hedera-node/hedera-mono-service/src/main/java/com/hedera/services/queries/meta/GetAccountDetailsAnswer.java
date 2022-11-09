@@ -38,8 +38,8 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.Objects;
 import java.util.Optional;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
+import org.jetbrains.annotations.Nullable;
 
 public class GetAccountDetailsAnswer implements AnswerService {
     private final OptionValidator optionValidator;

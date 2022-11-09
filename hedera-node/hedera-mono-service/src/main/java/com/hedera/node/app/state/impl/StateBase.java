@@ -17,12 +17,11 @@ package com.hedera.node.app.state.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.state.State;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A base class for implementations of {@link State}.

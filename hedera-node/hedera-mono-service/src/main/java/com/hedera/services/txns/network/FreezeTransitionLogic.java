@@ -46,9 +46,9 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public class FreezeTransitionLogic implements TransitionLogic {

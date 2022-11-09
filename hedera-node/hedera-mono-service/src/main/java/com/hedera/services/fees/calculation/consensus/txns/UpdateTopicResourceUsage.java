@@ -27,12 +27,12 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public final class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {

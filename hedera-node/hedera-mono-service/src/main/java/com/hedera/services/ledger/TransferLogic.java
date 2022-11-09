@@ -51,10 +51,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public class TransferLogic {

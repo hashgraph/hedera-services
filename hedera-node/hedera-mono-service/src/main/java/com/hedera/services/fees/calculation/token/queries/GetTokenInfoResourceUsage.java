@@ -29,9 +29,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {

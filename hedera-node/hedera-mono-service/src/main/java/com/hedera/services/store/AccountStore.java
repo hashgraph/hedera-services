@@ -31,9 +31,9 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public class AccountStore {

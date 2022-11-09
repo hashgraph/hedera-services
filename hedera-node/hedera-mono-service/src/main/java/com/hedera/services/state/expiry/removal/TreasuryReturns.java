@@ -43,11 +43,11 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public class TreasuryReturns {

@@ -44,12 +44,12 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.*;
 import java.util.function.Function;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Responsible for managing the properties in a {@link TxnAccessor#getSpanMap()}. This management

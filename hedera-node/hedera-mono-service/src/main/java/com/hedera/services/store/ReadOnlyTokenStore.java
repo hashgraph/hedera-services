@@ -40,8 +40,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.HashMap;
 import java.util.List;
-import org.jetbrains.annotations.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Loads token-related entities from the Swirlds state, hiding the details of Merkle types from

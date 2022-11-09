@@ -28,12 +28,12 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.Units;
 import java.time.Instant;
 import java.util.function.Supplier;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Manages the block-related fields in the {@link MerkleNetworkContext}, based on 2-second "periods"

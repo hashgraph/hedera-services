@@ -52,11 +52,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.function.Function;
-import org.jetbrains.annotations.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.Nullable;
 
 public class StaticEntityAccess implements EntityAccess {
     private final StateView view;

@@ -45,7 +45,6 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiPredicate;
-import org.jetbrains.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -55,6 +54,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Hedera adapted version of the {@link SelfDestructOperation}.

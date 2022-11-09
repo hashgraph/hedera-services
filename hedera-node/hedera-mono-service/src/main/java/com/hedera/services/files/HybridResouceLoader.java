@@ -20,11 +20,11 @@ import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 import java.io.IOException;
 import java.util.regex.Pattern;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Helper that loads a resource as from <i>either</i> an asset in a JAR or from the Hedera file

@@ -23,9 +23,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Provides methods for interacting with the underlying data storage mechanisms for working with
@@ -34,9 +33,7 @@ import java.util.Optional;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public class TokenStore {
-    /**
-     * The underlying data storage class that holds the token data.
-     */
+    /** The underlying data storage class that holds the token data. */
     private final State<Long, MerkleToken> tokenState;
 
     /**
@@ -57,8 +54,7 @@ public class TokenStore {
             Optional<JKey> feeScheduleKey,
             Optional<JKey> pauseKey,
             boolean hasRoyaltyWithFallback,
-            EntityId treasury) {
-    }
+            EntityId treasury) {}
 
     public record TokenMetaOrLookupFailureReason(
             TokenMetadata metadata, ResponseCodeEnum failureReason) {

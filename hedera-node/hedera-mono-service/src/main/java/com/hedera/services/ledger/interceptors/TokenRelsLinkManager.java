@@ -27,9 +27,9 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import java.util.List;
 import java.util.function.Supplier;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public class TokenRelsLinkManager {

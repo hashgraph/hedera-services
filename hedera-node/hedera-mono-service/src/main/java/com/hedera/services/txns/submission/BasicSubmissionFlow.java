@@ -24,9 +24,9 @@ import com.hedera.services.txns.SubmissionFlow;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Performs precheck on a top-level transaction and submits it to the Platform if precheck passes.

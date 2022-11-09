@@ -17,11 +17,10 @@ package com.hedera.node.app.state.impl;
 
 import com.hedera.node.app.spi.state.State;
 import com.swirlds.fchashmap.FCHashMap;
-import org.jetbrains.annotations.NotNull;
-
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * An implementation of {@link State} backed by a {@link FCHashMap} for aliases, that needs to be

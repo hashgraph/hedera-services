@@ -27,9 +27,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import org.jetbrains.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 public class AccountStorageAdapter {
     private static final Logger log = LogManager.getLogger(AccountStorageAdapter.class);

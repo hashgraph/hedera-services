@@ -16,13 +16,12 @@
 package com.hedera.services.context.properties;
 
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 public enum SemanticVersions {
     SEMANTIC_VERSIONS;
@@ -33,7 +32,7 @@ public enum SemanticVersions {
     private static final Pattern SEMVER_SPEC_REGEX =
             Pattern.compile(
                     "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\."
-                            + "(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
+                        + "(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
 
     private static final String HAPI_VERSION_KEY = "hapi.proto.version";
     private static final String HEDERA_VERSION_KEY = "hedera.services.version";
@@ -69,7 +68,7 @@ public enum SemanticVersions {
     static ActiveVersions fromResource(
             final String propertiesFile, final String protoKey, final String servicesKey) {
         try (final var in =
-                     SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile)) {
+                SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile)) {
             final var props = new Properties();
             props.load(in);
             log.info("Discovered semantic versions {} from resource '{}'", props, propertiesFile);

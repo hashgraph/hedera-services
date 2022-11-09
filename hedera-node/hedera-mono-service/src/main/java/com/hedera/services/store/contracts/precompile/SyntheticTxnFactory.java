@@ -105,10 +105,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public class SyntheticTxnFactory {

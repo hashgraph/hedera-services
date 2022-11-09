@@ -19,12 +19,11 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 
 public class RichInstant implements Comparable<RichInstant> {
     public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);

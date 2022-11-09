@@ -58,9 +58,9 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
-import org.jetbrains.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
     private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);

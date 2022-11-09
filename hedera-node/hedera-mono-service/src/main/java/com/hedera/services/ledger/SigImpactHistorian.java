@@ -26,9 +26,9 @@ import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tracks changes to ledger entities and aliases that can impact signature validity over a trailing

@@ -25,8 +25,8 @@ import com.swirlds.common.system.SoftwareVersion;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.regex.Pattern;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class SerializableSemVers implements SoftwareVersion {
     private static final String IS_INCOMPARABLE_MSG = " cannot be compared to ";

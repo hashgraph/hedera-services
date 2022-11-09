@@ -36,7 +36,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -48,6 +47,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all the peripherals upon

@@ -25,8 +25,8 @@ import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A {@link CommitInterceptor} implementation that tracks the hbar adjustments being committed, and

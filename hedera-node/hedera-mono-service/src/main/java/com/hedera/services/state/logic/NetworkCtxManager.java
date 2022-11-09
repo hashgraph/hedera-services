@@ -15,6 +15,15 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
+import static java.time.ZoneOffset.UTC;
+import static java.time.temporal.ChronoUnit.SECONDS;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
@@ -33,25 +42,15 @@ import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
-
-import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
-import static com.hedera.services.utils.MiscUtils.isGasThrottled;
-import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
-import static java.time.ZoneOffset.UTC;
-import static java.time.temporal.ChronoUnit.SECONDS;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class NetworkCtxManager {

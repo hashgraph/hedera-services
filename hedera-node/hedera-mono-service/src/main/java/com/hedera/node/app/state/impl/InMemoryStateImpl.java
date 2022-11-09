@@ -19,10 +19,9 @@ import com.hedera.node.app.spi.state.State;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
-import org.jetbrains.annotations.NotNull;
-
 import java.time.Instant;
 import java.util.Objects;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * An implementation of {@link State} backed by a {@link MerkleMap}, resulting in a state that is

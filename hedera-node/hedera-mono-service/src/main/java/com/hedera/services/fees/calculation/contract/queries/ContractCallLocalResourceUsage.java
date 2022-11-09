@@ -42,11 +42,11 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import java.util.Map;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public final class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {

@@ -15,6 +15,9 @@
  */
 package com.hedera.services.ledger.interceptors;
 
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.hedera.services.utils.MapValueListUtils.*;
+
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.state.expiry.UniqueTokensListMutation;
@@ -28,16 +31,12 @@ import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.function.Supplier;
+import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import javax.inject.Inject;
-import java.util.function.Supplier;
-
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.MapValueListUtils.*;
 
 public class UniqueTokensLinkManager {
     private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
@@ -71,8 +70,8 @@ public class UniqueTokensLinkManager {
      * contract operation. In this case, there is no existing NFT to in the {@code uniqueTokens}
      * map, and the {@code linksManager} must insert one itself.
      *
-     * @param from  the previous owner of the NFT, if any
-     * @param to    the new owner of the NFT, if any
+     * @param from the previous owner of the NFT, if any
+     * @param to the new owner of the NFT, if any
      * @param nftId the id of the NFT changing owners
      * @return the newly minted NFT, if one needed to be inserted
      */

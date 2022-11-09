@@ -29,8 +29,8 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.EnumSet;
 import java.util.Set;
-import org.jetbrains.annotations.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.Nullable;
 
 /** Interceptor that externalizes any auto-associations created during a transaction. */
 public class AutoAssocTokenRelsCommitInterceptor

@@ -26,13 +26,13 @@ import com.swirlds.common.utility.CommonUtils;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
-import org.jetbrains.annotations.Nullable;
 import javax.crypto.ShortBufferException;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 public class SpecKeyFromMnemonic extends UtilOp {
     private static final Logger log = LogManager.getLogger(SpecKeyFromMnemonic.class);

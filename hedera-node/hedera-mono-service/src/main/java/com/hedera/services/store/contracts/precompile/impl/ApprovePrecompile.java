@@ -58,11 +58,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-import org.jetbrains.annotations.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
+import org.jetbrains.annotations.Nullable;
 
 public class ApprovePrecompile extends AbstractWritePrecompile {
     private static final Function ERC_TOKEN_APPROVE_FUNCTION =

@@ -15,6 +15,12 @@
  */
 package com.hedera.services.queries.answering;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
@@ -29,19 +35,12 @@ import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.FeeObject;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public final class StakedAnswerFlow implements AnswerFlow {
     private final FeeCalculator fees;

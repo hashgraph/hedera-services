@@ -26,9 +26,9 @@ import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public final class GetVersionInfoAnswer extends AbstractAnswer {

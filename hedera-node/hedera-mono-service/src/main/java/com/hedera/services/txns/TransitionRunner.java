@@ -15,21 +15,20 @@
  */
 package com.hedera.services.txns;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.EnumSet;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.EnumSet;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 @Singleton
 public class TransitionRunner {

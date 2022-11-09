@@ -30,9 +30,9 @@ import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
 import java.util.function.Supplier;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public class EntityAutoExpiry {

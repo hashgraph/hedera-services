@@ -26,8 +26,8 @@ import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Responsible for charging the auto-renewal fee and storage rent from the payer or auto-renew

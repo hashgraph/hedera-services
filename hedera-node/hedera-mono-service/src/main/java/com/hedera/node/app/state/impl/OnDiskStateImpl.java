@@ -19,10 +19,9 @@ import com.hedera.node.app.spi.state.State;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
-import org.jetbrains.annotations.NotNull;
-
 import java.time.Instant;
 import java.util.Objects;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * An implementation of {@link State} backed by a {@link VirtualMap}, resulting in a state that is

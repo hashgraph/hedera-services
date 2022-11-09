@@ -34,9 +34,9 @@ import com.hederahashgraph.api.proto.java.TokenGetNftInfoResponse;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.util.Map;
 import java.util.Optional;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public class GetTokenNftInfoAnswer implements AnswerService {

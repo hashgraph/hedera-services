@@ -48,11 +48,11 @@ import com.hederahashgraph.api.proto.java.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.jetbrains.annotations.Nullable;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
+import org.jetbrains.annotations.Nullable;
 
 /** Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}. */
 public class SignedTxnAccessor implements TxnAccessor {

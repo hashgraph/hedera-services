@@ -96,8 +96,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Module(includes = HandleLogicModule.class)
 public interface StateModule {

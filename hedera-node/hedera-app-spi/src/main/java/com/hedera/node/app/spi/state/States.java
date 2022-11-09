@@ -28,11 +28,12 @@ public interface States {
      * bug.
      *
      * @param stateKey The key used for looking up state
-     * @param <K>      The key type in the State.
-     * @param <V>      The value type in the State.
+     * @param <K> The key type in the State.
+     * @param <V> The value type in the State.
      * @return The State for that key. This will never be null.
-     * @throws NullPointerException     if stateKey is null.
+     * @throws NullPointerException if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
-    @NotNull <K, V> State<K, V> get(@NotNull String stateKey);
+    @NotNull
+    <K, V> State<K, V> get(@NotNull String stateKey);
 }

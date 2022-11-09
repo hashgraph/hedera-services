@@ -37,9 +37,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.Objects;
 import java.util.Optional;
-import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.Nullable;
 
 @Singleton
 public class GetTopicInfoAnswer implements AnswerService {
