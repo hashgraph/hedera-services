@@ -85,16 +85,16 @@ dependencyResolutionManagement {
             bundle("netty", listOf("netty-handler", "netty-transport-native-epoll"))
             // Use when you depend upon all or swirlds
             bundle(
-                    "swirlds",
-                    listOf(
-                            "swirlds-common",
-                            "swirlds-platform-core",
-                            "swirlds-fchashmap",
-                            "swirlds-merkle",
-                            "swirlds-fcqueue",
-                            "swirlds-jasperdb",
-                            "swirlds-virtualmap"
-                    )
+                "swirlds",
+                listOf(
+                    "swirlds-common",
+                    "swirlds-platform-core",
+                    "swirlds-fchashmap",
+                    "swirlds-merkle",
+                    "swirlds-fcqueue",
+                    "swirlds-jasperdb",
+                    "swirlds-virtualmap"
+                )
             )
 
             // Define the individual libraries
