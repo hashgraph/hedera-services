@@ -20,7 +20,7 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOve
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /** A throttle with milli-TPS resolution that exists in a deterministic timeline. */
 public class DeterministicThrottle implements CongestibleThrottle {

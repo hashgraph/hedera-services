@@ -19,9 +19,10 @@ import com.hedera.node.app.spi.state.State;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
+import org.jetbrains.annotations.NotNull;
+
 import java.time.Instant;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * An implementation of {@link State} backed by a {@link VirtualMap}, resulting in a state that is
@@ -36,9 +37,9 @@ public final class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends Vi
     private final Instant lastModifiedTime;
 
     public OnDiskStateImpl(
-            @Nonnull final String stateKey,
-            @Nonnull VirtualMap<K, V> virtualMap,
-            @Nonnull final Instant lastModifiedTime) {
+            @NotNull final String stateKey,
+            @NotNull final VirtualMap<K, V> virtualMap,
+            @NotNull final Instant lastModifiedTime) {
         super(stateKey);
         this.virtualMap = Objects.requireNonNull(virtualMap);
         this.lastModifiedTime = lastModifiedTime;

@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosResponse;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

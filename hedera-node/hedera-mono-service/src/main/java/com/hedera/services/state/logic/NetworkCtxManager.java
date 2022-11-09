@@ -15,15 +15,6 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
-import static com.hedera.services.utils.MiscUtils.isGasThrottled;
-import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
-import static java.time.ZoneOffset.UTC;
-import static java.time.temporal.ChronoUnit.SECONDS;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
@@ -42,15 +33,25 @@ import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
+import static java.time.ZoneOffset.UTC;
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 @Singleton
 public class NetworkCtxManager {
@@ -116,7 +117,7 @@ public class NetworkCtxManager {
 
     public void loadObservableSysFilesIfNeeded() {
         if (!systemFilesManager.areObservableFilesLoaded()) {
-            var networkCtxNow = networkCtx.get();
+            final var networkCtxNow = networkCtx.get();
             log.info("Observable files not yet loaded, doing now");
             systemFilesManager.loadObservableSystemFiles();
             log.info("Loaded observable files");
@@ -127,7 +128,7 @@ public class NetworkCtxManager {
         }
     }
 
-    public void advanceConsensusClockTo(Instant consensusTime) {
+    public void advanceConsensusClockTo(final Instant consensusTime) {
         final var networkCtxNow = networkCtx.get();
         final var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
 
@@ -150,7 +151,7 @@ public class NetworkCtxManager {
             issInfo.consensusTimeOfRecentAlert()
                     .ifPresentOrElse(
                             recentAlertTime -> {
-                                var resetTime = recentAlertTime.plus(issResetPeriod, SECONDS);
+                                final var resetTime = recentAlertTime.plus(issResetPeriod, SECONDS);
                                 if (consensusTime.isAfter(resetTime)) {
                                     issInfo.relax();
                                 }
@@ -188,7 +189,7 @@ public class NetworkCtxManager {
      *
      * @param op the type of transaction just handled
      */
-    public void finishIncorporating(@Nonnull HederaFunctionality op) {
+    public void finishIncorporating(@NotNull final HederaFunctionality op) {
         opCounters.countHandled(op);
         if (consensusSecondJustChanged) {
             runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);
@@ -204,12 +205,12 @@ public class NetworkCtxManager {
             }
         }
 
-        var networkCtxNow = networkCtx.get();
+        final var networkCtxNow = networkCtx.get();
         networkCtxNow.syncThrottling(handleThrottling);
         networkCtxNow.syncMultiplierSources(multiplierSources);
     }
 
-    public static boolean inSameUtcDay(Instant now, Instant then) {
+    public static boolean inSameUtcDay(final Instant now, final Instant then) {
         return LocalDateTime.ofInstant(now, UTC).getDayOfYear()
                 == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
     }
@@ -219,7 +220,7 @@ public class NetworkCtxManager {
         return issResetPeriod;
     }
 
-    void setConsensusSecondJustChanged(boolean consensusSecondJustChanged) {
+    void setConsensusSecondJustChanged(final boolean consensusSecondJustChanged) {
         this.consensusSecondJustChanged = consensusSecondJustChanged;
     }
 
@@ -227,11 +228,11 @@ public class NetworkCtxManager {
         return gasUsedThisConsSec;
     }
 
-    void setGasUsedThisConsSec(long gasUsedThisConsSec) {
+    void setGasUsedThisConsSec(final long gasUsedThisConsSec) {
         this.gasUsedThisConsSec = gasUsedThisConsSec;
     }
 
-    void setIsNextDay(BiPredicate<Instant, Instant> isNextDay) {
+    void setIsNextDay(final BiPredicate<Instant, Instant> isNextDay) {
         this.isNextDay = isNextDay;
     }
 

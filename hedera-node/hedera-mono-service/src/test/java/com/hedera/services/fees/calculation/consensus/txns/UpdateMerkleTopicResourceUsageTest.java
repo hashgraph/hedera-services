@@ -54,7 +54,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.apache.commons.codec.DecoderException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;

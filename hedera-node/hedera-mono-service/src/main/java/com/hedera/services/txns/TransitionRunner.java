@@ -15,42 +15,21 @@
  */
 package com.hedera.services.txns;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.util.EnumSet;
-import javax.annotation.Nonnull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.EnumSet;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 @Singleton
 public class TransitionRunner {
@@ -104,7 +83,7 @@ public class TransitionRunner {
      * @param accessor the transaction accessor
      * @return true if the logic was run to completion
      */
-    public boolean tryTransition(@Nonnull TxnAccessor accessor) {
+    public boolean tryTransition(@NotNull final TxnAccessor accessor) {
         final var txn = accessor.getTxn();
         final var function = accessor.getFunction();
         final var logic = lookup.lookupFor(function, txn);
@@ -127,9 +106,9 @@ public class TransitionRunner {
                 if (opsWithDefaultSuccessStatus.contains(function)) {
                     txnCtx.setStatus(SUCCESS);
                 }
-            } catch (InvalidTransactionException e) {
+            } catch (final InvalidTransactionException e) {
                 resolveFailure(e, accessor);
-            } catch (Exception processFailure) {
+            } catch (final Exception processFailure) {
                 ids.reclaimProvisionalIds();
                 throw processFailure;
             }

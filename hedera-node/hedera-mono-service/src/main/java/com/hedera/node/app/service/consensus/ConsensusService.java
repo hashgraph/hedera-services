@@ -17,7 +17,8 @@ package com.hedera.node.app.service.consensus;
 
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
+
 
 /**
  * Implements the HAPI <a
@@ -32,6 +33,6 @@ public interface ConsensusService extends Service {
      * @return the corresponding consensus service pre-handler
      */
     @Override
-    @Nonnull
-    ConsensusPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    @NotNull
+    ConsensusPreTransactionHandler createPreTransactionHandler(@NotNull States states);
 }

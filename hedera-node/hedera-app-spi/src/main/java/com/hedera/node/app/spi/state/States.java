@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.state;
 
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A set of {@link State} used by a service. Any service may have one or more {@link State}s, and
@@ -28,12 +28,11 @@ public interface States {
      * bug.
      *
      * @param stateKey The key used for looking up state
+     * @param <K>      The key type in the State.
+     * @param <V>      The value type in the State.
      * @return The State for that key. This will never be null.
-     * @param <K> The key type in the State.
-     * @param <V> The value type in the State.
-     * @throws NullPointerException if stateKey is null.
+     * @throws NullPointerException     if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
-    @Nonnull
-    <K, V> State<K, V> get(@Nonnull String stateKey);
+    @NotNull <K, V> State<K, V> get(@NotNull String stateKey);
 }

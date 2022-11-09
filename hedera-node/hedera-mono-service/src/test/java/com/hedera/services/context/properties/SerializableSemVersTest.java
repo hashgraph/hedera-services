@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.system.SoftwareVersion;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 class SerializableSemVersTest {

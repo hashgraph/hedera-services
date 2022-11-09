@@ -17,7 +17,7 @@ package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Implements the HAPI <a
@@ -32,6 +32,6 @@ public interface TokenService extends Service {
      * @return the corresponding token service pre-handler
      */
     @Override
-    @Nonnull
-    CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    @NotNull
+    CryptoPreTransactionHandler createPreTransactionHandler(@NotNull States states);
 }

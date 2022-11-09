@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.system.Platform;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

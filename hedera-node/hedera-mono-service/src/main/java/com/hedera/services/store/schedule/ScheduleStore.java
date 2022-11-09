@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 
 /** Defines a type able to manage Scheduled entities. */

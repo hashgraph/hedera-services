@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import java.util.Map;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public interface AnswerService {
     Optional<Map<String, Object>> NO_QUERY_CTX = Optional.empty();

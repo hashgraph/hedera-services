@@ -32,7 +32,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public class Dissociation {
     private final TokenRelationship dissociatingAccountRel;

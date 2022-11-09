@@ -28,7 +28,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.Units;
 import java.time.Instant;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;

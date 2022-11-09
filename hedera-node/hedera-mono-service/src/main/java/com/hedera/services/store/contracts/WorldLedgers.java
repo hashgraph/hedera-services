@@ -67,7 +67,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;

@@ -22,7 +22,7 @@ import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.crypto.RunningHash;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 
 public class RecordsRunningHashLeafSerdeTest

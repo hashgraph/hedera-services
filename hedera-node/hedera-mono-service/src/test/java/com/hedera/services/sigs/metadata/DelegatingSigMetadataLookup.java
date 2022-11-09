@@ -46,7 +46,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenience class that gives unified access to Hedera signing metadata by delegating to

@@ -15,19 +15,20 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.Utils.asHederaKey;
-
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nonnull;
-import org.apache.commons.lang3.NotImplementedException;
+
+import static com.hedera.node.app.Utils.asHederaKey;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -36,7 +37,7 @@ import org.apache.commons.lang3.NotImplementedException;
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
 
-    public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
+    public CryptoPreTransactionHandlerImpl(@NotNull final AccountStore accountStore) {
         this.accountStore = Objects.requireNonNull(accountStore);
     }
 
@@ -52,43 +53,43 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
+    public TransactionMetadata preHandleUpdateAccount(final TransactionBody txn) {
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoTransfer(TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoTransfer(final TransactionBody txn) {
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoDelete(TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoDelete(final TransactionBody txn) {
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleApproveAllowances(TransactionBody txn) {
+    public TransactionMetadata preHandleApproveAllowances(final TransactionBody txn) {
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
+    public TransactionMetadata preHandleDeleteAllowances(final TransactionBody txn) {
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleAddLiveHash(TransactionBody txn) {
+    public TransactionMetadata preHandleAddLiveHash(final TransactionBody txn) {
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteLiveHash(TransactionBody txn) {
+    public TransactionMetadata preHandleDeleteLiveHash(final TransactionBody txn) {
         throw new NotImplementedException();
     }
 

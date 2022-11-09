@@ -37,7 +37,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

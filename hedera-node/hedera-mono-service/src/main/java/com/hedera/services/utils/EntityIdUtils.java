@@ -39,7 +39,7 @@ import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;

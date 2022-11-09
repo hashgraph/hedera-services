@@ -15,13 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.service.token.util.AliasUtils.MISSING_NUM;
-import static com.hedera.node.app.service.token.util.AliasUtils.fromMirror;
-import static com.hedera.services.evm.accounts.HederaEvmContractAliases.isMirror;
-import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.State;
@@ -29,9 +22,17 @@ import com.hedera.node.app.spi.state.States;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Optional;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+
+import static com.hedera.node.app.service.token.util.AliasUtils.MISSING_NUM;
+import static com.hedera.node.app.service.token.util.AliasUtils.fromMirror;
+import static com.hedera.services.evm.accounts.HederaEvmContractAliases.isMirror;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 /**
  * Provides methods for interacting with the underlying data storage mechanisms for working with
@@ -40,9 +41,13 @@ import javax.annotation.Nullable;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public final class AccountStore {
-    /** The underlying data storage class that holds the account data. */
+    /**
+     * The underlying data storage class that holds the account data.
+     */
     private final State<Long, MerkleAccount> accountState;
-    /** The underlying data storage class that holds the aliases data built from the state. */
+    /**
+     * The underlying data storage class that holds the aliases data built from the state.
+     */
     private final State<ByteString, Long> aliases;
 
     /**
@@ -50,7 +55,7 @@ public final class AccountStore {
      *
      * @param states The state to use.
      */
-    public AccountStore(@Nonnull States states) {
+    public AccountStore(@NotNull final States states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }

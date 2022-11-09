@@ -15,15 +15,6 @@
  */
 package com.hedera.services.queries.answering;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
@@ -36,18 +27,21 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.FeeObject;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 public final class StakedAnswerFlow implements AnswerFlow {
     private final FeeCalculator fees;
@@ -138,7 +132,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
         return service.responseGiven(query, view, OK, fee, queryCtx);
     }
 
-    private ResponseCodeEnum tryToPay(@Nonnull final SignedTxnAccessor payment, final long fee) {
+    private ResponseCodeEnum tryToPay(@NotNull final SignedTxnAccessor payment, final long fee) {
         if (accountNums.isSuperuser(payment.getPayer().getAccountNum())) {
             return OK;
         }

@@ -17,7 +17,7 @@ package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * The {@code CryptoService} is responsible for working with {Account}s. It implements all
@@ -40,6 +40,6 @@ public interface CryptoService extends Service {
      * @return the corresponding crypto service pre-handler
      */
     @Override
-    @Nonnull
-    CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    @NotNull
+    CryptoPreTransactionHandler createPreTransactionHandler(@NotNull States states);
 }

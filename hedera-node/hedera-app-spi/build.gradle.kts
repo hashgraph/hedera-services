@@ -21,4 +21,5 @@ description = "Hedera Application - SPI"
 
 dependencies {
     implementation(libs.hapi)
+    compileOnly(libs.jetbrains.annotation)
 }

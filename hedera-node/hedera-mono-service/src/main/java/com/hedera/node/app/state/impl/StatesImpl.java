@@ -20,9 +20,10 @@ import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.MutableStateChildren;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 public class StatesImpl implements States {
     private final MutableStateChildren children = new MutableStateChildren();
@@ -41,7 +42,8 @@ public class StatesImpl implements States {
     }
 
     @Override
-    public @Nonnull <K, V> State<K, V> get(@Nonnull final String stateKey) {
+    public @NotNull
+    <K, V> State<K, V> get(@NotNull final String stateKey) {
         Objects.requireNonNull(stateKey);
 
         if (stateKey.equals("ACCOUNTS")) {
@@ -49,9 +51,9 @@ public class StatesImpl implements States {
             return (State<K, V>)
                     (accounts.areOnDisk()
                             ? new OnDiskStateImpl<>(
-                                    stateKey, accounts.getOnDiskAccounts(), children.signedAt())
+                            stateKey, accounts.getOnDiskAccounts(), children.signedAt())
                             : new InMemoryStateImpl<>(
-                                    stateKey, accounts.getInMemoryAccounts(), children.signedAt()));
+                            stateKey, accounts.getInMemoryAccounts(), children.signedAt()));
         } else if (stateKey.equals("ALIASES")) {
             final var state =
                     new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());

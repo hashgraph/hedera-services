@@ -33,7 +33,7 @@ import com.hederahashgraph.fee.CryptoFeeBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
