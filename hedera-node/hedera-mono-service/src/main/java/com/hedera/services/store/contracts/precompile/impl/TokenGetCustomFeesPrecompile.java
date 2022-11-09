@@ -24,7 +24,6 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -44,17 +43,13 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile {
             Bytes.wrap(TOKEN_GET_CUSTOM_FEES_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_GET_CUSTOM_FEES_DECODER = TypeFactory.create(BYTES32);
 
-    private final StateView stateView;
-
     public TokenGetCustomFeesPrecompile(
             final TokenID tokenId,
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-            final PrecompilePricingUtils pricingUtils,
-            final StateView stateView) {
+            final PrecompilePricingUtils pricingUtils) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
-        this.stateView = stateView;
     }
 
     @Override

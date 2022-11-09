@@ -52,6 +52,7 @@ import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -226,6 +227,7 @@ public class ViewExecutor {
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+                Objects.requireNonNull(tokenInfo);
 
                 final var expiryInfo =
                         new TokenExpiryWrapper(

@@ -67,15 +67,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
 public class StaticEntityAccess implements EntityAccess {
-    private static final Logger log = LogManager.getLogger(StaticEntityAccess.class);
     private final StateView view;
     private final ContractAliases aliases;
     private final OptionValidator validator;

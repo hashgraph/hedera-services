@@ -185,66 +185,7 @@ public class StateView {
             if (token == null) {
                 return Optional.empty();
             }
-            final var info =
-                    TokenInfo.newBuilder()
-                            .setLedgerId(networkInfo.ledgerId())
-                            .setTokenTypeValue(token.tokenType().ordinal())
-                            .setSupplyTypeValue(token.supplyType().ordinal())
-                            .setTokenId(tokenId)
-                            .setDeleted(token.isDeleted())
-                            .setSymbol(token.symbol())
-                            .setName(token.name())
-                            .setMemo(token.memo())
-                            .setTreasury(token.treasury().toGrpcAccountId())
-                            .setTotalSupply(token.totalSupply())
-                            .setMaxSupply(token.maxSupply())
-                            .setDecimals(token.decimals())
-                            .setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
-
-            final var adminCandidate = token.adminKey();
-            adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
-
-            final var freezeCandidate = token.freezeKey();
-            freezeCandidate.ifPresentOrElse(
-                    k -> {
-                        info.setDefaultFreezeStatus(
-                                tokenFreeStatusFor(token.accountsAreFrozenByDefault()));
-                        info.setFreezeKey(asKeyUnchecked(k));
-                    },
-                    () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
-
-            final var kycCandidate = token.kycKey();
-            kycCandidate.ifPresentOrElse(
-                    k -> {
-                        info.setDefaultKycStatus(
-                                tokenKycStatusFor(token.accountsKycGrantedByDefault()));
-                        info.setKycKey(asKeyUnchecked(k));
-                    },
-                    () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
-
-            final var supplyCandidate = token.supplyKey();
-            supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
-            final var wipeCandidate = token.wipeKey();
-            wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
-            final var feeScheduleCandidate = token.feeScheduleKey();
-            feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
-
-            final var pauseCandidate = token.pauseKey();
-            pauseCandidate.ifPresentOrElse(
-                    k -> {
-                        info.setPauseKey(asKeyUnchecked(k));
-                        info.setPauseStatus(tokenPauseStatusOf(token.isPaused()));
-                    },
-                    () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable));
-
-            if (token.hasAutoRenewAccount()) {
-                info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());
-                info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
-            }
-
-            info.addAllCustomFees(token.grpcFeeSchedule());
-
-            return Optional.of(info.build());
+            return token.asTokenInfo(networkInfo.ledgerId());
         } catch (Exception unexpected) {
             log.warn(
                     "Unexpected failure getting info for token {}!",

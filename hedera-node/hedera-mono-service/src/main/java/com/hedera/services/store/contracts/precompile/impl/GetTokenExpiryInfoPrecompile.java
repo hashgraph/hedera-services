@@ -35,6 +35,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -70,6 +71,7 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile {
                 ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
 
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+        Objects.requireNonNull(tokenInfo);
 
         final var expiryInfo =
                 new TokenExpiryWrapper(

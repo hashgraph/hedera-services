@@ -15,17 +15,22 @@
  */
 package com.hedera.services.state.merkle;
 
+import static com.hedera.services.context.primitives.StateView.tokenFreeStatusFor;
+import static com.hedera.services.context.primitives.StateView.tokenKycStatusFor;
+import static com.hedera.services.context.primitives.StateView.tokenPauseStatusOf;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
@@ -38,7 +43,13 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -705,6 +716,67 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
             grpcList.add(customFee.asGrpc());
         }
         return grpcList;
+    }
+
+    public Optional<TokenInfo> asTokenInfo(final ByteString ledgerId) {
+        final var info =
+                TokenInfo.newBuilder()
+                        .setLedgerId(ledgerId)
+                        .setTokenTypeValue(tokenType().ordinal())
+                        .setSupplyTypeValue(supplyType().ordinal())
+                        .setTokenId(grpcId())
+                        .setDeleted(isDeleted())
+                        .setSymbol(symbol())
+                        .setName(name())
+                        .setMemo(memo())
+                        .setTreasury(treasury().toGrpcAccountId())
+                        .setTotalSupply(totalSupply())
+                        .setMaxSupply(maxSupply())
+                        .setDecimals(decimals())
+                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry()));
+
+        final var adminCandidate = adminKey();
+        adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
+
+        final var freezeCandidate = freezeKey();
+        freezeCandidate.ifPresentOrElse(
+                k -> {
+                    info.setDefaultFreezeStatus(tokenFreeStatusFor(accountsAreFrozenByDefault()));
+                    info.setFreezeKey(asKeyUnchecked(k));
+                },
+                () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
+
+        final var kycCandidate = kycKey();
+        kycCandidate.ifPresentOrElse(
+                k -> {
+                    info.setDefaultKycStatus(tokenKycStatusFor(accountsKycGrantedByDefault()));
+                    info.setKycKey(asKeyUnchecked(k));
+                },
+                () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
+
+        final var supplyCandidate = supplyKey();
+        supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
+        final var wipeCandidate = wipeKey();
+        wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
+        final var feeScheduleCandidate = feeScheduleKey();
+        feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
+
+        final var pauseCandidate = pauseKey();
+        pauseCandidate.ifPresentOrElse(
+                k -> {
+                    info.setPauseKey(asKeyUnchecked(k));
+                    info.setPauseStatus(tokenPauseStatusOf(isPaused()));
+                },
+                () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable));
+
+        if (hasAutoRenewAccount()) {
+            info.setAutoRenewAccount(autoRenewAccount().toGrpcAccountId());
+            info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod()));
+        }
+
+        info.addAllCustomFees(grpcFeeSchedule());
+
+        return Optional.of(info.build());
     }
 
     @VisibleForTesting

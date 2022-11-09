@@ -16,9 +16,6 @@
 package com.hedera.services.store.contracts;
 
 import static com.hedera.services.context.primitives.StateView.WILDCARD_OWNER;
-import static com.hedera.services.context.primitives.StateView.tokenFreeStatusFor;
-import static com.hedera.services.context.primitives.StateView.tokenKycStatusFor;
-import static com.hedera.services.context.primitives.StateView.tokenPauseStatusOf;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp;
@@ -44,7 +41,6 @@ import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
@@ -72,15 +68,10 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
-import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -164,67 +155,7 @@ public class WorldLedgers {
                 if (token == null) {
                     return Optional.empty();
                 }
-                final var info =
-                        TokenInfo.newBuilder()
-                                .setLedgerId(ledgerId)
-                                .setTokenTypeValue(token.tokenType().ordinal())
-                                .setSupplyTypeValue(token.supplyType().ordinal())
-                                .setTokenId(tokenId)
-                                .setDeleted(token.isDeleted())
-                                .setSymbol(token.symbol())
-                                .setName(token.name())
-                                .setMemo(token.memo())
-                                .setTreasury(token.treasury().toGrpcAccountId())
-                                .setTotalSupply(token.totalSupply())
-                                .setMaxSupply(token.maxSupply())
-                                .setDecimals(token.decimals())
-                                .setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
-
-                final var adminCandidate = token.adminKey();
-                adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
-
-                final var freezeCandidate = token.freezeKey();
-                freezeCandidate.ifPresentOrElse(
-                        k -> {
-                            info.setDefaultFreezeStatus(
-                                    tokenFreeStatusFor(token.accountsAreFrozenByDefault()));
-                            info.setFreezeKey(asKeyUnchecked(k));
-                        },
-                        () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
-
-                final var kycCandidate = token.kycKey();
-                kycCandidate.ifPresentOrElse(
-                        k -> {
-                            info.setDefaultKycStatus(
-                                    tokenKycStatusFor(token.accountsKycGrantedByDefault()));
-                            info.setKycKey(asKeyUnchecked(k));
-                        },
-                        () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
-
-                final var supplyCandidate = token.supplyKey();
-                supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
-                final var wipeCandidate = token.wipeKey();
-                wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
-                final var feeScheduleCandidate = token.feeScheduleKey();
-                feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
-
-                final var pauseCandidate = token.pauseKey();
-                pauseCandidate.ifPresentOrElse(
-                        k -> {
-                            info.setPauseKey(asKeyUnchecked(k));
-                            info.setPauseStatus(tokenPauseStatusOf(token.isPaused()));
-                        },
-                        () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable));
-
-                if (token.hasAutoRenewAccount()) {
-                    info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());
-                    info.setAutoRenewPeriod(
-                            Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
-                }
-
-                info.addAllCustomFees(token.grpcFeeSchedule());
-
-                return Optional.of(info.build());
+                return token.asTokenInfo(ledgerId);
             } catch (Exception unexpected) {
                 log.warn(
                         "Unexpected failure getting info for token {}!",
