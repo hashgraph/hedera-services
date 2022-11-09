@@ -71,9 +71,7 @@ jobs:
       version-policy: branch-commit
       #      new-version: ${{ github.event.inputs.new-version }}
       #      trigger-env-deploy: ${{ github.event.inputs.trigger-env-deploy }}
-      #trigger-env-deploy: none
-      # For testing only via integration
-      trigger-env-deploy: integration
+      trigger-env-deploy: none
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
