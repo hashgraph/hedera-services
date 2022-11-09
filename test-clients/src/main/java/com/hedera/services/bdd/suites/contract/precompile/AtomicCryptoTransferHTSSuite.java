@@ -114,13 +114,13 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                    cryptoTransferForHbarOnly(),
-                    //                    cryptoTransferForFungibleTokenOnly(),
-                    //                    cryptoTransferForNonFungibleTokenOnly(),
-                    //                    cryptoTransferHBarFungibleNft(),
-                    //                    cryptoTransferAllowanceHbarToken(),
-                    //                    cryptoTransferAllowanceFungibleToken(),
-                    //                    cryptoTransferAllowanceNft(),
+                    cryptoTransferForHbarOnly(),
+                    cryptoTransferForFungibleTokenOnly(),
+                    cryptoTransferForNonFungibleTokenOnly(),
+                    cryptoTransferHBarFungibleNft(),
+                    cryptoTransferAllowanceHbarToken(),
+                    cryptoTransferAllowanceFungibleToken(),
+                    cryptoTransferAllowanceNft(),
                     cryptoTransferSpecialAccounts()
                 });
     }
