@@ -39,8 +39,8 @@ public interface CryptoQueryHandler extends QueryHandler {
 
     /**
      * Returns all transactions in the last 180s of consensus time for which the given account was
-     * the effective payer <b>and</b> network property <tt>ledger.keepRecordsInState</tt> was
-     * <tt>true</tt>.
+     * the effective payer <b>and</b> network property {@code ledger.keepRecordsInState} was {@code
+     * true}.
      */
     void getAccountRecords(@NonNull CryptoGetAccountRecordsQuery query);
 

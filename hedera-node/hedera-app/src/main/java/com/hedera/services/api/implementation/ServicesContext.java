@@ -18,4 +18,11 @@ package com.hedera.services.api.implementation;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.StateRegistry;
 
+/**
+ * A pair of a {@link Service} and the {@link StateRegistry} it uses to handle state.
+ *
+ * @param service the {@code Service}
+ * @param stateRegistry the {@code StateRegistry}
+ * @param <S> the concrete type of the {@code ServiceContext}
+ */
 public record ServicesContext<S extends Service>(S service, StateRegistry stateRegistry) {}

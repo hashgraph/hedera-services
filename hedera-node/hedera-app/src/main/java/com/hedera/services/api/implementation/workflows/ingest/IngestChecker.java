@@ -22,13 +22,49 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ * Encapsulates the workflow related to transaction ingestion. Given a Transaction, parses,
+ * validates, and submits to the platform.
+ */
 public interface IngestChecker {
+
+    /**
+     * Validates a {@link SignedTransaction}
+     *
+     * @param tx the {@code SignedTransaction} to check
+     * @throws PreCheckException if validation fails
+     * @throws NullPointerException if {@code tx} is {@code null}
+     */
     void checkSignedTransaction(SignedTransaction tx) throws PreCheckException;
 
+    /**
+     * Validates a {@link TransactionBody} with the paying {@link Account}
+     *
+     * @param txBody the {@code TransactionBody} to check
+     * @param account the paying {@code Account}
+     * @throws PreCheckException if validation fails
+     * @throws NullPointerException if any of the parameters is {@code null}
+     */
     void checkTransactionBody(TransactionBody txBody, Account account) throws PreCheckException;
 
+    /**
+     * Validates a signature.
+     *
+     * @param signedTransactionBytes the signed bytes to check
+     * @param signatureMap the {@link SignatureMap} with all signatures
+     * @param key the {@link JKey} of the paying {@link Account}
+     * @throws PreCheckException if validation fails
+     * @throws NullPointerException if any of the parameters is {@code null}
+     */
     void checkSignatures(ByteString signedTransactionBytes, SignatureMap signatureMap, JKey key)
             throws PreCheckException;
 
+    /**
+     * Check the throttle for a {@link TransactionBody.DataCase}
+     *
+     * @param type the type which throttle needs to be checked
+     * @throws ThrottleException if the throttle is exceeded
+     * @throws NullPointerException if {@code type} is {@code null}
+     */
     void checkThrottles(TransactionBody.DataCase type) throws ThrottleException;
 }

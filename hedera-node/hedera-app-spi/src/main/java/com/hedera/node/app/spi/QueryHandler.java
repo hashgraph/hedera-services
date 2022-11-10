@@ -15,4 +15,5 @@
  */
 package com.hedera.node.app.spi;
 
+/** Marker interface for all handlers that query entities. */
 public interface QueryHandler {}

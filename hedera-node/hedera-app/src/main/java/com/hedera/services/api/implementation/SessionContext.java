@@ -21,7 +21,14 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-// Put the per-thread stuff here like parsers
+/**
+ * This record keeps a list of everything that is used per-thread
+ *
+ * @param queryParser a parser for {@link Query}
+ * @param txParser a parser for {@link Transaction}
+ * @param signedParser a parser for {@link SignedTransaction}
+ * @param txBodyParser a parser for {@link TransactionBody}
+ */
 public record SessionContext(
         Parser<Query> queryParser,
         Parser<Transaction> txParser,

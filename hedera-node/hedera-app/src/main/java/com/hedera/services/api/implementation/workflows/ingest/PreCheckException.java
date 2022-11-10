@@ -15,6 +15,8 @@
  */
 package com.hedera.services.api.implementation.workflows.ingest;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
@@ -24,11 +26,23 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 public class PreCheckException extends Exception {
     private final ResponseCodeEnum responseCode;
 
+    /**
+     * Constructor of {@code PreCheckException}
+     *
+     * @param responseCode the {@link ResponseCodeEnum responseCode}
+     * @param message an error message with further details
+     * @throws NullPointerException if {@code responseCode} is {@code null}
+     */
     public PreCheckException(ResponseCodeEnum responseCode, String message) {
         super(message);
-        this.responseCode = responseCode;
+        this.responseCode = requireNonNull(responseCode);
     }
 
+    /**
+     * Returns the {@code responseCode} of this {@code PreCheckException}
+     *
+     * @return the {@link ResponseCodeEnum responseCode}
+     */
     public ResponseCodeEnum responseCode() {
         return responseCode;
     }

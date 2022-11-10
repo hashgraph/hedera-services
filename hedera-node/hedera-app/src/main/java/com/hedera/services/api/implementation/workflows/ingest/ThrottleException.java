@@ -19,6 +19,12 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /** Thrown if a throttle is exceeded. */
 public class ThrottleException extends PreCheckException {
+
+    /**
+     * Constructor of {@code ThrottleException}
+     *
+     * @param message an error message with further details
+     */
     public ThrottleException(String message) {
         // TODO Not sure.
         super(ResponseCodeEnum.BUSY, message);

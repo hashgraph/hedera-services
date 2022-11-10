@@ -15,24 +15,43 @@
  */
 package com.hedera.services.api.implementation;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 
+/**
+ * A simple implementation of {@link TransactionMetadata} that is setup with the attributes directly
+ */
 public class TransactionMetadataImpl implements TransactionMetadata {
 
     private final TransactionBody transactionBody;
     private final ResponseCodeEnum status;
 
+    /**
+     * Constructor of {@code TransactionMetadataImpl} which {@code status} is {@link
+     * ResponseCodeEnum#OK}
+     *
+     * @param transactionBody the {@link TransactionBody}
+     * @throws NullPointerException if {@code transactionBody} is {@code null}
+     */
     public TransactionMetadataImpl(TransactionBody transactionBody) {
         this(transactionBody, ResponseCodeEnum.OK);
     }
 
+    /**
+     * Constructor of {@code TransactionMetadataImpl}
+     *
+     * @param transactionBody the {@link TransactionBody}
+     * @param status the status, a {@link ResponseCodeEnum}
+     * @throws NullPointerException if any of the parameters is {@code null}
+     */
     protected TransactionMetadataImpl(TransactionBody transactionBody, ResponseCodeEnum status) {
-        this.transactionBody = transactionBody;
-        this.status = status;
+        this.transactionBody = requireNonNull(transactionBody);
+        this.status = requireNonNull(status);
     }
 
     @Override

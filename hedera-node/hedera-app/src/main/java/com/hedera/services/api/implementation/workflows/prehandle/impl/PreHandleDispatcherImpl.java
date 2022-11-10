@@ -13,25 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.api.implementation.workflows.prehandle;
+package com.hedera.services.api.implementation.workflows.prehandle.impl;
 
-import com.hedera.node.app.spi.PreHandleDispatcher;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.services.api.implementation.ServicesAccessor;
+import com.hedera.services.api.implementation.workflows.prehandle.PreHandleDispatcher;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Objects;
 
+/** Default implementation of {@link PreHandleDispatcher} */
 public final class PreHandleDispatcherImpl implements PreHandleDispatcher {
     private final ServicesAccessor services;
 
-    public PreHandleDispatcherImpl(ServicesAccessor services) {
-        this.services = Objects.requireNonNull(services);
+    /**
+     * Constructor of {@code PreHandleDispatcherImpl}
+     *
+     * @param services the {@link ServicesAccessor} with all available services
+     * @throws NullPointerException if {@code services} is {@code null}
+     */
+    public PreHandleDispatcherImpl(final ServicesAccessor services) {
+        this.services = requireNonNull(services);
     }
 
     @Override
-    public void dispatch(TransactionBody transactionBody) {
+    public void dispatch(final TransactionBody transactionBody) {
+        requireNonNull(transactionBody);
         switch (transactionBody.getDataCase()) {
                 //            case FILE_CREATE ->
-                //
                 // services.fileService().preHandler().preHandleFileCreate(transactionBodyData.as());
                 //            case CRYPTO_CREATE_ACCOUNT ->
                 //

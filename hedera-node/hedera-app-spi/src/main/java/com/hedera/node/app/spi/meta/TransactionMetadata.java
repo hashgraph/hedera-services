@@ -61,13 +61,27 @@ public interface TransactionMetadata {
      */
     List<HederaKey> getReqKeys();
 
+    /**
+     * An implementation of {@link TransactionMetadata} for cases when an unknown error has
+     * occurred.
+     */
     final class UnknownErrorTransactionMetadata implements TransactionMetadata {
         private final Throwable throwable;
 
+        /**
+         * Constructor of {@code UnknownErrorTransactionMetadata}
+         *
+         * @param th the {@link Throwable} that caused the error
+         */
         public UnknownErrorTransactionMetadata(Throwable th) {
             this.throwable = Objects.requireNonNull(th);
         }
 
+        /**
+         * Returns the cause of the error
+         *
+         * @return the {@link Throwable} that caused the error
+         */
         public Throwable cause() {
             return throwable;
         }

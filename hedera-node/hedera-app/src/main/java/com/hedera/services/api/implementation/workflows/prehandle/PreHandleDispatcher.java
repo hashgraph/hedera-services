@@ -13,10 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.spi;
+package com.hedera.services.api.implementation.workflows.prehandle;
 
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ * A {@code PreHandleDispatcher} takes a validated transaction and dispatches it to the correct
+ * handler
+ */
 public interface PreHandleDispatcher {
+
+    /**
+     * Dispatch a request. It is forwarded to the correct handler, which takes care of the specific
+     * functionality
+     *
+     * @param transactionBody the {@link TransactionBody} of the request
+     * @throws NullPointerException if {@code transactionBody} is {@code null}
+     */
     void dispatch(TransactionBody transactionBody);
 }
