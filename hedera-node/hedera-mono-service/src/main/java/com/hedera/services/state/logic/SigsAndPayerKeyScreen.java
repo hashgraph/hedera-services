@@ -155,8 +155,7 @@ public class SigsAndPayerKeyScreen {
         sideEffects.trackHollowAccountUpdate(accountID);
 
         final var childRecordBuilder =
-                creator.createSuccessfulSyntheticRecord(
-                        Collections.emptyList(), sideEffects, "lazy-create completion");
+                creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, null);
 
         final var inProgress =
                 new InProgressChildRecord(

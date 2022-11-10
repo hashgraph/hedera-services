@@ -493,7 +493,6 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 accountNum.toGrpcAccountId(),
                 txnBody.getCryptoUpdateAccount().getAccountIDToUpdate());
-        //        assertEquals(LAZY_MEMO, txnBody.getCryptoUpdateAccount().getMemo());
     }
 
     @Test
