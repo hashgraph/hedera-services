@@ -25,4 +25,5 @@ dependencies {
     implementation(libs.hapi)
     implementation(project(":hedera-node:hedera-mono-service"))
 
+    testImplementation(testLibs.bundles.testing)
 }

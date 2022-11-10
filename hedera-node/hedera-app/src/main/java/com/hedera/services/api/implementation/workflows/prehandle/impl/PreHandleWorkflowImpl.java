@@ -59,7 +59,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * @param query a {@link Supplier} of {@link CryptoQueryHandler} used to request account data
      * @param ingestChecker an {@link IngestChecker} that contains all validators
      * @param dispatcher a {@link PreHandleDispatcher} that handles the actual request
-     * @throws NullPointerException if any of the paramters is {@code null}
+     * @throws NullPointerException if any of the parameters is {@code null}
      */
     public PreHandleWorkflowImpl(
             ExecutorService exe,

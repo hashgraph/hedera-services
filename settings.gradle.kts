@@ -152,11 +152,13 @@ dependencyResolutionManagement {
             version("testcontainers-version", "1.17.2")
             version("truth-java8-extension-version", "1.1.3")
             version("classgraph-version", "4.8.65")
+            version("assertj-version", "3.23.1")
+
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
             bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
-            bundle("testing", listOf("junit-jupiter", "junit-jupiter-api", "junit-jupiter-params", "mockito-core", "mockito-jupiter", "hamcrest", "awaitility", "truth-java8-extension"))
+            bundle("testing", listOf("junit-jupiter", "junit-jupiter-api", "junit-jupiter-params", "mockito-core", "mockito-jupiter", "hamcrest", "awaitility", "truth-java8-extension", "assertj-core"))
 
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
             library("besu-internal", "org.hyperledger.besu.internal", "crypto").versionRef("besu-internal-version")
@@ -174,6 +176,7 @@ dependencyResolutionManagement {
             library("testcontainers-junit", "org.testcontainers", "junit-jupiter").versionRef("testcontainers-version")
             library("truth-java8-extension", "com.google.truth.extensions", "truth-java8-extension").versionRef("truth-java8-extension-version")
             library("classgraph", "io.github.classgraph", "classgraph").versionRef("classgraph-version")
+            library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj-version")
         }
     }
 }
