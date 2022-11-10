@@ -2,9 +2,9 @@
 pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-import "./HederaTokenService.sol";
+import "./FeeHelper.sol";
 
-contract TokenInfoContract is HederaTokenService {
+contract TokenInfoContract is FeeHelper {
 
     function getInformationForToken(address token) external returns (IHederaTokenService.TokenInfo memory tokenInfo) {
         (int responseCode, IHederaTokenService.TokenInfo memory retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
@@ -92,6 +92,34 @@ contract TokenInfoContract is HederaTokenService {
         }
 
         nonFungibleTokenInfo = retrievedTokenInfo;
+    }
+
+    function updateTokenKeysAndReadLatestInformation(
+        address token,
+        address contractID) public payable {
+
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](7);
+        keys[0] = getSingleKey(0, 2, contractID);
+        keys[1] = getSingleKey(1, 2, contractID);
+        keys[2] = getSingleKey(2, 2, contractID);
+        keys[3] = getSingleKey(3, 2, contractID);
+        keys[4] = getSingleKey(4, 2, contractID);
+        keys[5] = getSingleKey(6, 2, contractID);
+        keys[6] = getSingleKey(5, 2, contractID);
+
+        int responseCode = super.updateTokenKeys(token, keys);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of token keys failed!");
+        }
+
+        HederaTokenService.getTokenKey(token, 1);
+        HederaTokenService.getTokenKey(token, 2);
+        HederaTokenService.getTokenKey(token, 4);
+        HederaTokenService.getTokenKey(token, 8);
+        HederaTokenService.getTokenKey(token, 16);
+        HederaTokenService.getTokenKey(token, 32);
+        HederaTokenService.getTokenKey(token, 64);
     }
 
     function getCustomFeesForToken(address token) external returns (

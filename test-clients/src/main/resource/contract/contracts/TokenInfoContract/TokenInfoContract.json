@@ -2033,5 +2033,23 @@
     ],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "contractID",
+        "type": "address"
+      }
+    ],
+    "name": "updateTokenKeysAndReadLatestInformation",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
   }
 ]

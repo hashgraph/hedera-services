@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -44,6 +45,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -104,6 +106,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final String NON_FUNGIBLE_TOKEN_INFO_TXN = "NonFungibleTokenInfoTxn";
     private static final String GET_TOKEN_INFO_TXN = "GetTokenInfo";
     private static final String APPROVE_TXN = "approveTxn";
+    private static final String UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN =
+            "updateTokenKeysAndReadLatestInformation";
     private static final String SYMBOL = "T";
     private static final String FUNGIBLE_SYMBOL = "FT";
     private static final String FUNGIBLE_TOKEN_NAME = "FungibleToken";
@@ -117,6 +121,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final String NFT_OWNER = "NFT Owner";
     private static final String NFT_SPENDER = "NFT Spender";
     private static final String NON_FUNGIBLE_TOKEN_NAME = "NonFungibleToken";
+    private static final String MULTI_KEY = "multiKey";
     private static final String GET_INFORMATION_FOR_TOKEN = "getInformationForToken";
     private static final String GET_INFORMATION_FOR_FUNGIBLE_TOKEN =
             "getInformationForFungibleToken";
@@ -168,7 +173,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 happyPathGetNonFungibleTokenInfo(),
                 happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo(),
                 happyPathGetTokenCustomFees(),
-                happyPathGetNonFungibleTokenCustomFees());
+                happyPathGetNonFungibleTokenCustomFees(),
+                happyPathUpdateTokenKeysAndReadLatestInformation());
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
@@ -1299,6 +1305,179 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                 .withCustomFees(
                                                                                                         getCustomFeeForNFT(
                                                                                                                 spec))))))));
+    }
+
+    private HapiApiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
+        final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
+        return defaultHapiSpec("UpdateTokenKeysAndReadLatestInformation")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                        cryptoCreate(HTS_COLLECTOR),
+                        cryptoCreate(ACCOUNT),
+                        uploadInitCode(TOKEN_INFO_CONTRACT),
+                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(TOKEN_INFO_AS_KEY)
+                                .shape(CONTRACT.signedWith(TOKEN_INFO_CONTRACT)),
+                        tokenCreate(FUNGIBLE_TOKEN_NAME)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .feeScheduleKey(MULTI_KEY)
+                                .pauseKey(MULTI_KEY)
+                                .wipeKey(MULTI_KEY)
+                                .freezeKey(MULTI_KEY)
+                                .kycKey(MULTI_KEY)
+                                .initialSupply(1_000),
+                        tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_INFO_CONTRACT,
+                                                                UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN_NAME))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_INFO_CONTRACT))))
+                                                        .via(UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN)
+                                                        .alsoSigningWithFullPrefix(MULTI_KEY))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                getTxnRecord(UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN)
+                                                        .andAllChildRecords()
+                                                        .logged(),
+                                                childRecordsCheck(
+                                                        UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN,
+                                                        SUCCESS,
+                                                        recordWith().status(SUCCESS),
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_KEY)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withTokenKeyValue(
+                                                                                                        //                                                        spec.registry().getKey(TOKEN_INFO_AS_KEY)
+                                                                                                        Key
+                                                                                                                .newBuilder()
+                                                                                                                .setContractID(
+                                                                                                                        spec.registry()
+                                                                                                                                .getContractId(
+                                                                                                                                        TOKEN_INFO_CONTRACT))
+                                                                                                                .build()))),
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_KEY)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withTokenKeyValue(
+                                                                                                        Key
+                                                                                                                .newBuilder()
+                                                                                                                .setContractID(
+                                                                                                                        spec.registry()
+                                                                                                                                .getContractId(
+                                                                                                                                        TOKEN_INFO_CONTRACT))
+                                                                                                                .build()))),
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_KEY)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withTokenKeyValue(
+                                                                                                        spec.registry()
+                                                                                                                .getKey(
+                                                                                                                        TOKEN_INFO_AS_KEY)))),
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_KEY)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withTokenKeyValue(
+                                                                                                        spec.registry()
+                                                                                                                .getKey(
+                                                                                                                        TOKEN_INFO_AS_KEY)))),
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_KEY)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withTokenKeyValue(
+                                                                                                        spec.registry()
+                                                                                                                .getKey(
+                                                                                                                        TOKEN_INFO_AS_KEY)))),
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_KEY)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withTokenKeyValue(
+                                                                                                        spec.registry()
+                                                                                                                .getKey(
+                                                                                                                        TOKEN_INFO_AS_KEY)))),
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_KEY)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withTokenKeyValue(
+                                                                                                        spec.registry()
+                                                                                                                .getKey(
+                                                                                                                        TOKEN_INFO_AS_KEY))))))));
     }
 
     private TokenNftInfo getTokenNftInfoForCheck(
