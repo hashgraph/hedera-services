@@ -34,7 +34,6 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -70,6 +69,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -168,6 +168,7 @@ class WorldLedgersTest {
     @Mock private TokenInfo tokenInfo;
     @Mock private TokenNftInfo tokenNftInfo;
     @Mock private List<CustomFee> customFees;
+    @Mock private JKey key;
 
     private WorldLedgers subject;
     private MerkleToken token;
@@ -203,7 +204,8 @@ class WorldLedgersTest {
                         "UnfrozenTokenName",
                         true,
                         true,
-                        EntityId.fromGrpcAccountId(accountID));
+                        EntityId.fromGrpcAccountId(accountID),
+                        789);
 
         setUpToken(token);
     }
@@ -440,6 +442,50 @@ class WorldLedgersTest {
     }
 
     @Test
+    void nonStaticNftTokenInfoWorksForMissingSerialNumber() {
+        final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+        final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
+        given(nftsLedger.contains(targetKey)).willReturn(false);
+
+        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId);
+
+        assertEquals(Optional.empty(), tokenNftInfo);
+    }
+
+    @Test
+    void nonStaticNftTokenInfoWorksForWildCardOwner() {
+        final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+        final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
+        targetNft.setOwner(MISSING_ENTITY_ID);
+        given(nftsLedger.contains(targetKey)).willReturn(true);
+        given(nftsLedger.getImmutableRef(targetKey)).willReturn(targetNft);
+        given(tokensLedger.getImmutableRef(nftTokenId)).willReturn(token);
+
+        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId).get();
+
+        assertEquals(ledgerId, tokenNftInfo.getLedgerId());
+        assertEquals(nftId, tokenNftInfo.getNftID());
+        assertEquals(accountID, tokenNftInfo.getAccountID());
+        assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(tokenNftInfo.getSpenderId()));
+        assertEquals(fromJava(nftCreation).toGrpc(), tokenNftInfo.getCreationTime());
+        assertArrayEquals(nftMeta, tokenNftInfo.getMetadata().toByteArray());
+    }
+
+    @Test
+    void nonStaticNftTokenInfoWorksForWildCardOwnerWithMissingToken() {
+        final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+        final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
+        targetNft.setOwner(MISSING_ENTITY_ID);
+        given(nftsLedger.contains(targetKey)).willReturn(true);
+        given(nftsLedger.getImmutableRef(targetKey)).willReturn(targetNft);
+        given(tokensLedger.getImmutableRef(nftTokenId)).willReturn(null);
+
+        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId);
+
+        assertEquals(Optional.empty(), tokenNftInfo);
+    }
+
+    @Test
     void staticTokenCustomFeesInfoWorks() {
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
@@ -472,6 +518,70 @@ class WorldLedgersTest {
 
         final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken);
         assertEquals(Optional.empty(), customFeesInfo);
+    }
+
+    @Test
+    void staticKeyInfoWorks() {
+        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+        given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.ADMIN_KEY)).willReturn(key);
+        given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.FREEZE_KEY)).willReturn(key);
+        given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.KYC_KEY)).willReturn(key);
+        given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.WIPE_KEY)).willReturn(key);
+        given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.PAUSE_KEY)).willReturn(key);
+        given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.FEE_SCHEDULE_KEY))
+                .willReturn(key);
+        given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.SUPPLY_KEY)).willReturn(key);
+
+        final var adminKey = subject.keyOf(fungibleToken, TokenProperty.ADMIN_KEY);
+        final var freezeKey = subject.keyOf(fungibleToken, TokenProperty.FREEZE_KEY);
+        final var kycKey = subject.keyOf(fungibleToken, TokenProperty.KYC_KEY);
+        final var wipeKey = subject.keyOf(fungibleToken, TokenProperty.WIPE_KEY);
+        final var pauseKey = subject.keyOf(fungibleToken, TokenProperty.PAUSE_KEY);
+        final var feeScheduleKey = subject.keyOf(fungibleToken, TokenProperty.FEE_SCHEDULE_KEY);
+        final var supplyKey = subject.keyOf(fungibleToken, TokenProperty.SUPPLY_KEY);
+
+        assertEquals(key, adminKey);
+        assertEquals(key, freezeKey);
+        assertEquals(key, kycKey);
+        assertEquals(key, wipeKey);
+        assertEquals(key, pauseKey);
+        assertEquals(key, feeScheduleKey);
+        assertEquals(key, supplyKey);
+    }
+
+    @Test
+    void nonStaticKeyInfoWorks() throws DecoderException {
+        given(tokensLedger.get(fungibleToken, TokenProperty.ADMIN_KEY))
+                .willReturn(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
+        given(tokensLedger.get(fungibleToken, TokenProperty.FREEZE_KEY))
+                .willReturn(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
+        given(tokensLedger.get(fungibleToken, TokenProperty.KYC_KEY))
+                .willReturn(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
+        given(tokensLedger.get(fungibleToken, TokenProperty.WIPE_KEY))
+                .willReturn(MISC_ACCOUNT_KT.asJKey());
+        given(tokensLedger.get(fungibleToken, TokenProperty.PAUSE_KEY))
+                .willReturn(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
+        given(tokensLedger.get(fungibleToken, TokenProperty.FEE_SCHEDULE_KEY))
+                .willReturn(MISC_ACCOUNT_KT.asJKey());
+        given(tokensLedger.get(fungibleToken, TokenProperty.SUPPLY_KEY))
+                .willReturn(MISC_ACCOUNT_KT.asJKey());
+
+        final var adminKey = subject.keyOf(fungibleToken, TokenProperty.ADMIN_KEY);
+        final var freezeKey = subject.keyOf(fungibleToken, TokenProperty.FREEZE_KEY);
+        final var kycKey = subject.keyOf(fungibleToken, TokenProperty.KYC_KEY);
+        final var wipeKey = subject.keyOf(fungibleToken, TokenProperty.WIPE_KEY);
+        final var pauseKey = subject.keyOf(fungibleToken, TokenProperty.PAUSE_KEY);
+        final var feeScheduleKey = subject.keyOf(fungibleToken, TokenProperty.FEE_SCHEDULE_KEY);
+        final var supplyKey = subject.keyOf(fungibleToken, TokenProperty.SUPPLY_KEY);
+
+        assertEquals(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(), adminKey);
+        assertEquals(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey(), freezeKey);
+        assertEquals(TxnHandlingScenario.TOKEN_KYC_KT.asJKey(), kycKey);
+        assertEquals(MISC_ACCOUNT_KT.asJKey(), wipeKey);
+        assertEquals(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey(), pauseKey);
+        assertEquals(MISC_ACCOUNT_KT.asJKey(), feeScheduleKey);
+        assertEquals(MISC_ACCOUNT_KT.asJKey(), supplyKey);
     }
 
     @Test
@@ -825,18 +935,7 @@ class WorldLedgersTest {
 
     private void setUpToken(final MerkleToken token) throws DecoderException {
         token.setMemo(tokenMemo);
-        token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
-        token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
-        token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
-        token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
-        token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
-        token.setFeeScheduleKey(MISC_ACCOUNT_KT.asJKey());
         token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
-        token.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenew));
-        long expiry = 2_000_000L;
-        token.setExpiry(expiry);
-        long autoRenewPeriod = 1_234_567;
-        token.setAutoRenewPeriod(autoRenewPeriod);
         token.setDeleted(true);
         token.setPaused(true);
         token.setSupplyType(TokenSupplyType.FINITE);
