@@ -167,29 +167,30 @@ public class CryptoTransferSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                transferWithMissingAccountGetsInvalidAccountId(),
-                complexKeyAcctPaysForOwnTransfer(),
-                twoComplexKeysRequired(),
-                specialAccountsBalanceCheck(),
-                tokenTransferFeesScaleAsExpected(),
-                okToSetInvalidPaymentHeaderForCostAnswer(),
-                baseCryptoTransferFeeChargedAsExpected(),
-                autoAssociationRequiresOpenSlots(),
-                royaltyCollectorsCanUseAutoAssociation(),
-                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-                transferToNonAccountEntitiesReturnsInvalidAccountId(),
-                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-                checksExpectedDecimalsForFungibleTokenTransferList(),
-                allowanceTransfersWorkAsExpected(),
-                allowanceTransfersWithComplexTransfersWork(),
-                canUseMirrorAliasesForNonContractXfers(),
-                canUseEip1014AliasesForXfers(),
-                cannotTransferFromImmutableAccounts(),
-                nftTransfersCannotRepeatSerialNos(),
-                vanillaTransferSucceeds(),
-                aliasKeysAreValidated());
+//                transferWithMissingAccountGetsInvalidAccountId(),
+//                complexKeyAcctPaysForOwnTransfer(),
+//                twoComplexKeysRequired(),
+//                specialAccountsBalanceCheck(),
+//                tokenTransferFeesScaleAsExpected(),
+//                okToSetInvalidPaymentHeaderForCostAnswer(),
+//                baseCryptoTransferFeeChargedAsExpected(),
+//                autoAssociationRequiresOpenSlots(),
+//                royaltyCollectorsCanUseAutoAssociation(),
+//                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+//                transferToNonAccountEntitiesReturnsInvalidAccountId(),
+//                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+//                checksExpectedDecimalsForFungibleTokenTransferList(),
+//                allowanceTransfersWorkAsExpected(),
+//                allowanceTransfersWithComplexTransfersWork(),
+//                canUseMirrorAliasesForNonContractXfers(),
+//                canUseEip1014AliasesForXfers(),
+//                cannotTransferFromImmutableAccounts(),
+//                nftTransfersCannotRepeatSerialNos(),
+                vanillaTransferSucceeds()
+//                aliasKeysAreValidated()
+        );
     }
 
     @Override
@@ -2100,32 +2101,38 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
         return defaultHapiSpec("VanillaTransferSucceeds")
                 .given(
-                        cryptoCreate("somebody")
-                                .maxAutomaticTokenAssociations(5001)
-                                .hasPrecheck(
-                                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                        UtilVerbs.inParallel(
-                                cryptoCreate(PAYER),
-                                cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true),
-                                cryptoCreate(PAYEE_NO_SIG_REQ)))
+                        cryptoCreate(PAYER).via("test"),
+                        getTxnRecord("test").andAllChildRecords().logged()
+//                        cryptoCreate("somebody")
+//                                .maxAutomaticTokenAssociations(5001)
+//                                .hasPrecheck(
+//                                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+//                        UtilVerbs.inParallel(
+//                                cryptoCreate(PAYER),
+//                                cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true),
+//                                cryptoCreate(PAYEE_NO_SIG_REQ))
+                )
+
                 .when(
-                        cryptoTransfer(
-                                        tinyBarsFromTo(PAYER, PAYEE_SIG_REQ, 1_000L),
-                                        tinyBarsFromTo(PAYER, PAYEE_NO_SIG_REQ, 2_000L))
-                                .via("transferTxn"))
+//                        cryptoTransfer(
+//                                        tinyBarsFromTo(PAYER, PAYEE_SIG_REQ, 1_000L),
+//                                        tinyBarsFromTo(PAYER, PAYEE_NO_SIG_REQ, 2_000L))
+//                                .via("transferTxn")
+                )
                 .then(
-                        getAccountInfo(PAYER)
-                                .logged()
-                                .hasExpectedLedgerId("0x03")
-                                .has(accountWith().balance(initialBalance - 3_000L)),
-                        getAccountInfo(PAYEE_SIG_REQ)
-                                .has(accountWith().balance(initialBalance + 1_000L)),
-                        getAccountDetails(PAYEE_NO_SIG_REQ)
-                                .payingWith(GENESIS)
-                                .has(
-                                        AccountDetailsAsserts.accountWith()
-                                                .balance(initialBalance + 2_000L)
-                                                .noAllowances()));
+//                        getAccountInfo(PAYER)
+//                                .logged()
+//                                .hasExpectedLedgerId("0x03")
+//                                .has(accountWith().balance(initialBalance - 3_000L)),
+//                        getAccountInfo(PAYEE_SIG_REQ)
+//                                .has(accountWith().balance(initialBalance + 1_000L)),
+//                        getAccountDetails(PAYEE_NO_SIG_REQ)
+//                                .payingWith(GENESIS)
+//                                .has(
+//                                        AccountDetailsAsserts.accountWith()
+//                                                .balance(initialBalance + 2_000L)
+//                                                .noAllowances())
+                );
     }
 
     @Override

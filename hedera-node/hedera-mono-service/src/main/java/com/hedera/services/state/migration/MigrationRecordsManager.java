@@ -35,6 +35,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
@@ -167,7 +168,8 @@ public class MigrationRecordsManager {
                                 asKeyUnchecked(account.getAccountKey()),
                                 account.getMemo(),
                                 memo,
-                                description));
+                                description,
+                                account.getBalance()));
     }
 
     private boolean grantingFreeAutoRenewals() {
@@ -184,7 +186,9 @@ public class MigrationRecordsManager {
                 immutableKey,
                 EMPTY_MEMO,
                 STAKING_MEMO,
-                "staking fund");
+                "staking fund",
+                0L); // since 0.0.800 and 0.0.801 are created with zero balance,
+                            // it is okay to hard code zero balance here.
     }
 
     @SuppressWarnings("java:S107")
@@ -196,14 +200,18 @@ public class MigrationRecordsManager {
             final Key key,
             final String accountMemo,
             final String recordMemo,
-            final String description) {
+            final String description,
+            final long balance) {
         final var tracker = sideEffectsFactory.get();
         tracker.trackAutoCreation(num.toGrpcAccountId(), ByteString.EMPTY);
         final var synthBody =
                 synthCreation(
-                        autoRenewPeriod, key, accountMemo, receiverSigRequired, declineReward);
+                        autoRenewPeriod, key, accountMemo, receiverSigRequired, declineReward, balance);
         final var synthRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, recordMemo);
+//        synthRecord.setHbarAdjustments(CurrencyAdjustments
+//                .fromChanges(new long[]{balance}, new long[]{num.longValue()}));
+
         recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
         sigImpactHistorian.markEntityChanged(num.longValue());
         log.info(
@@ -217,14 +225,15 @@ public class MigrationRecordsManager {
             final Key key,
             final String memo,
             final boolean receiverSigRequired,
-            final boolean declineReward) {
+            final boolean declineReward,
+            final long balance) {
         final var txnBody =
                 CryptoCreateTransactionBody.newBuilder()
                         .setKey(key)
                         .setMemo(memo)
                         .setDeclineReward(declineReward)
                         .setReceiverSigRequired(receiverSigRequired)
-                        .setInitialBalance(0)
+                        .setInitialBalance(balance)
                         .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
                         .build();
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
