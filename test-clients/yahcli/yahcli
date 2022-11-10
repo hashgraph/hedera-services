@@ -1,2 +1,2 @@
 #! /bin/sh
-java -jar yahcli.jar $*
+java -jar yahcli.jar "${@}"
