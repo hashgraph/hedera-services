@@ -154,7 +154,6 @@ dependencyResolutionManagement {
             version("classgraph-version", "4.8.65")
             version("assertj-version", "3.23.1")
 
-
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
             bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
