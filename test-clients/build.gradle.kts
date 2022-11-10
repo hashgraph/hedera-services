@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 /*
  * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
@@ -74,10 +76,8 @@ tasks.eet {
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
 }
 
-val sjJar: String by project
-val sjMainClass: String by project
 tasks.shadowJar {
-    archiveFileName.set(sjJar)
+    archiveFileName.set("SuiteRunner.jar")
     isReproducibleFileOrder = true
     isPreserveFileTimestamps = false
     fileMode = 664
@@ -85,11 +85,48 @@ tasks.shadowJar {
 
     manifest {
         attributes(
-            "Main-Class" to sjMainClass
+            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner"
         )
     }
 }
 
+val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
+    group = "shadow"
+    from(sourceSets.main.get().output)
+    configurations = listOf(project.configurations["runtimeClasspath"])
+
+    exclude(listOf("META-INF/*.DSA","META-INF/*.SF"))
+
+    archiveClassifier.set("yahcli")
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.services.yahcli.Yahcli"
+        )
+    }
+}
+
+val copyYahCli = tasks.register<Copy>("copyYahCli") {
+    group = "copy"
+    from(yahCliJar)
+    into(project.file("yahcli"))
+    rename { "yahcli.jar" }
+}
+
+val cleanYahCli = tasks.register<Delete>("cleanYahCli") {
+    group = "build"
+    delete(File(project.file("yahcli"), "yahcli.jar"))
+}
+
 tasks.assemble {
     dependsOn(tasks.shadowJar)
+    dependsOn(copyYahCli)
+}
+
+tasks.clean {
+    dependsOn(cleanYahCli)
 }
