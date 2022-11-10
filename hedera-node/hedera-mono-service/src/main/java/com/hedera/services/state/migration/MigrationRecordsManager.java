@@ -187,8 +187,7 @@ public class MigrationRecordsManager {
                 EMPTY_MEMO,
                 STAKING_MEMO,
                 "staking fund",
-                0L); // since 0.0.800 and 0.0.801 are created with zero balance,
-                            // it is okay to hard code zero balance here.
+                0L); // since 0.0.800 and 0.0.801 are created with zero balance
     }
 
     @SuppressWarnings("java:S107")
@@ -206,11 +205,20 @@ public class MigrationRecordsManager {
         tracker.trackAutoCreation(num.toGrpcAccountId(), ByteString.EMPTY);
         final var synthBody =
                 synthCreation(
-                        autoRenewPeriod, key, accountMemo, receiverSigRequired, declineReward, balance);
+                        autoRenewPeriod,
+                        key,
+                        accountMemo,
+                        receiverSigRequired,
+                        declineReward,
+                        balance);
         final var synthRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, recordMemo);
-//        synthRecord.setHbarAdjustments(CurrencyAdjustments
-//                .fromChanges(new long[]{balance}, new long[]{num.longValue()}));
+        // show the balance of treasury account for mirror node reconciliation.
+        if (num.longValue() == 2L) {
+            synthRecord.setHbarAdjustments(
+                    CurrencyAdjustments.fromChanges(
+                            new long[] {balance}, new long[] {num.longValue()}));
+        }
 
         recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
         sigImpactHistorian.markEntityChanged(num.longValue());
