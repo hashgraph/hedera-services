@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -732,39 +733,9 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                     .getTokenInfo()
                                                     .getExpiry()
                                                     .getSeconds();
-                                    final var tokenId =
-                                            getTokenInfoQuery
-                                                    .getResponse()
-                                                    .getTokenGetInfo()
-                                                    .getTokenInfo()
-                                                    .getTokenId();
-
-                                    final var getNftTokenInfoQuery =
-                                            getTokenNftInfo(NON_FUNGIBLE_TOKEN_NAME, 1L);
-                                    allRunFor(spec, getNftTokenInfoQuery);
-                                    final var creationTime =
-                                            getNftTokenInfoQuery
-                                                    .getResponse()
-                                                    .getTokenGetNftInfo()
-                                                    .getNft()
-                                                    .getCreationTime();
-
-                                    final var ownerId = spec.registry().getAccountID(NFT_OWNER);
-                                    final var spenderId = spec.registry().getAccountID(NFT_SPENDER);
 
                                     final var nftTokenInfo =
-                                            TokenNftInfo.newBuilder()
-                                                    .setLedgerId(fromString("0x03"))
-                                                    .setNftID(
-                                                            NftID.newBuilder()
-                                                                    .setTokenID(tokenId)
-                                                                    .setSerialNumber(1L)
-                                                                    .build())
-                                                    .setAccountID(ownerId)
-                                                    .setCreationTime(creationTime)
-                                                    .setMetadata(meta)
-                                                    .setSpenderId(spenderId)
-                                                    .build();
+                                            getTokenNftInfoForCheck(spec, getTokenInfoQuery, meta);
 
                                     allRunFor(
                                             spec,
@@ -905,39 +876,9 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                     .getTokenInfo()
                                                     .getExpiry()
                                                     .getSeconds();
-                                    final var tokenId =
-                                            getTokenInfoQuery
-                                                    .getResponse()
-                                                    .getTokenGetInfo()
-                                                    .getTokenInfo()
-                                                    .getTokenId();
-
-                                    final var getNftTokenInfoQuery =
-                                            getTokenNftInfo(NON_FUNGIBLE_TOKEN_NAME, 1L);
-                                    allRunFor(spec, getNftTokenInfoQuery);
-                                    final var creationTime =
-                                            getNftTokenInfoQuery
-                                                    .getResponse()
-                                                    .getTokenGetNftInfo()
-                                                    .getNft()
-                                                    .getCreationTime();
-
-                                    final var ownerId = spec.registry().getAccountID(NFT_OWNER);
-                                    final var spenderId = spec.registry().getAccountID(NFT_SPENDER);
 
                                     final var nftTokenInfo =
-                                            TokenNftInfo.newBuilder()
-                                                    .setLedgerId(fromString("0x03"))
-                                                    .setNftID(
-                                                            NftID.newBuilder()
-                                                                    .setTokenID(tokenId)
-                                                                    .setSerialNumber(1L)
-                                                                    .build())
-                                                    .setAccountID(ownerId)
-                                                    .setCreationTime(creationTime)
-                                                    .setMetadata(meta)
-                                                    .setSpenderId(spenderId)
-                                                    .build();
+                                            getTokenNftInfoForCheck(spec, getTokenInfoQuery, meta);
 
                                     allRunFor(
                                             spec,
@@ -1358,6 +1299,31 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                 .withCustomFees(
                                                                                                         getCustomFeeForNFT(
                                                                                                                 spec))))))));
+    }
+
+    private TokenNftInfo getTokenNftInfoForCheck(
+            final HapiApiSpec spec,
+            final HapiGetTokenInfo getTokenInfoQuery,
+            final ByteString meta) {
+        final var tokenId =
+                getTokenInfoQuery.getResponse().getTokenGetInfo().getTokenInfo().getTokenId();
+
+        final var getNftTokenInfoQuery = getTokenNftInfo(NON_FUNGIBLE_TOKEN_NAME, 1L);
+        allRunFor(spec, getNftTokenInfoQuery);
+        final var creationTime =
+                getNftTokenInfoQuery.getResponse().getTokenGetNftInfo().getNft().getCreationTime();
+
+        final var ownerId = spec.registry().getAccountID(NFT_OWNER);
+        final var spenderId = spec.registry().getAccountID(NFT_SPENDER);
+
+        return TokenNftInfo.newBuilder()
+                .setLedgerId(fromString("0x03"))
+                .setNftID(NftID.newBuilder().setTokenID(tokenId).setSerialNumber(1L).build())
+                .setAccountID(ownerId)
+                .setCreationTime(creationTime)
+                .setMetadata(meta)
+                .setSpenderId(spenderId)
+                .build();
     }
 
     private TokenInfo getTokenInfoStructForFungibleToken(

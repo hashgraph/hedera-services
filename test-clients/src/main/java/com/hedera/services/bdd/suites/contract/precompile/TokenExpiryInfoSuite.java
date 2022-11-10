@@ -86,7 +86,8 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                //            getExpiryInfoForToken(), updateExpiryInfoForToken(),
+                getExpiryInfoForToken(),
+                updateExpiryInfoForToken(),
                 updateExpiryInfoForTokenAndReadLatestInfo());
     }
 
@@ -418,39 +419,6 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    //                  final var getTokenInfoQuery =
-                                    // getTokenInfo(VANILLA_TOKEN);
-                                    //                  allRunFor(spec, getTokenInfoQuery);
-                                    //                  final var expirySecond =
-                                    //                      getTokenInfoQuery
-                                    //                          .getResponse()
-                                    //                          .getTokenGetInfo()
-                                    //                          .getTokenInfo()
-                                    //                          .getExpiry()
-                                    //                          .getSeconds();
-                                    //                  final var autoRenewAccount =
-                                    //                      getTokenInfoQuery
-                                    //                          .getResponse()
-                                    //                          .getTokenGetInfo()
-                                    //                          .getTokenInfo()
-                                    //                          .getAutoRenewAccount();
-                                    //                  final var autoRenewPeriod =
-                                    //                      getTokenInfoQuery
-                                    //                          .getResponse()
-                                    //                          .getTokenGetInfo()
-                                    //                          .getTokenInfo()
-                                    //                          .getAutoRenewPeriod()
-                                    //                          .getSeconds();
-                                    //                  assertEquals(expirySecond,
-                                    // DEFAULT_MAX_LIFETIME - 12_345L);
-                                    //                  assertEquals(
-                                    //                      autoRenewAccount,
-                                    //                      spec.registry()
-                                    //
-                                    // .getAccountID(UPDATED_AUTO_RENEW_ACCOUNT));
-                                    //                  assertEquals(autoRenewPeriod,
-                                    // MONTH_IN_SECONDS);
-
                                     allRunFor(
                                             spec,
                                             childRecordsCheck(
