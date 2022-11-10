@@ -418,30 +418,29 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS))))
                 .then(
                         withOpContext(
-                                (spec, opLog) -> {
-                                    allRunFor(
-                                            spec,
-                                            childRecordsCheck(
-                                                    "updateExpiryAndReadLatestInfoTxn",
-                                                    SUCCESS,
-                                                    recordWith().status(SUCCESS),
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .contractCallResult(
-                                                                                    htsPrecompileResult()
-                                                                                            .forFunction(
-                                                                                                    FunctionType
-                                                                                                            .HAPI_GET_TOKEN_EXPIRY_INFO)
-                                                                                            .withStatus(
-                                                                                                    SUCCESS)
-                                                                                            .withExpiry(
-                                                                                                    DEFAULT_MAX_LIFETIME
-                                                                                                            - 12_345L,
-                                                                                                    updatedAutoRenewAccountID
-                                                                                                            .get(),
-                                                                                                    MONTH_IN_SECONDS)))));
-                                }));
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                childRecordsCheck(
+                                                        "updateExpiryAndReadLatestInfoTxn",
+                                                        SUCCESS,
+                                                        recordWith().status(SUCCESS),
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_EXPIRY_INFO)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withExpiry(
+                                                                                                        DEFAULT_MAX_LIFETIME
+                                                                                                                - 12_345L,
+                                                                                                        updatedAutoRenewAccountID
+                                                                                                                .get(),
+                                                                                                        MONTH_IN_SECONDS)))))));
     }
 }
