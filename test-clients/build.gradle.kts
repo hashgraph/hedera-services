@@ -110,7 +110,7 @@ val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
     from(sourceSets.main.get().output)
     configurations = listOf(project.configurations["runtimeClasspath"])
 
-    exclude(listOf("META-INF/*.DSA", "META-INF/*.SF"))
+    exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 
     archiveClassifier.set("yahcli")
     isReproducibleFileOrder = true
