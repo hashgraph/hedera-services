@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.yahcli.commands.signedstate;
 
 import com.hedera.services.yahcli.Yahcli;
@@ -24,19 +23,18 @@ import picocli.CommandLine.ParentCommand;
 
 @Command(
         name = "signedstate",
-        subcommands = {
-            CommandLine.HelpCommand.class,
-            SummarizeSignedStateFileCommand.class
-        },
+        subcommands = {CommandLine.HelpCommand.class, SummarizeSignedStateFileCommand.class},
         description = "Dealing with signed state files")
 public class SignedStateCommand implements Callable<Integer> {
     @ParentCommand Yahcli yahcli;
 
     @Override
     public Integer call() throws Exception {
-      throw new CommandLine.ParameterException(
-          yahcli.getSpec().commandLine(), "Please specify a signedstate subcommand!");
+        throw new CommandLine.ParameterException(
+                yahcli.getSpec().commandLine(), "Please specify a signedstate subcommand!");
     }
 
-    public Yahcli getYahcli() { return yahcli; }
+    public Yahcli getYahcli() {
+        return yahcli;
+    }
 }

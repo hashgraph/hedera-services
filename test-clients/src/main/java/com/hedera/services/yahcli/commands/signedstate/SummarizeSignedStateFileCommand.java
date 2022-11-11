@@ -15,46 +15,52 @@
  */
 package com.hedera.services.yahcli.commands.signedstate;
 
+import com.swirlds.platform.state.signed.SignedStateFileReader;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
 
 @Command(
         name = "summarize",
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Summarizes contents of signed state file")
 public class SummarizeSignedStateFileCommand implements Callable<Integer> {
-  @ParentCommand private SignedStateCommand signedStateCommand;
+    @ParentCommand private SignedStateCommand signedStateCommand;
 
-  @Option(names = {"-f","--file"}, paramLabel = "INPUT-SIGNED-STATE-FILE", description = "Input signed state file")
-  Optional<Path> inputFile;
+    @Option(
+            names = {"-f", "--file"},
+            paramLabel = "INPUT-SIGNED-STATE-FILE",
+            description = "Input signed state file")
+    Optional<Path> inputFile;
 
-  @Option(names = {"-o", "--out"}, paramLabel = "OUTPUT-SIGNED-STATE-FILE", description = "Output signed state file")
-  Optional<Path> outputFile;
+    @Option(
+            names = {"-o", "--out"},
+            paramLabel = "OUTPUT-SIGNED-STATE-FILE",
+            description = "Output signed state file")
+    Optional<Path> outputFile;
 
-  @Option(names = {"-s", "--summarize"}, description = "Provide summary of what was in the input file")
-  Optional<Boolean> doSummary;
+    @Option(
+            names = {"-s", "--summarize"},
+            description = "Provide summary of what was in the input file")
+    Optional<Boolean> doSummary;
 
-  @Override
-  public Integer call() throws Exception {
-    System.out.println("SummarizeSignedStateFile! <TBD>");
-    System.out.printf("SummarizeSignedStateFile: input file %s output file %s summarize %s%n",
-                      inputFile.isPresent() ? inputFile.get().toString() : "<NONE>",
-                      outputFile.isPresent() ? outputFile.get().toString() : "<NONE>",
-                      doSummary.isPresent() ? "YES" : "NO");
+    @Override
+    public Integer call() throws Exception {
+        System.out.println("SummarizeSignedStateFile! <TBD>");
+        System.out.printf(
+                "SummarizeSignedStateFile: input file %s output file %s summarize %s%n",
+                inputFile.map(Path::toString).orElse("<NONE>"),
+                outputFile.map(Path::toString).orElse("<NONE>"),
+                doSummary.isPresent() ? "YES" : "NO");
 
-    // Must have an input file (TODO: use stdin if no input file specified)
-    if (inputFile.isEmpty()) return 1;
+        // Must have an input file (TODO: use stdin if no input file specified)
+        if (inputFile.isEmpty()) return 1;
 
-    var signedPair = SignedStateFileReader.readStateFile(inputFile.get());
+        var signedPair = SignedStateFileReader.readStateFile(inputFile.get());
 
-
-    return 0;
-  }
+        return 0;
+    }
 }
