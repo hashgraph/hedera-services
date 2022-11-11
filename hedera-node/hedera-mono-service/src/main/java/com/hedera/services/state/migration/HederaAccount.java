@@ -193,4 +193,8 @@ public interface HederaAccount {
     EntityId getAutoRenewAccount();
 
     void setAutoRenewAccount(EntityId autoRenewAccount);
+
+    boolean isExpiredAndPendingRemoval();
+
+    void setExpiredAndPendingRemoval(boolean flag);
 }

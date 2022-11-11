@@ -415,7 +415,7 @@ class LedgerBalanceChangesTest {
                             change.replaceNonEmptyAliasWith(validAliasEntityNum);
                             return Pair.of(OK, 100L);
                         });
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
         given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
 
         subject.begin();
@@ -473,7 +473,7 @@ class LedgerBalanceChangesTest {
 
     private void givenUnexpiredEntities() {
         given(validator.expiryStatusGiven(eq(accountsLedger), any())).willReturn(OK);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
     }
 
     private void givenInitialBalancesAndOwnership() {
