@@ -32,6 +32,6 @@ public class Bar {
 
     @OverrideMustInvoke
     public void important() {
-        System.out.println("YEAH");
+        Thread.dumpStack();
     }
 }

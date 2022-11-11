@@ -59,8 +59,10 @@ public class NullCheckJetbrains {
         putValue("A");
         putValue(null);
         final String val1 = maybe();
-        System.out.println("" + val1.length());
+        System.err.println("" + val1.length());
         final String val2 = argh();
-        System.out.println("" + val2.length());
+        System.err.println("" + val2.length());
+        @Nullable final String val3 = maybe();
+        System.err.println("" + val3.length());
     }
 }
