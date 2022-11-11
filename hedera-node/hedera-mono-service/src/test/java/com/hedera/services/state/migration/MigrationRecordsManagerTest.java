@@ -20,7 +20,9 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.initialization.TreasuryClonerTest.accountWith;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -126,6 +128,7 @@ class MigrationRecordsManagerTest {
     @Mock private SideEffectsTracker tracker201;
     @Mock private SideEffectsTracker tracker100;
     @Mock private SideEffectsTracker tracker101;
+    @Mock private SideEffectsTracker tracker2;
     @Mock private EntityCreator creator;
     @Mock private AccountNumbers accountNumbers;
     @Mock private BackedSystemAccountsCreator systemAccountsCreator;
@@ -161,6 +164,52 @@ class MigrationRecordsManagerTest {
                             case 4 -> tracker100;
                             default -> tracker101;
                         });
+    }
+
+    @Test
+    void streamsTreasuryAccountCreationRecordsWithTransferList() {
+        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
+                forClass(TransactionBody.Builder.class);
+        subject.setSideEffectsFactory(
+                () ->
+                        switch (nextTracker.getAndIncrement()) {
+                            case 0 -> tracker2;
+                            default -> tracker2;
+                        });
+
+        final var systemAccountSynthBody = expectedTreasuryAccountCreationSynthBody();
+        final var record = ExpirableTxnRecord.newBuilder();
+
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                NO_CUSTOM_FEES, tracker2, SYSTEM_ACCOUNT_CREATION_MEMO))
+                .willReturn(record);
+        given(systemAccountsCreator.getTreasuryClonesCreated()).willReturn(List.of());
+        given(systemAccountsCreator.getSystemAccountsCreated()).willReturn(List.of(merkleAccount));
+        given(merkleAccount.number()).willReturn(2);
+        given(merkleAccount.getBalance()).willReturn(MAX_PENDING_REWARDS);
+        given(merkleAccount.getExpiry()).willReturn(pretendExpiry);
+        given(merkleAccount.isReceiverSigRequired()).willReturn(true);
+        given(merkleAccount.getAccountKey()).willReturn(pretendTreasuryKey);
+        given(merkleAccount.getMemo()).willReturn("123");
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+
+        subject.publishMigrationRecords(now);
+
+        verify(sigImpactHistorian).markEntityChanged(2L);
+        verify(recordsHistorian)
+                .trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(record));
+        verify(networkCtx).markMigrationRecordsStreamed();
+        verify(systemAccountsCreator).forgetCreations();
+
+        final var bodies = bodyCaptor.getAllValues();
+        assertEquals(systemAccountSynthBody, bodies.get(0).build());
+        assertFalse(record.getHbarAdjustments().isEmpty());
+        assertEquals(1, record.getHbarAdjustments().getAccountNums().length);
+        assertEquals(1, record.getHbarAdjustments().getHbars().length);
+        assertEquals(2L, record.getHbarAdjustments().getAccountNums()[0]);
+        assertEquals(MAX_PENDING_REWARDS, record.getHbarAdjustments().getHbars()[0]);
     }
 
     @Test
@@ -412,11 +461,25 @@ class MigrationRecordsManagerTest {
                 CryptoCreateTransactionBody.newBuilder()
                         .setKey(MiscUtils.asKeyUnchecked(systemAccountKey))
                         .setMemo("123")
-                        .setInitialBalance(0)
+                        .setInitialBalance(0L)
                         .setReceiverSigRequired(true)
                         .setAutoRenewPeriod(
                                 Duration.newBuilder()
                                         .setSeconds(systemAccount - now.getEpochSecond()))
+                        .build();
+        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
+    }
+
+    private TransactionBody expectedTreasuryAccountCreationSynthBody() {
+        final var txnBody =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
+                        .setMemo("123")
+                        .setInitialBalance(MAX_PENDING_REWARDS)
+                        .setReceiverSigRequired(true)
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder()
+                                        .setSeconds(pretendExpiry - now.getEpochSecond()))
                         .build();
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
     }

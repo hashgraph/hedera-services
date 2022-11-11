@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.submerkle;
 
+import static com.hedera.services.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -177,6 +178,29 @@ class ExpirableTxnRecordBuilderTest {
         final var expectedChanges = new long[] {+8, +7, -5};
         final var expectedAccounts =
                 new long[] {firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num()};
+        assertArrayEquals(expectedChanges, subject.getHbarAdjustments().hbars);
+        assertArrayEquals(expectedAccounts, subject.getHbarAdjustments().accountNums);
+    }
+
+    @Test
+    void doesntAdjustForTreasuryCreation() {
+        final var firstInBoth = new EntityId(0, 0, 3);
+        final var secondInBoth = new EntityId(0, 0, 4);
+
+        final var thisAdjusts =
+                new CurrencyAdjustments(
+                        new long[] {+6, +3}, new long[] {firstInBoth.num(), secondInBoth.num()});
+        final var thatAdjusts =
+                new CurrencyAdjustments(new long[] {MAX_PENDING_REWARDS}, new long[] {2L});
+
+        final var that = ExpirableTxnRecord.newBuilder();
+        that.setHbarAdjustments(thatAdjusts);
+
+        subject.setHbarAdjustments(thisAdjusts);
+        subject.excludeHbarChangesFrom(that);
+
+        final var expectedChanges = new long[] {+6, +3};
+        final var expectedAccounts = new long[] {firstInBoth.num(), secondInBoth.num()};
         assertArrayEquals(expectedChanges, subject.getHbarAdjustments().hbars);
         assertArrayEquals(expectedAccounts, subject.getHbarAdjustments().accountNums);
     }
