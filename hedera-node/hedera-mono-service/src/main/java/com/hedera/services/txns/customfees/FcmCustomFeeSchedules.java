@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.customfees;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -57,6 +58,9 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
             }
             merkleToken = currentTokens.get(key);
         } else {
+            if (!tokensLedger.exists(tokenId.asGrpcToken())) {
+                return CustomFeeMeta.forMissingLookupOf(tokenId);
+            }
             merkleToken = tokensLedger.getImmutableRef(tokenId.asGrpcToken());
         }
         return new CustomFeeMeta(
@@ -75,5 +79,10 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
     @Override
     public int hashCode() {
         return HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    @VisibleForTesting
+    public TransactionalLedger<TokenID, TokenProperty, MerkleToken> getTokensLedger() {
+        return tokensLedger;
     }
 }

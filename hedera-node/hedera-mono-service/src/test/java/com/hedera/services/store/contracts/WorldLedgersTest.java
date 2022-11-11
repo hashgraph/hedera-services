@@ -36,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -407,11 +408,11 @@ class WorldLedgersTest {
         final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
         final var liveAliases = new AliasManager(() -> aliases);
 
-        final var customFeeSchedules = new FcmCustomFeeSchedules(liveTokens);
+        final var liveFeeSchedules = new FcmCustomFeeSchedules(liveTokens);
         final var source =
                 new WorldLedgers(
                         liveAliases,
-                        customFeeSchedules,
+                        liveFeeSchedules,
                         liveTokenRels,
                         liveAccounts,
                         liveNfts,
@@ -419,26 +420,21 @@ class WorldLedgersTest {
         assertTrue(source.areMutable());
         final var nullTokenRels =
                 new WorldLedgers(
-                        liveAliases, customFeeSchedules, null, liveAccounts, liveNfts, liveTokens);
+                        liveAliases, liveFeeSchedules, null, liveAccounts, liveNfts, liveTokens);
         final var nullAccounts =
                 new WorldLedgers(
-                        liveAliases, customFeeSchedules, liveTokenRels, null, liveNfts, liveTokens);
+                        liveAliases, liveFeeSchedules, liveTokenRels, null, liveNfts, liveTokens);
         final var nullNfts =
                 new WorldLedgers(
                         liveAliases,
-                        customFeeSchedules,
+                        liveFeeSchedules,
                         liveTokenRels,
                         liveAccounts,
                         null,
                         liveTokens);
         final var nullTokens =
                 new WorldLedgers(
-                        liveAliases,
-                        customFeeSchedules,
-                        liveTokenRels,
-                        liveAccounts,
-                        liveNfts,
-                        null);
+                        liveAliases, liveFeeSchedules, liveTokenRels, liveAccounts, liveNfts, null);
         assertFalse(nullTokenRels.areMutable());
         assertFalse(nullAccounts.areMutable());
         assertFalse(nullNfts.areMutable());
@@ -458,6 +454,9 @@ class WorldLedgersTest {
         assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());
         assertSame(liveNfts, wrappedSource.nfts().getEntitiesLedger());
         assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
+        assertSame(wrappedSource.tokens(), wrappedSource.customFeeSchedules().getTokensLedger());
+        assertNotSame(liveFeeSchedules, wrappedSource.customFeeSchedules());
+        assertNull(liveFeeSchedules.getTokens());
         final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
         assertSame(liveAliases, stackedAliases.wrappedAliases());
 
@@ -496,11 +495,11 @@ class WorldLedgersTest {
         final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
         final var liveAliases = new AliasManager(() -> aliases);
 
-        final var customFeeSchedules = new FcmCustomFeeSchedules(liveTokens);
+        final var liveFeeSchedules = new FcmCustomFeeSchedules(liveTokens);
         final var source =
                 new WorldLedgers(
                         liveAliases,
-                        customFeeSchedules,
+                        liveFeeSchedules,
                         liveTokenRels,
                         liveAccounts,
                         liveNfts,
@@ -508,26 +507,21 @@ class WorldLedgersTest {
         assertTrue(source.areMutable());
         final var nullTokenRels =
                 new WorldLedgers(
-                        liveAliases, customFeeSchedules, null, liveAccounts, liveNfts, liveTokens);
+                        liveAliases, liveFeeSchedules, null, liveAccounts, liveNfts, liveTokens);
         final var nullAccounts =
                 new WorldLedgers(
-                        liveAliases, customFeeSchedules, liveTokenRels, null, liveNfts, liveTokens);
+                        liveAliases, liveFeeSchedules, liveTokenRels, null, liveNfts, liveTokens);
         final var nullNfts =
                 new WorldLedgers(
                         liveAliases,
-                        customFeeSchedules,
+                        liveFeeSchedules,
                         liveTokenRels,
                         liveAccounts,
                         null,
                         liveTokens);
         final var nullTokens =
                 new WorldLedgers(
-                        liveAliases,
-                        customFeeSchedules,
-                        liveTokenRels,
-                        liveAccounts,
-                        liveNfts,
-                        null);
+                        liveAliases, liveFeeSchedules, liveTokenRels, liveAccounts, liveNfts, null);
         assertFalse(nullTokenRels.areMutable());
         assertFalse(nullAccounts.areMutable());
         assertFalse(nullNfts.areMutable());
@@ -545,6 +539,9 @@ class WorldLedgersTest {
         assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());
         assertSame(liveNfts, wrappedSource.nfts().getEntitiesLedger());
         assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
+        assertSame(wrappedSource.tokens(), wrappedSource.customFeeSchedules().getTokensLedger());
+        assertNotSame(liveFeeSchedules, wrappedSource.customFeeSchedules());
+        assertNull(liveFeeSchedules.getTokens());
         final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
         assertSame(liveAliases, stackedAliases.wrappedAliases());
     }
