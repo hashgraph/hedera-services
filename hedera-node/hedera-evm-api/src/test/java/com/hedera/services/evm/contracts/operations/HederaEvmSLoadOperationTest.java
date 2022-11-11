@@ -17,7 +17,7 @@ package com.hedera.services.evm.contracts.operations;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -73,8 +73,7 @@ class HederaEvmSLoadOperationTest {
 
         final var coldResult = subject.execute(messageFrame, evm);
 
-        final var expectedColdResult =
-                new Operation.OperationResult(20L, null);
+        final var expectedColdResult = new Operation.OperationResult(20L, null);
 
         assertEquals(expectedColdResult.getGasCost(), coldResult.getGasCost());
         assertEquals(expectedColdResult.getHaltReason(), coldResult.getHaltReason());
@@ -93,8 +92,7 @@ class HederaEvmSLoadOperationTest {
 
         final var warmResult = subject.execute(messageFrame, evm);
 
-        final var expectedWarmResult =
-                new Operation.OperationResult(30L, null);
+        final var expectedWarmResult = new Operation.OperationResult(30L, null);
         assertEquals(expectedWarmResult.getGasCost(), warmResult.getGasCost());
         assertEquals(expectedWarmResult.getHaltReason(), warmResult.getHaltReason());
         assertEquals(expectedWarmResult.getPcIncrement(), warmResult.getPcIncrement());
@@ -108,8 +106,7 @@ class HederaEvmSLoadOperationTest {
         given(messageFrame.getRemainingGas()).willReturn(0L);
 
         final var expectedHaltResult =
-                new Operation.OperationResult(
-                        30L, ExceptionalHaltReason.INSUFFICIENT_GAS);
+                new Operation.OperationResult(30L, ExceptionalHaltReason.INSUFFICIENT_GAS);
 
         final var haltResult = subject.execute(messageFrame, evm);
 
