@@ -16,6 +16,7 @@
 package com;
 
 import java.util.Objects;
+import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -29,11 +30,11 @@ public class NullCheckJetbrains {
 
     @NotNull
     static String getValue() {
-        return "yeah!";
+        return UUID.randomUUID().toString();
     }
 
     static void putValue(@NotNull String value) {
-        Objects.requireNonNull(value);
+        Objects.hash(value.length());
     }
 
     @TestOnly
@@ -55,19 +56,22 @@ public class NullCheckJetbrains {
     }
 
     static void checkMe(@Nullable final String val) {
-        Objects.requireNonNull("" + val.length());
+        Objects.hash(val.length());
     }
 
     public static void main(String[] args) {
-        getValue();
-        getNullValue();
         putValue("A");
         putValue(null);
+
         final String val1 = maybe();
-        Objects.requireNonNull(val1.length());
+        Objects.hash(val1.length());
         final String val2 = argh();
-        Objects.requireNonNull("" + val2.length());
+        Objects.hash(val2.length());
         @Nullable final String val3 = maybe();
-        Objects.requireNonNull("" + val3.length());
+        Objects.hash(val3.length());
+        final String val4 = getValue();
+        Objects.hash(val4.length());
+        final String val5 = getNullValue();
+        Objects.hash(val5.length());
     }
 }

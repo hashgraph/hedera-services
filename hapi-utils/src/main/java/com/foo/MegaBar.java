@@ -15,10 +15,20 @@
  */
 package com.foo;
 
+import java.util.Objects;
+
 public class MegaBar extends Bar {
 
     @Override
     public void important() {
         Thread.dumpStack();
+        Thread.dumpStack();
+    }
+
+    public static void main(String[] args) {
+        new MegaBar().important();
+
+        Objects.hash("" + new MegaBar().ohNo().length());
+        Objects.hash("" + new MegaBar().yeah().length());
     }
 }

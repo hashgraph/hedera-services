@@ -19,6 +19,7 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import java.util.UUID;
 
 public class NullCheck {
 
@@ -29,11 +30,11 @@ public class NullCheck {
 
     @NonNull
     static String getValue() {
-        return "yeah!";
+        return UUID.randomUUID().toString();
     }
 
     static void putValue(@NonNull String value) {
-        Objects.requireNonNull(value);
+        Objects.hash(value);
     }
 
     @CheckForNull
@@ -55,19 +56,24 @@ public class NullCheck {
     }
 
     static void checkMe(@Nullable final String val) {
-        Objects.requireNonNull("" + val.length());
+        Objects.hash("" + val.length());
     }
 
     public static void main(String[] args) {
-        getValue();
-        getNullValue();
         putValue("A");
         putValue(null);
+
         final String val1 = maybe();
-        Objects.requireNonNull("" + val1.length());
+        Objects.hash("" + val1.length());
         final String val2 = possible();
-        Objects.requireNonNull("" + val2.length());
+        Objects.hash("" + val2.length());
         @Nullable final String val3 = possible();
-        Objects.requireNonNull("" + val3.length());
+        Objects.hash("" + val3.length());
+        final String val4 = getValue();
+        Objects.hash(val4.length());
+        final String val5 = getNullValue();
+        Objects.hash(val5.length());
+        @CheckForNull final String val6 = getNullValue();
+        Objects.hash(val6.length());
     }
 }
